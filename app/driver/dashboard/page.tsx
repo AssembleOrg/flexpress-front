@@ -87,7 +87,7 @@ export default function DriverDashboard() {
               <Switch
                 checked={isAvailable}
                 onChange={handleAvailabilityChange}
-                size='large'
+                size='medium'
                 color='secondary'
               />
             }
