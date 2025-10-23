@@ -1,5 +1,5 @@
-import { Trip } from "@/lib/types/trip";
-import { User } from "@/lib/types/auth";
+import type { User } from "@/lib/types/auth";
+import type { Trip } from "@/lib/types/trip";
 
 // Mock users
 export const mockUsers: User[] = [

@@ -1,10 +1,10 @@
-import { io, Socket } from "socket.io-client";
+import toast from "react-hot-toast";
+import { io, type Socket } from "socket.io-client";
 import { useAuthStore } from "./stores/authStore";
 import { useChatStore } from "./stores/chatStore";
 import { useTripStore } from "./stores/tripStore";
-import { Message } from "./types/chat";
-import { Trip } from "./types/trip";
-import toast from "react-hot-toast";
+import type { Message } from "./types/chat";
+import type { Trip } from "./types/trip";
 
 class SocketService {
   private socket: Socket | null = null;

@@ -1,46 +1,39 @@
 import { createTheme } from "@mui/material/styles";
-import { Poppins } from "next/font/google";
-
-const poppins = Poppins({
-  weight: ["400", "500", "600", "700"],
-  subsets: ["latin"],
-  display: "swap",
-});
 
 export const flexpressTheme = createTheme({
   palette: {
     primary: {
-      main: "#2C3E50", // Dark Slate Blue - Base de Confianza
-      dark: "#1A252F",
-      light: "#34495E",
+      main: "#380116", // Bordo Sofisticado (Púrpura Profundo)
+      dark: "#4b011d", // Bordo Clásico para hover
+      light: "#5a0a2f",
       contrastText: "#FFFFFF",
     },
     secondary: {
-      main: "#E67E22", // Carrot Orange - Llamado a la Acción
-      dark: "#D35400",
-      light: "#F39C12",
-      contrastText: "#FFFFFF",
+      main: "#DCA621", // Oro Brillante para los CTAs
+      dark: "#B7850D", // Oro Medio para hover
+      light: "#E8B76E",
+      contrastText: "#212121",
     },
     background: {
-      default: "#F4F6F8", // Lightest Gray - Lienzo Limpio
-      paper: "#FFFFFF", // Pure White - Superficie
+      default: "#F5F2E8", // Fondo Pergamino / Lino
+      paper: "#FFFFFF", // Fondo para Cards
     },
     success: {
-      main: "#2ECC71", // Emerald Green - Confirmación Visual
+      main: "#2ECC71", // Verde estándar para "Éxito"
       dark: "#27AE60",
       light: "#58D68D",
       contrastText: "#FFFFFF",
     },
     error: {
-      main: "#E74C3C", // Alizarin Red - Alerta y Cancelación
+      main: "#E74C3C", // Rojo estándar para "Error"
       dark: "#C0392B",
       light: "#EC7063",
       contrastText: "#FFFFFF",
     },
     warning: {
-      main: "#F39C12", // Orange variant for "Negociando" state
-      dark: "#E67E22",
-      light: "#F7DC6F",
+      main: "#B7850D", // Oro Medio para "Advertencia"
+      dark: "#9A6B0A",
+      light: "#D4A574",
       contrastText: "#FFFFFF",
     },
     info: {
@@ -50,63 +43,63 @@ export const flexpressTheme = createTheme({
       contrastText: "#FFFFFF",
     },
     text: {
-      primary: "#2C3E50",
-      secondary: "#5D6D7E",
+      primary: "#212121",
+      secondary: "#503933",
     },
   },
   typography: {
-    fontFamily: poppins.style.fontFamily,
-    // Títulos Principales (h1, h2)
+    fontFamily: "var(--font-lato), sans-serif",
+    // Títulos Principales (h1, h2) - Playfair Display
     h1: {
-      fontFamily: poppins.style.fontFamily,
+      fontFamily: "var(--font-playfair), serif",
       fontWeight: 700,
       letterSpacing: "-0.5px",
-      color: "#2C3E50",
+      color: "#212121",
     },
     h2: {
-      fontFamily: poppins.style.fontFamily,
+      fontFamily: "var(--font-playfair), serif",
       fontWeight: 700,
       letterSpacing: "-0.5px",
-      color: "#2C3E50",
+      color: "#212121",
     },
-    // Subtítulos y Títulos de Tarjetas (h3, h4)
+    // Subtítulos y Títulos de Tarjetas (h3-h6) - Lato
     h3: {
-      fontFamily: poppins.style.fontFamily,
-      fontWeight: 600,
-      color: "#2C3E50",
+      fontFamily: "var(--font-lato), sans-serif",
+      fontWeight: 700,
+      color: "#212121",
     },
     h4: {
-      fontFamily: poppins.style.fontFamily,
-      fontWeight: 600,
-      color: "#2C3E50",
+      fontFamily: "var(--font-lato), sans-serif",
+      fontWeight: 700,
+      color: "#212121",
     },
     h5: {
-      fontFamily: poppins.style.fontFamily,
-      fontWeight: 600,
-      color: "#2C3E50",
+      fontFamily: "var(--font-lato), sans-serif",
+      fontWeight: 700,
+      color: "#212121",
     },
     h6: {
-      fontFamily: poppins.style.fontFamily,
+      fontFamily: "var(--font-lato), sans-serif",
       fontWeight: 600,
-      color: "#2C3E50",
+      color: "#212121",
     },
-    // Cuerpo de Texto
+    // Cuerpo de Texto - Lato
     body1: {
-      fontFamily: poppins.style.fontFamily,
+      fontFamily: "var(--font-lato), sans-serif",
       fontWeight: 400,
       lineHeight: 1.5,
-      color: "#2C3E50",
+      color: "#212121",
     },
     body2: {
-      fontFamily: poppins.style.fontFamily,
+      fontFamily: "var(--font-lato), sans-serif",
       fontWeight: 400,
       lineHeight: 1.5,
-      color: "#5D6D7E",
+      color: "#503933",
     },
-    // Texto de UI y Botones
+    // Texto de UI y Botones - Lato Bold
     button: {
-      fontFamily: poppins.style.fontFamily,
-      fontWeight: 500,
+      fontFamily: "var(--font-lato), sans-serif",
+      fontWeight: 700,
       textTransform: "none",
       letterSpacing: "0px",
     },
@@ -117,19 +110,20 @@ export const flexpressTheme = createTheme({
       styleOverrides: {
         root: {
           borderRadius: 8,
-          fontWeight: 500,
+          fontWeight: 700,
           padding: "10px 24px",
         },
         containedPrimary: {
-          backgroundColor: "#2C3E50",
+          backgroundColor: "#380116",
           "&:hover": {
-            backgroundColor: "#1A252F",
+            backgroundColor: "#4b011d",
           },
         },
         containedSecondary: {
-          backgroundColor: "#E67E22",
+          backgroundColor: "#DCA621",
+          color: "#212121",
           "&:hover": {
-            backgroundColor: "#D35400",
+            backgroundColor: "#B7850D",
           },
         },
       },
@@ -146,11 +140,11 @@ export const flexpressTheme = createTheme({
         },
       },
     },
-    // AppBar con color primario
+    // AppBar con color primario (Bordo)
     MuiAppBar: {
       styleOverrides: {
         root: {
-          backgroundColor: "#2C3E50",
+          backgroundColor: "#380116",
           boxShadow: "0px 1px 3px rgba(0, 0, 0, 0.12)",
         },
       },
@@ -169,10 +163,10 @@ export const flexpressTheme = createTheme({
       styleOverrides: {
         root: {
           "& .MuiSwitch-switchBase.Mui-checked": {
-            color: "#E67E22",
+            color: "#DCA621",
           },
           "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track": {
-            backgroundColor: "#E67E22",
+            backgroundColor: "#DCA621",
           },
         },
       },

@@ -1,29 +1,29 @@
-'use client';
+"use client";
 
-import React, { useState, useEffect } from 'react';
+import { Close, MyLocation } from "@mui/icons-material";
 import {
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Button,
-  Box,
-  Typography,
-  CircularProgress,
   Alert,
+  Box,
+  Button,
+  CircularProgress,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
   IconButton,
-} from '@mui/material';
-import { Close, MyLocation } from '@mui/icons-material';
+  Typography,
+} from "@mui/material";
+import { useEffect, useState } from "react";
 
 interface MapModalProps {
   open: boolean;
   onClose: () => void;
   onLocationSelect: (
     address: string,
-    coordinates: { lat: number; lng: number }
+    coordinates: { lat: number; lng: number },
   ) => void;
   title: string;
-  fieldName: 'origin' | 'destination';
+  fieldName: "origin" | "destination";
 }
 
 export default function MapModal({
@@ -57,23 +57,23 @@ export default function MapModal({
   const reverseGeocode = async (lat: number, lng: number): Promise<string> => {
     try {
       const response = await fetch(
-        `https://geocode.maps.co/reverse?lat=${lat}&lon=${lng}&format=json`
+        `https://geocode.maps.co/reverse?lat=${lat}&lon=${lng}&format=json`,
       );
 
-      if (!response.ok) throw new Error('Geocoding API error');
+      if (!response.ok) throw new Error("Geocoding API error");
 
       const data = await response.json();
 
       if (data.display_name) {
         // Extraer partes relevantes para Buenos Aires
-        const parts = data.display_name.split(', ');
-        const relevantParts = parts.slice(0, 3).join(', ');
+        const parts = data.display_name.split(", ");
+        const relevantParts = parts.slice(0, 3).join(", ");
         return relevantParts || data.display_name;
       }
 
-      throw new Error('No address found');
+      throw new Error("No address found");
     } catch (error) {
-      console.error('Reverse geocoding error:', error);
+      console.error("Reverse geocoding error:", error);
       return `Lat: ${lat.toFixed(4)}, Lng: ${lng.toFixed(4)}`;
     }
   };
@@ -85,7 +85,7 @@ export default function MapModal({
     try {
       const address = await reverseGeocode(lat, lng);
       setSelectedLocation({ lat, lng, address });
-    } catch (error) {
+    } catch (_error) {
       setSelectedLocation({
         lat,
         lng,
@@ -101,7 +101,7 @@ export default function MapModal({
       onLocationSelect(
         selectedLocation.address ||
           `Lat: ${selectedLocation.lat}, Lng: ${selectedLocation.lng}`,
-        { lat: selectedLocation.lat, lng: selectedLocation.lng }
+        { lat: selectedLocation.lat, lng: selectedLocation.lng },
       );
       onClose();
     }
@@ -115,11 +115,11 @@ export default function MapModal({
           handleMapClick(latitude, longitude);
         },
         (error) => {
-          console.error('Geolocation error:', error);
+          console.error("Geolocation error:", error);
           // Fallback to Buenos Aires center
           handleMapClick(defaultCenter.lat, defaultCenter.lng);
         },
-        { enableHighAccuracy: true, timeout: 10000 }
+        { enableHighAccuracy: true, timeout: 10000 },
       );
     }
   };
@@ -128,49 +128,40 @@ export default function MapModal({
     <Dialog
       open={open}
       onClose={onClose}
-      maxWidth='md'
+      maxWidth="md"
       fullWidth
       PaperProps={{
-        sx: { height: '80vh' },
+        sx: { height: "80vh" },
       }}
     >
       <DialogTitle
         sx={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
           pb: 1,
         }}
       >
-        <Typography
-          variant='h6'
-          component='div'
-        >
+        <Typography variant="h6" component="div">
           {title}
         </Typography>
-        <IconButton
-          onClick={onClose}
-          size='small'
-        >
+        <IconButton onClick={onClose} size="small">
           <Close />
         </IconButton>
       </DialogTitle>
 
-      <DialogContent sx={{ p: 0, display: 'flex', flexDirection: 'column' }}>
+      <DialogContent sx={{ p: 0, display: "flex", flexDirection: "column" }}>
         {isLoading ? (
           <Box
-            display='flex'
-            justifyContent='center'
-            alignItems='center'
-            height='100%'
-            flexDirection='column'
+            display="flex"
+            justifyContent="center"
+            alignItems="center"
+            height="100%"
+            flexDirection="column"
             gap={2}
           >
             <CircularProgress size={40} />
-            <Typography
-              variant='body2'
-              color='text.secondary'
-            >
+            <Typography variant="body2" color="text.secondary">
               Cargando mapa interactivo...
             </Typography>
           </Box>
@@ -178,23 +169,23 @@ export default function MapModal({
           <>
             {/* Instructions */}
             <Alert
-              severity='info'
+              severity="info"
               sx={{ m: 2, mb: 1 }}
               action={
                 <Button
-                  size='small'
+                  size="small"
                   startIcon={<MyLocation />}
                   onClick={handleCurrentLocation}
-                  variant='outlined'
+                  variant="outlined"
                 >
                   Mi ubicación
                 </Button>
               }
             >
-              <Typography variant='body2'>
+              <Typography variant="body2">
                 <strong>Instrucciones:</strong> Haz clic en el mapa donde
-                quieres{' '}
-                {fieldName === 'origin' ? 'ser recogido' : 'que te lleven'}. La
+                quieres{" "}
+                {fieldName === "origin" ? "ser recogido" : "que te lleven"}. La
                 dirección aparecerá automáticamente.
               </Typography>
             </Alert>
@@ -202,12 +193,12 @@ export default function MapModal({
             <Box
               sx={{
                 flex: 1,
-                position: 'relative',
+                position: "relative",
                 m: 2,
                 mt: 1,
                 borderRadius: 2,
-                overflow: 'hidden',
-                bgcolor: 'grey.100',
+                overflow: "hidden",
+                bgcolor: "grey.100",
               }}
             >
               {/* COPIAR O USAR FLETALO QUIZAS? idea<iframe
@@ -223,12 +214,12 @@ export default function MapModal({
 
               <Box
                 sx={{
-                  position: 'absolute',
+                  position: "absolute",
                   top: 0,
                   left: 0,
                   right: 0,
                   bottom: 0,
-                  cursor: 'crosshair',
+                  cursor: "crosshair",
                 }}
                 onClick={() => {
                   const randomLat =
@@ -244,35 +235,31 @@ export default function MapModal({
             {selectedLocation && (
               <Box sx={{ p: 2, pt: 0 }}>
                 <Alert
-                  severity='success'
+                  severity="success"
                   sx={{
-                    '& .MuiAlert-message': {
-                      display: 'flex',
-                      alignItems: 'center',
+                    "& .MuiAlert-message": {
+                      display: "flex",
+                      alignItems: "center",
                       gap: 1,
                     },
                   }}
                 >
                   <Box>
                     <Typography
-                      variant='subtitle2'
+                      variant="subtitle2"
                       sx={{ fontWeight: 600, mb: 1 }}
                     >
                       📍 Ubicación seleccionada:
                     </Typography>
                     {isGettingAddress ? (
-                      <Box
-                        display='flex'
-                        alignItems='center'
-                        gap={1}
-                      >
+                      <Box display="flex" alignItems="center" gap={1}>
                         <CircularProgress size={16} />
-                        <Typography variant='body2'>
+                        <Typography variant="body2">
                           Obteniendo dirección...
                         </Typography>
                       </Box>
                     ) : (
-                      <Typography variant='body2'>
+                      <Typography variant="body2">
                         {selectedLocation.address}
                       </Typography>
                     )}
@@ -285,19 +272,16 @@ export default function MapModal({
       </DialogContent>
 
       <DialogActions sx={{ p: 2, pt: 1 }}>
-        <Button
-          onClick={onClose}
-          color='inherit'
-        >
+        <Button onClick={onClose} color="inherit">
           Cancelar
         </Button>
         <Button
           onClick={handleConfirm}
-          variant='contained'
+          variant="contained"
           disabled={!selectedLocation || isGettingAddress}
           sx={{ minWidth: 120 }}
         >
-          {isGettingAddress ? 'Procesando...' : 'Confirmar Ubicación'}
+          {isGettingAddress ? "Procesando..." : "Confirmar Ubicación"}
         </Button>
       </DialogActions>
     </Dialog>

@@ -1,6 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import {
+  ArrowBack,
+  AttachMoney,
+  Cancel,
+  CheckCircle,
+  Person,
+  Send,
+  Star,
+} from "@mui/icons-material";
 import {
   Avatar,
   Box,
@@ -8,22 +16,13 @@ import {
   Card,
   CardContent,
   Container,
-  Divider,
   IconButton,
   Paper,
   TextField,
   Typography,
 } from "@mui/material";
-import {
-  ArrowBack,
-  Send,
-  CheckCircle,
-  Cancel,
-  Person,
-  Star,
-  AttachMoney,
-} from "@mui/icons-material";
 import Link from "next/link";
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import toast from "react-hot-toast";
 
@@ -46,18 +45,20 @@ const mockMessages: Message[] = [
     isCurrentUser: false,
   },
   {
-    id: "msg-2", 
+    id: "msg-2",
     senderId: "driver-001",
     senderName: "Carlos Rodríguez",
-    content: "¡Hola María! Un placer ayudarte. He visto que necesitas transportar cajas y una silla desde Palermo a San Telmo.",
+    content:
+      "¡Hola María! Un placer ayudarte. He visto que necesitas transportar cajas y una silla desde Palermo a San Telmo.",
     timestamp: "14:32",
     isCurrentUser: true,
   },
   {
     id: "msg-3",
     senderId: "client-001",
-    senderName: "María González", 
-    content: "Exacto. Son 2 cajas medianas con libros y una silla de escritorio pequeña. ¿El precio de $3500 te parece bien?",
+    senderName: "María González",
+    content:
+      "Exacto. Son 2 cajas medianas con libros y una silla de escritorio pequeña. ¿El precio de $3500 te parece bien?",
     timestamp: "14:35",
     isCurrentUser: false,
   },
@@ -65,10 +66,11 @@ const mockMessages: Message[] = [
     id: "msg-4",
     senderId: "driver-001",
     senderName: "Carlos Rodríguez",
-    content: "Por el peso y la distancia, me parece justo. ¿A qué hora te vendría bien que pase a buscar?",
+    content:
+      "Por el peso y la distancia, me parece justo. ¿A qué hora te vendría bien que pase a buscar?",
     timestamp: "14:38",
     isCurrentUser: true,
-  }
+  },
 ];
 
 const mockTripInfo = {
@@ -81,7 +83,7 @@ const mockTripInfo = {
     avatar: "/avatars/maria.jpg",
     rating: 4.8,
     role: "Cliente" as const,
-  }
+  },
 };
 
 export default function ChatNegotiationPage() {
@@ -98,17 +100,20 @@ export default function ChatNegotiationPage() {
       senderId: "driver-001",
       senderName: "Carlos Rodríguez",
       content: data.message,
-      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      timestamp: new Date().toLocaleTimeString([], {
+        hour: "2-digit",
+        minute: "2-digit",
+      }),
       isCurrentUser: true,
     };
 
-    setMessages(prev => [...prev, newMessage]);
+    setMessages((prev) => [...prev, newMessage]);
     reset();
   };
 
   const handleConfirmTrip = () => {
     toast.success("¡Has confirmado el acuerdo!");
-    
+
     setTimeout(() => {
       setBothConfirmed(true);
       toast.success("¡Viaje confirmado! Ambos usuarios han aceptado.", {
@@ -123,19 +128,18 @@ export default function ChatNegotiationPage() {
   };
 
   return (
-    <Container maxWidth="md" sx={{ py: 4, height: '100vh', display: 'flex', flexDirection: 'column' }}>
+    <Container
+      maxWidth="md"
+      sx={{ py: 4, height: "100vh", display: "flex", flexDirection: "column" }}
+    >
       {/* Header */}
       <Box mb={3}>
         <Link href="/driver/dashboard">
-          <Button
-            startIcon={<ArrowBack />}
-            variant="outlined" 
-            sx={{ mb: 2 }}
-          >
+          <Button startIcon={<ArrowBack />} variant="outlined" sx={{ mb: 2 }}>
             Volver al Dashboard
           </Button>
         </Link>
-        
+
         <Typography variant="h5" sx={{ fontWeight: 600 }}>
           Negociación de Flete
         </Typography>
@@ -144,9 +148,16 @@ export default function ChatNegotiationPage() {
       {/* Info del otro usuario */}
       <Card sx={{ mb: 3 }}>
         <CardContent sx={{ p: 2 }}>
-          <Box display="flex" alignItems="center" justifyContent="space-between">
+          <Box
+            display="flex"
+            alignItems="center"
+            justifyContent="space-between"
+          >
             <Box display="flex" alignItems="center" gap={2}>
-              <Avatar src={mockTripInfo.otherUser.avatar} sx={{ width: 48, height: 48 }}>
+              <Avatar
+                src={mockTripInfo.otherUser.avatar}
+                sx={{ width: 48, height: 48 }}
+              >
                 <Person />
               </Avatar>
               <Box>
@@ -156,7 +167,8 @@ export default function ChatNegotiationPage() {
                 <Box display="flex" alignItems="center" gap={1}>
                   <Star sx={{ fontSize: 16, color: "warning.main" }} />
                   <Typography variant="body2" color="text.secondary">
-                    {mockTripInfo.otherUser.rating} • {mockTripInfo.otherUser.role}
+                    {mockTripInfo.otherUser.rating} •{" "}
+                    {mockTripInfo.otherUser.role}
                   </Typography>
                 </Box>
               </Box>
@@ -177,42 +189,42 @@ export default function ChatNegotiationPage() {
       </Card>
 
       {/* Chat Messages */}
-      <Card sx={{ flex: 1, display: 'flex', flexDirection: 'column', mb: 3 }}>
-        <CardContent sx={{ flex: 1, display: 'flex', flexDirection: 'column', p: 2 }}>
-          <Box sx={{ flex: 1, overflowY: 'auto', mb: 2 }}>
+      <Card sx={{ flex: 1, display: "flex", flexDirection: "column", mb: 3 }}>
+        <CardContent
+          sx={{ flex: 1, display: "flex", flexDirection: "column", p: 2 }}
+        >
+          <Box sx={{ flex: 1, overflowY: "auto", mb: 2 }}>
             {messages.map((message) => (
               <Box
                 key={message.id}
                 display="flex"
-                justifyContent={message.isCurrentUser ? "flex-end" : "flex-start"}
+                justifyContent={
+                  message.isCurrentUser ? "flex-end" : "flex-start"
+                }
                 mb={1}
               >
                 <Paper
                   elevation={1}
                   sx={{
                     p: 2,
-                    maxWidth: '70%',
-                    backgroundColor: message.isCurrentUser 
-                      ? 'secondary.main' 
-                      : 'grey.100',
-                    color: message.isCurrentUser 
-                      ? 'white' 
-                      : 'text.primary',
+                    maxWidth: "70%",
+                    backgroundColor: message.isCurrentUser
+                      ? "secondary.main"
+                      : "grey.100",
+                    color: message.isCurrentUser ? "white" : "text.primary",
                   }}
                 >
                   <Typography variant="body2" sx={{ fontWeight: 500, mb: 0.5 }}>
                     {message.senderName}
                   </Typography>
-                  <Typography variant="body2">
-                    {message.content}
-                  </Typography>
-                  <Typography 
-                    variant="caption" 
-                    sx={{ 
-                      display: 'block', 
-                      textAlign: 'right', 
+                  <Typography variant="body2">{message.content}</Typography>
+                  <Typography
+                    variant="caption"
+                    sx={{
+                      display: "block",
+                      textAlign: "right",
                       mt: 0.5,
-                      opacity: 0.8 
+                      opacity: 0.8,
                     }}
                   >
                     {message.timestamp}
@@ -231,10 +243,10 @@ export default function ChatNegotiationPage() {
                 fullWidth
                 size="small"
               />
-              <IconButton 
-                type="submit" 
+              <IconButton
+                type="submit"
                 color="secondary"
-                sx={{ bgcolor: 'secondary.main', color: 'white' }}
+                sx={{ bgcolor: "secondary.main", color: "white" }}
               >
                 <Send />
               </IconButton>
@@ -267,13 +279,20 @@ export default function ChatNegotiationPage() {
         </Box>
       ) : (
         <Card>
-          <CardContent sx={{ textAlign: 'center', bgcolor: 'success.light', color: 'success.contrastText' }}>
+          <CardContent
+            sx={{
+              textAlign: "center",
+              bgcolor: "success.light",
+              color: "success.contrastText",
+            }}
+          >
             <CheckCircle sx={{ fontSize: 48, mb: 1 }} />
             <Typography variant="h6" sx={{ fontWeight: 600, mb: 1 }}>
               ¡Viaje Confirmado!
             </Typography>
             <Typography variant="body2">
-              Ambos usuarios han confirmado el acuerdo. Pueden coordinar los detalles finales por aquí.
+              Ambos usuarios han confirmado el acuerdo. Pueden coordinar los
+              detalles finales por aquí.
             </Typography>
           </CardContent>
         </Card>

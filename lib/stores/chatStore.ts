@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { ChatState, Message } from "@/lib/types/chat";
+import type { ChatState, Message } from "@/lib/types/chat";
 
 interface ChatActions {
   addMessage: (message: Message) => void;

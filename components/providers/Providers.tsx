@@ -1,7 +1,7 @@
 "use client";
 
-import { ThemeProvider } from "./ThemeProvider";
 import { Toaster } from "react-hot-toast";
+import { ThemeProvider } from "./ThemeProvider";
 
 interface ProvidersProps {
   children: React.ReactNode;
@@ -16,9 +16,9 @@ export function Providers({ children }: ProvidersProps) {
         toastOptions={{
           duration: 4000,
           style: {
-            background: "#2C3E50",
+            background: "#380116",
             color: "#FFFFFF",
-            fontFamily: "Poppins, sans-serif",
+            fontFamily: "var(--font-lato), sans-serif",
             fontWeight: 500,
           },
           success: {

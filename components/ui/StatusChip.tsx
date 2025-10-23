@@ -9,7 +9,7 @@ interface StatusChipProps {
 const statusConfig = {
   searching: {
     label: "Buscando Conductor",
-    color: "info" as const,
+    color: "primary" as const,
   },
   negotiating: {
     label: "Negociando",

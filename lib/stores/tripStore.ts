@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { TripState, Trip } from "@/lib/types/trip";
+import type { Trip, TripState } from "@/lib/types/trip";
 
 interface TripActions {
   setCurrentTrip: (trip: Trip | null) => void;

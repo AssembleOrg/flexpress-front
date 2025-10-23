@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import { AuthState, User } from "@/lib/types/auth";
+import type { AuthState, User } from "@/lib/types/auth";
 
 interface AuthActions {
   login: (user: User, token: string) => void;

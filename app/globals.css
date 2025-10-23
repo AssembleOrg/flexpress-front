@@ -1,6 +1,29 @@
+@import url("https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Lato:wght@400;700&display=swap");
+
 :root {
+  /* Brand Colors - Legado Vinotinto Palette */
+  --color-bordo-sofisticado: #380116;
+  --color-bordo-clasico: #4b011d;
+  --color-oro-brillante: #dca621;
+  --color-oro-medio: #b7850d;
+  --color-fondo-pergamino: #f5f2e8;
+
+  /* Text Colors */
+  --color-text-primary: #212121;
+  --color-text-secondary: #503933;
+
+  /* Semantic Colors */
+  --color-success: #2ecc71;
+  --color-error: #e74c3c;
+  --color-warning: #b7850d;
+
+  /* Legacy (for compatibility) */
   --background: #ffffff;
   --foreground: #171717;
+
+  /* Typography */
+  --font-playfair: "Playfair Display", serif;
+  --font-lato: "Lato", sans-serif;
 }
 
 @media (prefers-color-scheme: dark) {

@@ -1,6 +1,14 @@
 "use client";
 
 import {
+  ArrowBack,
+  AttachMoney,
+  LocalShipping,
+  LocationOn,
+  Person,
+  Star,
+} from "@mui/icons-material";
+import {
   Alert,
   Avatar,
   Box,
@@ -11,23 +19,15 @@ import {
   Divider,
   Typography,
 } from "@mui/material";
-import {
-  ArrowBack,
-  LocationOn,
-  LocalShipping,
-  Star,
-  AttachMoney,
-  Person,
-} from "@mui/icons-material";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import StatusChip from "@/components/ui/StatusChip";
 import toast from "react-hot-toast";
+import StatusChip from "@/components/ui/StatusChip";
 
 const mockTripDetail = {
   id: "trip-001",
   origin: "Palermo, Buenos Aires",
-  destination: "San Telmo, Buenos Aires", 
+  destination: "San Telmo, Buenos Aires",
   description: "2 cajas de libros y una silla pequeña",
   suggestedPrice: 3500,
   status: "searching" as const,
@@ -47,11 +47,11 @@ export default function TripDetailPage() {
 
   const handleAcceptTrip = () => {
     console.log("Aceptar viaje:", mockTripDetail.id);
-    
+
     toast.success("¡Viaje aceptado! Redirigiendo al chat...", {
       duration: 4000,
     });
-    
+
     // Simular delay de aceptación
     setTimeout(() => {
       router.push(`/trips/${mockTripDetail.id}`);
@@ -63,22 +63,18 @@ export default function TripDetailPage() {
       {/* Header */}
       <Box mb={4}>
         <Link href="/driver/dashboard">
-          <Button
-            startIcon={<ArrowBack />}
-            variant="outlined"
-            sx={{ mb: 2 }}
-          >
+          <Button startIcon={<ArrowBack />} variant="outlined" sx={{ mb: 2 }}>
             Volver al Dashboard
           </Button>
         </Link>
-        
+
         <Box display="flex" alignItems="center" gap={2} mb={2}>
           <LocalShipping sx={{ fontSize: 32, color: "secondary.main" }} />
           <Typography variant="h4" component="h1" sx={{ fontWeight: 700 }}>
             Detalle del Flete
           </Typography>
         </Box>
-        
+
         <StatusChip status={mockTripDetail.status} />
       </Box>
 
@@ -88,7 +84,7 @@ export default function TripDetailPage() {
           <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
             👤 Cliente
           </Typography>
-          
+
           <Box display="flex" alignItems="center" gap={2} mb={2}>
             <Avatar
               src={mockTripDetail.client.avatar}
@@ -98,12 +94,14 @@ export default function TripDetailPage() {
             </Avatar>
             <Box>
               <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                {mockTripDetail.client.firstName} {mockTripDetail.client.lastName}
+                {mockTripDetail.client.firstName}{" "}
+                {mockTripDetail.client.lastName}
               </Typography>
               <Box display="flex" alignItems="center" gap={1}>
                 <Star sx={{ fontSize: 16, color: "warning.main" }} />
                 <Typography variant="body2" color="text.secondary">
-                  {mockTripDetail.client.rating} • {mockTripDetail.client.totalTrips} viajes
+                  {mockTripDetail.client.rating} •{" "}
+                  {mockTripDetail.client.totalTrips} viajes
                 </Typography>
               </Box>
             </Box>
@@ -117,13 +115,17 @@ export default function TripDetailPage() {
           <Typography variant="h6" sx={{ fontWeight: 600, mb: 3 }}>
             📍 Detalles del Viaje
           </Typography>
-          
+
           {/* Ubicaciones */}
           <Box mb={3}>
             <Box display="flex" alignItems="start" gap={2} mb={2}>
               <LocationOn sx={{ color: "success.main", mt: 0.5 }} />
               <Box>
-                <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.75rem' }}>
+                <Typography
+                  variant="body2"
+                  color="text.secondary"
+                  sx={{ fontSize: "0.75rem" }}
+                >
                   ORIGEN
                 </Typography>
                 <Typography variant="body1" sx={{ fontWeight: 600 }}>
@@ -131,11 +133,15 @@ export default function TripDetailPage() {
                 </Typography>
               </Box>
             </Box>
-            
+
             <Box display="flex" alignItems="start" gap={2}>
               <LocationOn sx={{ color: "error.main", mt: 0.5 }} />
               <Box>
-                <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.75rem' }}>
+                <Typography
+                  variant="body2"
+                  color="text.secondary"
+                  sx={{ fontSize: "0.75rem" }}
+                >
                   DESTINO
                 </Typography>
                 <Typography variant="body1" sx={{ fontWeight: 600 }}>
@@ -149,7 +155,11 @@ export default function TripDetailPage() {
 
           {/* Descripción */}
           <Box mb={3}>
-            <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.75rem', mb: 1 }}>
+            <Typography
+              variant="body2"
+              color="text.secondary"
+              sx={{ fontSize: "0.75rem", mb: 1 }}
+            >
               DESCRIPCIÓN
             </Typography>
             <Typography variant="body1">
@@ -162,11 +172,18 @@ export default function TripDetailPage() {
           {/* Precio */}
           <Box display="flex" alignItems="center" gap={1}>
             <AttachMoney sx={{ color: "success.main" }} />
-            <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.75rem' }}>
+            <Typography
+              variant="body2"
+              color="text.secondary"
+              sx={{ fontSize: "0.75rem" }}
+            >
               PRECIO SUGERIDO
             </Typography>
           </Box>
-          <Typography variant="h5" sx={{ fontWeight: 700, color: "success.main" }}>
+          <Typography
+            variant="h5"
+            sx={{ fontWeight: 700, color: "success.main" }}
+          >
             ${mockTripDetail.suggestedPrice.toLocaleString()}
           </Typography>
           <Typography variant="body2" color="text.secondary">
@@ -178,8 +195,9 @@ export default function TripDetailPage() {
       {/* Información adicional */}
       <Alert severity="info" sx={{ mb: 4 }}>
         <Typography variant="body2">
-          <strong>Recuerda:</strong> Al aceptar este viaje podrás negociar el precio final 
-          directamente con el cliente a través del chat en tiempo real.
+          <strong>Recuerda:</strong> Al aceptar este viaje podrás negociar el
+          precio final directamente con el cliente a través del chat en tiempo
+          real.
         </Typography>
       </Alert>
 
@@ -200,7 +218,7 @@ export default function TripDetailPage() {
         >
           Aceptar Viaje
         </Button>
-        
+
         <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
           Serás redirigido al chat para coordinar con el cliente
         </Typography>

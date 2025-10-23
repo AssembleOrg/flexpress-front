@@ -1,5 +1,5 @@
 import api from "../api";
-import { Trip } from "../types/trip";
+import type { Trip } from "../types/trip";
 
 export interface CreateTripRequest {
   origin: string;
