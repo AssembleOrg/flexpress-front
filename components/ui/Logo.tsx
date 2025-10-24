@@ -5,15 +5,17 @@ import Image from "next/image";
 
 interface LogoProps {
   size?: number;
-  variant?: "default" | "white";
   className?: string;
+  withCircle?: boolean;
 }
 
 export default function Logo({
   size = 60,
-  variant = "default",
   className,
+  withCircle = false,
 }: LogoProps) {
+  const circleSize = size + 12;
+
   return (
     <Box
       sx={{
@@ -24,6 +26,20 @@ export default function Logo({
       }}
       className={className}
     >
+      {withCircle && (
+        <Box
+          sx={{
+            position: "absolute",
+            width: circleSize,
+            height: circleSize,
+            borderRadius: "50%",
+            backgroundColor: "white",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        />
+      )}
       <Image
         src="/logo/flexpress-logo.svg"
         alt="Flexpress Logo"
@@ -33,6 +49,8 @@ export default function Logo({
         style={{
           maxWidth: "100%",
           height: "auto",
+          position: "relative",
+          zIndex: 1,
         }}
       />
     </Box>

@@ -1,83 +1,236 @@
-'use client';
+"use client";
 
-import { Shield, Speed, Star } from '@mui/icons-material';
-import { Box, Button, Typography } from '@mui/material'; // No se necesita Container
-import { motion } from 'framer-motion';
-import Image from 'next/image';
-import { useRouter } from 'next/navigation';
+import { Shield, Speed, Star } from "@mui/icons-material";
+import { Box, Button, Typography } from "@mui/material";
+import { motion } from "framer-motion";
+import Image from "next/image";
+import { useRouter } from "next/navigation";
 import {
   fadeInRight,
   fadeInUp,
   staggerContainer,
   staggerItem,
-} from '@/lib/animations/variants';
+} from "@/lib/animations/variants";
 
 export function HeroSplit() {
   const router = useRouter();
 
   const trustBadges = [
     {
-      icon: <Shield sx={{ fontSize: 24, color: '#DCA621' }} />,
-      text: 'Conductores Verificados',
+      icon: <Shield sx={{ fontSize: 24, color: "#DCA621" }} />,
+      text: "Conductores Verificados",
     },
     {
-      icon: <Speed sx={{ fontSize: 24, color: '#DCA621' }} />,
-      text: 'Conexión Inmediata',
+      icon: <Speed sx={{ fontSize: 24, color: "#DCA621" }} />,
+      text: "Conexión Inmediata",
     },
     {
-      icon: <Star sx={{ fontSize: 24, color: '#DCA621' }} />,
-      text: 'Seguimiento 24/7',
+      icon: <Star sx={{ fontSize: 24, color: "#DCA621" }} />,
+      text: "Seguimiento 24/7",
     },
   ];
 
-  return (
+  const MobileView = (
     <Box
       sx={{
-        position: 'relative',
-        minHeight: { xs: '100vh', md: '50vh' },
-        display: 'flex',
-        alignItems: 'center',
-        backgroundColor: '#380116',
-        color: 'white',
-        overflow: 'hidden',
+        display: { xs: "flex", md: "none" },
+        flexDirection: "column",
+        justifyContent: "space-between",
+        alignItems: "stretch",
+        minHeight: { xs: "90vh", md: "85vh" },
+        backgroundColor: "#380116",
+        color: "white",
+        textAlign: "left",
+        backgroundImage: "url(/persona-hero.svg)",
+        backgroundPosition: "right center",
+        backgroundSize: "cover",
+        backgroundRepeat: "no-repeat",
+        position: "relative",
+        "&::before": {
+          content: '""',
+          position: "absolute",
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          zIndex: 1,
+        },
       }}
     >
-      {/* El Container se elimina. El padding se controla aquí: */}
+      <Box sx={{ position: "relative", zIndex: 2, width: "100%" }}>
+        {/* Title */}
+        <Typography
+          variant="h2"
+          component="h1"
+          sx={{
+            fontSize: "2.8rem",
+            fontWeight: 700,
+            mb: 1,
+            mt: 8,
+            ml: 1,
+            lineHeight: 1.1,
+            color: "white",
+          }}
+        >
+          Fletes urbanos
+        </Typography>
+        <Typography
+          variant="h2"
+          sx={{
+            fontSize: "2.6rem",
+            fontWeight: 700,
+            mb: 3,
+            ml: 1,
+            lineHeight: 1.1,
+            color: "#DCA621",
+          }}
+        >
+          rápidos y seguros
+        </Typography>
+
+        {/* Trust Badges */}
+        <Box display="flex" flexDirection="column" gap={1.5} sx={{ ml: 1 }}>
+          {trustBadges.map((badge) => (
+            <Box
+              key={badge.text}
+              display="flex"
+              alignItems="center"
+              justifyContent="flex-start"
+              gap={1}
+            >
+              {badge.icon}
+              <Typography
+                variant="body2"
+                sx={{
+                  fontWeight: 600,
+                  color: "white",
+                  fontSize: "1rem",
+                }}
+              >
+                {badge.text}
+              </Typography>
+            </Box>
+          ))}
+        </Box>
+      </Box>
+
+      {/* Buttons */}
       <Box
-        display='flex'
-        gap={{ xs: 2, md: 2 }}
-        alignItems='center'
+        display="flex"
+        flexDirection="row"
+        gap={4}
         sx={{
-          width: '100%',
-          flexDirection: { xs: 'column', md: 'row' },
+          width: "100%",
+          position: "relative",
+          zIndex: 2,
+          alignItems: "center",
+          justifyContent: "center",
+          mb: 5,
+        }}
+      >
+        <Button
+          variant="contained"
+          color="secondary"
+          size="medium"
+          onClick={() => router.push("/login?redirect=/client/dashboard")}
+          sx={{
+            py: 2,
+            px: 2,
+            fontSize: "1rem",
+            fontWeight: 700,
+            boxShadow: "0 10px 30px rgba(220, 166, 33, 0.3)",
+            flex: 1,
+            minWidth: "100px",
+            maxWidth: "140px",
+            "&:hover": {
+              boxShadow: "0 15px 40px rgba(220, 166, 33, 0.4)",
+            },
+          }}
+        >
+          Solicitar Flete
+        </Button>
+        <Button
+          variant="contained"
+          color="secondary"
+          size="medium"
+          onClick={() => router.push("/login?redirect=/driver/dashboard")}
+          sx={{
+            py: 2,
+            px: 2,
+            fontSize: "1rem",
+            fontWeight: 700,
+            boxShadow: "0 10px 30px rgba(220, 166, 33, 0.3)",
+            flex: 1,
+            minWidth: "100px",
+            maxWidth: "140px",
+            "&:hover": {
+              boxShadow: "0 15px 40px rgba(220, 166, 33, 0.4)",
+            },
+          }}
+        >
+          Ser Conductor
+        </Button>
+      </Box>
+    </Box>
+  );
+
+  const DesktopView = (
+    <Box
+      sx={{
+        display: { xs: "none", md: "flex" },
+        position: "relative",
+        minHeight: "50vh",
+        alignItems: "center",
+        justifyContent: "center",
+        backgroundColor: "#380116",
+        color: "white",
+        overflow: "hidden",
+      }}
+    >
+      <Box
+        display="flex"
+        gap={2}
+        alignItems="center"
+        sx={{
+          width: "100%",
+          flexDirection: "row",
+          position: "relative",
+          zIndex: 2,
+          padding: 0,
+          justifyContent: "center",
         }}
       >
         {/* Left Content (60%) */}
         <motion.div
-          style={{ flex: '1 1 60%' }}
-          initial='hidden'
-          animate='visible'
+          style={{
+            flex: "1 1 60%",
+            width: "100%",
+          }}
+          initial="hidden"
+          animate="visible"
           variants={staggerContainer}
         >
-          <Box>
+          <Box
+            sx={{
+              width: "100%",
+              maxWidth: "600px",
+            }}
+          >
             {/* Main Title */}
             <motion.div variants={fadeInUp}>
               <Typography
-                variant='h2'
-                component='h1'
+                variant="h2"
+                component="h1"
                 sx={{
-                  fontSize: { xs: '2.2rem', md: '3.8rem' },
+                  fontSize: "3.8rem",
                   fontWeight: 700,
                   mb: 2,
                   lineHeight: 1.1,
-                  color: 'white',
+                  color: "white",
                 }}
               >
-                Fletes urbanos{' '}
-                <Box
-                  component='span'
-                  sx={{ color: '#DCA621' }}
-                >
+                Fletes urbanos{" "}
+                <Box component="span" sx={{ color: "#DCA621" }}>
                   rápidos y seguros
                 </Box>
               </Typography>
@@ -86,15 +239,14 @@ export function HeroSplit() {
             {/* Subtitle */}
             <motion.div variants={fadeInUp}>
               <Typography
-                variant='h5'
+                variant="h5"
                 sx={{
                   mb: 3,
-                  fontSize: { xs: '0.95rem', md: '1.4rem' },
+                  fontSize: "1.4rem",
                   maxWidth: 600,
-                  color: 'rgba(255,255,255,0.9)',
+                  color: "rgba(255,255,255,0.9)",
                   fontWeight: 400,
                   lineHeight: 1.6,
-                  display: { xs: 'none', sm: 'block' },
                 }}
               >
                 Conectamos personas que necesitan transportar objetos con
@@ -105,31 +257,18 @@ export function HeroSplit() {
             {/* Trust Badges */}
             <motion.div
               variants={staggerContainer}
-              initial='hidden'
-              animate='visible'
+              initial="hidden"
+              animate="visible"
               style={{ marginBottom: 32 }}
-              sx={{ display: { xs: 'none', md: 'block' } }}
             >
-              <Box
-                display='flex'
-                flexDirection='column'
-                gap={2}
-                sx={{ mb: 4 }}
-              >
+              <Box display="flex" flexDirection="column" gap={2} sx={{ mb: 4 }}>
                 {trustBadges.map((badge) => (
-                  <motion.div
-                    key={badge.text}
-                    variants={staggerItem}
-                  >
-                    <Box
-                      display='flex'
-                      alignItems='center'
-                      gap={2}
-                    >
+                  <motion.div key={badge.text} variants={staggerItem}>
+                    <Box display="flex" alignItems="center" gap={2}>
                       {badge.icon}
                       <Typography
-                        variant='body1'
-                        sx={{ fontWeight: 600, color: 'white' }}
+                        variant="body1"
+                        sx={{ fontWeight: 600, color: "white" }}
                       >
                         {badge.text}
                       </Typography>
@@ -142,15 +281,14 @@ export function HeroSplit() {
             {/* CTAs */}
             <motion.div
               variants={staggerContainer}
-              initial='hidden'
-              animate='visible'
+              initial="hidden"
+              animate="visible"
             >
               <Box
-                display='flex'
-                gap={{ xs: 1.5, md: 2 }}
+                display="flex"
+                gap={2}
                 sx={{
-                  flexDirection: { xs: 'column', sm: 'row' },
-                  mt: { xs: 2, md: 0 },
+                  flexDirection: "row",
                 }}
               >
                 <motion.div
@@ -159,20 +297,20 @@ export function HeroSplit() {
                   whileTap={{ scale: 0.95 }}
                 >
                   <Button
-                    variant='contained'
-                    color='secondary'
-                    size='large'
-                    fullWidth
+                    variant="contained"
+                    color="secondary"
+                    size="large"
                     onClick={() =>
-                      router.push('/login?redirect=/client/dashboard')
+                      router.push("/login?redirect=/client/dashboard")
                     }
                     sx={{
-                      py: { xs: 1.5, md: 1.5 },
-                      fontSize: { xs: '0.95rem', md: '1.1rem' },
+                      py: 1.5,
+                      px: 2,
+                      fontSize: "1.1rem",
                       fontWeight: 700,
-                      boxShadow: '0 10px 30px rgba(220, 166, 33, 0.3)',
-                      '&:hover': {
-                        boxShadow: '0 15px 40px rgba(220, 166, 33, 0.4)',
+                      boxShadow: "0 10px 30px rgba(220, 166, 33, 0.3)",
+                      "&:hover": {
+                        boxShadow: "0 15px 40px rgba(220, 166, 33, 0.4)",
                       },
                     }}
                   >
@@ -185,21 +323,21 @@ export function HeroSplit() {
                   whileTap={{ scale: 0.95 }}
                 >
                   <Button
-                    variant='outlined'
-                    size='large'
-                    fullWidth
+                    variant="outlined"
+                    size="large"
                     onClick={() =>
-                      router.push('/login?redirect=/driver/dashboard')
+                      router.push("/login?redirect=/driver/dashboard")
                     }
                     sx={{
-                      py: { xs: 1.5, md: 1.5 },
-                      fontSize: { xs: '0.95rem', md: '1.1rem' },
+                      py: 1.5,
+                      px: 2,
+                      fontSize: "1.1rem",
                       fontWeight: 600,
-                      color: 'white',
-                      borderColor: 'white',
+                      color: "white",
+                      borderColor: "white",
                       borderWidth: 2,
-                      '&:hover': {
-                        bgcolor: 'rgba(255,255,255,0.1)',
+                      "&:hover": {
+                        bgcolor: "rgba(255,255,255,0.1)",
                         borderWidth: 2,
                       },
                     }}
@@ -215,33 +353,39 @@ export function HeroSplit() {
         {/* Right Image */}
         <motion.div
           style={{
-            flex: '1 1 40%',
-            position: 'relative',
+            flex: "1 1 40%",
+            position: "relative",
           }}
-          sx={{ display: { xs: 'none', md: 'block' } }}
-          initial='hidden'
-          animate='visible'
+          initial="hidden"
+          animate="visible"
           variants={fadeInRight}
         >
           <Box
             sx={{
-              position: 'relative',
-              height: { md: '80vh' }, // La altura ahora es relativa al viewport height
-              width: '100%',
+              position: "relative",
+              height: "80vh",
+              width: "100%",
             }}
           >
             <Image
-              src='/persona-hero.svg'
-              alt='Persona con caja de envío'
+              src="/persona-hero.svg"
+              alt="Persona con caja de envío"
               fill
               priority
               style={{
-                objectFit: 'contain', // Mantiene la proporción
+                objectFit: "contain",
               }}
             />
           </Box>
         </motion.div>
       </Box>
     </Box>
+  );
+
+  return (
+    <>
+      {MobileView}
+      {DesktopView}
+    </>
   );
 }

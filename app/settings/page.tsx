@@ -21,6 +21,7 @@ import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import toast from "react-hot-toast";
+import { AuthNavbar } from "@/components/layout/AuthNavbar";
 import { PageTransition } from "@/components/ui/PageTransition";
 import { useAuthStore } from "@/lib/stores/authStore";
 
@@ -121,6 +122,7 @@ export default function SettingsPage() {
 
   return (
     <PageTransition>
+      <AuthNavbar />
       <Box
         sx={{
           bgcolor: "background.default",

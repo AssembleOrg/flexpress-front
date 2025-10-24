@@ -11,6 +11,7 @@ import {
 } from "@mui/material";
 import { useState } from "react";
 import toast from "react-hot-toast";
+import { AuthNavbar } from "@/components/layout/AuthNavbar";
 import TripCard from "@/components/ui/TripCard";
 import { getMockAvailableTrips, mockCurrentDriver } from "@/lib/mock/data";
 
@@ -54,16 +55,9 @@ export default function DriverDashboard() {
 
   return (
     <Box sx={{ backgroundColor: "background.default", minHeight: "100vh" }}>
-      {/* Header Bordo */}
-      <Box sx={{ bgcolor: "primary.main", color: "white", py: 3, mb: 3 }}>
-        <Container maxWidth="sm">
-          <Typography variant="h5" component="h1" sx={{ fontWeight: 700 }}>
-            Hola, {mockCurrentDriver.firstName}
-          </Typography>
-        </Container>
-      </Box>
+      <AuthNavbar />
 
-      <Container maxWidth="sm" sx={{ py: 2, px: 2 }}>
+      <Container maxWidth="sm" sx={{ py: 4, px: 2 }}>
         {/* Status Toggle - Uber Driver Style */}
         <Card sx={{ mb: 3, overflow: "visible" }}>
           <CardContent sx={{ p: 3, textAlign: "center", position: "relative" }}>

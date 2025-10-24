@@ -1,4 +1,4 @@
-import type { Variants } from 'framer-motion';
+import type { Variants } from "framer-motion";
 
 /**
  * Motion timing tokens
@@ -8,8 +8,8 @@ export const motionTokens = {
   fast: 0.2,
   normal: 0.4,
   slow: 0.6,
-  spring: { type: 'spring' as const, stiffness: 300, damping: 30 },
-  springGentle: { type: 'spring' as const, stiffness: 100, damping: 30 },
+  spring: { type: "spring" as const, stiffness: 300, damping: 30 },
+  springGentle: { type: "spring" as const, stiffness: 100, damping: 30 },
 };
 
 /**
@@ -101,7 +101,7 @@ export const hoverScale = {
 
 export const hoverLift = {
   y: -4,
-  boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)',
+  boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1)",
   transition: { duration: motionTokens.fast },
 };
 
@@ -115,15 +115,15 @@ export const pulse: Variants = {
     transition: {
       duration: 1.5,
       repeat: Infinity,
-      repeatType: 'reverse' as const,
+      repeatType: "reverse" as const,
     },
   },
 };
 
 export const shimmer: Variants = {
-  initial: { backgroundPosition: '200% 0' },
+  initial: { backgroundPosition: "200% 0" },
   animate: {
-    backgroundPosition: '-200% 0',
+    backgroundPosition: "-200% 0",
     transition: {
       duration: 2,
       repeat: Infinity,

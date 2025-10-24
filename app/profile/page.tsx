@@ -23,6 +23,7 @@ import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import toast from "react-hot-toast";
+import { AuthNavbar } from "@/components/layout/AuthNavbar";
 import { PageTransition } from "@/components/ui/PageTransition";
 import { useAuthStore } from "@/lib/stores/authStore";
 
@@ -97,16 +98,17 @@ export default function ProfilePage() {
 
   const handleCancel = () => {
     setFormData({
-      name: user.name,
-      email: user.email,
-      number: user.number,
-      address: user.address,
+      name: user?.name || "",
+      email: user?.email || "",
+      number: user?.number || "",
+      address: user?.address || "",
     });
     setIsEditing(false);
   };
 
   return (
     <PageTransition>
+      <AuthNavbar />
       <Box
         sx={{
           bgcolor: "background.default",

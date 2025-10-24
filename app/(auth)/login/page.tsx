@@ -120,14 +120,14 @@ function LoginForm() {
       {/* Header with Logo */}
       <Box
         sx={{
-          pt: 4,
-          pb: 2,
+          pt: { xs: 6, md: 8 },
+          pb: 3,
           textAlign: "center",
           position: "relative",
           zIndex: 1,
         }}
       >
-        <Logo size={80} />
+        <Logo size={80} withCircle={true} />
       </Box>
 
       {/* Content Container */}
@@ -139,7 +139,7 @@ function LoginForm() {
           justifyContent: "center",
           position: "relative",
           zIndex: 1,
-          px: 2,
+          px: { xs: 3, md: 2 },
         }}
       >
         <Container maxWidth="sm" sx={{ py: { xs: 4, md: 6 } }}>
