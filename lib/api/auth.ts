@@ -1,5 +1,5 @@
 import api from "../api";
-import type { User } from "../types/auth";
+import type { ApiResponse, AuthResponse, User } from "../types/api";
 
 export interface LoginRequest {
   email: string;
@@ -9,40 +9,69 @@ export interface LoginRequest {
 export interface RegisterRequest {
   email: string;
   password: string;
-  firstName: string;
-  lastName: string;
-  phone: string;
-  role: "client" | "driver";
+  name: string;
+  number: string;
+  address: string;
+  role: "user" | "charter";
+  originAddress?: string | null;
+  originLatitude?: string | null;
+  originLongitude?: string | null;
 }
 
-export interface AuthResponse {
-  user: User;
-  token: string;
+export interface UpdateUserRequest {
+  name?: string;
+  email?: string;
+  number?: string;
+  address?: string;
+  avatar?: string | null;
+  originAddress?: string | null;
+  originLatitude?: string | null;
+  originLongitude?: string | null;
 }
 
 export const authApi = {
   // Iniciar sesión
   login: async (data: LoginRequest): Promise<AuthResponse> => {
-    const response = await api.post("/auth/login", data);
-    return response.data;
+    const response = await api.post<ApiResponse<AuthResponse>>(
+      "/auth/login",
+      data,
+    );
+    // biome-ignore lint/style/noNonNullAssertion: axios response guarantees data
+    return response.data.data!;
   },
 
   // Registrarse
   register: async (data: RegisterRequest): Promise<AuthResponse> => {
-    const response = await api.post("/auth/register", data);
-    return response.data;
+    const response = await api.post<ApiResponse<AuthResponse>>(
+      "/auth/register",
+      data,
+    );
+    // biome-ignore lint/style/noNonNullAssertion: axios response guarantees data
+    return response.data.data!;
   },
 
   // Obtener perfil actual
   getProfile: async (): Promise<User> => {
-    const response = await api.get("/auth/profile");
-    return response.data;
+    const response = await api.get<ApiResponse<User>>("/auth/profile");
+    // biome-ignore lint/style/noNonNullAssertion: axios response guarantees data
+    return response.data.data!;
   },
 
   // Actualizar perfil
   updateProfile: async (data: Partial<User>): Promise<User> => {
-    const response = await api.put("/auth/profile", data);
-    return response.data;
+    const response = await api.put<ApiResponse<User>>("/auth/profile", data);
+    // biome-ignore lint/style/noNonNullAssertion: axios response guarantees data
+    return response.data.data!;
+  },
+
+  // Actualizar usuario por ID
+  updateUser: async (
+    userId: string,
+    data: UpdateUserRequest,
+  ): Promise<User> => {
+    const response = await api.put<ApiResponse<User>>(`/users/${userId}`, data);
+    // biome-ignore lint/style/noNonNullAssertion: axios response guarantees data
+    return response.data.data!;
   },
 
   // Cerrar sesión
@@ -52,7 +81,8 @@ export const authApi = {
 
   // Verificar token
   verifyToken: async (): Promise<User> => {
-    const response = await api.get("/auth/verify");
-    return response.data;
+    const response = await api.get<ApiResponse<User>>("/auth/verify");
+    // biome-ignore lint/style/noNonNullAssertion: axios response guarantees data
+    return response.data.data!;
   },
 };

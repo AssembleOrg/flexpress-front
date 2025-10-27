@@ -9,36 +9,19 @@ import {
   Container,
   Typography,
 } from "@mui/material";
-import toast from "react-hot-toast";
+import { useRouter } from "next/navigation";
 import { AuthNavbar } from "@/components/layout/AuthNavbar";
-import TripCard from "@/components/ui/TripCard";
-import { getMockTripsByClient, mockCurrentUser } from "@/lib/mock/data";
 
 export default function ClientDashboard() {
-  const userTrips = getMockTripsByClient(mockCurrentUser.id);
-  const activeTrips = userTrips.filter((trip) =>
-    ["searching", "negotiating", "confirmed", "in_progress"].includes(
-      trip.status,
-    ),
-  );
+  const router = useRouter();
+  const activeTrips: { id: string }[] = [];
 
   const handleRequestFreight = () => {
-    console.log("Solicitar nuevo flete");
-    toast.success("Redirigiendo al formulario...", {
-      duration: 2000,
-    });
-    window.location.href = "/client/trips/new";
+    router.push("/client/trips/new");
   };
 
   const handleViewTrip = (tripId: string) => {
-    console.log("Ver detalles del viaje:", tripId);
-    // TODO: Navegar a los detalles del viaje
-  };
-
-  const handleCancelTrip = (tripId: string) => {
-    console.log("Cancelar viaje:", tripId);
-    toast.error("Funcionalidad de cancelar viaje en desarrollo");
-    // TODO: Implementar lógica de cancelar viaje
+    router.push(`/trips/${tripId}`);
   };
 
   return (
@@ -141,13 +124,17 @@ export default function ClientDashboard() {
           ) : (
             <Box display="flex" flexDirection="column" gap={2}>
               {activeTrips.map((trip) => (
-                <TripCard
-                  key={trip.id}
-                  trip={trip}
-                  variant="client"
-                  onView={handleViewTrip}
-                  onCancel={handleCancelTrip}
-                />
+                <Card key={trip.id}>
+                  <CardContent>
+                    <Typography variant="h6">Viaje activo</Typography>
+                    <Button
+                      size="small"
+                      onClick={() => handleViewTrip(trip.id)}
+                    >
+                      Ver Detalles
+                    </Button>
+                  </CardContent>
+                </Card>
               ))}
             </Box>
           )}

@@ -15,7 +15,8 @@ export function TripCardSkeleton({ count = 1 }: TripCardSkeletonProps) {
     <>
       {Array.from({ length: count }).map((_, index) => (
         <Card
-          key={index}
+          // biome-ignore lint/suspicious/noArrayIndexKey: skeleton items are static placeholders
+          key={`trip-skeleton-${index}`}
           elevation={2}
           sx={{
             mb: 2,

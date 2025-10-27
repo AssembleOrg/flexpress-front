@@ -35,59 +35,8 @@ type Message = {
   isCurrentUser: boolean;
 };
 
-const mockMessages: Message[] = [
-  {
-    id: "msg-1",
-    senderId: "client-001",
-    senderName: "María González",
-    content: "Hola! Gracias por aceptar mi solicitud de flete.",
-    timestamp: "14:30",
-    isCurrentUser: false,
-  },
-  {
-    id: "msg-2",
-    senderId: "driver-001",
-    senderName: "Carlos Rodríguez",
-    content:
-      "¡Hola María! Un placer ayudarte. He visto que necesitas transportar cajas y una silla desde Palermo a San Telmo.",
-    timestamp: "14:32",
-    isCurrentUser: true,
-  },
-  {
-    id: "msg-3",
-    senderId: "client-001",
-    senderName: "María González",
-    content:
-      "Exacto. Son 2 cajas medianas con libros y una silla de escritorio pequeña. ¿El precio de $3500 te parece bien?",
-    timestamp: "14:35",
-    isCurrentUser: false,
-  },
-  {
-    id: "msg-4",
-    senderId: "driver-001",
-    senderName: "Carlos Rodríguez",
-    content:
-      "Por el peso y la distancia, me parece justo. ¿A qué hora te vendría bien que pase a buscar?",
-    timestamp: "14:38",
-    isCurrentUser: true,
-  },
-];
-
-const mockTripInfo = {
-  id: "trip-001",
-  status: "negotiating" as const,
-  suggestedPrice: 3500,
-  otherUser: {
-    id: "client-001",
-    name: "María González",
-    avatar: "/avatars/maria.jpg",
-    rating: 4.8,
-    role: "Cliente" as const,
-  },
-};
-
 export default function ChatNegotiationPage() {
-  const [messages, setMessages] = useState<Message[]>(mockMessages);
+  const [messages, setMessages] = useState<Message[]>([]);
   const [bothConfirmed, setBothConfirmed] = useState(false);
 
   const { register, handleSubmit, reset } = useForm<{ message: string }>();
@@ -154,21 +103,17 @@ export default function ChatNegotiationPage() {
             justifyContent="space-between"
           >
             <Box display="flex" alignItems="center" gap={2}>
-              <Avatar
-                src={mockTripInfo.otherUser.avatar}
-                sx={{ width: 48, height: 48 }}
-              >
+              <Avatar sx={{ width: 48, height: 48 }}>
                 <Person />
               </Avatar>
               <Box>
                 <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                  {mockTripInfo.otherUser.name}
+                  Usuario
                 </Typography>
                 <Box display="flex" alignItems="center" gap={1}>
                   <Star sx={{ fontSize: 16, color: "warning.main" }} />
                   <Typography variant="body2" color="text.secondary">
-                    {mockTripInfo.otherUser.rating} •{" "}
-                    {mockTripInfo.otherUser.role}
+                    4.8 • Cliente
                   </Typography>
                 </Box>
               </Box>
@@ -177,7 +122,7 @@ export default function ChatNegotiationPage() {
               <Box display="flex" alignItems="center" gap={1}>
                 <AttachMoney sx={{ color: "success.main" }} />
                 <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                  ${mockTripInfo.suggestedPrice.toLocaleString()}
+                  $ 0
                 </Typography>
               </Box>
               <Typography variant="body2" color="text.secondary">

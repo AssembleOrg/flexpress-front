@@ -71,7 +71,7 @@ class SocketService {
       const user = useAuthStore.getState().user;
 
       // Solo mostrar a conductores
-      if (user?.role === "driver") {
+      if (user?.role === "charter") {
         useTripStore.getState().addAvailableTrip(trip);
 
         toast("Nuevo viaje disponible", {

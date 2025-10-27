@@ -13,7 +13,8 @@ export function SkeletonCard({ count = 1 }: SkeletonCardProps) {
     <>
       {Array.from({ length: count }).map((_, index) => (
         <Card
-          key={index}
+          // biome-ignore lint/suspicious/noArrayIndexKey: skeleton items are static placeholders
+          key={`skeleton-${index}`}
           sx={{
             mb: 2,
             borderRadius: 4,

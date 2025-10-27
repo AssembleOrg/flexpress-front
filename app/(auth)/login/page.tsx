@@ -40,42 +40,30 @@ function LoginForm() {
     formState: { errors, isSubmitting },
   } = useForm<LoginForm>({
     resolver: zodResolver(loginSchema),
-    defaultValues: {
-      email: redirectPath?.includes("driver")
-        ? "conductor@flexpress.com"
-        : "cliente@flexpress.com",
-      password: "123456",
-    },
   });
 
   const onSubmit = async (data: LoginForm) => {
-    console.log("Formulario de login enviado:", data);
+    try {
+      const { authApi } = await import("@/lib/api/auth");
 
-    // Simular login (sin API real por ahora)
-    await new Promise((resolve) => setTimeout(resolve, 1000));
+      const response = await authApi.login({
+        email: data.email,
+        password: data.password,
+      });
 
-    // Mock de usuario logueado
-    const mockUser = {
-      id: "user-001",
-      firstName: "Usuario",
-      lastName: "Demo",
-      email: data.email,
-      phone: "+54 9 11 1234-5678",
-      role: redirectPath?.includes("driver")
-        ? ("driver" as const)
-        : ("client" as const),
-      status: "active" as const,
-      rating: 4.8,
-    };
+      login(response.user, response.token);
+      toast.success(`¡Bienvenido ${response.user.name}!`);
 
-    login(mockUser, "mock-token-123");
-    toast.success(`¡Bienvenido ${mockUser.firstName}!`);
-
-    // Redirigir según el parámetro o rol
-    const targetPath =
-      redirectPath ||
-      (mockUser.role === "driver" ? "/driver/dashboard" : "/client/dashboard");
-    router.push(targetPath);
+      const targetPath =
+        redirectPath ||
+        (response.user.role === "charter"
+          ? "/driver/dashboard"
+          : "/client/dashboard");
+      router.push(targetPath);
+    } catch (error) {
+      toast.error("Email o contraseña incorrectos");
+      console.error("Login error:", error);
+    }
   };
 
   return (

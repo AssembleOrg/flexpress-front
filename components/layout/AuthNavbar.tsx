@@ -37,7 +37,7 @@ export function AuthNavbar() {
 
   const handleDashboard = () => {
     const dashboardPath =
-      user?.role === "driver" ? "/driver/dashboard" : "/client/dashboard";
+      user?.role === "charter" ? "/driver/dashboard" : "/client/dashboard";
     router.push(dashboardPath);
     setMobileOpen(false);
   };
@@ -223,12 +223,11 @@ export function AuthNavbar() {
                     fontWeight: 700,
                   }}
                 >
-                  {user.firstName?.[0]}
-                  {user.lastName?.[0]}
+                  {user.name?.[0]}
                 </Avatar>
                 <Box>
                   <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
-                    {user.firstName} {user.lastName}
+                    {user.name}
                   </Typography>
                   <Typography variant="caption" color="text.secondary">
                     {user.email}
@@ -241,9 +240,11 @@ export function AuthNavbar() {
           {/* Navigation List */}
           <List sx={{ p: 0 }}>
             <ListItem
-              button
+              component="button"
               onClick={handleDashboard}
               sx={{
+                display: "flex",
+                cursor: "pointer",
                 "&:hover": {
                   bgcolor: "action.hover",
                 },
@@ -260,9 +261,11 @@ export function AuthNavbar() {
               />
             </ListItem>
             <ListItem
-              button
+              component="button"
               onClick={handleProfile}
               sx={{
+                display: "flex",
+                cursor: "pointer",
                 "&:hover": {
                   bgcolor: "action.hover",
                 },
@@ -279,9 +282,11 @@ export function AuthNavbar() {
               />
             </ListItem>
             <ListItem
-              button
+              component="button"
               onClick={handleSettings}
               sx={{
+                display: "flex",
+                cursor: "pointer",
                 "&:hover": {
                   bgcolor: "action.hover",
                 },
@@ -298,9 +303,11 @@ export function AuthNavbar() {
               />
             </ListItem>
             <ListItem
-              button
+              component="button"
               onClick={handleLogout}
               sx={{
+                display: "flex",
+                cursor: "pointer",
                 borderTop: 1,
                 borderColor: "divider",
                 "&:hover": {

@@ -20,42 +20,15 @@ import {
   Typography,
 } from "@mui/material";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
 import StatusChip from "@/components/ui/StatusChip";
 
-const mockTripDetail = {
-  id: "trip-001",
-  origin: "Palermo, Buenos Aires",
-  destination: "San Telmo, Buenos Aires",
-  description: "2 cajas de libros y una silla pequeña",
-  suggestedPrice: 3500,
-  status: "searching" as const,
-  createdAt: "2025-01-15T10:30:00Z",
-  client: {
-    id: "client-001",
-    firstName: "María",
-    lastName: "González",
-    avatar: "/avatars/maria.jpg",
-    rating: 4.8,
-    totalTrips: 23,
-  },
-};
-
 export default function TripDetailPage() {
-  const router = useRouter();
+  // const router = useRouter();
 
   const handleAcceptTrip = () => {
-    console.log("Aceptar viaje:", mockTripDetail.id);
-
-    toast.success("¡Viaje aceptado! Redirigiendo al chat...", {
-      duration: 4000,
-    });
-
-    // Simular delay de aceptación
-    setTimeout(() => {
-      router.push(`/trips/${mockTripDetail.id}`);
-    }, 2000);
+    // TODO: Implementar en Fase 4
+    toast.error("Backend no conectado - Funcionalidad pendiente");
   };
 
   return (
@@ -75,7 +48,7 @@ export default function TripDetailPage() {
           </Typography>
         </Box>
 
-        <StatusChip status={mockTripDetail.status} />
+        <StatusChip status={"searching"} />
       </Box>
 
       {/* Información del cliente */}
@@ -86,22 +59,17 @@ export default function TripDetailPage() {
           </Typography>
 
           <Box display="flex" alignItems="center" gap={2} mb={2}>
-            <Avatar
-              src={mockTripDetail.client.avatar}
-              sx={{ width: 56, height: 56 }}
-            >
+            <Avatar sx={{ width: 56, height: 56 }}>
               <Person />
             </Avatar>
             <Box>
               <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                {mockTripDetail.client.firstName}{" "}
-                {mockTripDetail.client.lastName}
+                Usuario
               </Typography>
               <Box display="flex" alignItems="center" gap={1}>
                 <Star sx={{ fontSize: 16, color: "warning.main" }} />
                 <Typography variant="body2" color="text.secondary">
-                  {mockTripDetail.client.rating} •{" "}
-                  {mockTripDetail.client.totalTrips} viajes
+                  4.8 • 0 viajes
                 </Typography>
               </Box>
             </Box>
@@ -129,7 +97,7 @@ export default function TripDetailPage() {
                   ORIGEN
                 </Typography>
                 <Typography variant="body1" sx={{ fontWeight: 600 }}>
-                  {mockTripDetail.origin}
+                  Por definir
                 </Typography>
               </Box>
             </Box>
@@ -145,7 +113,7 @@ export default function TripDetailPage() {
                   DESTINO
                 </Typography>
                 <Typography variant="body1" sx={{ fontWeight: 600 }}>
-                  {mockTripDetail.destination}
+                  Por definir
                 </Typography>
               </Box>
             </Box>
@@ -162,9 +130,7 @@ export default function TripDetailPage() {
             >
               DESCRIPCIÓN
             </Typography>
-            <Typography variant="body1">
-              {mockTripDetail.description}
-            </Typography>
+            <Typography variant="body1">Por definir</Typography>
           </Box>
 
           <Divider sx={{ my: 3 }} />
@@ -184,7 +150,7 @@ export default function TripDetailPage() {
             variant="h5"
             sx={{ fontWeight: 700, color: "success.main" }}
           >
-            ${mockTripDetail.suggestedPrice.toLocaleString()}
+            $ 0
           </Typography>
           <Typography variant="body2" color="text.secondary">
             Este precio es negociable en el chat

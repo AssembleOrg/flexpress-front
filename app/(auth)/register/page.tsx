@@ -25,10 +25,10 @@ import { useAuthStore } from "@/lib/stores/authStore";
 
 const registerSchema = z
   .object({
-    firstName: z.string().min(2, "Nombre debe tener al menos 2 caracteres"),
-    lastName: z.string().min(2, "Apellido debe tener al menos 2 caracteres"),
+    name: z.string().min(2, "Nombre debe tener al menos 2 caracteres"),
     email: z.string().email("Ingresa un email válido"),
-    phone: z.string().min(10, "Teléfono debe tener al menos 10 dígitos"),
+    number: z.string().min(10, "Teléfono debe tener al menos 10 dígitos"),
+    address: z.string().min(5, "Dirección debe tener al menos 5 caracteres"),
     password: z
       .string()
       .min(6, "La contraseña debe tener al menos 6 caracteres"),
@@ -44,7 +44,6 @@ type RegisterForm = z.infer<typeof registerSchema>;
 export default function RegisterPage() {
   const [userRole, setUserRole] = useState<"client" | "driver">("client");
   const router = useRouter();
-  const { login } = useAuthStore();
 
   const {
     register,
@@ -55,33 +54,31 @@ export default function RegisterPage() {
   });
 
   const onSubmit = async (data: RegisterForm) => {
-    const formData = { ...data, role: userRole };
-    console.log("Formulario de registro enviado:", formData);
+    try {
+      const { authApi } = await import("@/lib/api/auth");
+      const { login } = useAuthStore.getState();
 
-    // Simular registro (sin API real por ahora)
-    await new Promise((resolve) => setTimeout(resolve, 1500));
+      const registerData = {
+        email: data.email,
+        password: data.password,
+        name: data.name,
+        number: data.number,
+        address: data.address,
+        role: userRole === "driver" ? ("charter" as const) : ("user" as const),
+      };
 
-    // Mock de usuario registrado
-    const newUser = {
-      id: `user-${Date.now()}`,
-      firstName: data.firstName,
-      lastName: data.lastName,
-      email: data.email,
-      phone: data.phone,
-      role: userRole,
-      status: "active" as const,
-      rating: 5.0,
-    };
+      const response = await authApi.register(registerData);
 
-    login(newUser, "mock-token-123");
-    toast.success(
-      `¡Bienvenido ${newUser.firstName}! Cuenta creada exitosamente`,
-    );
+      login(response.user, response.token);
+      toast.success("Cuenta creada exitosamente");
 
-    // Redirigir al dashboard según el rol
-    const targetPath =
-      userRole === "driver" ? "/driver/dashboard" : "/client/dashboard";
-    router.push(targetPath);
+      const targetPath =
+        userRole === "driver" ? "/driver/dashboard" : "/client/dashboard";
+      router.push(targetPath);
+    } catch (error) {
+      toast.error("Error al registrarse");
+      console.error("Register error:", error);
+    }
   };
 
   const handleRoleChange = (
@@ -217,22 +214,15 @@ export default function RegisterPage() {
 
               {/* Formulario */}
               <Box component="form" onSubmit={handleSubmit(onSubmit)}>
-                <Box display="flex" gap={2} mb={2}>
-                  <TextField
-                    {...register("firstName")}
-                    label="Nombre"
-                    fullWidth
-                    error={!!errors.firstName}
-                    helperText={errors.firstName?.message}
-                  />
-                  <TextField
-                    {...register("lastName")}
-                    label="Apellido"
-                    fullWidth
-                    error={!!errors.lastName}
-                    helperText={errors.lastName?.message}
-                  />
-                </Box>
+                <TextField
+                  {...register("name")}
+                  label="Nombre Completo"
+                  fullWidth
+                  margin="normal"
+                  error={!!errors.name}
+                  helperText={errors.name?.message}
+                  placeholder="Ej: María García"
+                />
 
                 <TextField
                   {...register("email")}
@@ -245,14 +235,24 @@ export default function RegisterPage() {
                 />
 
                 <TextField
-                  {...register("phone")}
+                  {...register("number")}
                   label="Teléfono"
                   type="tel"
                   fullWidth
                   margin="normal"
-                  error={!!errors.phone}
-                  helperText={errors.phone?.message}
+                  error={!!errors.number}
+                  helperText={errors.number?.message}
                   placeholder="Ej: +54 9 11 1234-5678"
+                />
+
+                <TextField
+                  {...register("address")}
+                  label="Dirección"
+                  fullWidth
+                  margin="normal"
+                  error={!!errors.address}
+                  helperText={errors.address?.message}
+                  placeholder="Ej: Av. San Martín 123, Buenos Aires"
                 />
 
                 <Box display="flex" gap={2} sx={{ mt: 2 }}>

@@ -23,8 +23,11 @@ import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import toast from "react-hot-toast";
+
 import { AuthNavbar } from "@/components/layout/AuthNavbar";
+import { AddressInput } from "@/components/ui/AddressInput";
 import { PageTransition } from "@/components/ui/PageTransition";
+import { authApi } from "@/lib/api/auth";
 import { useAuthStore } from "@/lib/stores/authStore";
 
 export default function ProfilePage() {
@@ -39,6 +42,12 @@ export default function ProfilePage() {
     number: user?.number || "",
     address: user?.address || "",
   });
+  const [originData, setOriginData] = useState<{
+    address: string;
+    lat: number;
+    lon: number;
+  } | null>(null);
+  const [isSavingOrigin, setIsSavingOrigin] = useState(false);
 
   if (!isAuthenticated || !user) {
     return (
@@ -104,6 +113,27 @@ export default function ProfilePage() {
       address: user?.address || "",
     });
     setIsEditing(false);
+  };
+
+  const handleSaveOrigin = async () => {
+    if (!originData || !user) return;
+
+    setIsSavingOrigin(true);
+    try {
+      const updatedUser = await authApi.updateUser(user.id, {
+        originAddress: originData.address,
+        originLatitude: originData.lat.toString(),
+        originLongitude: originData.lon.toString(),
+      });
+      updateUser(updatedUser);
+      toast.success("Ubicación de trabajo actualizada");
+      setOriginData(null);
+    } catch (error) {
+      console.error("Error updating charter origin:", error);
+      toast.error("Error al actualizar ubicación de trabajo");
+    } finally {
+      setIsSavingOrigin(false);
+    }
   };
 
   return (
@@ -274,7 +304,7 @@ export default function ProfilePage() {
                   />
                   <TextField
                     fullWidth
-                    label="Dirección"
+                    label="Dirección de Residencia"
                     name="address"
                     value={formData.address}
                     onChange={handleInputChange}
@@ -315,6 +345,127 @@ export default function ProfilePage() {
                 )}
               </Box>
             </Paper>
+
+            {/* Charter Work Location Section */}
+            {user.role === "charter" && (
+              <Paper
+                elevation={2}
+                sx={{ p: { xs: 3, md: 4 }, borderRadius: 3, mb: 3 }}
+              >
+                <Box mb={3}>
+                  <Typography
+                    variant="h5"
+                    sx={{
+                      fontWeight: 700,
+                      color: "primary.main",
+                      mb: 1,
+                    }}
+                  >
+                    Ubicación de Trabajo
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Esta es la ubicación desde la cual atiendes servicios. Los
+                    usuarios podrán encontrarte basándose en esta ubicación.
+                  </Typography>
+                </Box>
+
+                <Box
+                  sx={{
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: 2,
+                  }}
+                >
+                  <AddressInput
+                    label="Ubicación de Trabajo"
+                    placeholder="Ingresa tu ubicación de trabajo..."
+                    onAddressSelect={(address, lat, lon) => {
+                      setOriginData({ address, lat, lon });
+                    }}
+                  />
+
+                  {originData && (
+                    <Box
+                      sx={{
+                        p: 2,
+                        bgcolor: "primary.light",
+                        borderRadius: 2,
+                        display: "flex",
+                        alignItems: "flex-start",
+                        gap: 2,
+                      }}
+                    >
+                      <LocationOnIcon sx={{ color: "primary.main", mt: 0.5 }} />
+                      <Box flex={1}>
+                        <Typography
+                          variant="body2"
+                          sx={{ fontWeight: 600, color: "primary.main" }}
+                        >
+                          {originData.address}
+                        </Typography>
+                        <Typography variant="caption" color="primary.dark">
+                          {originData.lat.toFixed(4)},{" "}
+                          {originData.lon.toFixed(4)}
+                        </Typography>
+                      </Box>
+                    </Box>
+                  )}
+
+                  {user.originAddress && !originData && (
+                    <Box
+                      sx={{
+                        p: 2,
+                        bgcolor: "success.light",
+                        borderRadius: 2,
+                        display: "flex",
+                        alignItems: "flex-start",
+                        gap: 2,
+                      }}
+                    >
+                      <LocationOnIcon sx={{ color: "success.main", mt: 0.5 }} />
+                      <Box flex={1}>
+                        <Typography
+                          variant="body2"
+                          sx={{ fontWeight: 600, color: "success.dark" }}
+                        >
+                          Ubicación Actual
+                        </Typography>
+                        <Typography
+                          variant="body2"
+                          sx={{ color: "success.dark", mt: 0.5 }}
+                        >
+                          {user.originAddress}
+                        </Typography>
+                      </Box>
+                    </Box>
+                  )}
+
+                  {originData && (
+                    <Box display="flex" gap={2}>
+                      <Button
+                        variant="contained"
+                        color="secondary"
+                        startIcon={<SaveIcon />}
+                        onClick={handleSaveOrigin}
+                        disabled={isSavingOrigin}
+                        sx={{ flex: 1 }}
+                      >
+                        {isSavingOrigin ? "Guardando..." : "Guardar Ubicación"}
+                      </Button>
+                      <Button
+                        variant="outlined"
+                        startIcon={<CancelIcon />}
+                        onClick={() => setOriginData(null)}
+                        disabled={isSavingOrigin}
+                        sx={{ flex: 1 }}
+                      >
+                        Cancelar
+                      </Button>
+                    </Box>
+                  )}
+                </Box>
+              </Paper>
+            )}
 
             {/* Additional Info Cards */}
             <Box

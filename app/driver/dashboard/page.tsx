@@ -10,47 +10,26 @@ import {
   Typography,
 } from "@mui/material";
 import { useState } from "react";
-import toast from "react-hot-toast";
 import { AuthNavbar } from "@/components/layout/AuthNavbar";
-import TripCard from "@/components/ui/TripCard";
-import { getMockAvailableTrips, mockCurrentDriver } from "@/lib/mock/data";
 
 export default function DriverDashboard() {
   const [isAvailable, setIsAvailable] = useState(false);
-  const availableTrips = getMockAvailableTrips();
+  const availableTrips: { id: string }[] = [];
 
   const handleAvailabilityChange = (
     event: React.ChangeEvent<HTMLInputElement>,
   ) => {
     const newStatus = event.target.checked;
     setIsAvailable(newStatus);
-
-    if (newStatus) {
-      toast.success("¡Estás disponible para recibir solicitudes!", {
-        duration: 4000,
-      });
-    } else {
-      toast("Ya no recibirás nuevas solicitudes", {
-        duration: 3000,
-        style: {
-          background: "#5D6D7E",
-          color: "#FFFFFF",
-        },
-      });
-    }
+    // TODO: Conectar con API en Fase 4
   };
 
-  const handleAcceptTrip = (tripId: string) => {
-    console.log("Aceptar viaje:", tripId);
-    toast.success("¡Viaje aceptado! Redirigiendo al chat...", {
-      duration: 4000,
-    });
-    // TODO: Implementar lógica real de aceptar viaje
+  const _handleAcceptTrip = (_tripId: string) => {
+    // TODO: Implementar en Fase 3
   };
 
-  const handleViewTrip = (tripId: string) => {
-    console.log("Ver detalles del viaje:", tripId);
-    // TODO: Navegar a los detalles del viaje
+  const _handleViewTrip = (_tripId: string) => {
+    // TODO: Implementar en Fase 4
   };
 
   return (
@@ -120,7 +99,7 @@ export default function DriverDashboard() {
             </Card>
             <Card sx={{ flex: 1, p: 2, textAlign: "center" }}>
               <Typography variant="h6" sx={{ fontWeight: 700 }}>
-                {mockCurrentDriver.totalTrips || 12}
+                0
               </Typography>
               <Typography variant="caption" color="text.secondary">
                 Viajes completados
@@ -185,13 +164,11 @@ export default function DriverDashboard() {
           ) : (
             <Box display="flex" flexDirection="column" gap={2}>
               {availableTrips.map((trip) => (
-                <TripCard
-                  key={trip.id}
-                  trip={trip}
-                  variant="driver"
-                  onAccept={handleAcceptTrip}
-                  onView={handleViewTrip}
-                />
+                <Card key={trip.id}>
+                  <CardContent>
+                    <Typography variant="body2">Viaje disponible</Typography>
+                  </CardContent>
+                </Card>
               ))}
             </Box>
           )}
