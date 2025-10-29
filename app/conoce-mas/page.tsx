@@ -3,15 +3,12 @@
 import { ArrowBack } from "@mui/icons-material";
 import { Box, Button, Container, Typography } from "@mui/material";
 import { useRouter } from "next/navigation";
-import { AuthNavbar } from "@/components/layout/AuthNavbar";
 
 export default function ConoceMorePage() {
   const router = useRouter();
 
   return (
     <Box sx={{ minHeight: "100vh", backgroundColor: "background.default" }}>
-      <AuthNavbar />
-
       {/* Header */}
       <Box sx={{ py: 4, mb: 4, textAlign: "center" }}>
         <Container maxWidth="lg">
