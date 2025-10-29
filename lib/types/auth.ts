@@ -1,16 +1,5 @@
-export interface User {
-  id: string;
-  email: string;
-  firstName: string;
-  lastName: string;
-  phone: string;
-  avatar?: string;
-  role: "client" | "driver" | "admin";
-  status: "active" | "pending" | "suspended";
-  verificationStatus?: "pending" | "verified" | "rejected";
-  rating?: number;
-  totalTrips?: number;
-}
+// Import User type from API (single source of truth)
+import type { User } from "./api";
 
 export interface AuthState {
   user: User | null;
@@ -18,3 +7,6 @@ export interface AuthState {
   isAuthenticated: boolean;
   isLoading: boolean;
 }
+
+// Re-export User for convenience
+export type { User };

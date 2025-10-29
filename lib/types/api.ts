@@ -48,8 +48,8 @@ export interface User {
   email: string;
   name: string;
   role: UserRole;
-  address: string;
   credits: number;
+  address: string;
   number: string;
   avatar: string | null;
   originAddress: string | null; // Solo charters
@@ -60,11 +60,8 @@ export interface User {
 }
 
 export interface AuthResponse {
-  success: boolean;
-  data: {
-    user: User;
-    token: string;
-  };
+  user: User;
+  token: string;
 }
 
 export interface Trip {

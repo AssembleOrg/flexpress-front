@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import {
   fadeInUp,
   motionTokens,
+  scaleIn,
   staggerContainer,
   staggerItem,
 } from "@/lib/animations/variants";
@@ -125,6 +126,17 @@ export function HowItWorks() {
                       }}
                     >
                       {/* Mobile: Circle + Content stacked */}
+                      {/* Desktop Left placeholder for odd steps */}
+                      <Box
+                        sx={{
+                          display: {
+                            xs: "none",
+                            md: !isEven ? "block" : "none",
+                          },
+                          order: 0,
+                        }}
+                      />
+
                       {/* Desktop Left (even) / Right (odd) */}
                       <Box
                         sx={{
@@ -136,6 +148,10 @@ export function HowItWorks() {
                         }}
                       >
                         <motion.div
+                          initial={{ opacity: 0, scale: 0.95 }}
+                          whileInView={{ opacity: 1, scale: 1 }}
+                          viewport={{ once: true }}
+                          transition={{ duration: motionTokens.normal }}
                           whileHover={{
                             y: -8,
                             transition: {
@@ -228,6 +244,13 @@ export function HowItWorks() {
                         }}
                       >
                         <motion.div
+                          initial={{ opacity: 0, scale: 0 }}
+                          whileInView={{ opacity: 1, scale: 1 }}
+                          viewport={{ once: true }}
+                          transition={{
+                            duration: motionTokens.normal,
+                            ...motionTokens.spring,
+                          }}
                           whileHover={{
                             scale: 1.1,
                             rotate: 360,
@@ -258,10 +281,13 @@ export function HowItWorks() {
                         </motion.div>
                       </Box>
 
-                      {/* Right side placeholder (desktop) */}
+                      {/* Right side placeholder (desktop) - only for even steps */}
                       <Box
                         sx={{
-                          display: { xs: "none", md: "block" },
+                          display: {
+                            xs: "none",
+                            md: isEven ? "block" : "none",
+                          },
                           order: 2,
                         }}
                       />

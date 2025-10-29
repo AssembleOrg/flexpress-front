@@ -1,19 +1,9 @@
 "use client";
 
 import { Box, Button, Container, Typography } from "@mui/material";
-import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 export function FinalCTA() {
-  const router = useRouter();
-
-  const handleSolicitarFlete = () => {
-    router.push("/login?redirect=/client/dashboard");
-  };
-
-  const handleSoyConductor = () => {
-    router.push("/login?redirect=/driver/dashboard");
-  };
-
   return (
     <Container maxWidth="md" sx={{ py: 8 }}>
       <Box textAlign="center">
@@ -29,48 +19,27 @@ export function FinalCTA() {
           Registrarse es completamente gratuito.
         </Typography>
 
-        <Box display="flex" gap={3} justifyContent="center" flexWrap="wrap">
+        <Link href="/register" style={{ textDecoration: "none" }}>
           <Button
             variant="contained"
             color="secondary"
             size="large"
-            onClick={handleSolicitarFlete}
             sx={{
-              fontSize: "1.2rem",
-              fontWeight: 600,
-              px: 5,
+              fontSize: "1.3rem",
+              fontWeight: 700,
+              px: 6,
               py: 2.5,
               borderRadius: 2,
               "&:hover": {
-                transform: "translateY(-2px)",
-                boxShadow: 4,
+                transform: "translateY(-3px)",
+                boxShadow: 6,
               },
               transition: "all 0.3s ease",
             }}
           >
-            Solicitar Flete
+            Registrarse
           </Button>
-
-          <Button
-            variant="outlined"
-            size="large"
-            onClick={handleSoyConductor}
-            sx={{
-              fontSize: "1.1rem",
-              fontWeight: 600,
-              px: 4,
-              py: 2.5,
-              borderWidth: 2,
-              "&:hover": {
-                borderWidth: 2,
-                transform: "translateY(-2px)",
-              },
-              transition: "all 0.3s ease",
-            }}
-          >
-            Ser Transportista
-          </Button>
-        </Box>
+        </Link>
       </Box>
     </Container>
   );
