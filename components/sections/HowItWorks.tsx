@@ -5,7 +5,6 @@ import { motion } from "framer-motion";
 import {
   fadeInUp,
   motionTokens,
-  scaleIn,
   staggerContainer,
   staggerItem,
 } from "@/lib/animations/variants";

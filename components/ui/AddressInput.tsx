@@ -7,9 +7,14 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
-import { useCallback, useEffect, useState } from "react";
+import { useMapsLibrary } from "@vis.gl/react-google-maps";
+import { useCallback, useEffect, useRef, useState } from "react";
 
-import { type AddressSuggestion, geoApi } from "@/lib/api/geo";
+// Interfaz para la respuesta de Autocomplete de Google
+interface PlacePrediction {
+  place_id: string;
+  description: string;
+}
 
 interface AddressInputProps {
   label: string;
@@ -30,42 +35,99 @@ export function AddressInput({
   helperText = "",
   disabled = false,
 }: AddressInputProps) {
+  const places = useMapsLibrary("places");
   const [inputValue, setInputValue] = useState(value);
-  const [suggestions, setSuggestions] = useState<AddressSuggestion[]>([]);
+  const [suggestions, setSuggestions] = useState<PlacePrediction[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [open, setOpen] = useState(false);
+  const [sessionToken, setSessionToken] = useState<
+    google.maps.places.AutocompleteSessionToken | undefined
+  >(undefined);
+  const autocompleteServiceRef =
+    useRef<google.maps.places.AutocompleteService | null>(null);
 
-  /**
-   * Fetch address suggestions from Geoapify
-   */
-  const fetchSuggestions = useCallback(async (searchText: string) => {
-    if (!searchText || searchText.trim().length < 2) {
-      setSuggestions([]);
-      return;
-    }
+  useEffect(() => {
+    if (!places) return;
+    autocompleteServiceRef.current = new places.AutocompleteService();
+    setSessionToken(new places.AutocompleteSessionToken());
+  }, [places]);
 
-    setIsLoading(true);
-    try {
-      const results = await geoApi.autocomplete(searchText, 5);
-      setSuggestions(results);
-    } catch (error) {
-      console.error("Error fetching suggestions:", error);
-      setSuggestions([]);
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
+  const fetchSuggestions = useCallback(
+    async (searchText: string) => {
+      if (
+        !searchText ||
+        searchText.trim().length < 2 ||
+        !autocompleteServiceRef.current
+      ) {
+        setSuggestions([]);
+        return;
+      }
 
-  /**
-   * Debounce input changes to avoid too many API calls
-   */
+      setIsLoading(true);
+
+      const locationBias = {
+        north: -34.4,
+        south: -34.9,
+        west: -58.8,
+        east: -58.2,
+      };
+
+      autocompleteServiceRef.current.getPlacePredictions(
+        {
+          input: searchText,
+          componentRestrictions: { country: "ar" },
+          sessionToken: sessionToken,
+          locationBias: locationBias,
+        },
+        (predictions, status) => {
+          setIsLoading(false);
+          if (
+            status === google.maps.places.PlacesServiceStatus.OK &&
+            predictions
+          ) {
+            setSuggestions(predictions);
+          } else {
+            setSuggestions([]);
+          }
+        },
+      );
+    },
+    [sessionToken],
+  );
+
   useEffect(() => {
     const timer = setTimeout(() => {
       fetchSuggestions(inputValue);
     }, 300);
-
     return () => clearTimeout(timer);
   }, [inputValue, fetchSuggestions]);
+
+  const handleSelect = useCallback(
+    async (placeId: string) => {
+      if (!places) return;
+
+      const place = new places.Place({ id: placeId });
+
+      try {
+        const { place: placeDetails } = await place.fetchFields({
+          fields: ["formattedAddress", "location"],
+        });
+
+        const location = placeDetails.location;
+        const address = placeDetails.formattedAddress;
+
+        if (location && address) {
+          onAddressSelect(address, location.lat(), location.lng());
+          setInputValue(address);
+        }
+      } catch (error) {
+        console.error("Error fetching place details:", error);
+      } finally {
+        setSessionToken(new places.AutocompleteSessionToken());
+      }
+    },
+    [places, onAddressSelect],
+  );
 
   return (
     <Autocomplete
@@ -77,29 +139,16 @@ export function AddressInput({
       onClose={() => setOpen(false)}
       options={suggestions}
       getOptionLabel={(option) =>
-        typeof option === "string" ? option : option.address
+        typeof option === "string" ? option : option.description
       }
-      isOptionEqualToValue={(option, value) => {
-        if (typeof value === "string") return option.address === value;
-        return option.address === value.address;
-      }}
       inputValue={inputValue}
-      onInputChange={(_, value) => setInputValue(value)}
+      onInputChange={(_, newValue) => setInputValue(newValue)}
       onChange={(_, value) => {
         if (!value) return;
-
-        const selected =
-          typeof value === "string"
-            ? suggestions.find((s) => s.address === value)
-            : value;
-
-        if (selected) {
-          onAddressSelect(
-            selected.address,
-            selected.coordinates.lat,
-            selected.coordinates.lon,
-          );
-          setInputValue(selected.address);
+        const selectedPlaceId =
+          typeof value === "string" ? null : value.place_id;
+        if (selectedPlaceId) {
+          handleSelect(selectedPlaceId);
         }
       }}
       loading={isLoading}
@@ -111,49 +160,22 @@ export function AddressInput({
           error={error}
           helperText={helperText}
           fullWidth
-          slotProps={{
-            input: {
-              ...params.InputProps,
-              endAdornment: (
-                <>
-                  {isLoading && <CircularProgress color="inherit" size={20} />}
-                  {params.InputProps.endAdornment}
-                </>
-              ),
-            },
+          InputProps={{
+            ...params.InputProps,
+            endAdornment: (
+              <>
+                {isLoading && <CircularProgress color="inherit" size={20} />}
+                {params.InputProps.endAdornment}
+              </>
+            ),
           }}
         />
       )}
-      renderOption={(props, option) => {
-        const { key, ...otherProps } = props;
-        return (
-          <Box
-            component="li"
-            key={key}
-            {...otherProps}
-            sx={{
-              "& > img": { mr: 2, flexShrink: 0 },
-              padding: "12px 16px",
-              cursor: "pointer",
-              "&:hover": {
-                backgroundColor: "#f5f5f5",
-              },
-            }}
-          >
-            <Box>
-              <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                {option.address}
-              </Typography>
-              {option.city && (
-                <Typography variant="caption" color="text.secondary">
-                  {option.city}
-                  {option.state ? `, ${option.state}` : ""}
-                </Typography>
-              )}
-            </Box>
-          </Box>
-        );
-      }}
+      renderOption={(props, option) => (
+        <Box component="li" {...props} key={option.place_id}>
+          <Typography variant="body2">{option.description}</Typography>
+        </Box>
+      )}
       noOptionsText={
         inputValue.length < 2
           ? "Escribe al menos 2 caracteres"

@@ -106,8 +106,8 @@ export default function MatchingPage() {
         </Box>
 
         <Typography variant="body1" color="text.secondary">
-          Se encontraron {availableCharters.length} chóferes disponibles en tu
-          área
+          Se encontraron {availableCharters.length} chóferes disponibles dentro
+          de 30 km del origen
         </Typography>
       </Box>
 
@@ -138,12 +138,39 @@ export default function MatchingPage() {
 
       {/* Lista de chóferes */}
       {availableCharters.length === 0 ? (
-        <Alert severity="warning">
-          <Typography>
-            No se encontraron chóferes disponibles en este momento. Intenta más
-            tarde.
-          </Typography>
-        </Alert>
+        <Box>
+          <Alert severity="warning" sx={{ mb: 3 }}>
+            <Typography variant="h6" sx={{ fontWeight: 600, mb: 1 }}>
+              No se encontraron chóferes disponibles
+            </Typography>
+            <Typography variant="body2" sx={{ mb: 2 }}>
+              Buscamos dentro de 30 km de tu punto de recogida, pero no hay
+              chóferes disponibles en este momento.
+            </Typography>
+            <Typography variant="body2" component="div" sx={{ mb: 1 }}>
+              <strong>Posibles razones:</strong>
+              <ul style={{ marginTop: 8, marginBottom: 8, paddingLeft: 20 }}>
+                <li>No hay chóferes dentro del radio de búsqueda</li>
+                <li>Los chóferes cercanos no están disponibles ahora</li>
+                <li>Todos están ocupados con otros viajes</li>
+              </ul>
+            </Typography>
+            <Typography variant="body2" component="div">
+              <strong>Sugerencias:</strong>
+              <ul style={{ marginTop: 8, paddingLeft: 20 }}>
+                <li>Ajusta tu punto de recogida o destino</li>
+                <li>Intenta en unos minutos cuando un chófer esté libre</li>
+                <li>Contacta a soporte para asistencia</li>
+              </ul>
+            </Typography>
+          </Alert>
+
+          <Link href="/client/trips/new" style={{ textDecoration: "none" }}>
+            <Button variant="contained" color="secondary">
+              Buscar de Nuevo
+            </Button>
+          </Link>
+        </Box>
       ) : (
         <Box>
           <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 3 }}>

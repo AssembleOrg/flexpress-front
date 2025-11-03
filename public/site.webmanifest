@@ -1,0 +1,14 @@
+{
+  "name": "Flexpress - Tu flete, fácil y seguro",
+  "short_name": "Flexpress",
+  "icons": [
+    {
+      "src": "genfavicon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ],
+  "theme_color": "#380116",
+  "background_color": "#F5F2E8",
+  "display": "standalone"
+}
