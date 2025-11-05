@@ -86,7 +86,7 @@ export function ProfileContent() {
 
     setIsSavingOrigin(true);
     try {
-      const updatedUser = await authApi.updateUser(user!.id, {
+      const updatedUser = await authApi.updateUser(user?.id || "", {
         originAddress: originData.address,
         originLatitude: originData.lat.toString(),
         originLongitude: originData.lon.toString(),
@@ -418,7 +418,9 @@ export function ProfileContent() {
                       Miembro desde
                     </Typography>
                     <Typography variant="h6">
-                      {new Date(user!.createdAt).toLocaleDateString("es-AR")}
+                      {new Date(
+                        user?.createdAt || new Date(),
+                      ).toLocaleDateString("es-AR")}
                     </Typography>
                   </CardContent>
                 </Card>

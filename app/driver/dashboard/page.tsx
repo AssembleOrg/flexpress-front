@@ -11,25 +11,18 @@ import {
 } from "@mui/material";
 import { useState } from "react";
 import { AuthNavbar } from "@/components/layout/AuthNavbar";
+import { useToggleAvailability } from "@/lib/hooks/mutations/useTravelMatchMutations";
 
 export default function DriverDashboard() {
   const [isAvailable, setIsAvailable] = useState(false);
-  const availableTrips: { id: string }[] = [];
+  const toggleMutation = useToggleAvailability();
 
   const handleAvailabilityChange = (
     event: React.ChangeEvent<HTMLInputElement>,
   ) => {
     const newStatus = event.target.checked;
     setIsAvailable(newStatus);
-    // TODO: Conectar con API en Fase 4
-  };
-
-  const _handleAcceptTrip = (_tripId: string) => {
-    // TODO: Implementar en Fase 3
-  };
-
-  const _handleViewTrip = (_tripId: string) => {
-    // TODO: Implementar en Fase 4
+    toggleMutation.mutate(newStatus);
   };
 
   return (
@@ -108,71 +101,23 @@ export default function DriverDashboard() {
           </Box>
         )}
 
-        {/* Trip Requests */}
-        <Box>
-          <Box
-            display="flex"
-            alignItems="center"
-            justifyContent="space-between"
-            mb={2}
-          >
-            <Typography variant="h6" sx={{ fontWeight: 600 }}>
-              Solicitudes
+        {/* Information */}
+        <Card sx={{ mb: 3 }}>
+          <CardContent>
+            <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
+              ℹ️ Cómo Funciona
             </Typography>
-            {isAvailable && (
-              <Box display="flex" alignItems="center" gap={0.5}>
-                <Box
-                  sx={{
-                    width: 6,
-                    height: 6,
-                    borderRadius: "50%",
-                    bgcolor: "success.main",
-                    animation: "pulse 2s infinite",
-                  }}
-                />
-                <Typography variant="caption" color="success.main">
-                  Buscando...
-                </Typography>
-              </Box>
-            )}
-          </Box>
-
-          {!isAvailable ? (
-            <Box textAlign="center" py={4}>
-              <Typography variant="h6" sx={{ mb: 1, opacity: 0.5 }}>
-                📴
-              </Typography>
-              <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-                Actívate para empezar a recibir viajes
-              </Typography>
-              <Typography variant="caption" color="text.secondary">
-                Las solicitudes aparecerán cuando estés disponible
-              </Typography>
-            </Box>
-          ) : availableTrips.length === 0 ? (
-            <Box textAlign="center" py={4}>
-              <Typography variant="h6" sx={{ mb: 1 }}>
-                🔍
-              </Typography>
-              <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-                Buscando solicitudes cerca de ti
-              </Typography>
-              <Typography variant="caption" color="text.secondary">
-                Te notificaremos cuando aparezcan nuevas
-              </Typography>
-            </Box>
-          ) : (
-            <Box display="flex" flexDirection="column" gap={2}>
-              {availableTrips.map((trip) => (
-                <Card key={trip.id}>
-                  <CardContent>
-                    <Typography variant="body2">Viaje disponible</Typography>
-                  </CardContent>
-                </Card>
-              ))}
-            </Box>
-          )}
-        </Box>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
+              Cuando estés conectado (disponible), recibirás notificaciones en
+              tiempo real de nuevas solicitudes de viaje que coincidan con tu
+              ubicación y disponibilidad.
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              Acepta o rechaza las solicitudes según tus preferencias. ¡Buena
+              suerte!
+            </Typography>
+          </CardContent>
+        </Card>
       </Container>
     </Box>
   );

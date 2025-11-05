@@ -16,23 +16,51 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { CharterCard } from "@/components/ui/CharterCard";
 import { RouteMap } from "@/components/ui/Map";
-import { useTravelMatch } from "@/lib/hooks/useTravelMatch";
+import { useSelectCharter } from "@/lib/hooks/mutations/useTravelMatchMutations";
+import { useCharterRating } from "@/lib/hooks/queries/useFeedbackQueries";
+import { useTravelMatchStore } from "@/lib/stores/travelMatchStore";
+import type { AvailableCharter } from "@/lib/types/api";
+
+/**
+ * Charter card wrapper that fetches and displays rating
+ */
+function CharterCardWithRating({
+  charter,
+  isLoading,
+  onSelect,
+}: {
+  charter: AvailableCharter;
+  isLoading: boolean;
+  onSelect: () => void;
+}) {
+  const { data: feedback } = useCharterRating(charter.charterId);
+
+  return (
+    <CharterCard
+      charter={charter}
+      isLoading={isLoading}
+      onSelect={onSelect}
+      averageRating={feedback?.averageRating || 0}
+      totalReviews={feedback?.totalFeedbacks || 0}
+    />
+  );
+}
 
 export default function MatchingPage() {
   const router = useRouter();
+  const selectMutation = useSelectCharter();
+
   const {
     currentMatch,
     availableCharters,
-    isLoading,
-    selectCharter,
     pickupAddress,
     pickupCoords,
     destinationAddress,
     destinationCoords,
-  } = useTravelMatch();
+  } = useTravelMatchStore();
 
   // Si no hay match activo, redirect de vuelta
-  if (!currentMatch && !isLoading) {
+  if (!currentMatch) {
     return (
       <Container maxWidth="md" sx={{ py: 4 }}>
         <Alert severity="warning" sx={{ mb: 2 }}>
@@ -49,21 +77,25 @@ export default function MatchingPage() {
     );
   }
 
-  if (isLoading) {
+  if (selectMutation.isPending) {
     return (
       <Container maxWidth="md" sx={{ py: 4, textAlign: "center" }}>
         <CircularProgress sx={{ mb: 2 }} />
-        <Typography>Buscando chóferes disponibles...</Typography>
+        <Typography>Seleccionando chófer...</Typography>
       </Container>
     );
   }
 
-  const handleSelectCharter = async (charterId: string) => {
-    const result = await selectCharter(charterId);
-    if (result) {
-      // Redirect a la vista de conversación o detalles del match
-      router.push(`/client/trips/matching/${result.id}`);
-    }
+  const handleSelectCharter = (charterId: string) => {
+    if (!currentMatch) return;
+    selectMutation.mutate(
+      { matchId: currentMatch.id, charterId },
+      {
+        onSuccess: (result) => {
+          router.push(`/client/trips/matching/${result.id}`);
+        },
+      },
+    );
   };
 
   return (
@@ -178,13 +210,11 @@ export default function MatchingPage() {
           </Typography>
 
           {availableCharters.map((charter) => (
-            <CharterCard
+            <CharterCardWithRating
               key={charter.charterId}
               charter={charter}
-              isLoading={isLoading}
+              isLoading={selectMutation.isPending}
               onSelect={() => handleSelectCharter(charter.charterId)}
-              averageRating={4.5}
-              totalReviews={12}
             />
           ))}
         </Box>

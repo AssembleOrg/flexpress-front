@@ -20,14 +20,13 @@ import {
   Typography,
 } from "@mui/material";
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { Suspense, useState } from "react";
 import { useForm } from "react-hook-form";
-import toast from "react-hot-toast";
 import { z } from "zod";
 import Logo from "@/components/ui/Logo";
 import { PageTransition } from "@/components/ui/PageTransition";
-import { useAuthStore } from "@/lib/stores/authStore";
+import { useRegister } from "@/lib/hooks/mutations/useAuthMutations";
 
 const registerSchema = z
   .object({
@@ -50,12 +49,12 @@ type RegisterForm = z.infer<typeof registerSchema>;
 function RegisterFormContent() {
   const [userRole, setUserRole] = useState<"client" | "driver">("client");
   const [acceptedTerms, setAcceptedTerms] = useState(false);
-  const router = useRouter();
   const searchParams = useSearchParams();
-  const redirectPath = searchParams.get("redirect");
+  const registerMutation = useRegister();
 
   // Determine transition direction based on redirect parameter
   const getTransitionDirection = (): "left" | "right" | "default" => {
+    const redirectPath = searchParams.get("redirect");
     if (!redirectPath) return "default";
     if (redirectPath.includes("/client")) return "left";
     if (redirectPath.includes("/driver")) return "right";
@@ -67,37 +66,26 @@ function RegisterFormContent() {
   const {
     register,
     handleSubmit,
-    formState: { errors, isSubmitting },
+    formState: { errors },
   } = useForm<RegisterForm>({
     resolver: zodResolver(registerSchema),
   });
 
-  const onSubmit = async (data: RegisterForm) => {
-    try {
-      const { authApi } = await import("@/lib/api/auth");
-      const { login } = useAuthStore.getState();
+  const onSubmit = (data: RegisterForm) => {
+    const registerData = {
+      email: data.email,
+      password: data.password,
+      name: data.name,
+      number: data.number,
+      address: data.address,
+      role: userRole === "driver" ? ("charter" as const) : ("user" as const),
+    };
 
-      const registerData = {
-        email: data.email,
-        password: data.password,
-        name: data.name,
-        number: data.number,
-        address: data.address,
-        role: userRole === "driver" ? ("charter" as const) : ("user" as const),
-      };
+    console.log("📝 [RegisterForm] Triggering mutation...");
+    console.log("   Email:", data.email);
+    console.log("   Role:", registerData.role);
 
-      const response = await authApi.register(registerData);
-
-      login(response.user, response.token);
-      toast.success("Cuenta creada exitosamente");
-
-      const targetPath =
-        userRole === "driver" ? "/driver/dashboard" : "/client/dashboard";
-      router.push(targetPath);
-    } catch (error) {
-      toast.error("Error al registrarse");
-      console.error("Register error:", error);
-    }
+    registerMutation.mutate(registerData);
   };
 
   const handleRoleChange = (
@@ -340,7 +328,7 @@ function RegisterFormContent() {
                     color="secondary"
                     fullWidth
                     size="large"
-                    disabled={isSubmitting || !acceptedTerms}
+                    disabled={registerMutation.isPending || !acceptedTerms}
                     sx={{
                       py: 1.5,
                       fontSize: "1.125rem",
@@ -349,7 +337,9 @@ function RegisterFormContent() {
                       mb: 3,
                     }}
                   >
-                    {isSubmitting ? "Creando cuenta..." : "Registrarse"}
+                    {registerMutation.isPending
+                      ? "Creando cuenta..."
+                      : "Registrarse"}
                   </Button>
                 </Box>
 

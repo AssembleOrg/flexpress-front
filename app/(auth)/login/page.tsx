@@ -21,14 +21,13 @@ import {
   Typography,
 } from "@mui/material";
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { Suspense, useState } from "react";
 import { useForm } from "react-hook-form";
-import toast from "react-hot-toast";
 import { z } from "zod";
 import Logo from "@/components/ui/Logo";
 import { PageTransition } from "@/components/ui/PageTransition";
-import { useAuthStore } from "@/lib/stores/authStore";
+import { useLogin } from "@/lib/hooks/mutations/useAuthMutations";
 
 const loginSchema = z.object({
   email: z.string().email("Ingresa un email válido"),
@@ -38,14 +37,13 @@ const loginSchema = z.object({
 type LoginForm = z.infer<typeof loginSchema>;
 
 function LoginForm() {
-  const router = useRouter();
   const searchParams = useSearchParams();
-  const redirectPath = searchParams.get("redirect");
-  const { login } = useAuthStore();
   const [showPassword, setShowPassword] = useState(false);
+  const loginMutation = useLogin();
 
   // transition direction based on redirect parameter
   const getTransitionDirection = (): "left" | "right" | "default" => {
+    const redirectPath = searchParams.get("redirect");
     if (!redirectPath) return "default";
     if (redirectPath.includes("/client")) return "left";
     if (redirectPath.includes("/driver")) return "right";
@@ -57,33 +55,14 @@ function LoginForm() {
   const {
     register,
     handleSubmit,
-    formState: { errors, isSubmitting },
+    formState: { errors },
   } = useForm<LoginForm>({
     resolver: zodResolver(loginSchema),
   });
 
-  const onSubmit = async (data: LoginForm) => {
-    try {
-      const { authApi } = await import("@/lib/api/auth");
-
-      const response = await authApi.login({
-        email: data.email,
-        password: data.password,
-      });
-
-      login(response.user, response.token);
-      toast.success(`¡Bienvenido ${response.user.name}!`);
-
-      const targetPath =
-        redirectPath ||
-        (response.user.role === "charter"
-          ? "/driver/dashboard"
-          : "/client/dashboard");
-      router.push(targetPath);
-    } catch (error) {
-      toast.error("Email o contraseña incorrectos");
-      console.error("Login error:", error);
-    }
+  const onSubmit = (data: LoginForm) => {
+    console.log("📝 [LoginForm] Triggering mutation...");
+    loginMutation.mutate(data);
   };
 
   return (
@@ -231,7 +210,7 @@ function LoginForm() {
                     color="secondary"
                     fullWidth
                     size="large"
-                    disabled={isSubmitting}
+                    disabled={loginMutation.isPending}
                     sx={{
                       py: 1.5,
                       fontSize: "1.125rem",
@@ -239,7 +218,7 @@ function LoginForm() {
                       mb: 3,
                     }}
                   >
-                    {isSubmitting ? "Ingresando..." : "Entrar"}
+                    {loginMutation.isPending ? "Ingresando..." : "Entrar"}
                   </Button>
                 </Box>
 

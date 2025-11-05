@@ -2,7 +2,6 @@
 
 import { useMemo } from "react";
 import toast from "react-hot-toast";
-import { authApi } from "@/lib/api/auth";
 import {
   type CreateMatchRequest,
   travelMatchingApi,
@@ -21,6 +20,14 @@ export function useTravelMatch() {
    * Create a new travel match (user searches for available charters)
    */
   const createMatch = async () => {
+    // Verificar autenticación PRIMERO
+    const { isAuthenticated, token } = useAuthStore.getState();
+    if (!isAuthenticated || !token) {
+      toast.error("Debes iniciar sesión para crear una búsqueda");
+      console.log("❌ [MATCH] User not authenticated");
+      return null;
+    }
+
     if (!store.pickupCoords || !store.destinationCoords) {
       toast.error("Por favor selecciona origen y destino");
       return null;
@@ -39,8 +46,8 @@ export function useTravelMatch() {
       if (
         typeof store.pickupCoords.lat !== "number" ||
         typeof store.pickupCoords.lon !== "number" ||
-        isNaN(store.pickupCoords.lat) ||
-        isNaN(store.pickupCoords.lon)
+        Number.isNaN(store.pickupCoords.lat) ||
+        Number.isNaN(store.pickupCoords.lon)
       ) {
         toast.error("Coordenadas de origen inválidas. Selecciona de nuevo.");
         store.setLoading(false);
@@ -50,8 +57,8 @@ export function useTravelMatch() {
       if (
         typeof store.destinationCoords.lat !== "number" ||
         typeof store.destinationCoords.lon !== "number" ||
-        isNaN(store.destinationCoords.lat) ||
-        isNaN(store.destinationCoords.lon)
+        Number.isNaN(store.destinationCoords.lat) ||
+        Number.isNaN(store.destinationCoords.lon)
       ) {
         toast.error("Coordenadas de destino inválidas. Selecciona de nuevo.");
         store.setLoading(false);

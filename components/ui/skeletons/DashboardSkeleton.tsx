@@ -1,75 +1,47 @@
-"use client";
+import { Box, Card, CardContent, Skeleton, Stack } from "@mui/material";
 
-import { Box, Card, CardContent, Container, Paper } from "@mui/material";
-import Skeleton from "react-loading-skeleton";
-import "react-loading-skeleton/dist/skeleton.css";
-
-interface DashboardSkeletonProps {
-  showToggle?: boolean;
-}
-
-export function DashboardSkeleton({
-  showToggle = false,
-}: DashboardSkeletonProps) {
+export function DashboardSkeleton() {
   return (
-    <Box
-      sx={{
-        bgcolor: "background.default",
-        minHeight: "calc(100vh - 64px)",
-        py: 4,
-      }}
-    >
-      <Container maxWidth="lg">
-        {/* Header with optional toggle */}
-        <Paper
-          elevation={2}
-          sx={{
-            p: 3,
-            mb: 4,
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            flexDirection: { xs: "column", md: "row" },
-            gap: 2,
-          }}
-        >
-          <Box flex={1}>
-            <Skeleton width={250} height={36} style={{ marginBottom: 8 }} />
-            <Skeleton width={350} height={20} />
-          </Box>
+    <Box sx={{ p: 3 }}>
+      {/* Header Skeleton */}
+      <Skeleton variant="text" width="40%" height={40} sx={{ mb: 3 }} />
 
-          {showToggle && (
-            <Box>
-              <Skeleton width={180} height={40} borderRadius={20} />
+      {/* Stats Cards Skeleton */}
+      <Stack direction={{ xs: "column", sm: "row" }} spacing={2} sx={{ mb: 4 }}>
+        {[1, 2, 3].map((i) => (
+          <Card key={i} sx={{ flex: 1 }}>
+            <CardContent>
+              <Skeleton variant="text" width="60%" sx={{ mb: 1 }} />
+              <Skeleton variant="text" width="40%" height={32} />
+            </CardContent>
+          </Card>
+        ))}
+      </Stack>
+
+      {/* Main Content Skeleton */}
+      <Card>
+        <CardContent>
+          {/* Filter/Header Skeleton */}
+          <Stack direction="row" spacing={2} sx={{ mb: 3 }}>
+            <Skeleton variant="rectangular" width={150} height={40} />
+            <Skeleton variant="rectangular" width={150} height={40} />
+          </Stack>
+
+          {/* List Items Skeleton */}
+          {[1, 2, 3, 4].map((i) => (
+            <Box key={i} sx={{ mb: 2, p: 2, border: "1px solid #e0e0e0" }}>
+              <Stack spacing={1}>
+                <Skeleton variant="text" width="80%" />
+                <Skeleton variant="text" width="60%" />
+                <Stack direction="row" spacing={1}>
+                  <Skeleton variant="rectangular" width={80} height={32} />
+                  <Skeleton variant="rectangular" width={80} height={32} />
+                </Stack>
+              </Stack>
             </Box>
-          )}
-        </Paper>
-
-        {/* Empty State or Content Skeleton */}
-        <Card elevation={2}>
-          <CardContent
-            sx={{
-              p: 4,
-              textAlign: "center",
-              minHeight: 300,
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              justifyContent: "center",
-            }}
-          >
-            <Skeleton
-              circle
-              width={80}
-              height={80}
-              style={{ marginBottom: 16 }}
-            />
-            <Skeleton width={300} height={32} style={{ marginBottom: 12 }} />
-            <Skeleton width={400} height={20} style={{ marginBottom: 24 }} />
-            <Skeleton width={180} height={44} borderRadius={22} />
-          </CardContent>
-        </Card>
-      </Container>
+          ))}
+        </CardContent>
+      </Card>
     </Box>
   );
 }

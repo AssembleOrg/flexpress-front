@@ -59,7 +59,7 @@ export const travelMatchingApi = {
       console.error("❌ [MATCHING] Create match failed");
 
       // Extract detailed error information
-      let errorDetails = {
+      const errorDetails = {
         status: null as number | null,
         message: "Unknown error",
         backend_error: null as unknown,
@@ -211,10 +211,9 @@ export const travelMatchingApi = {
    * Toggle charter availability
    */
   toggleAvailability: async (isAvailable: boolean) => {
-    const response = await api.put(
-      "/travel-matching/charter/availability",
-      { isAvailable },
-    );
+    const response = await api.put("/travel-matching/charter/availability", {
+      isAvailable,
+    });
     // biome-ignore lint/style/noNonNullAssertion: axios response guarantees data
     return response.data.data!;
   },
@@ -227,10 +226,11 @@ export const travelMatchingApi = {
     longitude: string,
     address: string,
   ) => {
-    const response = await api.put(
-      "/travel-matching/charter/origin",
-      { latitude, longitude, address },
-    );
+    const response = await api.put("/travel-matching/charter/origin", {
+      latitude,
+      longitude,
+      address,
+    });
     // biome-ignore lint/style/noNonNullAssertion: axios response guarantees data
     return response.data.data!;
   },

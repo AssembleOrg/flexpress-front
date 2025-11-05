@@ -24,11 +24,13 @@ import {
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import Logo from "@/components/ui/Logo";
+import { useLogout } from "@/lib/hooks/mutations/useAuthMutations";
 import { useAuthStore } from "@/lib/stores/authStore";
 
 export function AuthNavbar() {
   const router = useRouter();
-  const { user, logout } = useAuthStore();
+  const { user } = useAuthStore();
+  const logoutMutation = useLogout();
   const [mobileOpen, setMobileOpen] = useState(false);
 
   const handleDrawerToggle = () => {
@@ -53,9 +55,12 @@ export function AuthNavbar() {
   };
 
   const handleLogout = () => {
-    logout();
-    router.push("/");
-    setMobileOpen(false);
+    logoutMutation.mutate(undefined, {
+      onSuccess: () => {
+        router.push("/");
+        setMobileOpen(false);
+      },
+    });
   };
 
   return (

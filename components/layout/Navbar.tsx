@@ -21,6 +21,7 @@ import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import Logo from "@/components/ui/Logo";
+import { useLogout } from "@/lib/hooks/mutations/useAuthMutations";
 import { useHydrated } from "@/lib/hooks/useHydrated";
 import { useAuthStore } from "@/lib/stores/authStore";
 
@@ -28,7 +29,8 @@ export function Navbar() {
   const router = useRouter();
   const theme = useTheme();
   const hydrated = useHydrated();
-  const { user, isAuthenticated, logout } = useAuthStore();
+  const { user, isAuthenticated } = useAuthStore();
+  const logoutMutation = useLogout();
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
 
   const handleMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
@@ -40,9 +42,12 @@ export function Navbar() {
   };
 
   const handleLogout = () => {
-    logout();
-    handleMenuClose();
-    router.push("/");
+    logoutMutation.mutate(undefined, {
+      onSuccess: () => {
+        handleMenuClose();
+        router.push("/");
+      },
+    });
   };
 
   const handleProfile = () => {

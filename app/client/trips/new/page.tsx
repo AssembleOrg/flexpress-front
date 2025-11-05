@@ -7,37 +7,82 @@ import {
   Card,
   CardContent,
   Chip,
+  CircularProgress,
   Container,
   Typography,
 } from "@mui/material";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useEffect } from "react";
 import toast from "react-hot-toast";
 import { AddressInput } from "@/components/ui/AddressInput";
 // biome-ignore lint/suspicious/noShadowRestrictedNames: exported as alias from Map component
 import { Map } from "@/components/ui/Map";
-import { useTravelMatch } from "@/lib/hooks/useTravelMatch";
+import { useCreateMatch } from "@/lib/hooks/mutations/useTravelMatchMutations";
+import { useHydrated } from "@/lib/hooks/useHydrated";
+import { useAuthStore } from "@/lib/stores/authStore";
+import { useTravelMatchStore } from "@/lib/stores/travelMatchStore";
 
 export default function NewTripPage() {
   const router = useRouter();
+  const hydrated = useHydrated();
+  const { isAuthenticated } = useAuthStore();
+
+  // Redirigir a login si no está autenticado
+  useEffect(() => {
+    if (hydrated && !isAuthenticated) {
+      console.log("❌ [PAGE] User not authenticated, redirecting to login");
+      router.push("/login");
+    }
+  }, [hydrated, isAuthenticated, router]);
+
+  // Form state from Zustand
   const {
-    createMatch,
-    isLoading,
     pickupAddress,
     pickupCoords,
     destinationAddress,
     destinationCoords,
     setPickupLocation,
     setDestinationLocation,
-    isFormComplete,
-  } = useTravelMatch();
+  } = useTravelMatchStore();
 
-  const handleCreateMatch = async () => {
-    const result = await createMatch();
-    if (result) {
-      // Redirect to matching page to see available charters
-      router.push("/client/trips/matching");
-    }
+  // Mutation for creating match
+  const createMatchMutation = useCreateMatch();
+
+  // Mostrar loading mientras se hidrata
+  if (!hydrated) {
+    return (
+      <Container maxWidth="md" sx={{ py: 4, textAlign: "center" }}>
+        <CircularProgress sx={{ mb: 2 }} />
+        <Typography>Cargando...</Typography>
+      </Container>
+    );
+  }
+
+  const isFormComplete =
+    !!pickupAddress &&
+    !!destinationAddress &&
+    !!pickupCoords &&
+    !!destinationCoords;
+
+  const handleCreateMatch = () => {
+    if (!isFormComplete) return;
+
+    createMatchMutation.mutate(
+      {
+        pickupAddress,
+        pickupLatitude: pickupCoords.lat.toString(),
+        pickupLongitude: pickupCoords.lon.toString(),
+        destinationAddress,
+        destinationLatitude: destinationCoords.lat.toString(),
+        destinationLongitude: destinationCoords.lon.toString(),
+      },
+      {
+        onSuccess: () => {
+          router.push("/client/trips/matching");
+        },
+      },
+    );
   };
 
   return (
@@ -77,7 +122,7 @@ export default function NewTripPage() {
               placeholder="Ej: Av. Hipólito Yrigoyen 8985, Buenos Aires"
               value={pickupAddress || ""}
               onAddressSelect={(address, lat, lon) => {
-                setPickupLocation(address, lat, lon);
+                setPickupLocation(address, { lat, lon });
                 toast.success("Origen seleccionado");
               }}
             />
@@ -90,7 +135,7 @@ export default function NewTripPage() {
               placeholder="Ej: Calle 13 567, La Plata, Buenos Aires"
               value={destinationAddress || ""}
               onAddressSelect={(address, lat, lon) => {
-                setDestinationLocation(address, lat, lon);
+                setDestinationLocation(address, { lat, lon });
                 toast.success("Destino seleccionado");
               }}
             />
@@ -175,7 +220,7 @@ export default function NewTripPage() {
               color="secondary"
               size="large"
               onClick={handleCreateMatch}
-              disabled={isLoading || !isFormComplete}
+              disabled={createMatchMutation.isPending || !isFormComplete}
               sx={{
                 fontSize: "1.125rem",
                 fontWeight: 600,
@@ -184,7 +229,9 @@ export default function NewTripPage() {
                 minWidth: 250,
               }}
             >
-              {isLoading ? "Buscando chóferes..." : "Buscar Chóferes"}
+              {createMatchMutation.isPending
+                ? "Buscando chóferes..."
+                : "Buscar Chóferes"}
             </Button>
 
             <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>

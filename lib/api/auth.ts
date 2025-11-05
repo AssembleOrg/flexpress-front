@@ -1,6 +1,12 @@
 import api from "../api";
 import type { ApiResponse, AuthResponse, User } from "../types/api";
 
+// Backend response type (access_token, no token)
+interface BackendAuthResponse {
+  access_token: string;
+  user: User;
+}
+
 export interface LoginRequest {
   email: string;
   password: string;
@@ -32,22 +38,92 @@ export interface UpdateUserRequest {
 export const authApi = {
   // Iniciar sesión
   login: async (data: LoginRequest): Promise<AuthResponse> => {
-    const response = await api.post<ApiResponse<AuthResponse>>(
+    const response = await api.post<ApiResponse<BackendAuthResponse>>(
       "/auth/login",
       data,
     );
+
+    // DEBUG LOGS - Ver estructura exacta del response
+    if (
+      typeof window !== "undefined" &&
+      process.env.NODE_ENV === "development"
+    ) {
+      console.log("🔍 [authApi.login] Full response structure:");
+      console.log("   response.data:", response.data);
+      console.log("   response.data.data:", response.data.data);
+      console.log(
+        "   response.data.data?.user:",
+        response.data.data?.user?.name,
+      );
+      console.log(
+        "   response.data.data?.access_token:",
+        response.data.data?.access_token ? "✅ PRESENT" : "❌ MISSING",
+      );
+    }
+
+    // Backend retorna { access_token, user } → Mapear a { token, user }
     // biome-ignore lint/style/noNonNullAssertion: axios response guarantees data
-    return response.data.data!;
+    const { access_token, user } = response.data.data!;
+    const authResponse: AuthResponse = {
+      token: access_token,
+      user,
+    };
+
+    if (
+      typeof window !== "undefined" &&
+      process.env.NODE_ENV === "development"
+    ) {
+      console.log("✅ [authApi.login] Mapped response:");
+      console.log("   token present:", !!authResponse.token);
+      console.log("   token length:", authResponse.token.length);
+    }
+
+    return authResponse;
   },
 
   // Registrarse
   register: async (data: RegisterRequest): Promise<AuthResponse> => {
-    const response = await api.post<ApiResponse<AuthResponse>>(
+    const response = await api.post<ApiResponse<BackendAuthResponse>>(
       "/auth/register",
       data,
     );
+
+    // DEBUG LOGS - Ver estructura exacta del response
+    if (
+      typeof window !== "undefined" &&
+      process.env.NODE_ENV === "development"
+    ) {
+      console.log("🔍 [authApi.register] Full response structure:");
+      console.log("   response.data:", response.data);
+      console.log("   response.data.data:", response.data.data);
+      console.log(
+        "   response.data.data?.user:",
+        response.data.data?.user?.name,
+      );
+      console.log(
+        "   response.data.data?.access_token:",
+        response.data.data?.access_token ? "✅ PRESENT" : "❌ MISSING",
+      );
+    }
+
+    // Backend retorna { access_token, user } → Mapear a { token, user }
     // biome-ignore lint/style/noNonNullAssertion: axios response guarantees data
-    return response.data.data!;
+    const { access_token, user } = response.data.data!;
+    const authResponse: AuthResponse = {
+      token: access_token,
+      user,
+    };
+
+    if (
+      typeof window !== "undefined" &&
+      process.env.NODE_ENV === "development"
+    ) {
+      console.log("✅ [authApi.register] Mapped response:");
+      console.log("   token present:", !!authResponse.token);
+      console.log("   token length:", authResponse.token.length);
+    }
+
+    return authResponse;
   },
 
   // Obtener perfil actual
