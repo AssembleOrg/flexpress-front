@@ -53,8 +53,35 @@ export const travelMatchingApi = {
       );
       console.log("✅ [MATCHING] Match created successfully");
       console.log("📊 Response:", response.data.data);
+
       // biome-ignore lint/style/noNonNullAssertion: axios response guarantees data
-      return response.data.data!;
+      const responseData = response.data.data!;
+
+      // Si response.data.data tiene 'success' y 'message', es el wrapper del backend
+      // Extraer el verdadero CreateMatchResponse de responseData.data
+      if (
+        responseData &&
+        typeof responseData === "object" &&
+        "success" in responseData &&
+        "message" in responseData &&
+        "data" in responseData
+      ) {
+        console.log(
+          "🔍 [MATCHING] Detected double-wrapped response, extracting inner data",
+        );
+        // biome-ignore lint/style/noNonNullAssertion: structure validated above
+        return (
+          responseData as unknown as {
+            data: CreateMatchResponse;
+          }
+        ).data!;
+      }
+
+      // Si no tiene esos campos, asumir que es directamente CreateMatchResponse
+      console.log(
+        "✅ [MATCHING] Response structure is directly CreateMatchResponse",
+      );
+      return responseData as CreateMatchResponse;
     } catch (error) {
       console.error("❌ [MATCHING] Create match failed");
 

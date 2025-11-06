@@ -38,6 +38,14 @@ export function useCreateMatch() {
         queryKey: queryKeys.matches.user(user?.id || ""),
       });
 
+      // Update Zustand store with match and available charters
+      // availableCharters is client state (temporary, not persisted in backend)
+      // It's shown to the user to choose a charter, then cleared
+      useTravelMatchStore.getState().setCurrentMatch(result.match);
+      useTravelMatchStore
+        .getState()
+        .setAvailableCharters(result.availableCharters);
+
       // Clear search form state
       useTravelMatchStore.getState().clearSearchForm?.();
 
