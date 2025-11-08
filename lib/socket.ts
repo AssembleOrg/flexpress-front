@@ -4,7 +4,7 @@ import { io, type Socket } from "socket.io-client";
 import { queryKeys } from "./hooks/queries/queryFactory";
 import { useAuthStore } from "./stores/authStore";
 import { useChatStore } from "./stores/chatStore";
-import type { Message } from "./types/chat";
+import type { Message } from "./types/api";
 import type { Trip } from "./types/trip";
 
 class SocketService {
@@ -52,14 +52,17 @@ class SocketService {
       useChatStore.getState().addMessage(message);
     });
 
-    this.socket.on(
-      "message_status",
-      (data: { messageId: string; status: Message["status"] }) => {
-        useChatStore
-          .getState()
-          .updateMessageStatus(data.messageId, data.status);
-      },
-    );
+    // Note: message_status listener disabled because updateMessageStatus doesn't exist on chatStore
+    // The official Message type from api.ts doesn't have a status property
+    // Message status tracking is not currently supported by the backend
+    // this.socket.on(
+    //   "message_status",
+    //   (data: { messageId: string; status: Message["status"] }) => {
+    //     useChatStore
+    //       .getState()
+    //       .updateMessageStatus(data.messageId, data.status);
+    //   },
+    // );
 
     // Eventos de viajes - Invalidar React Query cache
     this.socket.on("trip_accepted", (trip: Trip) => {

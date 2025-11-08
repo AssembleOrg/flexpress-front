@@ -1,247 +1,36 @@
-"use client";
-
-import {
-  ArrowBack,
-  AttachMoney,
-  Cancel,
-  CheckCircle,
-  Person,
-  Send,
-  Star,
-} from "@mui/icons-material";
-import {
-  Avatar,
-  Box,
-  Button,
-  Card,
-  CardContent,
-  Container,
-  IconButton,
-  Paper,
-  TextField,
-  Typography,
-} from "@mui/material";
-import Link from "next/link";
-import { useState } from "react";
-import { useForm } from "react-hook-form";
-import toast from "react-hot-toast";
-
-type Message = {
-  id: string;
-  senderId: string;
-  senderName: string;
-  content: string;
-  timestamp: string;
-  isCurrentUser: boolean;
-};
+/*
+ * DEPRECATED: Legacy chat page with hardcoded demo data and conflicting Message type
+ *
+ * This page has been deprecated because:
+ * 1. Contains local type definition of Message that conflicts with official Message type from lib/types/api
+ * 2. Uses hardcoded demo data and fake user information
+ * 3. Has been replaced by the real matching and conversation system:
+ *    - Client matching: /client/trips/matching/[matchId]
+ *    - Driver dashboard with reactive conversation creation: /driver/dashboard
+ *    - Chat window: /components/chat/ChatWindow.tsx
+ *
+ * To be fully removed in a future cleanup phase.
+ */
 
 export default function ChatNegotiationPage() {
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [bothConfirmed, setBothConfirmed] = useState(false);
-
-  const { register, handleSubmit, reset } = useForm<{ message: string }>();
-
-  const onSendMessage = (data: { message: string }) => {
-    if (!data.message.trim()) return;
-
-    const newMessage: Message = {
-      id: `msg-${Date.now()}`,
-      senderId: "driver-001",
-      senderName: "Carlos Rodríguez",
-      content: data.message,
-      timestamp: new Date().toLocaleTimeString([], {
-        hour: "2-digit",
-        minute: "2-digit",
-      }),
-      isCurrentUser: true,
-    };
-
-    setMessages((prev) => [...prev, newMessage]);
-    reset();
-  };
-
-  const handleConfirmTrip = () => {
-    toast.success("¡Has confirmado el acuerdo!");
-
-    setTimeout(() => {
-      setBothConfirmed(true);
-      toast.success("¡Viaje confirmado! Ambos usuarios han aceptado.", {
-        duration: 5000,
-      });
-    }, 2000);
-  };
-
-  const handleCancelTrip = () => {
-    toast.error("Has cancelado la negociación");
-    // TODO: Redirigir al dashboard
-  };
-
   return (
-    <Container
-      maxWidth="md"
-      sx={{ py: 4, height: "100vh", display: "flex", flexDirection: "column" }}
-    >
-      {/* Header */}
-      <Box mb={3}>
-        <Link href="/driver/dashboard">
-          <Button startIcon={<ArrowBack />} variant="outlined" sx={{ mb: 2 }}>
-            Volver al Dashboard
-          </Button>
-        </Link>
-
-        <Typography variant="h5" sx={{ fontWeight: 600 }}>
-          Negociación de Flete
-        </Typography>
-      </Box>
-
-      {/* Info del otro usuario */}
-      <Card sx={{ mb: 3 }}>
-        <CardContent sx={{ p: 2 }}>
-          <Box
-            display="flex"
-            alignItems="center"
-            justifyContent="space-between"
-          >
-            <Box display="flex" alignItems="center" gap={2}>
-              <Avatar sx={{ width: 48, height: 48 }}>
-                <Person />
-              </Avatar>
-              <Box>
-                <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                  Usuario
-                </Typography>
-                <Box display="flex" alignItems="center" gap={1}>
-                  <Star sx={{ fontSize: 16, color: "warning.main" }} />
-                  <Typography variant="body2" color="text.secondary">
-                    4.8 • Cliente
-                  </Typography>
-                </Box>
-              </Box>
-            </Box>
-            <Box textAlign="right">
-              <Box display="flex" alignItems="center" gap={1}>
-                <AttachMoney sx={{ color: "success.main" }} />
-                <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                  $ 0
-                </Typography>
-              </Box>
-              <Typography variant="body2" color="text.secondary">
-                Precio sugerido
-              </Typography>
-            </Box>
-          </Box>
-        </CardContent>
-      </Card>
-
-      {/* Chat Messages */}
-      <Card sx={{ flex: 1, display: "flex", flexDirection: "column", mb: 3 }}>
-        <CardContent
-          sx={{ flex: 1, display: "flex", flexDirection: "column", p: 2 }}
-        >
-          <Box sx={{ flex: 1, overflowY: "auto", mb: 2 }}>
-            {messages.map((message) => (
-              <Box
-                key={message.id}
-                display="flex"
-                justifyContent={
-                  message.isCurrentUser ? "flex-end" : "flex-start"
-                }
-                mb={1}
-              >
-                <Paper
-                  elevation={1}
-                  sx={{
-                    p: 2,
-                    maxWidth: "70%",
-                    backgroundColor: message.isCurrentUser
-                      ? "secondary.main"
-                      : "grey.100",
-                    color: message.isCurrentUser ? "white" : "text.primary",
-                  }}
-                >
-                  <Typography variant="body2" sx={{ fontWeight: 500, mb: 0.5 }}>
-                    {message.senderName}
-                  </Typography>
-                  <Typography variant="body2">{message.content}</Typography>
-                  <Typography
-                    variant="caption"
-                    sx={{
-                      display: "block",
-                      textAlign: "right",
-                      mt: 0.5,
-                      opacity: 0.8,
-                    }}
-                  >
-                    {message.timestamp}
-                  </Typography>
-                </Paper>
-              </Box>
-            ))}
-          </Box>
-
-          {/* Message Input */}
-          <Box component="form" onSubmit={handleSubmit(onSendMessage)}>
-            <Box display="flex" gap={1}>
-              <TextField
-                {...register("message")}
-                placeholder="Escribe un mensaje..."
-                fullWidth
-                size="small"
-              />
-              <IconButton
-                type="submit"
-                color="secondary"
-                sx={{ bgcolor: "secondary.main", color: "white" }}
-              >
-                <Send />
-              </IconButton>
-            </Box>
-          </Box>
-        </CardContent>
-      </Card>
-
-      {/* Actions */}
-      {!bothConfirmed ? (
-        <Box display="flex" gap={2}>
-          <Button
-            variant="outlined"
-            color="error"
-            startIcon={<Cancel />}
-            onClick={handleCancelTrip}
-            sx={{ flex: 1 }}
-          >
-            Cancelar
-          </Button>
-          <Button
-            variant="contained"
-            color="success"
-            startIcon={<CheckCircle />}
-            onClick={handleConfirmTrip}
-            sx={{ flex: 1 }}
-          >
-            Confirmar Acuerdo
-          </Button>
-        </Box>
-      ) : (
-        <Card>
-          <CardContent
-            sx={{
-              textAlign: "center",
-              bgcolor: "success.light",
-              color: "success.contrastText",
-            }}
-          >
-            <CheckCircle sx={{ fontSize: 48, mb: 1 }} />
-            <Typography variant="h6" sx={{ fontWeight: 600, mb: 1 }}>
-              ¡Viaje Confirmado!
-            </Typography>
-            <Typography variant="body2">
-              Ambos usuarios han confirmado el acuerdo. Pueden coordinar los
-              detalles finales por aquí.
-            </Typography>
-          </CardContent>
-        </Card>
-      )}
-    </Container>
+    <div style={{ padding: "2rem", textAlign: "center" }}>
+      <h1>Página en construcción</h1>
+      <p>
+        Esta página ha sido reemplazada por el nuevo sistema de matching y
+        conversaciones en tiempo real.
+      </p>
+      <p style={{ color: "#666", fontSize: "0.9rem", marginTop: "1rem" }}>
+        Por favor, utiliza:
+      </p>
+      <ul style={{ textAlign: "left", display: "inline-block" }}>
+        <li>
+          <strong>Cliente:</strong> /client/trips/matching/[matchId]
+        </li>
+        <li>
+          <strong>Conductor:</strong> /driver/dashboard
+        </li>
+      </ul>
+    </div>
   );
 }

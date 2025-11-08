@@ -14,21 +14,35 @@ import {
 import { useRouter } from "next/navigation";
 import { AuthNavbar } from "@/components/layout/AuthNavbar";
 import { useUserMatches } from "@/lib/hooks/queries/useTravelMatchQueries";
+import { isMatchExpired } from "@/lib/utils/matchHelpers";
 
 export default function ClientDashboard() {
   const router = useRouter();
   const { data: myMatches = [], isLoading } = useUserMatches();
 
-  const activeMatches = myMatches.filter(
-    (match) => match.status === "pending" || match.status === "accepted",
-  );
+  const activeMatches = myMatches.filter((match) => {
+    // 1. Verificar status
+    if (match.status !== "pending" && match.status !== "accepted") {
+      return false;
+    }
+
+    // 2. Verificar expiración (solo para pending)
+    if (match.status === "pending" && isMatchExpired(match)) {
+      console.warn(
+        `⏰ [CLIENT DASHBOARD] Match ${match.id} has expired, filtering out`,
+      );
+      return false;
+    }
+
+    return true;
+  });
 
   const handleRequestFreight = () => {
     router.push("/client/trips/new");
   };
 
   const handleViewMatch = (matchId: string) => {
-    router.push(`/client/trips/matching?matchId=${matchId}`);
+    router.push(`/client/trips/matching/${matchId}`);
   };
 
   const getStatusLabel = (status: string) => {

@@ -52,6 +52,15 @@ export const queryKeys = {
     detail: (feedbackId: string) =>
       [...queryKeys.feedback.all, feedbackId] as const,
   },
+
+  // Conversations / Chat
+  conversations: {
+    all: ["conversations"] as const,
+    detail: (conversationId: string) =>
+      [...queryKeys.conversations.all, conversationId] as const,
+    messages: (conversationId: string) =>
+      [...queryKeys.conversations.detail(conversationId), "messages"] as const,
+  },
 };
 
 /**

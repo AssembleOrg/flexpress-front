@@ -77,16 +77,20 @@ export function useSelectCharter() {
       charterId: string;
     }) => travelMatchingApi.selectCharter(matchId, charterId),
 
-    onSuccess: (_result, { matchId }) => {
-      // Invalidate user's matches list
-      queryClient.invalidateQueries({
+    onSuccess: async (_result, { matchId }) => {
+      console.log("🔄 [SELECT] Starting cache invalidation");
+
+      // Invalidate user's matches list and WAIT for refetch
+      await queryClient.invalidateQueries({
         queryKey: queryKeys.matches.user(user?.id || ""),
       });
+      console.log("✅ [SELECT] User matches invalidated");
 
-      // Invalidate specific match detail
-      queryClient.invalidateQueries({
+      // Invalidate specific match detail and WAIT for refetch
+      await queryClient.invalidateQueries({
         queryKey: queryKeys.matches.detail(matchId),
       });
+      console.log("✅ [SELECT] Match detail invalidated");
 
       toast.success("Chófer seleccionado. Esperando confirmación...");
     },
@@ -100,6 +104,9 @@ export function useSelectCharter() {
 /**
  * Charter responds to a match (accept or reject)
  * PUT /travel-matching/charter/matches/:matchId/respond
+ *
+ * Note: Conversation creation is handled by a reactive watcher in DriverDashboard
+ * when it detects an accepted match without a conversation.
  */
 export function useRespondToMatch() {
   const queryClient = useQueryClient();
@@ -109,19 +116,23 @@ export function useRespondToMatch() {
       travelMatchingApi.respondToMatch(matchId, accept),
 
     onSuccess: (result, { matchId, accept }) => {
-      // Update the match
+      // Update the match in cache
       queryClient.setQueryData(queryKeys.matches.detail(matchId), result);
 
-      // Invalidate all matches (invalidar por raíz)
+      // Invalidate all matches to ensure fresh data from server
       queryClient.invalidateQueries({
         queryKey: queryKeys.matches.all,
       });
 
+      // Show appropriate toast
       if (accept) {
         toast.success("¡Solicitud aceptada!");
       } else {
         toast.success("Solicitud rechazada");
       }
+
+      // Note: Conversation creation will be triggered by the reactive watcher
+      // in DriverDashboard when it detects status='accepted' without conversationId
     },
 
     onError: () => {
