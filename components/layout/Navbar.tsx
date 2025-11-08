@@ -1,9 +1,9 @@
-'use client';
+"use client";
 
-import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet';
-import AccountCircleIcon from '@mui/icons-material/AccountCircle';
-import LogoutIcon from '@mui/icons-material/Logout';
-import SettingsIcon from '@mui/icons-material/Settings';
+import AccountBalanceWalletIcon from "@mui/icons-material/AccountBalanceWallet";
+import AccountCircleIcon from "@mui/icons-material/AccountCircle";
+import LogoutIcon from "@mui/icons-material/Logout";
+import SettingsIcon from "@mui/icons-material/Settings";
 import {
   AppBar,
   Avatar,
@@ -16,19 +16,21 @@ import {
   Toolbar,
   Typography,
   useTheme,
-} from '@mui/material';
-import { motion } from 'framer-motion';
-import { useRouter } from 'next/navigation';
-import { useState } from 'react';
-import Logo from '@/components/ui/Logo';
-import { useHydrated } from '@/lib/hooks/useHydrated';
-import { useAuthStore } from '@/lib/stores/authStore';
+} from "@mui/material";
+import { motion } from "framer-motion";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
+import Logo from "@/components/ui/Logo";
+import { useLogout } from "@/lib/hooks/mutations/useAuthMutations";
+import { useHydrated } from "@/lib/hooks/useHydrated";
+import { useAuthStore } from "@/lib/stores/authStore";
 
 export function Navbar() {
   const router = useRouter();
   const theme = useTheme();
   const hydrated = useHydrated();
-  const { user, isAuthenticated, logout } = useAuthStore();
+  const { user, isAuthenticated } = useAuthStore();
+  const logoutMutation = useLogout();
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
 
   const handleMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
@@ -40,59 +42,55 @@ export function Navbar() {
   };
 
   const handleLogout = () => {
-    logout();
-    handleMenuClose();
-    router.push('/');
+    logoutMutation.mutate(undefined, {
+      onSuccess: () => {
+        handleMenuClose();
+        router.push("/");
+      },
+    });
   };
 
   const handleProfile = () => {
     handleMenuClose();
-    router.push('/profile');
+    router.push("/profile");
   };
 
   const handleSettings = () => {
     handleMenuClose();
-    router.push('/settings');
+    router.push("/settings");
   };
 
   return (
     <AppBar
-      position='sticky'
+      position="sticky"
       elevation={0}
       sx={{
-        bgcolor: 'rgba(255, 255, 255, 0.98)',
-        backdropFilter: 'blur(12px)',
-        borderBottom: '1px solid',
-        borderColor: 'divider',
-        boxShadow: '0 2px 12px rgba(106, 27, 59, 0.08)',
+        bgcolor: "rgba(255, 255, 255, 0.98)",
+        backdropFilter: "blur(12px)",
+        borderBottom: "1px solid",
+        borderColor: "divider",
+        boxShadow: "0 2px 12px rgba(106, 27, 59, 0.08)",
       }}
     >
-      <Container maxWidth='xl'>
+      <Container maxWidth="xl">
         <Toolbar disableGutters>
           {/* Logo */}
           <Box
-            display='flex'
-            alignItems='center'
+            display="flex"
+            alignItems="center"
             gap={1}
-            sx={{ cursor: 'pointer', flexGrow: { xs: 1, md: 0 } }}
-            onClick={() => router.push('/')}
+            sx={{ cursor: "pointer", flexGrow: { xs: 1, md: 0 } }}
+            onClick={() => router.push("/")}
           >
-            <Logo
-              size={50}
-              variant='white'
-            />
+            <Logo size={50} variant="white" />
           </Box>
 
           {/* Spacer */}
-          <Box sx={{ flexGrow: 1, display: { xs: 'none', md: 'block' } }} />
+          <Box sx={{ flexGrow: 1, display: { xs: "none", md: "block" } }} />
 
           {/* User Section - Solo renderiza después de hidratar para evitar mismatch */}
           {hydrated && isAuthenticated && user ? (
-            <Box
-              display='flex'
-              alignItems='center'
-              gap={2}
-            >
+            <Box display="flex" alignItems="center" gap={2}>
               {/* Credits Display */}
               <motion.div
                 initial={{ scale: 0.8, opacity: 0 }}
@@ -106,7 +104,7 @@ export function Navbar() {
                     bgcolor: theme.palette.secondary.main,
                     color: theme.palette.secondary.contrastText,
                     fontWeight: 600,
-                    '& .MuiChip-icon': {
+                    "& .MuiChip-icon": {
                       color: theme.palette.secondary.contrastText,
                     },
                   }}
@@ -115,10 +113,7 @@ export function Navbar() {
 
               {/* User Menu */}
               <Box>
-                <IconButton
-                  onClick={handleMenuOpen}
-                  sx={{ p: 0 }}
-                >
+                <IconButton onClick={handleMenuOpen} sx={{ p: 0 }}>
                   <Avatar
                     src={user.avatar || undefined}
                     alt={user.name}
@@ -128,15 +123,15 @@ export function Navbar() {
                       height: 40,
                     }}
                   >
-                    {user.name?.charAt(0).toUpperCase() || 'U'}
+                    {user.name?.charAt(0).toUpperCase() || "U"}
                   </Avatar>
                 </IconButton>
                 <Menu
                   anchorEl={anchorEl}
                   open={Boolean(anchorEl)}
                   onClose={handleMenuClose}
-                  transformOrigin={{ horizontal: 'right', vertical: 'top' }}
-                  anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
+                  transformOrigin={{ horizontal: "right", vertical: "top" }}
+                  anchorOrigin={{ horizontal: "right", vertical: "bottom" }}
                   PaperProps={{
                     sx: {
                       mt: 1.5,
@@ -145,22 +140,11 @@ export function Navbar() {
                   }}
                 >
                   {/* User Info */}
-                  <Box
-                    px={2}
-                    py={1}
-                    borderBottom={1}
-                    borderColor='divider'
-                  >
-                    <Typography
-                      variant='subtitle2'
-                      fontWeight={600}
-                    >
+                  <Box px={2} py={1} borderBottom={1} borderColor="divider">
+                    <Typography variant="subtitle2" fontWeight={600}>
                       {user.name}
                     </Typography>
-                    <Typography
-                      variant='caption'
-                      color='text.secondary'
-                    >
+                    <Typography variant="caption" color="text.secondary">
                       {user.email}
                     </Typography>
                   </Box>
@@ -174,10 +158,7 @@ export function Navbar() {
                     <SettingsIcon sx={{ mr: 1.5, fontSize: 20 }} />
                     Configuración
                   </MenuItem>
-                  <MenuItem
-                    onClick={handleLogout}
-                    sx={{ color: 'error.main' }}
-                  >
+                  <MenuItem onClick={handleLogout} sx={{ color: "error.main" }}>
                     <LogoutIcon sx={{ mr: 1.5, fontSize: 20 }} />
                     Cerrar Sesión
                   </MenuItem>
@@ -186,26 +167,23 @@ export function Navbar() {
             </Box>
           ) : hydrated ? (
             // Guest buttons - también esperamos hidratación
-            <Box
-              display='flex'
-              gap={1}
-            >
+            <Box display="flex" gap={1}>
               <motion.div
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
               >
                 <Chip
-                  label='Iniciar Sesión'
-                  onClick={() => router.push('/auth/login')}
+                  label="Iniciar Sesión"
+                  onClick={() => router.push("/auth/login")}
                   sx={{
-                    cursor: 'pointer',
+                    cursor: "pointer",
                     fontWeight: 600,
-                    bgcolor: 'transparent',
-                    border: '2px solid',
-                    borderColor: 'primary.main',
-                    color: 'primary.main',
-                    '&:hover': {
-                      bgcolor: 'rgba(106, 27, 59, 0.04)',
+                    bgcolor: "transparent",
+                    border: "2px solid",
+                    borderColor: "primary.main",
+                    color: "primary.main",
+                    "&:hover": {
+                      bgcolor: "rgba(106, 27, 59, 0.04)",
                     },
                   }}
                 />
@@ -215,14 +193,14 @@ export function Navbar() {
                 whileTap={{ scale: 0.95 }}
               >
                 <Chip
-                  label='Registrarse'
-                  onClick={() => router.push('/auth/register')}
+                  label="Registrarse"
+                  onClick={() => router.push("/auth/register")}
                   sx={{
                     bgcolor: theme.palette.secondary.main,
                     color: theme.palette.secondary.contrastText,
-                    cursor: 'pointer',
+                    cursor: "pointer",
                     fontWeight: 600,
-                    '&:hover': {
+                    "&:hover": {
                       bgcolor: theme.palette.secondary.dark,
                     },
                   }}

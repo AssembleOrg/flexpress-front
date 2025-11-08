@@ -2,7 +2,6 @@
 
 import { useMemo } from "react";
 import toast from "react-hot-toast";
-import { authApi } from "@/lib/api/auth";
 import {
   type CreateMatchRequest,
   travelMatchingApi,
@@ -21,6 +20,14 @@ export function useTravelMatch() {
    * Create a new travel match (user searches for available charters)
    */
   const createMatch = async () => {
+    // Verificar autenticación PRIMERO
+    const { isAuthenticated, token } = useAuthStore.getState();
+    if (!isAuthenticated || !token) {
+      toast.error("Debes iniciar sesión para crear una búsqueda");
+      console.log("❌ [MATCH] User not authenticated");
+      return null;
+    }
+
     if (!store.pickupCoords || !store.destinationCoords) {
       toast.error("Por favor selecciona origen y destino");
       return null;
@@ -35,6 +42,29 @@ export function useTravelMatch() {
     store.setSearching(true);
 
     try {
+      // Validate coordinates are valid numbers before sending
+      if (
+        typeof store.pickupCoords.lat !== "number" ||
+        typeof store.pickupCoords.lon !== "number" ||
+        Number.isNaN(store.pickupCoords.lat) ||
+        Number.isNaN(store.pickupCoords.lon)
+      ) {
+        toast.error("Coordenadas de origen inválidas. Selecciona de nuevo.");
+        store.setLoading(false);
+        return null;
+      }
+
+      if (
+        typeof store.destinationCoords.lat !== "number" ||
+        typeof store.destinationCoords.lon !== "number" ||
+        Number.isNaN(store.destinationCoords.lat) ||
+        Number.isNaN(store.destinationCoords.lon)
+      ) {
+        toast.error("Coordenadas de destino inválidas. Selecciona de nuevo.");
+        store.setLoading(false);
+        return null;
+      }
+
       const matchRequest: CreateMatchRequest = {
         pickupAddress: store.pickupAddress,
         pickupLatitude: store.pickupCoords.lat.toString(),
@@ -46,6 +76,15 @@ export function useTravelMatch() {
         workersCount: store.workersCount,
         scheduledDate: store.scheduledDate || undefined,
       };
+
+      console.log("📍 Pickup coords:", {
+        lat: store.pickupCoords.lat,
+        lon: store.pickupCoords.lon,
+      });
+      console.log("📍 Destination coords:", {
+        lat: store.destinationCoords.lat,
+        lon: store.destinationCoords.lon,
+      });
 
       const result = await travelMatchingApi.create(matchRequest);
 
@@ -59,7 +98,42 @@ export function useTravelMatch() {
       return result;
     } catch (error) {
       console.error("Error creating match:", error);
-      toast.error("Error al crear búsqueda de viaje");
+
+      let errorMessage = "Error al crear búsqueda de viaje";
+
+      if (error instanceof Error) {
+        const errorStr = error.message.toLowerCase();
+
+        // Specific error messages based on HTTP status or error type
+        if (errorStr.includes("401") || errorStr.includes("unauthorized")) {
+          errorMessage = "Error de autenticación. Inicia sesión nuevamente.";
+        } else if (errorStr.includes("403") || errorStr.includes("forbidden")) {
+          errorMessage = "No tienes permiso para crear búsquedas.";
+        } else if (
+          errorStr.includes("400") ||
+          errorStr.includes("bad request")
+        ) {
+          errorMessage = "Datos inválidos. Verifica origen y destino.";
+        } else if (errorStr.includes("404") || errorStr.includes("not found")) {
+          errorMessage = "El servicio de búsqueda no está disponible.";
+        } else if (
+          errorStr.includes("500") ||
+          errorStr.includes("internal server")
+        ) {
+          errorMessage = "Error del servidor. Intenta más tarde.";
+        } else if (
+          errorStr.includes("network") ||
+          errorStr.includes("fetch") ||
+          errorStr.includes("econnrefused")
+        ) {
+          errorMessage = "Error de conexión. Verifica tu internet.";
+        } else if (error.message) {
+          // Use the actual error message if available
+          errorMessage = error.message;
+        }
+      }
+
+      toast.error(errorMessage);
       return null;
     } finally {
       store.setLoading(false);
@@ -213,13 +287,19 @@ export function useTravelMatch() {
         return;
       }
 
-      const updatedUser = await authApi.updateUser(user.id, {
+      await travelMatchingApi.updateCharterOrigin(
+        originLatitude.toString(),
+        originLongitude.toString(),
+        originAddress,
+      );
+
+      updateUser({
+        ...user,
         originAddress,
         originLatitude: originLatitude.toString(),
         originLongitude: originLongitude.toString(),
       });
 
-      updateUser(updatedUser);
       toast.success("Ubicación de base actualizada");
     } catch (error) {
       console.error("Error updating charter origin:", error);

@@ -31,7 +31,7 @@ import { authApi } from "@/lib/api/auth";
 import { useAuthStore } from "@/lib/stores/authStore";
 
 export function ProfileContent() {
-  const router = useRouter();
+  const _router = useRouter();
   const theme = useTheme();
   const { user, updateUser } = useAuthStore();
   const [isEditing, setIsEditing] = useState(false);
@@ -73,10 +73,10 @@ export function ProfileContent() {
 
   const handleCancel = () => {
     setFormData({
-      name: user!.name || "",
-      email: user!.email || "",
-      number: user!.number || "",
-      address: user!.address || "",
+      name: user?.name || "",
+      email: user?.email || "",
+      number: user?.number || "",
+      address: user?.address || "",
     });
     setIsEditing(false);
   };
@@ -86,7 +86,7 @@ export function ProfileContent() {
 
     setIsSavingOrigin(true);
     try {
-      const updatedUser = await authApi.updateUser(user!.id, {
+      const updatedUser = await authApi.updateUser(user?.id || "", {
         originAddress: originData.address,
         originLatitude: originData.lat.toString(),
         originLongitude: originData.lon.toString(),
@@ -169,8 +169,8 @@ export function ProfileContent() {
                   borderColor="divider"
                 >
                   <Avatar
-                    src={user!.avatar || undefined}
-                    alt={user!.name}
+                    src={user?.avatar || undefined}
+                    alt={user?.name}
                     sx={{
                       width: 100,
                       height: 100,
@@ -178,7 +178,7 @@ export function ProfileContent() {
                       fontSize: "2rem",
                     }}
                   >
-                    {user!.name?.charAt(0).toUpperCase() || "U"}
+                    {user?.name?.charAt(0).toUpperCase() || "U"}
                   </Avatar>
                   <Box>
                     <Typography
@@ -186,10 +186,10 @@ export function ProfileContent() {
                       fontWeight={700}
                       color="primary.main"
                     >
-                      {user!.name}
+                      {user?.name}
                     </Typography>
                     <Typography variant="body2" color="text.secondary">
-                      {user!.email}
+                      {user?.email}
                     </Typography>
                     <Box mt={1} display="flex" gap={1}>
                       <Box
@@ -204,7 +204,7 @@ export function ProfileContent() {
                           textTransform: "capitalize",
                         }}
                       >
-                        {user!.role}
+                        {user?.role}
                       </Box>
                     </Box>
                   </Box>
@@ -290,7 +290,7 @@ export function ProfileContent() {
               </Paper>
 
               {/* Charter Work Location Section */}
-              {user!.role === "charter" && (
+              {user?.role === "charter" && (
                 <Paper
                   elevation={2}
                   sx={{ p: { xs: 3, md: 4 }, borderRadius: 3, mb: 3 }}
@@ -334,7 +334,7 @@ export function ProfileContent() {
                     </Box>
                   )}
 
-                  {user!.originAddress && !originData && (
+                  {user?.originAddress && !originData && (
                     <Box
                       sx={{
                         p: 2,
@@ -356,7 +356,7 @@ export function ProfileContent() {
                           variant="body2"
                           sx={{ color: "success.dark", mt: 0.5 }}
                         >
-                          {user!.originAddress}
+                          {user?.originAddress}
                         </Typography>
                       </Box>
                     </Box>
@@ -408,7 +408,7 @@ export function ProfileContent() {
                       variant="h5"
                       sx={{ color: "secondary.main", fontWeight: 700 }}
                     >
-                      {user!.credits || 0} créditos
+                      {user?.credits || 0} créditos
                     </Typography>
                   </CardContent>
                 </Card>
@@ -418,7 +418,9 @@ export function ProfileContent() {
                       Miembro desde
                     </Typography>
                     <Typography variant="h6">
-                      {new Date(user!.createdAt).toLocaleDateString("es-AR")}
+                      {new Date(
+                        user?.createdAt || new Date(),
+                      ).toLocaleDateString("es-AR")}
                     </Typography>
                   </CardContent>
                 </Card>

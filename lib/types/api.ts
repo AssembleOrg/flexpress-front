@@ -104,6 +104,8 @@ export interface TravelMatch {
   workersCount: number;
   scheduledDate: string | null;
   expiresAt: string | null;
+  conversationId?: string; // Created when charter accepts match
+  tripId?: string | null;
   createdAt: string;
   updatedAt: string;
   user?: Partial<User>;

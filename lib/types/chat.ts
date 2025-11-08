@@ -1,11 +1,4 @@
-export interface Message {
-  id: string;
-  tripId: string;
-  senderId: string;
-  content: string;
-  timestamp: string;
-  status: "sent" | "delivered" | "failed";
-}
+import type { Message } from "@/lib/types/api";
 
 export interface ChatState {
   messages: Message[];
