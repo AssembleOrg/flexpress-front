@@ -3,6 +3,8 @@
  * Centralizes all API service exports for cleaner imports
  */
 
+export type * from "./admin";
+export { adminApi } from "./admin";
 export type * from "./auth";
 export { authApi } from "./auth";
 export type * from "./feedback";
