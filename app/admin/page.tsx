@@ -15,6 +15,7 @@ import { UsersTable } from "@/components/admin/UsersTable";
 import { ReportsTable } from "@/components/admin/ReportsTable";
 import { TripsTable } from "@/components/admin/TripsTable";
 import { PaymentsTable } from "@/components/admin/PaymentsTable";
+import { SystemConfigTab } from "@/components/admin/SystemConfigTab";
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -67,7 +68,11 @@ export default function AdminPage() {
             },
           }}
         >
-          <Tab label="Usuarios" id="admin-tab-0" aria-controls="admin-tabpanel-0" />
+          <Tab
+            label="Usuarios"
+            id="admin-tab-0"
+            aria-controls="admin-tabpanel-0"
+          />
 
           <Tab
             label={
@@ -92,7 +97,11 @@ export default function AdminPage() {
             aria-controls="admin-tabpanel-1"
           />
 
-          <Tab label="Viajes" id="admin-tab-2" aria-controls="admin-tabpanel-2" />
+          <Tab
+            label="Viajes"
+            id="admin-tab-2"
+            aria-controls="admin-tabpanel-2"
+          />
 
           {/* Pagos tab only for admin */}
           {user?.role === "admin" && (
@@ -100,6 +109,15 @@ export default function AdminPage() {
               label="Pagos"
               id="admin-tab-3"
               aria-controls="admin-tabpanel-3"
+            />
+          )}
+
+          {/* Configuración tab only for admin */}
+          {user?.role === "admin" && (
+            <Tab
+              label="Configuración"
+              id="admin-tab-4"
+              aria-controls="admin-tabpanel-4"
             />
           )}
         </Tabs>
@@ -121,6 +139,12 @@ export default function AdminPage() {
       {user?.role === "admin" && (
         <TabPanel value={activeTab} index={3}>
           <PaymentsTable />
+        </TabPanel>
+      )}
+
+      {user?.role === "admin" && (
+        <TabPanel value={activeTab} index={4}>
+          <SystemConfigTab />
         </TabPanel>
       )}
     </Container>

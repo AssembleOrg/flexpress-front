@@ -1,11 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import {
-  DataGrid,
-  GridColDef,
-  GridPaginationModel,
-} from "@mui/x-data-grid";
+import { DataGrid, GridColDef, GridPaginationModel } from "@mui/x-data-grid";
 import {
   Box,
   Button,
@@ -45,7 +41,10 @@ export function ReportsTable() {
   });
 
   const getStatusColor = (status: string) => {
-    const colors: Record<string, "default" | "primary" | "error" | "warning" | "success"> = {
+    const colors: Record<
+      string,
+      "default" | "primary" | "error" | "warning" | "success"
+    > = {
       pending: "error",
       investigating: "warning",
       resolved: "success",
@@ -103,13 +102,7 @@ export function ReportsTable() {
           };
         }
 
-        return (
-          <Chip
-            label={getStatusLabel(status)}
-            size="small"
-            sx={chipSx}
-          />
-        );
+        return <Chip label={getStatusLabel(status)} size="small" sx={chipSx} />;
       },
     },
     {
@@ -162,7 +155,9 @@ export function ReportsTable() {
 
   // Hide reporter, reported, createdAt columns on mobile
   const visibleColumns = isMobile
-    ? columns.filter((col) => !["reporter", "reported", "createdAt"].includes(col.field))
+    ? columns.filter(
+        (col) => !["reporter", "reported", "createdAt"].includes(col.field),
+      )
     : columns;
 
   return (

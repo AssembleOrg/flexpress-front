@@ -4,7 +4,14 @@
  */
 
 import api from "@/lib/api";
-import type { ApiResponse, User, Report, Trip, Payment } from "@/lib/types/api";
+import type {
+  ApiResponse,
+  User,
+  Report,
+  Trip,
+  Payment,
+  SystemConfig,
+} from "@/lib/types/api";
 import type {
   UserFilters,
   ReportFilters,
@@ -12,6 +19,7 @@ import type {
   PaymentFilters,
   PaginatedResponse,
   UpdateReportRequest,
+  UpdateSystemConfigRequest,
 } from "@/lib/types/admin";
 
 export const adminApi = {
@@ -22,7 +30,9 @@ export const adminApi = {
   /**
    * Get all users with filters
    */
-  getUsers: async (filters: UserFilters = {}): Promise<PaginatedResponse<User>> => {
+  getUsers: async (
+    filters: UserFilters = {},
+  ): Promise<PaginatedResponse<User>> => {
     const params = new URLSearchParams();
 
     if (filters.role) params.append("role", filters.role);
@@ -30,9 +40,9 @@ export const adminApi = {
     if (filters.page) params.append("page", String(filters.page));
     if (filters.limit) params.append("limit", String(filters.limit));
 
-    const response = await api.get<ApiResponse<User[] | PaginatedResponse<User>>>(
-      `/users?${params.toString()}`,
-    );
+    const response = await api.get<
+      ApiResponse<User[] | PaginatedResponse<User>>
+    >(`/users?${params.toString()}`);
 
     // Extraer response.data.data
     // biome-ignore lint/style/noNonNullAssertion: axios response guarantees data
@@ -106,10 +116,7 @@ export const adminApi = {
   /**
    * Update user
    */
-  updateUser: async (
-    id: string,
-    data: Partial<User>,
-  ): Promise<User> => {
+  updateUser: async (id: string, data: Partial<User>): Promise<User> => {
     const response = await api.patch<ApiResponse<User>>(`/users/${id}`, data);
 
     // biome-ignore lint/style/noNonNullAssertion: axios response guarantees data
@@ -139,9 +146,9 @@ export const adminApi = {
     if (filters.page) params.append("page", String(filters.page));
     if (filters.limit) params.append("limit", String(filters.limit));
 
-    const response = await api.get<ApiResponse<Report[] | PaginatedResponse<Report>>>(
-      `/reports?${params.toString()}`,
-    );
+    const response = await api.get<
+      ApiResponse<Report[] | PaginatedResponse<Report>>
+    >(`/reports?${params.toString()}`);
 
     // Extraer response.data.data
     // biome-ignore lint/style/noNonNullAssertion: axios response guarantees data
@@ -212,15 +219,17 @@ export const adminApi = {
   /**
    * Get all trips with pagination
    */
-  getTrips: async (filters: TripFilters = {}): Promise<PaginatedResponse<Trip>> => {
+  getTrips: async (
+    filters: TripFilters = {},
+  ): Promise<PaginatedResponse<Trip>> => {
     const params = new URLSearchParams();
 
     if (filters.page) params.append("page", String(filters.page));
     if (filters.limit) params.append("limit", String(filters.limit));
 
-    const response = await api.get<ApiResponse<Trip[] | PaginatedResponse<Trip>>>(
-      `/trips?${params.toString()}`,
-    );
+    const response = await api.get<
+      ApiResponse<Trip[] | PaginatedResponse<Trip>>
+    >(`/trips?${params.toString()}`);
 
     // Extraer response.data.data
     // biome-ignore lint/style/noNonNullAssertion: axios response guarantees data
@@ -276,9 +285,9 @@ export const adminApi = {
     if (filters.page) params.append("page", String(filters.page));
     if (filters.limit) params.append("limit", String(filters.limit));
 
-    const response = await api.get<ApiResponse<Payment[] | PaginatedResponse<Payment>>>(
-      `/payments?${params.toString()}`,
-    );
+    const response = await api.get<
+      ApiResponse<Payment[] | PaginatedResponse<Payment>>
+    >(`/payments?${params.toString()}`);
 
     // Extraer response.data.data
     // biome-ignore lint/style/noNonNullAssertion: axios response guarantees data
@@ -317,5 +326,44 @@ export const adminApi = {
         totalPages: 0,
       },
     };
+  },
+
+  // ============================================
+  // CONFIGURACIÓN DEL SISTEMA
+  // ============================================
+
+  /**
+   * Get all system configurations
+   */
+  getSystemConfigs: async (): Promise<SystemConfig[]> => {
+    const response =
+      await api.get<ApiResponse<SystemConfig[]>>("/system-config/all");
+
+    // biome-ignore lint/style/noNonNullAssertion: axios response guarantees data
+    const responseData = response.data.data!;
+
+    // Si es array directo, retornarlo
+    if (Array.isArray(responseData)) {
+      return responseData;
+    }
+
+    // Fallback: retornar vacío
+    return [];
+  },
+
+  /**
+   * Update system configuration by ID
+   */
+  updateSystemConfig: async (
+    id: string,
+    data: UpdateSystemConfigRequest,
+  ): Promise<SystemConfig> => {
+    const response = await api.patch<ApiResponse<SystemConfig>>(
+      `/system-config/${id}`,
+      data,
+    );
+
+    // biome-ignore lint/style/noNonNullAssertion: axios response guarantees data
+    return response.data.data!;
   },
 };

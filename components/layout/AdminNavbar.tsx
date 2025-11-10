@@ -73,7 +73,10 @@ export function AdminNavbar() {
         {/* User Info y Menu */}
         <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
           <Box sx={{ textAlign: "right" }}>
-            <Typography variant="body2" sx={{ fontWeight: 500, color: "#212121" }}>
+            <Typography
+              variant="body2"
+              sx={{ fontWeight: 500, color: "#212121" }}
+            >
               {user?.name}
             </Typography>
             <Typography variant="caption" sx={{ color: "#380116" }}>
@@ -115,7 +118,10 @@ export function AdminNavbar() {
               <DashboardIcon sx={{ mr: 1 }} />
               Panel de Control
             </MenuItem>
-            <MenuItem onClick={handleLogout} disabled={logoutMutation.isPending}>
+            <MenuItem
+              onClick={handleLogout}
+              disabled={logoutMutation.isPending}
+            >
               <LogoutIcon sx={{ mr: 1 }} />
               {logoutMutation.isPending ? "Cerrando..." : "Cerrar Sesión"}
             </MenuItem>

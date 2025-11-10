@@ -142,7 +142,8 @@ function AdminLoginForm() {
                       width: 60,
                       height: 60,
                       borderRadius: "50%",
-                      background: "linear-gradient(135deg, #380116 0%, #4b011d 100%)",
+                      background:
+                        "linear-gradient(135deg, #380116 0%, #4b011d 100%)",
                       boxShadow: "0 4px 12px rgba(56, 1, 22, 0.6)",
                     }}
                   >
@@ -225,18 +226,22 @@ function AdminLoginForm() {
                       fontSize: "1.125rem",
                       fontWeight: 600,
                       mb: 3,
-                      background: "linear-gradient(135deg, #380116 0%, #4b011d 100%)",
+                      background:
+                        "linear-gradient(135deg, #380116 0%, #4b011d 100%)",
                       color: "white",
                       "&:hover": {
                         boxShadow: "0 6px 20px rgba(56, 1, 22, 0.5)",
                       },
                       "&:disabled": {
-                        background: "linear-gradient(135deg, #380116 0%, #4b011d 100%)",
+                        background:
+                          "linear-gradient(135deg, #380116 0%, #4b011d 100%)",
                         opacity: 0.7,
                       },
                     }}
                   >
-                    {loginMutation.isPending ? "Ingresando..." : "Iniciar Sesión"}
+                    {loginMutation.isPending
+                      ? "Ingresando..."
+                      : "Iniciar Sesión"}
                   </Button>
                 </Box>
 

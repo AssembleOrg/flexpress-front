@@ -1,16 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import {
-  DataGrid,
-  GridColDef,
-  GridPaginationModel,
-} from "@mui/x-data-grid";
-import {
-  Box,
-  useMediaQuery,
-  useTheme,
-} from "@mui/material";
+import Link from "next/link";
+import { DataGrid, GridColDef, GridPaginationModel } from "@mui/x-data-grid";
+import { Box, useMediaQuery, useTheme } from "@mui/material";
 import { useAdminTrips } from "@/lib/hooks/queries/useAdminQueries";
 import type { Trip } from "@/lib/types/api";
 
@@ -41,13 +34,53 @@ export function TripsTable() {
       field: "user",
       headerName: "Usuario",
       width: 150,
-      renderCell: (params) => params.row.user?.name || "N/A",
+      renderCell: (params) => {
+        if (!params.row.user) return "N/A";
+        return (
+          <Link
+            href={`/admin/users/${params.row.user.id}`}
+            style={{
+              color: "#b7850d",
+              textDecoration: "none",
+              cursor: "pointer",
+            }}
+            onMouseEnter={(e) =>
+              (e.currentTarget.style.textDecoration = "underline")
+            }
+            onMouseLeave={(e) =>
+              (e.currentTarget.style.textDecoration = "none")
+            }
+          >
+            {params.row.user.name}
+          </Link>
+        );
+      },
     },
     {
       field: "charter",
       headerName: "Conductor",
       width: 150,
-      renderCell: (params) => params.row.charter?.name || "N/A",
+      renderCell: (params) => {
+        if (!params.row.charter) return "N/A";
+        return (
+          <Link
+            href={`/admin/users/${params.row.charter.id}`}
+            style={{
+              color: "#b7850d",
+              textDecoration: "none",
+              cursor: "pointer",
+            }}
+            onMouseEnter={(e) =>
+              (e.currentTarget.style.textDecoration = "underline")
+            }
+            onMouseLeave={(e) =>
+              (e.currentTarget.style.textDecoration = "none")
+            }
+          >
+            {params.row.charter.name}
+          </Link>
+        );
+      },
     },
     {
       field: "address",
@@ -85,7 +118,9 @@ export function TripsTable() {
 
   // Hide address, scheduledDate, createdAt columns on mobile
   const visibleColumns = isMobile
-    ? columns.filter((col) => !["address", "scheduledDate", "createdAt"].includes(col.field))
+    ? columns.filter(
+        (col) => !["address", "scheduledDate", "createdAt"].includes(col.field),
+      )
     : columns;
 
   return (

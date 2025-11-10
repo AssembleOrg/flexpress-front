@@ -1,11 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import {
-  DataGrid,
-  GridColDef,
-  GridPaginationModel,
-} from "@mui/x-data-grid";
+import { DataGrid, GridColDef, GridPaginationModel } from "@mui/x-data-grid";
 import {
   Box,
   Button,
@@ -66,7 +62,7 @@ export function UsersTable() {
       filtered = filtered.filter(
         (user) =>
           user.name.toLowerCase().includes(searchLower) ||
-          user.email.toLowerCase().includes(searchLower)
+          user.email.toLowerCase().includes(searchLower),
       );
     }
 
@@ -108,7 +104,10 @@ export function UsersTable() {
   };
 
   const getRoleColor = (role: string) => {
-    const colors: Record<string, "default" | "primary" | "error" | "warning" | "success"> = {
+    const colors: Record<
+      string,
+      "default" | "primary" | "error" | "warning" | "success"
+    > = {
       admin: "error",
       subadmin: "warning",
       user: "primary",
@@ -181,13 +180,7 @@ export function UsersTable() {
           };
         }
 
-        return (
-          <Chip
-            label={getRoleLabel(role)}
-            size="small"
-            sx={chipSx}
-          />
-        );
+        return <Chip label={getRoleLabel(role)} size="small" sx={chipSx} />;
       },
     },
     {
@@ -252,7 +245,9 @@ export function UsersTable() {
 
   // Hide email and createdAt columns on mobile
   const visibleColumns = isMobile
-    ? columns.filter((col) => !["email", "createdAt", "actions"].includes(col.field))
+    ? columns.filter(
+        (col) => !["email", "createdAt", "actions"].includes(col.field),
+      )
     : columns;
 
   return (
@@ -305,10 +300,14 @@ export function UsersTable() {
       </Box>
 
       {/* Delete Confirmation Dialog */}
-      <Dialog open={deleteDialogOpen} onClose={() => setDeleteDialogOpen(false)}>
+      <Dialog
+        open={deleteDialogOpen}
+        onClose={() => setDeleteDialogOpen(false)}
+      >
         <DialogTitle>Confirmar eliminación</DialogTitle>
         <DialogContent>
-          ¿Estás seguro de que deseas eliminar a {userToDelete?.name}? Esta acción no se puede deshacer.
+          ¿Estás seguro de que deseas eliminar a {userToDelete?.name}? Esta
+          acción no se puede deshacer.
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setDeleteDialogOpen(false)}>Cancelar</Button>

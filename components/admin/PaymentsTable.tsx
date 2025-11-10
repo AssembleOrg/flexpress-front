@@ -1,17 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import {
-  DataGrid,
-  GridColDef,
-  GridPaginationModel,
-} from "@mui/x-data-grid";
-import {
-  Box,
-  Chip,
-  useMediaQuery,
-  useTheme,
-} from "@mui/material";
+import Link from "next/link";
+import { DataGrid, GridColDef, GridPaginationModel } from "@mui/x-data-grid";
+import { Box, Chip, useMediaQuery, useTheme } from "@mui/material";
 import { useAdminPayments } from "@/lib/hooks/queries/useAdminQueries";
 import type { Payment } from "@/lib/types/api";
 
@@ -31,7 +23,10 @@ export function PaymentsTable() {
   });
 
   const getStatusColor = (status: string) => {
-    const colors: Record<string, "default" | "primary" | "error" | "warning" | "success"> = {
+    const colors: Record<
+      string,
+      "default" | "primary" | "error" | "warning" | "success"
+    > = {
       pending: "warning",
       completed: "success",
       rejected: "error",
@@ -63,7 +58,27 @@ export function PaymentsTable() {
       headerName: "Usuario",
       flex: 1,
       minWidth: 120,
-      renderCell: (params) => params.row.userId.substring(0, 8),
+      renderCell: (params) => {
+        const shortId = params.row.userId.substring(0, 8);
+        return (
+          <Link
+            href={`/admin/users/${params.row.userId}`}
+            style={{
+              color: "#b7850d",
+              textDecoration: "none",
+              cursor: "pointer",
+            }}
+            onMouseEnter={(e) =>
+              (e.currentTarget.style.textDecoration = "underline")
+            }
+            onMouseLeave={(e) =>
+              (e.currentTarget.style.textDecoration = "none")
+            }
+          >
+            {shortId}
+          </Link>
+        );
+      },
     },
     {
       field: "credits",
@@ -101,13 +116,7 @@ export function PaymentsTable() {
           };
         }
 
-        return (
-          <Chip
-            label={getStatusLabel(status)}
-            size="small"
-            sx={chipSx}
-          />
-        );
+        return <Chip label={getStatusLabel(status)} size="small" sx={chipSx} />;
       },
     },
     {

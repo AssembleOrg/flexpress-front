@@ -281,7 +281,9 @@ export default function UserEditPage() {
                 onClick={handleSubmit(onSubmit)}
                 disabled={updateUserMutation.isPending}
               >
-                {updateUserMutation.isPending ? "Guardando..." : "Guardar Cambios"}
+                {updateUserMutation.isPending
+                  ? "Guardando..."
+                  : "Guardar Cambios"}
               </Button>
 
               <Button
@@ -297,10 +299,14 @@ export default function UserEditPage() {
       </Card>
 
       {/* Delete Confirmation Dialog */}
-      <Dialog open={deleteDialogOpen} onClose={() => setDeleteDialogOpen(false)}>
+      <Dialog
+        open={deleteDialogOpen}
+        onClose={() => setDeleteDialogOpen(false)}
+      >
         <DialogTitle>Confirmar eliminación</DialogTitle>
         <DialogContent>
-          ¿Estás completamente seguro de que deseas eliminar a <strong>{user.name}</strong>?
+          ¿Estás completamente seguro de que deseas eliminar a{" "}
+          <strong>{user.name}</strong>?
           <br />
           <br />
           Esta acción es permanente y no se puede deshacer.

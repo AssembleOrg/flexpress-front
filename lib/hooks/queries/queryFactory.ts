@@ -1,5 +1,10 @@
 import { type UseQueryOptions, useQuery } from "@tanstack/react-query";
-import type { UserFilters, ReportFilters, TripFilters, PaymentFilters } from "@/lib/types/admin";
+import type {
+  UserFilters,
+  ReportFilters,
+  TripFilters,
+  PaymentFilters,
+} from "@/lib/types/admin";
 
 /**
  * Query Key Factory
@@ -89,6 +94,9 @@ export const queryKeys = {
       all: () => [...queryKeys.admin.all, "payments"] as const,
       list: (filters: PaymentFilters) =>
         [...queryKeys.admin.all, "payments", "list", filters] as const,
+    },
+    systemConfigs: {
+      all: () => [...queryKeys.admin.all, "system-configs"] as const,
     },
   },
 };

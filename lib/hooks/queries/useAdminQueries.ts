@@ -13,7 +13,13 @@ import type {
   PaymentFilters,
   PaginatedResponse,
 } from "@/lib/types/admin";
-import type { User, Report, Trip, Payment } from "@/lib/types/api";
+import type {
+  User,
+  Report,
+  Trip,
+  Payment,
+  SystemConfig,
+} from "@/lib/types/api";
 
 // ============================================
 // USUARIOS
@@ -102,5 +108,21 @@ export function useAdminPayments(filters: PaymentFilters = {}) {
     queryFn: () => adminApi.getPayments(filters),
     staleTime: 1000 * 60 * 5, // 5 minutes
     gcTime: 1000 * 60 * 15, // 15 minutes
+  });
+}
+
+// ============================================
+// CONFIGURACIÓN DEL SISTEMA
+// ============================================
+
+/**
+ * Get all system configurations
+ */
+export function useSystemConfigs() {
+  return useQuery<SystemConfig[]>({
+    queryKey: queryKeys.admin.systemConfigs.all(),
+    queryFn: () => adminApi.getSystemConfigs(),
+    staleTime: 1000 * 60 * 5, // 5 minutes - configs change rarely
+    gcTime: 1000 * 60 * 30, // 30 minutes
   });
 }

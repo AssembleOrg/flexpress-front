@@ -68,7 +68,10 @@ export default function ReportDetailPage() {
   };
 
   const getStatusColor = (status: string) => {
-    const colors: Record<string, "default" | "primary" | "error" | "warning" | "success"> = {
+    const colors: Record<
+      string,
+      "default" | "primary" | "error" | "warning" | "success"
+    > = {
       pending: "error",
       investigating: "warning",
       resolved: "success",
@@ -126,7 +129,11 @@ export default function ReportDetailPage() {
 
       {/* Header */}
       <Box sx={{ mb: 4 }}>
-        <Stack direction={isMobile ? "column" : "row"} spacing={2} alignItems="flex-start">
+        <Stack
+          direction={isMobile ? "column" : "row"}
+          spacing={2}
+          alignItems="flex-start"
+        >
           <Box sx={{ flex: 1 }}>
             <Typography variant="h5" sx={{ fontWeight: 700, mb: 1 }}>
               Reporte #{report.id.substring(0, 8)}
@@ -150,7 +157,11 @@ export default function ReportDetailPage() {
           {/* Reportador */}
           <Card sx={{ flex: 1 }}>
             <CardContent>
-              <Typography variant="subtitle2" color="textSecondary" sx={{ mb: 1 }}>
+              <Typography
+                variant="subtitle2"
+                color="textSecondary"
+                sx={{ mb: 1 }}
+              >
                 REPORTADOR
               </Typography>
               <Stack direction="row" spacing={2} alignItems="center">
@@ -172,7 +183,11 @@ export default function ReportDetailPage() {
           {/* Reportado */}
           <Card sx={{ flex: 1 }}>
             <CardContent>
-              <Typography variant="subtitle2" color="textSecondary" sx={{ mb: 1 }}>
+              <Typography
+                variant="subtitle2"
+                color="textSecondary"
+                sx={{ mb: 1 }}
+              >
                 REPORTADO
               </Typography>
               <Stack direction="row" spacing={2} alignItems="center">
@@ -205,12 +220,21 @@ export default function ReportDetailPage() {
         {/* Conversation Messages */}
         {report.conversation?.messages && (
           <Paper sx={{ p: 3 }}>
-            <Typography variant="subtitle2" color="textSecondary" sx={{ mb: 2 }}>
+            <Typography
+              variant="subtitle2"
+              color="textSecondary"
+              sx={{ mb: 2 }}
+            >
               HISTORIAL DE MENSAJES ({report.conversation.messages.length})
             </Typography>
             <Stack
               spacing={2}
-              sx={{ maxHeight: 400, overflowY: "auto", pl: 2, borderLeft: "2px solid #eee" }}
+              sx={{
+                maxHeight: 400,
+                overflowY: "auto",
+                pl: 2,
+                borderLeft: "2px solid #eee",
+              }}
             >
               {report.conversation.messages.map((msg) => (
                 <Box key={msg.id}>
@@ -247,11 +271,9 @@ export default function ReportDetailPage() {
             )}
 
             {/* Show form only for admin and subadmin */}
-            {(currentUser?.role === "admin" || currentUser?.role === "subadmin") && (
-              <Button
-                variant="contained"
-                onClick={() => setDialogOpen(true)}
-              >
+            {(currentUser?.role === "admin" ||
+              currentUser?.role === "subadmin") && (
+              <Button variant="contained" onClick={() => setDialogOpen(true)}>
                 Editar Reporte
               </Button>
             )}
@@ -260,7 +282,12 @@ export default function ReportDetailPage() {
       </Stack>
 
       {/* Edit Dialog */}
-      <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)} maxWidth="sm" fullWidth>
+      <Dialog
+        open={dialogOpen}
+        onClose={() => setDialogOpen(false)}
+        maxWidth="sm"
+        fullWidth
+      >
         <DialogTitle>Actualizar Reporte</DialogTitle>
         <DialogContent sx={{ pt: 2 }}>
           <Stack spacing={2}>

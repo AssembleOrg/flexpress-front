@@ -35,7 +35,10 @@ export default function AdminLayout({
   }, [isAuthenticated, user?.role, router, isLoginPage]);
 
   // Show loading while checking auth (skip on login page)
-  if (!isLoginPage && (!isAuthenticated || (user?.role !== "admin" && user?.role !== "subadmin"))) {
+  if (
+    !isLoginPage &&
+    (!isAuthenticated || (user?.role !== "admin" && user?.role !== "subadmin"))
+  ) {
     return (
       <Box
         sx={{

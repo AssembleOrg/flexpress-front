@@ -42,7 +42,11 @@ export function useLogin() {
         targetPath = "/client/dashboard";
       }
 
-      console.log("🔄 [useLogin] Redirigiendo a:", targetPath, `(role: ${response.user.role})`);
+      console.log(
+        "🔄 [useLogin] Redirigiendo a:",
+        targetPath,
+        `(role: ${response.user.role})`,
+      );
       router.push(targetPath);
     },
 

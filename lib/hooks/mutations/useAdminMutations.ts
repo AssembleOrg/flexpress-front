@@ -4,8 +4,11 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import toast from "react-hot-toast";
 import { adminApi } from "@/lib/api/admin";
 import { queryKeys } from "@/lib/hooks/queries/queryFactory";
-import type { User, Report } from "@/lib/types/api";
-import type { UpdateReportRequest } from "@/lib/types/admin";
+import type { User, Report, SystemConfig } from "@/lib/types/api";
+import type {
+  UpdateReportRequest,
+  UpdateSystemConfigRequest,
+} from "@/lib/types/admin";
 
 /**
  * Admin Mutation Hooks
@@ -91,7 +94,10 @@ export function useUpdateReport() {
 
     onSuccess: (updatedReport, { id }) => {
       // Update the specific report in cache
-      queryClient.setQueryData(queryKeys.admin.reports.detail(id), updatedReport);
+      queryClient.setQueryData(
+        queryKeys.admin.reports.detail(id),
+        updatedReport,
+      );
 
       // Invalidate reports list to refetch
       queryClient.invalidateQueries({
@@ -104,6 +110,42 @@ export function useUpdateReport() {
     onError: (error) => {
       console.error("Error updating report:", error);
       toast.error("Error al actualizar el reporte");
+    },
+  });
+}
+
+// ============================================
+// CONFIGURACIÓN DEL SISTEMA
+// ============================================
+
+/**
+ * Update a system configuration
+ * PATCH /system-config/:id
+ */
+export function useUpdateSystemConfig() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      id,
+      data,
+    }: {
+      id: string;
+      data: UpdateSystemConfigRequest;
+    }) => adminApi.updateSystemConfig(id, data),
+
+    onSuccess: () => {
+      // Invalidate system configs to refetch all
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.admin.systemConfigs.all(),
+      });
+
+      toast.success("Configuración actualizada correctamente");
+    },
+
+    onError: (error) => {
+      console.error("Error updating system config:", error);
+      toast.error("Error al actualizar la configuración");
     },
   });
 }
