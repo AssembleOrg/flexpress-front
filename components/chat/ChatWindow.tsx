@@ -1,6 +1,7 @@
 "use client";
 
 import CloseIcon from "@mui/icons-material/Close";
+import MoreVertIcon from "@mui/icons-material/MoreVert";
 import SendIcon from "@mui/icons-material/Send";
 import {
   Box,
@@ -11,12 +12,14 @@ import {
   CircularProgress,
   Divider,
   IconButton,
+  Menu,
+  MenuItem,
   TextField,
   Typography,
 } from "@mui/material";
 import { useEffect, useRef, useState } from "react";
-
 import { MessageBubble } from "@/components/chat/MessageBubble";
+import { ReportModal } from "@/components/modals/ReportModal";
 import {
   useNotifyTyping,
   useSendMessage,
@@ -45,6 +48,8 @@ export function ChatWindow({
   const { user } = useAuthStore();
   const [messageContent, setMessageContent] = useState("");
   const [isTyping, setIsTyping] = useState(false);
+  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const [reportModalOpen, setReportModalOpen] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -63,6 +68,35 @@ export function ChatWindow({
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, []);
+
+  /**
+   * Handle menu open
+   */
+  const handleMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
+    setAnchorEl(event.currentTarget);
+  };
+
+  /**
+   * Handle menu close
+   */
+  const handleMenuClose = () => {
+    setAnchorEl(null);
+  };
+
+  /**
+   * Handle report click - open modal and close menu
+   */
+  const handleReportClick = () => {
+    setReportModalOpen(true);
+    handleMenuClose();
+  };
+
+  /**
+   * Handle report modal close
+   */
+  const handleReportModalClose = () => {
+    setReportModalOpen(false);
+  };
 
   /**
    * Handle sending a message
@@ -161,12 +195,28 @@ export function ChatWindow({
           )
         }
         action={
-          <IconButton size="small" onClick={onClose}>
-            <CloseIcon />
-          </IconButton>
+          <Box sx={{ display: "flex", gap: 1 }}>
+            <IconButton size="small" onClick={handleMenuOpen}>
+              <MoreVertIcon />
+            </IconButton>
+            <IconButton size="small" onClick={onClose}>
+              <CloseIcon />
+            </IconButton>
+          </Box>
         }
         sx={{ pb: 1 }}
       />
+
+      {/* Menu */}
+      <Menu
+        anchorEl={anchorEl}
+        open={Boolean(anchorEl)}
+        onClose={handleMenuClose}
+      >
+        <MenuItem onClick={handleReportClick}>
+          ⚠️ Reportar esta conversación
+        </MenuItem>
+      </Menu>
 
       <Divider />
 
@@ -279,6 +329,15 @@ export function ChatWindow({
           </Typography>
         </Box>
       )}
+
+      {/* Report Modal */}
+      <ReportModal
+        open={reportModalOpen}
+        onClose={handleReportModalClose}
+        conversationId={conversationId}
+        reportedUserId={otherUser.id}
+        reportedUserName={otherUser.name}
+      />
     </Card>
   );
 }

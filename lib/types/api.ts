@@ -1,3 +1,5 @@
+import type { Trip } from "./trip";
+
 // ============================================
 // ENUMS
 // ============================================
@@ -62,29 +64,6 @@ export interface User {
 export interface AuthResponse {
   user: User;
   token: string;
-}
-
-export interface Trip {
-  id: string;
-  userId: string;
-  charterId: string;
-  address: string; // Dirección completa
-  latitude: string;
-  longitude: string;
-  workersCount: number;
-  scheduledDate: string | null;
-  createdAt: string;
-  updatedAt: string;
-  user?: {
-    id: string;
-    name: string;
-    email: string;
-  };
-  charter?: {
-    id: string;
-    name: string;
-    email: string;
-  };
 }
 
 export interface TravelMatch {
@@ -260,3 +239,6 @@ export interface ConversationClosedEvent {
   closedBy: string;
   timestamp: string;
 }
+
+// Re-export Trip for convenience (single source of truth: lib/types/trip.ts)
+export type { Trip };

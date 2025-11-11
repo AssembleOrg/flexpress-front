@@ -1,5 +1,6 @@
 "use client";
 
+import { History } from "@mui/icons-material";
 import {
   Box,
   Button,
@@ -12,6 +13,7 @@ import {
   Switch,
   Typography,
 } from "@mui/material";
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import { AuthNavbar } from "@/components/layout/AuthNavbar";
@@ -27,6 +29,7 @@ import type { TravelMatch } from "@/lib/types/api";
 import { isMatchExpired } from "@/lib/utils/matchHelpers";
 
 export default function DriverDashboard() {
+  const router = useRouter();
   const [isAvailable, setIsAvailable] = useState(false);
   const toggleMutation = useToggleAvailability();
   const { data: charterMatches = [], isLoading: matchesLoading } =
@@ -317,6 +320,25 @@ export default function DriverDashboard() {
             )}
           </Box>
         )}
+
+        {/* Quick Actions */}
+        <Box display="flex" gap={2} mb={3}>
+          <Button
+            variant="outlined"
+            startIcon={<History />}
+            onClick={() => router.push("/driver/trips/history")}
+            sx={{ flex: 1, py: 1.5 }}
+          >
+            Historial
+          </Button>
+          <Button
+            variant="outlined"
+            onClick={() => router.push("/support")}
+            sx={{ flex: 1, py: 1.5 }}
+          >
+            Soporte
+          </Button>
+        </Box>
 
         {/* Information */}
         <Card sx={{ mb: 3 }}>
