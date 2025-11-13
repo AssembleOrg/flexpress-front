@@ -54,7 +54,8 @@ export function useCreateMatch() {
       );
     },
 
-    onError: () => {
+    onError: (error) => {
+      console.error("❌ useCreateMatch error:", error);
       toast.error("Error al crear búsqueda de viaje");
     },
   });
@@ -95,7 +96,8 @@ export function useSelectCharter() {
       toast.success("Chófer seleccionado. Esperando confirmación...");
     },
 
-    onError: () => {
+    onError: (error) => {
+      console.error("❌ useSelectCharter error:", error);
       toast.error("Error al seleccionar chófer");
     },
   });
@@ -135,7 +137,8 @@ export function useRespondToMatch() {
       // in DriverDashboard when it detects status='accepted' without conversationId
     },
 
-    onError: () => {
+    onError: (error) => {
+      console.error("❌ useRespondToMatch error:", error);
       toast.error("Error al responder solicitud");
     },
   });
@@ -165,7 +168,8 @@ export function useCreateTripFromMatch() {
       toast.success("¡Viaje confirmado!");
     },
 
-    onError: () => {
+    onError: (error) => {
+      console.error("❌ useCreateTripFromMatch error:", error);
       toast.error("Error al crear viaje");
     },
   });
@@ -190,7 +194,8 @@ export function useToggleAvailability() {
       toast.success("Disponibilidad actualizada");
     },
 
-    onError: () => {
+    onError: (error) => {
+      console.error("❌ useToggleAvailability error:", error);
       toast.error("Error al actualizar disponibilidad");
     },
   });
@@ -223,7 +228,8 @@ export function useUpdateCharterOrigin() {
       toast.success("Ubicación actualizada");
     },
 
-    onError: () => {
+    onError: (error) => {
+      console.error("❌ useUpdateCharterOrigin error:", error);
       toast.error("Error al actualizar ubicación");
     },
   });

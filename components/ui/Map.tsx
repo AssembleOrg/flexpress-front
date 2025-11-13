@@ -36,6 +36,8 @@ interface MapProps {
   markers?: MapMarker[];
   height?: string;
   isLoading?: boolean;
+  onMarkerDrag?: (type: 'pickup' | 'destination' | 'charter', lat: number, lon: number) => void;
+  allowDragging?: boolean;
 }
 
 /**
@@ -46,6 +48,8 @@ export function MapDisplay({
   markers = [],
   height = "400px",
   isLoading = false,
+  onMarkerDrag,
+  allowDragging = false,
 }: MapProps) {
   // Show empty state if no markers
   if (!isLoading && markers.length === 0) {
@@ -71,7 +75,15 @@ export function MapDisplay({
     );
   }
 
-  return <LeafletMap markers={markers} height={height} isLoading={isLoading} />;
+  return (
+    <LeafletMap
+      markers={markers}
+      height={height}
+      isLoading={isLoading}
+      onMarkerDrag={onMarkerDrag}
+      allowDragging={allowDragging}
+    />
+  );
 }
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars -- Used as export Map
