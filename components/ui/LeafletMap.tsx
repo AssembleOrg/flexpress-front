@@ -3,7 +3,7 @@
 import { Box, CircularProgress, Paper, Typography } from '@mui/material';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import { useEffect, useRef, useState } from 'react';
+import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from 'react';
 
 export interface MapMarker {
   lat: number;
@@ -22,6 +22,10 @@ interface LeafletMapProps {
     lon: number
   ) => void;
   allowDragging?: boolean;
+}
+
+export interface LeafletMapHandle {
+  centerOnMarker: (lat: number, lon: number, zoom?: number) => void;
 }
 
 // Custom marker icons
@@ -63,19 +67,38 @@ const markerIcons = {
  * LeafletMap Component
  * Interactive map using Leaflet and OpenStreetMap
  * Must be rendered client-side only (no SSR)
+ *
+ * Exposed Methods:
+ * - centerOnMarker(lat, lon, zoom?): Center map on a marker with smooth animation
  */
-export default function LeafletMap({
-  markers = [],
-  height = '400px',
-  isLoading = false,
-  onMarkerDrag,
-  allowDragging = false,
-}: LeafletMapProps) {
+const LeafletMap = forwardRef<LeafletMapHandle, LeafletMapProps>(
+  (
+    {
+      markers = [],
+      height = '400px',
+      isLoading = false,
+      onMarkerDrag,
+      allowDragging = false,
+    },
+    ref
+  ) => {
   const mapRef = useRef<L.Map | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const markersRef = useRef<L.Marker[]>([]);
   const polylineRef = useRef<L.Polyline | null>(null);
   const [isMapReady, setIsMapReady] = useState(false);
+
+  // Expose methods to parent component
+  useImperativeHandle(ref, () => ({
+    centerOnMarker: (lat: number, lon: number, zoom = 15) => {
+      if (!mapRef.current) return;
+
+      mapRef.current.flyTo([lat, lon], zoom, {
+        duration: 0.8,
+        easeLinearity: 0.25,
+      });
+    },
+  }));
 
   // Initialize map
   useEffect(() => {
@@ -242,4 +265,9 @@ export default function LeafletMap({
       }}
     />
   );
-}
+  }
+);
+
+LeafletMap.displayName = 'LeafletMap';
+
+export default LeafletMap;

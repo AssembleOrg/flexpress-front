@@ -12,13 +12,13 @@ import {
 } from "@mui/material";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import toast from "react-hot-toast";
 import { geoApi } from "@/lib/api/geo";
 import { AddressInput } from "@/components/ui/AddressInput";
 import { LocationChip } from "@/components/ui/LocationChip";
 // biome-ignore lint/suspicious/noShadowRestrictedNames: exported as alias from Map component
-import { Map } from "@/components/ui/Map";
+import { Map, type MapHandle } from "@/components/ui/Map";
 import { useCreateMatch } from "@/lib/hooks/mutations/useTravelMatchMutations";
 import { useHydrated } from "@/lib/hooks/useHydrated";
 import { useAuthStore } from "@/lib/stores/authStore";
@@ -56,6 +56,9 @@ export default function NewTripPage() {
     lat: number;
     lon: number;
   } | null>(null);
+
+  // Ref para controlar el mapa desde los chips
+  const mapRef = useRef<MapHandle>(null);
 
   // Handle marker drag from map
   const handleMarkerDrag = (
@@ -127,6 +130,22 @@ export default function NewTripPage() {
     !!destinationAddress &&
     !!pickupCoords &&
     !!destinationCoords;
+
+  // Handle centering map on pickup location
+  const handleCenterOnPickup = () => {
+    if (pickupCoords) {
+      mapRef.current?.centerOnMarker(pickupCoords.lat, pickupCoords.lon);
+      toast.success("Centrando en Origen");
+    }
+  };
+
+  // Handle centering map on destination location
+  const handleCenterOnDestination = () => {
+    if (destinationCoords) {
+      mapRef.current?.centerOnMarker(destinationCoords.lat, destinationCoords.lon);
+      toast.success("Centrando en Destino");
+    }
+  };
 
   const handleCreateMatch = () => {
     if (!isFormComplete) return;
@@ -208,10 +227,18 @@ export default function NewTripPage() {
           {(pickupAddress || destinationAddress) && (
             <Box sx={{ mb: 3, display: "flex", gap: 1, flexWrap: "wrap" }}>
               {pickupAddress && (
-                <LocationChip type="pickup" address={pickupAddress} />
+                <LocationChip
+                  type="pickup"
+                  address={pickupAddress}
+                  onClick={handleCenterOnPickup}
+                />
               )}
               {destinationAddress && (
-                <LocationChip type="destination" address={destinationAddress} />
+                <LocationChip
+                  type="destination"
+                  address={destinationAddress}
+                  onClick={handleCenterOnDestination}
+                />
               )}
             </Box>
           )}
@@ -225,6 +252,7 @@ export default function NewTripPage() {
               💡 Arrastra los pines en el mapa para ajustar la ubicación exacta
             </Typography>
             <Map
+              ref={mapRef}
               markers={[
                 ...(pickupCoords
                   ? [
