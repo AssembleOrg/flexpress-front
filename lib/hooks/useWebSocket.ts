@@ -4,6 +4,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
 import { io, type Socket } from "socket.io-client";
 import { useAuthStore } from "@/lib/stores/authStore";
+import { queryKeys } from "@/lib/hooks/queries/queryFactory";
 import type { Message } from "@/lib/types/api";
 
 interface UseWebSocketReturn {
@@ -186,9 +187,10 @@ export function useWebSocket(): UseWebSocketReturn {
         console.log(`🔄 [WebSocket] Match ${matchId} actualizado: ${status}`);
 
         // Invalidar queries relacionadas a matches cuando el estado cambia
-        queryClient.invalidateQueries({ queryKey: ["userMatches"] });
-        queryClient.invalidateQueries({ queryKey: ["charterMatches"] });
-        queryClient.invalidateQueries({ queryKey: ["match", matchId] });
+        // Use same queryKeys as React Query to ensure cache consistency
+        queryClient.invalidateQueries({ queryKey: queryKeys.matches.user("") });
+        queryClient.invalidateQueries({ queryKey: queryKeys.matches.charter("") });
+        queryClient.invalidateQueries({ queryKey: queryKeys.matches.detail(matchId) });
       },
     );
 

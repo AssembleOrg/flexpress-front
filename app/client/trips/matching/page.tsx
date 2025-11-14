@@ -20,6 +20,7 @@ import { CharterCard } from "@/components/ui/CharterCard";
 import { RouteMap } from "@/components/ui/Map";
 import { useSelectCharter } from "@/lib/hooks/mutations/useTravelMatchMutations";
 import { useCharterRating } from "@/lib/hooks/queries/useFeedbackQueries";
+import { useMatch } from "@/lib/hooks/queries/useTravelMatchQueries";
 import { useMatchUpdateListener } from "@/lib/hooks/useWebSocket";
 import { useAuthStore } from "@/lib/stores/authStore";
 import { useTravelMatchStore } from "@/lib/stores/travelMatchStore";
@@ -81,6 +82,9 @@ export default function MatchingPage() {
     destinationCoords,
   } = useTravelMatchStore();
 
+  // Polling fallback: Detect when charter accepts via polling (WebSocket may be unreliable)
+  const { data: polledMatch } = useMatch(currentMatch?.id || "");
+
   // Handler for when match is updated (charter accepts/rejects)
   const handleMatchUpdated = useCallback(
     (status: string) => {
@@ -116,6 +120,29 @@ export default function MatchingPage() {
 
   // Listen for match updates
   useMatchUpdateListener(currentMatch?.id, handleMatchUpdated);
+
+  // Polling effect: Detect when charter accepts via polling (fallback for WebSocket)
+  useEffect(() => {
+    if (!polledMatch || !selectedCharterPending) return;
+
+    if (
+      polledMatch.status === "accepted" &&
+      currentMatch?.status !== "accepted"
+    ) {
+      console.log(
+        `✅ [POLLING] Match accepted detected via polling for match ${polledMatch.id}`,
+      );
+      handleMatchUpdated("ACCEPTED");
+    } else if (
+      polledMatch.status === "rejected" &&
+      currentMatch?.status !== "rejected"
+    ) {
+      console.log(
+        `❌ [POLLING] Match rejected detected via polling for match ${polledMatch.id}`,
+      );
+      handleMatchUpdated("REJECTED");
+    }
+  }, [polledMatch?.status, selectedCharterPending, currentMatch?.status, handleMatchUpdated]);
 
   // Monitor expiration: if match expires while we have a pending charter, clear it
   useEffect(() => {

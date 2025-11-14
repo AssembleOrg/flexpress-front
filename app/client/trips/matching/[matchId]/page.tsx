@@ -15,9 +15,13 @@ import {
 } from "@mui/material";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
+import { useEffect } from "react";
+import toast from "react-hot-toast";
 
 import { ChatWindow } from "@/components/chat/ChatWindow";
 import { useMatch } from "@/lib/hooks/queries/useTravelMatchQueries";
+import { useMatchUpdateListener } from "@/lib/hooks/useWebSocket";
+import { useAuthStore } from "@/lib/stores/authStore";
 import type { User } from "@/lib/types/api";
 import { TravelMatchStatus, UserRole } from "@/lib/types/api";
 
@@ -35,7 +39,30 @@ export default function MatchDetailPage() {
   const router = useRouter();
   const matchId = params.matchId as string;
 
+  const { user } = useAuthStore();
   const { data: match, isLoading } = useMatch(matchId);
+
+  // Determine if current user is the charter or the client
+  const isCharter = user?.id === match?.charterId;
+  const isClient = user?.id === match?.userId;
+
+  // Listen to WebSocket match updates (charter accepts/rejects)
+  useMatchUpdateListener(matchId, (newStatus) => {
+    console.log(`📬 [CLIENT PAGE] Match status updated via WebSocket: ${newStatus}`);
+    // React Query will auto-refetch via WebSocket invalidation
+  });
+
+  // Auto-redirect to chat when match is accepted with conversationId
+  useEffect(() => {
+    if (
+      match?.status === TravelMatchStatus.ACCEPTED &&
+      match?.conversationId
+    ) {
+      console.log(`✅ [CLIENT PAGE] Match accepted, redirecting to chat`);
+      toast.success("¡Chófer aceptó tu solicitud!");
+      // Page will show ChatWindow via conditional rendering below
+    }
+  }, [match?.status, match?.conversationId]);
 
   // ============================================
   // LOADING STATE
@@ -103,14 +130,24 @@ export default function MatchDetailPage() {
         {/* Waiting for response alert */}
         <Alert severity="info" sx={{ mb: 3 }}>
           <Typography variant="h6" sx={{ fontWeight: 600, mb: 1 }}>
-            ⏳ Esperando confirmación del chófer
+            {isCharter ? "⏳ Solicitud Pendiente de Respuesta" : "⏳ Esperando confirmación del chófer"}
           </Typography>
           <Typography variant="body2" sx={{ mb: 2 }}>
-            El chófer <strong>{match.charter?.name || "Chófer"}</strong> tiene
-            hasta las {timeRemaining} para responder a tu solicitud.
+            {isCharter ? (
+              <>
+                Tienes una solicitud de viaje de{" "}
+                <strong>{match.user?.name || "Cliente"}</strong>. Tienes hasta las{" "}
+                {timeRemaining} para responder.
+              </>
+            ) : (
+              <>
+                El chófer <strong>{match.charter?.name || "Chófer"}</strong> tiene
+                hasta las {timeRemaining} para responder a tu solicitud.
+              </>
+            )}
           </Typography>
           <Typography variant="caption" color="text.secondary">
-            Mientras esperas, puedes revisar los detalles de tu solicitud abajo.
+            Mientras esperas, puedes revisar los detalles abajo.
           </Typography>
         </Alert>
 
@@ -245,8 +282,17 @@ export default function MatchDetailPage() {
             ❌ Solicitud Rechazada
           </Typography>
           <Typography variant="body2">
-            El chófer <strong>{match.charter?.name || "Chófer"}</strong> rechazó
-            tu solicitud de viaje. Puedes buscar otro chófer disponible.
+            {isCharter ? (
+              <>
+                Rechazaste la solicitud de viaje de{" "}
+                <strong>{match.user?.name || "Cliente"}</strong>.
+              </>
+            ) : (
+              <>
+                El chófer <strong>{match.charter?.name || "Chófer"}</strong>{" "}
+                rechazó tu solicitud de viaje. Puedes buscar otro chófer disponible.
+              </>
+            )}
           </Typography>
         </Alert>
 
@@ -366,25 +412,59 @@ export default function MatchDetailPage() {
   // ACCEPTED STATE: Show chat window
   // ============================================
   if (match.status === TravelMatchStatus.ACCEPTED) {
-    // Determine the other user (charter driver)
-    const otherUser: User = {
-      id: match.charter?.id || match.charterId || "",
-      name: match.charter?.name || "Chófer",
-      email: match.charter?.email || "",
-      role: UserRole.CHARTER,
-      credits: match.charter?.credits || 0,
-      address: match.charter?.address || "",
-      number: match.charter?.number || "",
-      avatar: match.charter?.avatar || null,
-      originAddress: match.charter?.originAddress || null,
-      originLatitude: match.charter?.originLatitude || null,
-      originLongitude: match.charter?.originLongitude || null,
-      createdAt: match.charter?.createdAt || new Date().toISOString(),
-      updatedAt: match.charter?.updatedAt || new Date().toISOString(),
-    };
+    // Determine the other user based on current user's role
+    const otherUser: User = isCharter
+      ? {
+          // Charter sees CLIENT as otherUser
+          id: match.user?.id || match.userId || "",
+          name: match.user?.name || "Cliente",
+          email: match.user?.email || "",
+          role: UserRole.USER,
+          credits: match.user?.credits || 0,
+          address: match.user?.address || "",
+          number: match.user?.number || "",
+          avatar: match.user?.avatar || null,
+          originAddress: match.user?.originAddress || null,
+          originLatitude: match.user?.originLatitude || null,
+          originLongitude: match.user?.originLongitude || null,
+          createdAt: match.user?.createdAt || new Date().toISOString(),
+          updatedAt: match.user?.updatedAt || new Date().toISOString(),
+        }
+      : {
+          // Client sees CHARTER as otherUser
+          id: match.charter?.id || match.charterId || "",
+          name: match.charter?.name || "Chófer",
+          email: match.charter?.email || "",
+          role: UserRole.CHARTER,
+          credits: match.charter?.credits || 0,
+          address: match.charter?.address || "",
+          number: match.charter?.number || "",
+          avatar: match.charter?.avatar || null,
+          originAddress: match.charter?.originAddress || null,
+          originLatitude: match.charter?.originLatitude || null,
+          originLongitude: match.charter?.originLongitude || null,
+          createdAt: match.charter?.createdAt || new Date().toISOString(),
+          updatedAt: match.charter?.updatedAt || new Date().toISOString(),
+        };
 
-    // Use conversationId if available, fallback to matchId
-    const conversationId = match.conversationId || matchId;
+    // Validar que el match tenga conversación antes de mostrar el chat
+    if (!match.conversation?.id) {
+      return (
+        <Container maxWidth="md" sx={{ py: 4, textAlign: "center" }}>
+          <Box sx={{ my: 4 }}>
+            <CircularProgress sx={{ mb: 2 }} />
+            <Typography variant="h6" color="textSecondary">
+              Preparando el chat...
+            </Typography>
+            <Typography variant="body2" color="textSecondary" sx={{ mt: 1 }}>
+              Por favor espera mientras configuramos la conversación.
+            </Typography>
+          </Box>
+        </Container>
+      );
+    }
+
+    const conversationId = match.conversation.id;
 
     return (
       <Container maxWidth="lg" sx={{ py: 4 }}>

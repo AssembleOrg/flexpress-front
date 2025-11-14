@@ -1,6 +1,7 @@
 "use client";
 
 import { History } from "@mui/icons-material";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   Box,
   Button,
@@ -25,11 +26,13 @@ import {
   useToggleAvailability,
 } from "@/lib/hooks/mutations/useTravelMatchMutations";
 import { useCharterMatches } from "@/lib/hooks/queries/useTravelMatchQueries";
+import { queryKeys } from "@/lib/hooks/queries/queryFactory";
 import type { TravelMatch } from "@/lib/types/api";
 import { isMatchExpired } from "@/lib/utils/matchHelpers";
 
 export default function DriverDashboard() {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const [isAvailable, setIsAvailable] = useState(false);
   const toggleMutation = useToggleAvailability();
   const { data: charterMatches = [], isLoading: matchesLoading } =
@@ -62,37 +65,6 @@ export default function DriverDashboard() {
     return true;
   });
 
-  // 🔍 Reactive Watcher: Create conversation for accepted matches without conversationId
-  useEffect(() => {
-    charterMatches.forEach((match) => {
-      // Check if match is accepted but doesn't have a conversation yet
-      if (match?.id && match.status === "accepted" && !match.conversationId) {
-        console.log(
-          `🔄 [DRIVER DASHBOARD] Creating conversation for accepted match ${match.id}`,
-        );
-
-        createConversationMutation.mutate(
-          { matchId: match.id },
-          {
-            onSuccess: (conversation) => {
-              console.log(
-                `✅ [DRIVER DASHBOARD] Conversation created for match ${match.id}:`,
-                conversation.id,
-              );
-              toast.success("Chat habilitado");
-            },
-            onError: (error) => {
-              console.error(
-                `❌ [DRIVER DASHBOARD] Failed to create conversation for match ${match.id}:`,
-                error instanceof Error ? error.message : error,
-              );
-              // Conversation creation will be retried on next refetch
-            },
-          },
-        );
-      }
-    });
-  }, [charterMatches, createConversationMutation]);
 
   const handleAvailabilityChange = (
     event: React.ChangeEvent<HTMLInputElement>,
@@ -376,6 +348,20 @@ export default function DriverDashboard() {
                   onSuccess: () => {
                     setAcceptModalOpen(false);
                     setSelectedMatchForAccept(null);
+
+                    queryClient.invalidateQueries({
+                      queryKey: queryKeys.matches.all,
+                    });
+
+                    toast.success("¡Solicitud aceptada!");
+
+                    // Backend ya creó la conversación automáticamente
+                    // Solo esperamos un poco y redirigimos
+                    setTimeout(() => {
+                      router.push(
+                        `/client/trips/matching/${selectedMatchForAccept?.id}`,
+                      );
+                    }, 1000);
                   },
                   onError: () => {
                     // Keep modal open on error so user can retry

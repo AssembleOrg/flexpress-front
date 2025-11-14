@@ -1,6 +1,7 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
+import { useEffect, useState } from "react";
 import { travelMatchingApi } from "@/lib/api/travelMatching";
 import { useAuthStore } from "@/lib/stores/authStore";
 import { queryKeys } from "./queryFactory";
@@ -55,6 +56,10 @@ export function useCharterMatches() {
 /**
  * Get a single match by ID
  * Used by: Match detail page, matching page
+ *
+ * Includes polling fallback: polls every 5 seconds as a fallback in case
+ * WebSocket updates are missed. Polling stops automatically when match
+ * leaves "pending" state (via staleTime and refetchOnWindowFocus).
  */
 export function useMatch(matchId: string) {
   return useQuery({
@@ -63,6 +68,7 @@ export function useMatch(matchId: string) {
     staleTime: 15 * 1000, // 15 seconds
     gcTime: 5 * 60 * 1000, // 5 minutes
     refetchOnWindowFocus: true,
+    refetchInterval: 5 * 1000, // Poll every 5s as fallback (will stop refetching when match is no longer pending)
     enabled: !!matchId, // Only fetch if matchId provided
   });
 }

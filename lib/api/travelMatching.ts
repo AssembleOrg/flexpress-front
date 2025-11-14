@@ -290,25 +290,50 @@ export const travelMatchingApi = {
   /**
    * Get single match by ID
    * GET /travel-matching/matches/:matchId
+   *
+   * Handles double-wrapped response from backend:
+   * { data: { success: true, data: { ...match... } } }
    */
   getMatch: async (matchId: string): Promise<TravelMatch> => {
     console.log(`🔍 [MATCHING] Fetching match detail: ${matchId}`);
 
-    const response = await api.get<ApiResponse<TravelMatch>>(
-      `/travel-matching/matches/${matchId}`, // Fixed: added /matches
-    );
+    const response = await api.get<
+      ApiResponse<{ success: boolean; data: TravelMatch } | TravelMatch>
+    >(`/travel-matching/matches/${matchId}`);
 
-    // Defensive: validate response structure
-    if (!response.data.data) {
-      console.error(
-        "❌ [MATCHING] Backend returned invalid match:",
-        response.data,
+    console.log("🔍 [DEBUG] response.data:", response.data);
+    console.log("🔍 [DEBUG] response.data.data:", response.data.data);
+
+    // Manejar doble wrapper del backend
+    const responseData = response.data.data;
+
+    // Si tiene doble nesting (response.data.data.data)
+    if (
+      responseData &&
+      typeof responseData === "object" &&
+      "data" in responseData
+    ) {
+      const match = (responseData as { data: TravelMatch }).data;
+      console.log(
+        `✅ [MATCHING] Match detail fetched (doble wrapper): ${matchId}`,
       );
-      throw new Error("Backend devolvió match con estructura inválida");
+      return match;
     }
 
-    console.log(`✅ [MATCHING] Match detail fetched: ${matchId}`);
-    return response.data.data;
+    // Si es objeto directo (fallback)
+    if (responseData && typeof responseData === "object") {
+      console.log(
+        `✅ [MATCHING] Match detail fetched (directo): ${matchId}`,
+      );
+      return responseData as TravelMatch;
+    }
+
+    // Si no hay match, error
+    console.error(
+      "❌ [MATCHING] Backend returned invalid match:",
+      response.data,
+    );
+    throw new Error("Backend devolvió match con estructura inválida");
   },
 
   /**
