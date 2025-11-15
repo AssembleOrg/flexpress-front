@@ -21,11 +21,13 @@ import { useEffect, useRef, useState } from "react";
 import { MessageBubble } from "@/components/chat/MessageBubble";
 import { ReportModal } from "@/components/modals/ReportModal";
 import {
-  useNotifyTyping,
   useSendMessage,
 } from "@/lib/hooks/mutations/useConversationMutations";
 import { useConversationMessages } from "@/lib/hooks/queries/useConversationQueries";
-import { useWebSocket } from "@/lib/hooks/useWebSocket";
+import {
+  useWebSocket,
+  useSocketEmit,
+} from "@/lib/hooks/useWebSocket";
 import { useAuthStore } from "@/lib/stores/authStore";
 import type { User } from "@/lib/types/api";
 
@@ -47,11 +49,42 @@ export function ChatWindow({
 }: ChatWindowProps) {
   const { user } = useAuthStore();
   const [messageContent, setMessageContent] = useState("");
-  const [isTyping, setIsTyping] = useState(false);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [reportModalOpen, setReportModalOpen] = useState(false);
+  const [otherUserTyping, setOtherUserTyping] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Helper function to format date separator
+  const formatDateSeparator = (dateString: string): string => {
+    const date = new Date(dateString);
+    const today = new Date();
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+
+    const isToday =
+      date.toDateString() === today.toDateString();
+    const isYesterday =
+      date.toDateString() === yesterday.toDateString();
+
+    if (isToday) return "Hoy";
+    if (isYesterday) return "Ayer";
+    return date.toLocaleDateString("es-ES", {
+      month: "short",
+      day: "numeric",
+    });
+  };
+
+  // Helper function to check if we should show date separator
+  const shouldShowDateSeparator = (
+    currentMessage: Message,
+    previousMessage: Message | undefined,
+  ): boolean => {
+    if (!previousMessage) return true;
+    const currentDate = new Date(currentMessage.createdAt).toDateString();
+    const previousDate = new Date(previousMessage.createdAt).toDateString();
+    return currentDate !== previousDate;
+  };
 
   // Fetch messages from backend
   const { data: messages = [], isLoading } =
@@ -59,15 +92,51 @@ export function ChatWindow({
 
   // Send message mutation
   const sendMessageMutation = useSendMessage();
-  const typingNotify = useNotifyTyping();
 
   // WebSocket connection for real-time events
   const { isConnected } = useWebSocket();
+  const socketEmit = useSocketEmit();
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, []);
+  }, [messages]);
+
+  // Join conversation room for real-time messaging
+  useEffect(() => {
+    if (conversationId && user && isConnected && socketEmit) {
+      console.log(`🔌 Uniéndose a conversación: ${conversationId}`);
+      socketEmit.joinConversation(conversationId);
+
+      return () => {
+        console.log(`🔌 Saliendo de conversación: ${conversationId}`);
+        socketEmit.leaveConversation(conversationId);
+      };
+    }
+  }, [conversationId, user, isConnected, socketEmit]);
+
+  // Simple typing indicator: listen for typing events from other user
+  useEffect(() => {
+    const socket = socketEmit.socket;
+    if (!socket) return;
+
+    const handleTyping = () => {
+      setOtherUserTyping(true);
+      // Clear previous timeout
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+      }
+      // Hide typing indicator after 3 seconds
+      typingTimeoutRef.current = setTimeout(() => {
+        setOtherUserTyping(false);
+      }, 3000);
+    };
+
+    socket.on("typing", handleTyping);
+    return () => {
+      socket.off("typing", handleTyping);
+    };
+  }, [socketEmit.socket]);
 
   /**
    * Handle menu open
@@ -106,7 +175,6 @@ export function ChatWindow({
 
     const content = messageContent;
     setMessageContent("");
-    typingNotify.notifyStopTyping(conversationId);
 
     await sendMessageMutation.mutateAsync({
       conversationId,
@@ -115,31 +183,17 @@ export function ChatWindow({
   };
 
   /**
-   * Handle typing indicator
-   * Notifies other user that this user is typing
+   * Handle message input change
+   * Emits typing indicator every time user types
    */
   const handleMessageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const newContent = event.target.value;
     setMessageContent(newContent);
 
-    // Clear previous timeout
-    if (typingTimeoutRef.current) {
-      clearTimeout(typingTimeoutRef.current);
+    // Emit typing event when user types
+    if (newContent && newContent.length > 0) {
+      socketEmit.notifyTyping(conversationId);
     }
-
-    // Notify other user that this user is typing
-    if (newContent && !isTyping) {
-      setIsTyping(true);
-      typingNotify.notifyTyping(conversationId);
-    }
-
-    // Stop typing notification after 2 seconds of inactivity
-    typingTimeoutRef.current = setTimeout(() => {
-      if (newContent) {
-        setIsTyping(false);
-        typingNotify.notifyStopTyping(conversationId);
-      }
-    }, 2000);
   };
 
   /**
@@ -152,14 +206,6 @@ export function ChatWindow({
     }
   };
 
-  // Cleanup typing timeout on unmount
-  useEffect(() => {
-    return () => {
-      if (typingTimeoutRef.current) {
-        clearTimeout(typingTimeoutRef.current);
-      }
-    };
-  }, []);
 
   if (!user) {
     return (
@@ -252,7 +298,7 @@ export function ChatWindow({
             </Typography>
           </Box>
         ) : (
-          messages.map((message) => {
+          messages.map((message, index) => {
             // Validar que el mensaje tenga estructura válida
             if (!message?.id || !message?.senderId) {
               console.warn(
@@ -262,19 +308,44 @@ export function ChatWindow({
               return null;
             }
 
+            const previousMessage = index > 0 ? messages[index - 1] : undefined;
+            const showDateSeparator = shouldShowDateSeparator(message, previousMessage);
+
             return (
-              <MessageBubble
-                key={message.id}
-                message={message}
-                isOwn={message.senderId === user?.id}
-              />
+              <Box key={message.id}>
+                {/* Date separator */}
+                {showDateSeparator && (
+                  <Box
+                    sx={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 1,
+                      my: 2,
+                      opacity: 0.5,
+                    }}
+                  >
+                    <Box sx={{ flex: 1, height: 1, backgroundColor: "divider" }} />
+                    <Typography variant="caption" color="textSecondary">
+                      {formatDateSeparator(message.createdAt)}
+                    </Typography>
+                    <Box sx={{ flex: 1, height: 1, backgroundColor: "divider" }} />
+                  </Box>
+                )}
+                <MessageBubble
+                  message={message}
+                  isOwn={message.senderId === user?.id}
+                />
+              </Box>
             );
           })
         )}
 
-        {/* Typing indicator */}
-        {/* TODO: Implement typing state from WebSocket event */}
-        {/* {otherUserIsTyping && <TypingIndicator userName={otherUser.name} />} */}
+        {/* Typing indicator - simple "..." text */}
+        {otherUserTyping && (
+          <Typography variant="caption" color="text.secondary" sx={{ pl: 1 }}>
+            {otherUser?.name || "El otro usuario"} está escribiendo...
+          </Typography>
+        )}
 
         <div ref={messagesEndRef} />
       </Box>

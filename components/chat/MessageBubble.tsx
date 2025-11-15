@@ -77,6 +77,19 @@ export function MessageBubble({ message, isOwn }: MessageBubbleProps) {
           >
             {formatTime(message.createdAt)}
           </Typography>
+          {/* Message status indicator (only for own messages) */}
+          {isOwn && (
+            <Typography
+              variant="caption"
+              sx={{
+                color: message.isRead ? "primary.contrastText" : "primary.contrastText",
+                opacity: 0.7,
+                fontSize: "0.75rem",
+              }}
+            >
+              {message.isRead ? "✓✓" : "✓"}
+            </Typography>
+          )}
         </Box>
       </Box>
     </Box>

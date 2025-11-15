@@ -142,7 +142,12 @@ export default function MatchingPage() {
       );
       handleMatchUpdated("REJECTED");
     }
-  }, [polledMatch?.status, selectedCharterPending, currentMatch?.status, handleMatchUpdated]);
+  }, [
+    polledMatch?.status,
+    selectedCharterPending,
+    currentMatch?.status,
+    handleMatchUpdated,
+  ]);
 
   // Monitor expiration: if match expires while we have a pending charter, clear it
   useEffect(() => {

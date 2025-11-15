@@ -65,6 +65,10 @@ export default function DriverDashboard() {
     return true;
   });
 
+  // Filter active conversations (accepted matches)
+  const activeConversations = charterMatches.filter((match) => {
+    return match?.id && match.status === "accepted" && match.conversation?.id;
+  });
 
   const handleAvailabilityChange = (
     event: React.ChangeEvent<HTMLInputElement>,
@@ -293,6 +297,53 @@ export default function DriverDashboard() {
           </Box>
         )}
 
+        {/* Active Conversations Section */}
+        {activeConversations.length > 0 && (
+          <Box mb={3}>
+            <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
+              💬 Conversaciones Activas
+            </Typography>
+
+            <Stack spacing={2}>
+              {activeConversations.map((match) => (
+                <Card key={match.id} sx={{ overflow: "hidden" }}>
+                  <CardContent>
+                    <Box
+                      display="flex"
+                      justifyContent="space-between"
+                      alignItems="center"
+                      mb={2}
+                    >
+                      <Box flex={1}>
+                        <Typography
+                          variant="h6"
+                          sx={{ fontWeight: 600, mb: 0.5 }}
+                        >
+                          👤 {match.user?.name}
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary">
+                          📍 {match.pickupAddress}
+                        </Typography>
+                      </Box>
+                    </Box>
+
+                    <Button
+                      variant="contained"
+                      color="primary"
+                      onClick={() =>
+                        router.push(`/driver/trips/matching/${match.id}`)
+                      }
+                      fullWidth
+                    >
+                      Ver Chat
+                    </Button>
+                  </CardContent>
+                </Card>
+              ))}
+            </Stack>
+          </Box>
+        )}
+
         {/* Quick Actions */}
         <Box display="flex" gap={2} mb={3}>
           <Button
@@ -337,38 +388,36 @@ export default function DriverDashboard() {
             setAcceptModalOpen(false);
             setSelectedMatchForAccept(null);
           }}
-          onAccept={() => {
+          onAccept={async () => {
             if (selectedMatchForAccept) {
-              respondMutation.mutate(
-                {
+              try {
+                // Use mutateAsync to wait for the response
+                await respondMutation.mutateAsync({
                   matchId: selectedMatchForAccept.id,
                   accept: true,
-                },
-                {
-                  onSuccess: () => {
-                    setAcceptModalOpen(false);
-                    setSelectedMatchForAccept(null);
+                });
 
-                    queryClient.invalidateQueries({
-                      queryKey: queryKeys.matches.all,
-                    });
+                setAcceptModalOpen(false);
+                setSelectedMatchForAccept(null);
 
-                    toast.success("¡Solicitud aceptada!");
+                // Invalidate and wait for fresh data
+                await queryClient.invalidateQueries({
+                  queryKey: queryKeys.matches.all,
+                });
 
-                    // Backend ya creó la conversación automáticamente
-                    // Solo esperamos un poco y redirigimos
-                    setTimeout(() => {
-                      router.push(
-                        `/client/trips/matching/${selectedMatchForAccept?.id}`,
-                      );
-                    }, 1000);
-                  },
-                  onError: () => {
-                    // Keep modal open on error so user can retry
-                    setAcceptModalOpen(true);
-                  },
-                },
-              );
+                toast.success("¡Solicitud aceptada!");
+
+                // Now redirect to the chat page
+                // The conversation should now be available in the cached data
+                router.push(
+                  `/driver/trips/matching/${selectedMatchForAccept?.id}`,
+                );
+              } catch (error) {
+                console.error("❌ Error accepting match:", error);
+                toast.error("Error al aceptar solicitud. Intenta de nuevo.");
+                // Keep modal open on error so user can retry
+                setAcceptModalOpen(true);
+              }
             }
           }}
           onReject={() => {

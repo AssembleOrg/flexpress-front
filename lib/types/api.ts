@@ -84,6 +84,11 @@ export interface TravelMatch {
   scheduledDate: string | null;
   expiresAt: string | null;
   conversationId?: string; // Created when charter accepts match
+  conversation?: {
+    id: string;
+    status: ConversationStatus;
+    createdAt: string;
+  };
   tripId?: string | null;
   createdAt: string;
   updatedAt: string;

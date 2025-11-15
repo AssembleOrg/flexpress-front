@@ -322,9 +322,7 @@ export const travelMatchingApi = {
 
     // Si es objeto directo (fallback)
     if (responseData && typeof responseData === "object") {
-      console.log(
-        `✅ [MATCHING] Match detail fetched (directo): ${matchId}`,
-      );
+      console.log(`✅ [MATCHING] Match detail fetched (directo): ${matchId}`);
       return responseData as TravelMatch;
     }
 
@@ -342,7 +340,7 @@ export const travelMatchingApi = {
   createTripFromMatch: async (matchId: string) => {
     const response = await api.post(
       `/travel-matching/matches/${matchId}/create-trip`,
-      null,
+      {},
     );
     // biome-ignore lint/style/noNonNullAssertion: axios response guarantees data
     return response.data.data!;

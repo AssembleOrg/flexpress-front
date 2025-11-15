@@ -38,7 +38,11 @@ interface MapProps {
   markers?: MapMarker[];
   height?: string;
   isLoading?: boolean;
-  onMarkerDrag?: (type: 'pickup' | 'destination' | 'charter', lat: number, lon: number) => void;
+  onMarkerDrag?: (
+    type: "pickup" | "destination" | "charter",
+    lat: number,
+    lon: number,
+  ) => void;
   allowDragging?: boolean;
 }
 
@@ -48,17 +52,16 @@ export type MapHandle = LeafletMapHandle;
  * MapDisplay Component
  * Interactive map component that displays markers and routes using Leaflet
  */
-export const MapDisplay = forwardRef<MapHandle, MapProps>(
-  function MapDisplay(
-    {
-      markers = [],
-      height = "400px",
-      isLoading = false,
-      onMarkerDrag,
-      allowDragging = false,
-    },
-    ref
-  ) {
+export const MapDisplay = forwardRef<MapHandle, MapProps>(function MapDisplay(
+  {
+    markers = [],
+    height = "400px",
+    isLoading = false,
+    onMarkerDrag,
+    allowDragging = false,
+  },
+  ref,
+) {
   // Show empty state if no markers
   if (!isLoading && markers.length === 0) {
     return (
@@ -93,8 +96,7 @@ export const MapDisplay = forwardRef<MapHandle, MapProps>(
       allowDragging={allowDragging}
     />
   );
-  }
-);
+});
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars -- Used as export Map
 export { MapDisplay as Map };

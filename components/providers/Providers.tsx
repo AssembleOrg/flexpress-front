@@ -46,7 +46,7 @@ export function Providers({ children }: ProvidersProps) {
 
   if (!googleApiKey) {
     console.warn(
-      "⚠️ Warning: NEXT_PUBLIC_GOOGLE_MAPS_API_KEY is not configured. Google Maps features may not work correctly."
+      "⚠️ Warning: NEXT_PUBLIC_GOOGLE_MAPS_API_KEY is not configured. Google Maps features may not work correctly.",
     );
   }
 

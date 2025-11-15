@@ -1,194 +1,155 @@
 "use client";
 
+import { useParams } from "next/navigation";
+import { useEffect, useState } from "react";
 import {
-  ArrowBack,
-  AttachMoney,
-  LocalShipping,
-  LocationOn,
-  Person,
-  Star,
-} from "@mui/icons-material";
-import {
-  Alert,
-  Avatar,
   Box,
-  Button,
+  Container,
   Card,
   CardContent,
-  Container,
-  Divider,
   Typography,
+  Stack,
+  CircularProgress,
+  Alert,
+  Grid,
 } from "@mui/material";
-import Link from "next/link";
-import toast from "react-hot-toast";
-import StatusChip from "@/components/ui/StatusChip";
+import { FeedbackModal } from "@/components/feedback/FeedbackModal";
+import { useTrip } from "@/lib/hooks/queries/useTripQueries";
 
-export default function TripDetailPage() {
-  // const router = useRouter();
+export default function DriverTripDetailPage() {
+  const params = useParams();
+  const tripId = params.tripId as string;
 
-  const handleAcceptTrip = () => {
-    // TODO: Implementar en Fase 4
-    toast.error("Backend no conectado - Funcionalidad pendiente");
+  const { data: trip, isLoading } = useTrip(tripId);
+  const [feedbackModalOpen, setFeedbackModalOpen] = useState(false);
+  const [feedbackGiven, setFeedbackGiven] = useState(false);
+
+  // Auto-open feedback modal when trip is completed
+  useEffect(() => {
+    if (trip?.status === "completed" && !feedbackGiven) {
+      setFeedbackModalOpen(true);
+    }
+  }, [trip?.status, feedbackGiven]);
+
+  const handleFeedbackClose = () => {
+    setFeedbackModalOpen(false);
+    setFeedbackGiven(true);
   };
+
+  if (isLoading) {
+    return (
+      <Container sx={{ display: "flex", justifyContent: "center", pt: 4 }}>
+        <CircularProgress />
+      </Container>
+    );
+  }
+
+  if (!trip) {
+    return (
+      <Container sx={{ pt: 4 }}>
+        <Alert severity="error">Viaje no encontrado</Alert>
+      </Container>
+    );
+  }
 
   return (
     <Container maxWidth="md" sx={{ py: 4 }}>
-      {/* Header */}
-      <Box mb={4}>
-        <Link href="/driver/dashboard">
-          <Button startIcon={<ArrowBack />} variant="outlined" sx={{ mb: 2 }}>
-            Volver al Dashboard
-          </Button>
-        </Link>
-
-        <Box display="flex" alignItems="center" gap={2} mb={2}>
-          <LocalShipping sx={{ fontSize: 32, color: "secondary.main" }} />
-          <Typography variant="h4" component="h1" sx={{ fontWeight: 700 }}>
-            Detalle del Flete
-          </Typography>
-        </Box>
-
-        <StatusChip status={"searching"} />
-      </Box>
-
-      {/* Información del cliente */}
-      <Card sx={{ mb: 3 }}>
-        <CardContent sx={{ p: 3 }}>
-          <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
-            👤 Cliente
-          </Typography>
-
-          <Box display="flex" alignItems="center" gap={2} mb={2}>
-            <Avatar sx={{ width: 56, height: 56 }}>
-              <Person />
-            </Avatar>
-            <Box>
-              <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                Usuario
-              </Typography>
-              <Box display="flex" alignItems="center" gap={1}>
-                <Star sx={{ fontSize: 16, color: "warning.main" }} />
-                <Typography variant="body2" color="text.secondary">
-                  4.8 • 0 viajes
-                </Typography>
-              </Box>
-            </Box>
-          </Box>
-        </CardContent>
-      </Card>
-
-      {/* Detalles del viaje */}
-      <Card sx={{ mb: 3 }}>
-        <CardContent sx={{ p: 3 }}>
-          <Typography variant="h6" sx={{ fontWeight: 600, mb: 3 }}>
-            📍 Detalles del Viaje
-          </Typography>
-
-          {/* Ubicaciones */}
-          <Box mb={3}>
-            <Box display="flex" alignItems="start" gap={2} mb={2}>
-              <LocationOn sx={{ color: "success.main", mt: 0.5 }} />
-              <Box>
-                <Typography
-                  variant="body2"
-                  color="text.secondary"
-                  sx={{ fontSize: "0.75rem" }}
-                >
-                  ORIGEN
-                </Typography>
-                <Typography variant="body1" sx={{ fontWeight: 600 }}>
-                  Por definir
-                </Typography>
-              </Box>
-            </Box>
-
-            <Box display="flex" alignItems="start" gap={2}>
-              <LocationOn sx={{ color: "error.main", mt: 0.5 }} />
-              <Box>
-                <Typography
-                  variant="body2"
-                  color="text.secondary"
-                  sx={{ fontSize: "0.75rem" }}
-                >
-                  DESTINO
-                </Typography>
-                <Typography variant="body1" sx={{ fontWeight: 600 }}>
-                  Por definir
-                </Typography>
-              </Box>
-            </Box>
-          </Box>
-
-          <Divider sx={{ my: 3 }} />
-
-          {/* Descripción */}
-          <Box mb={3}>
-            <Typography
-              variant="body2"
-              color="text.secondary"
-              sx={{ fontSize: "0.75rem", mb: 1 }}
-            >
-              DESCRIPCIÓN
-            </Typography>
-            <Typography variant="body1">Por definir</Typography>
-          </Box>
-
-          <Divider sx={{ my: 3 }} />
-
-          {/* Precio */}
-          <Box display="flex" alignItems="center" gap={1}>
-            <AttachMoney sx={{ color: "success.main" }} />
-            <Typography
-              variant="body2"
-              color="text.secondary"
-              sx={{ fontSize: "0.75rem" }}
-            >
-              PRECIO SUGERIDO
-            </Typography>
-          </Box>
-          <Typography
-            variant="h5"
-            sx={{ fontWeight: 700, color: "success.main" }}
-          >
-            $ 0
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            Este precio es negociable en el chat
-          </Typography>
-        </CardContent>
-      </Card>
-
-      {/* Información adicional */}
-      <Alert severity="info" sx={{ mb: 4 }}>
-        <Typography variant="body2">
-          <strong>Recuerda:</strong> Al aceptar este viaje podrás negociar el
-          precio final directamente con el cliente a través del chat en tiempo
-          real.
+      <Stack spacing={3}>
+        <Typography variant="h5" sx={{ fontWeight: 600 }}>
+          Detalles del Viaje
         </Typography>
-      </Alert>
 
-      {/* Acción principal */}
-      <Box textAlign="center">
-        <Button
-          variant="contained"
-          color="secondary"
-          size="large"
-          onClick={handleAcceptTrip}
-          sx={{
-            fontSize: "1.125rem",
-            fontWeight: 600,
-            px: 6,
-            py: 1.5,
-            minWidth: 200,
-          }}
-        >
-          Aceptar Viaje
-        </Button>
+        <Grid container spacing={2}>
+          <Grid item xs={12}>
+            <Card>
+              <CardContent>
+                <Stack spacing={2}>
+                  <Box>
+                    <Typography variant="caption" color="textSecondary">
+                      Estado
+                    </Typography>
+                    <Typography
+                      variant="body2"
+                      sx={{
+                        textTransform: "capitalize",
+                        fontWeight: 600,
+                        color:
+                          trip.status === "completed"
+                            ? "success.main"
+                            : "info.main",
+                      }}
+                    >
+                      {trip.status}
+                    </Typography>
+                  </Box>
 
-        <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
-          Serás redirigido al chat para coordinar con el cliente
-        </Typography>
-      </Box>
+                  <Box>
+                    <Typography variant="caption" color="textSecondary">
+                      Cliente
+                    </Typography>
+                    <Typography variant="body2">
+                      {trip.client?.name || "N/A"}
+                    </Typography>
+                  </Box>
+
+                  <Box>
+                    <Typography variant="caption" color="textSecondary">
+                      Origen
+                    </Typography>
+                    <Typography variant="body2">
+                      {trip.origin || "N/A"}
+                    </Typography>
+                  </Box>
+
+                  <Box>
+                    <Typography variant="caption" color="textSecondary">
+                      Destino
+                    </Typography>
+                    <Typography variant="body2">
+                      {trip.destination || "N/A"}
+                    </Typography>
+                  </Box>
+
+                  <Box>
+                    <Typography variant="caption" color="textSecondary">
+                      Precio Sugerido
+                    </Typography>
+                    <Typography variant="body2">
+                      ${trip.suggestedPrice || 0}
+                    </Typography>
+                  </Box>
+
+                  <Box>
+                    <Typography variant="caption" color="textSecondary">
+                      Precio Final
+                    </Typography>
+                    <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                      ${trip.finalPrice || trip.suggestedPrice || 0}
+                    </Typography>
+                  </Box>
+
+                  {trip.status === "completed" && (
+                    <Alert severity="success">
+                      ✅ Viaje completado. Los créditos han sido transferidos.
+                    </Alert>
+                  )}
+                </Stack>
+              </CardContent>
+            </Card>
+          </Grid>
+        </Grid>
+      </Stack>
+
+      {/* Feedback Modal - Opens automatically when trip is completed */}
+      {trip.client && (
+        <FeedbackModal
+          open={feedbackModalOpen}
+          onClose={handleFeedbackClose}
+          tripId={trip.id}
+          toUserId={trip.client.id}
+          recipientName={trip.client.name}
+        />
+      )}
     </Container>
   );
 }

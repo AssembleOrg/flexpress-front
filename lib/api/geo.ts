@@ -14,7 +14,11 @@ export interface AddressSuggestion {
   address: string;
   coordinates: Coordinates;
   formattedAddress?: string;
-  locationType?: 'ROOFTOP' | 'RANGE_INTERPOLATED' | 'GEOMETRIC_CENTER' | 'APPROXIMATE';
+  locationType?:
+    | "ROOFTOP"
+    | "RANGE_INTERPOLATED"
+    | "GEOMETRIC_CENTER"
+    | "APPROXIMATE";
   isPrecise?: boolean;
   city?: string;
   state?: string;
