@@ -4,6 +4,8 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
 import { io, type Socket } from "socket.io-client";
 import { useAuthStore } from "@/lib/stores/authStore";
+import { queryKeys } from "@/lib/hooks/queries/queryFactory";
+import { conversationKeys } from "@/lib/hooks/queries/useConversationQueries";
 import type { Message } from "@/lib/types/api";
 
 interface UseWebSocketReturn {
@@ -108,7 +110,7 @@ export function useWebSocket(): UseWebSocketReturn {
 
       // Actualizar cache de React Query con el nuevo mensaje
       queryClient.setQueryData(
-        ["conversations", message.conversationId, "messages"],
+        conversationKeys.messages(message.conversationId),
         (old: Message[] | undefined) => {
           if (!old) return [message];
           // Evitar duplicados
@@ -126,45 +128,6 @@ export function useWebSocket(): UseWebSocketReturn {
       }
     });
 
-    /**
-     * Evento: user-typing
-     * Recibido cuando el otro usuario está escribiendo
-     */
-    socket.on(
-      "user-typing",
-      (data: { conversationId?: string; userId?: string }) => {
-        // Validar estructura del evento
-        if (!data?.conversationId || !data?.userId) {
-          console.warn(
-            "⚠️ [WebSocket] Evento user-typing con estructura inválida:",
-            data,
-          );
-          return;
-        }
-        const { conversationId, userId } = data;
-        console.log(
-          `⌨️  [WebSocket] ${userId} está escribiendo en ${conversationId}`,
-        );
-        // El componente ChatWindow escuchará este evento a través del hook
-      },
-    );
-
-    /**
-     * Evento: user-stop-typing
-     * Recibido cuando el otro usuario deja de escribir
-     */
-    socket.on("user-stop-typing", (data: { userId?: string }) => {
-      // Validar estructura del evento
-      if (!data?.userId) {
-        console.warn(
-          "⚠️ [WebSocket] Evento user-stop-typing con estructura inválida:",
-          data,
-        );
-        return;
-      }
-      const { userId } = data;
-      console.log(`⌨️  [WebSocket] ${userId} dejó de escribir`);
-    });
 
     /**
      * Evento: match:updated
@@ -186,9 +149,46 @@ export function useWebSocket(): UseWebSocketReturn {
         console.log(`🔄 [WebSocket] Match ${matchId} actualizado: ${status}`);
 
         // Invalidar queries relacionadas a matches cuando el estado cambia
-        queryClient.invalidateQueries({ queryKey: ["userMatches"] });
-        queryClient.invalidateQueries({ queryKey: ["charterMatches"] });
-        queryClient.invalidateQueries({ queryKey: ["match", matchId] });
+        // Use same queryKeys as React Query to ensure cache consistency
+        queryClient.invalidateQueries({ queryKey: queryKeys.matches.user("") });
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.matches.charter(""),
+        });
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.matches.detail(matchId),
+        });
+      },
+    );
+
+    /**
+     * Evento: trip:completed
+     * Recibido cuando el charter finaliza el viaje
+     */
+    socket.on(
+      "trip:completed",
+      (data: { tripId?: string; matchId?: string }) => {
+        if (!data?.tripId && !data?.matchId) {
+          console.warn(
+            "⚠️ [WebSocket] Evento trip:completed con estructura inválida:",
+            data,
+          );
+          return;
+        }
+
+        const { tripId, matchId } = data;
+        console.log(`🏁 [WebSocket] Trip ${tripId} completado`);
+
+        // Invalidar queries para refrescar estado del viaje y match
+        if (tripId) {
+          queryClient.invalidateQueries({
+            queryKey: ["trips", tripId],
+          });
+        }
+        if (matchId) {
+          queryClient.invalidateQueries({
+            queryKey: queryKeys.matches.detail(matchId),
+          });
+        }
       },
     );
 
@@ -218,12 +218,24 @@ export function useWebSocket(): UseWebSocketReturn {
  */
 export function useSocketEmit() {
   const { socket } = useWebSocket();
+  const { user } = useAuthStore();
 
   return {
+    socket, // Expose socket for event listeners
     joinConversation: (conversationId: string) => {
       if (socket?.connected) {
         console.log("📍 [WebSocket] Uniéndose a conversación:", conversationId);
-        socket.emit("join-conversation", { conversationId });
+        socket.emit("join-conversation", {
+          conversationId,
+          userId: user?.id,
+        });
+      }
+    },
+
+    leaveConversation: (conversationId: string) => {
+      if (socket?.connected) {
+        console.log("📍 [WebSocket] Saliendo de conversación:", conversationId);
+        socket.emit("leave-conversation", { conversationId });
       }
     },
 
@@ -243,19 +255,10 @@ export function useSocketEmit() {
         socket.emit("typing", { conversationId });
       }
     },
-
-    notifyStopTyping: (conversationId: string) => {
-      if (socket?.connected) {
-        socket.emit("stop-typing", { conversationId });
-      }
-    },
   };
 }
 
-/**
- * Hook para suscribirse a cambios de estado de un match específico
- * Útil para la página de matching para detectar cuando charter acepta
- */
+
 export function useMatchUpdateListener(
   matchId: string | undefined,
   onMatchUpdated?: (status: string) => void,
@@ -282,4 +285,36 @@ export function useMatchUpdateListener(
       socket.off("match:updated", handleMatchUpdate);
     };
   }, [socket, matchId, onMatchUpdated]);
+}
+
+/**
+ * Hook para escuchar cuando un viaje es completado por el charter
+ * Útil para notificar al cliente cuando el transporte está listo
+ */
+export function useTripCompletedListener(
+  matchId: string | undefined,
+  onTripCompleted?: () => void,
+): void {
+  const { socket } = useWebSocket();
+
+  useEffect(() => {
+    if (!socket?.connected || !matchId) {
+      return;
+    }
+
+    const handleTripCompleted = (data: { tripId?: string; matchId?: string }) => {
+      if (data?.matchId === matchId) {
+        console.log(
+          `🏁 [TRIP COMPLETED LISTENER] Trip completado para match ${matchId}`,
+        );
+        onTripCompleted?.();
+      }
+    };
+
+    socket.on("trip:completed", handleTripCompleted);
+
+    return () => {
+      socket.off("trip:completed", handleTripCompleted);
+    };
+  }, [socket, matchId, onTripCompleted]);
 }

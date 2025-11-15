@@ -3,9 +3,11 @@
 import { ZoomOutMap } from "@mui/icons-material";
 import { CircularProgress, Paper, Typography } from "@mui/material";
 import dynamic from "next/dynamic";
+import { forwardRef } from "react";
+import type { LeafletMapHandle } from "./LeafletMap";
 
 // Dynamic import to avoid SSR issues with Leaflet
-const LeafletMap = dynamic(() => import("./LeafletMap"), {
+const LeafletMapDynamic = dynamic(() => import("./LeafletMap"), {
   ssr: false,
   loading: () => (
     <Paper
@@ -36,17 +38,30 @@ interface MapProps {
   markers?: MapMarker[];
   height?: string;
   isLoading?: boolean;
+  onMarkerDrag?: (
+    type: "pickup" | "destination" | "charter",
+    lat: number,
+    lon: number,
+  ) => void;
+  allowDragging?: boolean;
 }
+
+export type MapHandle = LeafletMapHandle;
 
 /**
  * MapDisplay Component
  * Interactive map component that displays markers and routes using Leaflet
  */
-export function MapDisplay({
-  markers = [],
-  height = "400px",
-  isLoading = false,
-}: MapProps) {
+export const MapDisplay = forwardRef<MapHandle, MapProps>(function MapDisplay(
+  {
+    markers = [],
+    height = "400px",
+    isLoading = false,
+    onMarkerDrag,
+    allowDragging = false,
+  },
+  ref,
+) {
   // Show empty state if no markers
   if (!isLoading && markers.length === 0) {
     return (
@@ -71,8 +86,17 @@ export function MapDisplay({
     );
   }
 
-  return <LeafletMap markers={markers} height={height} isLoading={isLoading} />;
-}
+  return (
+    <LeafletMapDynamic
+      ref={ref}
+      markers={markers}
+      height={height}
+      isLoading={isLoading}
+      onMarkerDrag={onMarkerDrag}
+      allowDragging={allowDragging}
+    />
+  );
+});
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars -- Used as export Map
 export { MapDisplay as Map };

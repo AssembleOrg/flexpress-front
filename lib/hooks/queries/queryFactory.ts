@@ -61,6 +61,16 @@ export const queryKeys = {
     messages: (conversationId: string) =>
       [...queryKeys.conversations.detail(conversationId), "messages"] as const,
   },
+
+  // Reports / Abuse Reporting
+  reports: {
+    all: ["reports"] as const,
+    admin: () => [...queryKeys.reports.all, "admin"] as const,
+    user: (userId: string) =>
+      [...queryKeys.reports.all, "user", userId] as const,
+    conversation: (conversationId: string) =>
+      [...queryKeys.reports.all, "conversation", conversationId] as const,
+  },
 };
 
 /**

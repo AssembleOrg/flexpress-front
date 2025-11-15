@@ -42,7 +42,13 @@ function SocketInitializer() {
 }
 
 export function Providers({ children }: ProvidersProps) {
-  const googleApiKey = process.env.NEXT_PUBLIC_GOOGLE_API_KEY || "";
+  const googleApiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "";
+
+  if (!googleApiKey) {
+    console.warn(
+      "⚠️ Warning: NEXT_PUBLIC_GOOGLE_MAPS_API_KEY is not configured. Google Maps features may not work correctly.",
+    );
+  }
 
   return (
     <APIProvider apiKey={googleApiKey}>

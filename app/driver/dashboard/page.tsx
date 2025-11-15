@@ -1,5 +1,7 @@
 "use client";
 
+import { History } from "@mui/icons-material";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   Box,
   Button,
@@ -12,6 +14,7 @@ import {
   Switch,
   Typography,
 } from "@mui/material";
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import { AuthNavbar } from "@/components/layout/AuthNavbar";
@@ -23,10 +26,13 @@ import {
   useToggleAvailability,
 } from "@/lib/hooks/mutations/useTravelMatchMutations";
 import { useCharterMatches } from "@/lib/hooks/queries/useTravelMatchQueries";
+import { queryKeys } from "@/lib/hooks/queries/queryFactory";
 import type { TravelMatch } from "@/lib/types/api";
 import { isMatchExpired } from "@/lib/utils/matchHelpers";
 
 export default function DriverDashboard() {
+  const router = useRouter();
+  const queryClient = useQueryClient();
   const [isAvailable, setIsAvailable] = useState(false);
   const toggleMutation = useToggleAvailability();
   const { data: charterMatches = [], isLoading: matchesLoading } =
@@ -59,37 +65,10 @@ export default function DriverDashboard() {
     return true;
   });
 
-  // 🔍 Reactive Watcher: Create conversation for accepted matches without conversationId
-  useEffect(() => {
-    charterMatches.forEach((match) => {
-      // Check if match is accepted but doesn't have a conversation yet
-      if (match?.id && match.status === "accepted" && !match.conversationId) {
-        console.log(
-          `🔄 [DRIVER DASHBOARD] Creating conversation for accepted match ${match.id}`,
-        );
-
-        createConversationMutation.mutate(
-          { matchId: match.id },
-          {
-            onSuccess: (conversation) => {
-              console.log(
-                `✅ [DRIVER DASHBOARD] Conversation created for match ${match.id}:`,
-                conversation.id,
-              );
-              toast.success("Chat habilitado");
-            },
-            onError: (error) => {
-              console.error(
-                `❌ [DRIVER DASHBOARD] Failed to create conversation for match ${match.id}:`,
-                error instanceof Error ? error.message : error,
-              );
-              // Conversation creation will be retried on next refetch
-            },
-          },
-        );
-      }
-    });
-  }, [charterMatches, createConversationMutation]);
+  // Filter active conversations (accepted matches)
+  const activeConversations = charterMatches.filter((match) => {
+    return match?.id && match.status === "accepted" && match.conversation?.id;
+  });
 
   const handleAvailabilityChange = (
     event: React.ChangeEvent<HTMLInputElement>,
@@ -318,6 +297,72 @@ export default function DriverDashboard() {
           </Box>
         )}
 
+        {/* Active Conversations Section */}
+        {activeConversations.length > 0 && (
+          <Box mb={3}>
+            <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
+              💬 Conversaciones Activas
+            </Typography>
+
+            <Stack spacing={2}>
+              {activeConversations.map((match) => (
+                <Card key={match.id} sx={{ overflow: "hidden" }}>
+                  <CardContent>
+                    <Box
+                      display="flex"
+                      justifyContent="space-between"
+                      alignItems="center"
+                      mb={2}
+                    >
+                      <Box flex={1}>
+                        <Typography
+                          variant="h6"
+                          sx={{ fontWeight: 600, mb: 0.5 }}
+                        >
+                          👤 {match.user?.name}
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary">
+                          📍 {match.pickupAddress}
+                        </Typography>
+                      </Box>
+                    </Box>
+
+                    <Button
+                      variant="contained"
+                      color="primary"
+                      onClick={() =>
+                        router.push(`/driver/trips/matching/${match.id}`)
+                      }
+                      fullWidth
+                    >
+                      Ver Chat
+                    </Button>
+                  </CardContent>
+                </Card>
+              ))}
+            </Stack>
+          </Box>
+        )}
+
+        {/* Quick Actions */}
+        <Box display="flex" gap={2} mb={3}>
+          <Button
+            variant="outlined"
+            startIcon={<History />}
+            onClick={() => router.push("/driver/trips/history")}
+            sx={{ flex: 1, py: 1.5 }}
+          >
+            Historial
+          </Button>
+          <Button
+            variant="outlined"
+            onClick={() => router.push("/support")}
+            sx={{ flex: 1, py: 1.5 }}
+          >
+            Soporte
+          </Button>
+        </Box>
+
         {/* Information */}
         <Card sx={{ mb: 3 }}>
           <CardContent>
@@ -343,24 +388,36 @@ export default function DriverDashboard() {
             setAcceptModalOpen(false);
             setSelectedMatchForAccept(null);
           }}
-          onAccept={() => {
+          onAccept={async () => {
             if (selectedMatchForAccept) {
-              respondMutation.mutate(
-                {
+              try {
+                // Use mutateAsync to wait for the response
+                await respondMutation.mutateAsync({
                   matchId: selectedMatchForAccept.id,
                   accept: true,
-                },
-                {
-                  onSuccess: () => {
-                    setAcceptModalOpen(false);
-                    setSelectedMatchForAccept(null);
-                  },
-                  onError: () => {
-                    // Keep modal open on error so user can retry
-                    setAcceptModalOpen(true);
-                  },
-                },
-              );
+                });
+
+                setAcceptModalOpen(false);
+                setSelectedMatchForAccept(null);
+
+                // Invalidate and wait for fresh data
+                await queryClient.invalidateQueries({
+                  queryKey: queryKeys.matches.all,
+                });
+
+                toast.success("¡Solicitud aceptada!");
+
+                // Now redirect to the chat page
+                // The conversation should now be available in the cached data
+                router.push(
+                  `/driver/trips/matching/${selectedMatchForAccept?.id}`,
+                );
+              } catch (error) {
+                console.error("❌ Error accepting match:", error);
+                toast.error("Error al aceptar solicitud. Intenta de nuevo.");
+                // Keep modal open on error so user can retry
+                setAcceptModalOpen(true);
+              }
             }
           }}
           onReject={() => {

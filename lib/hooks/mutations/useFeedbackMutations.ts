@@ -15,6 +15,12 @@ import { useAuthStore } from "@/lib/stores/authStore";
 /**
  * Create feedback for a trip/user
  * POST /feedback
+ *
+ * Features:
+ * - Optimistic update: immediately marks trip as feedback given
+ * - Invalidates canGiveFeedback query so button disappears
+ * - Invalidates user feedback so profile rating updates
+ * - Handles errors gracefully
  */
 export function useCreateFeedback() {
   const queryClient = useQueryClient();
@@ -24,8 +30,31 @@ export function useCreateFeedback() {
     mutationFn: (data: Parameters<typeof feedbackApi.create>[0]) =>
       feedbackApi.create(data),
 
-    onSuccess: (result) => {
+    onMutate: async (newFeedback) => {
+      // Cancel any ongoing queries for this trip's feedback eligibility
+      await queryClient.cancelQueries({
+        queryKey: [...queryKeys.feedback.all, "can-give", newFeedback.tripId],
+      });
+
+      // Snapshot previous state for potential rollback
+      const previousCanGive = queryClient.getQueryData([
+        ...queryKeys.feedback.all,
+        "can-give",
+        newFeedback.tripId,
+      ]);
+
+      // Optimistic update: mark that user can no longer give feedback
+      queryClient.setQueryData(
+        [...queryKeys.feedback.all, "can-give", newFeedback.tripId],
+        false,
+      );
+
+      return { previousCanGive };
+    },
+
+    onSuccess: (result, variables) => {
       // Invalidate the recipient's feedback (user/charter being rated)
+      // This updates their profile rating
       queryClient.invalidateQueries({
         queryKey: queryKeys.feedback.user(result.toUserId),
       });
@@ -35,11 +64,24 @@ export function useCreateFeedback() {
         queryKey: queryKeys.feedback.my(user?.id || ""),
       });
 
-      toast.success("¡Gracias por tu reseña!");
+      // Explicitly invalidate canGiveFeedback to reflect eligibility change
+      queryClient.invalidateQueries({
+        queryKey: [...queryKeys.feedback.all, "can-give", variables.tripId],
+      });
+
+      toast.success("¡Gracias por tu calificación!");
     },
 
-    onError: () => {
-      toast.error("Error al enviar reseña");
+    onError: (_error, variables, context) => {
+      // Rollback optimistic update on error
+      if (context?.previousCanGive !== undefined) {
+        queryClient.setQueryData(
+          [...queryKeys.feedback.all, "can-give", variables.tripId],
+          context.previousCanGive,
+        );
+      }
+
+      toast.error("No se pudo enviar la calificación. Intenta de nuevo.");
     },
   });
 }

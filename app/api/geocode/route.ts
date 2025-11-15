@@ -19,8 +19,10 @@ interface GeocodeResult {
       lat: number;
       lng: number;
     };
+    location_type?: string;
   };
   address_components: GeocoderAddressComponent[];
+  types?: string[];
 }
 
 interface GoogleGeocodeResponse {
@@ -55,7 +57,7 @@ const extractAddressComponents = (components: GeocoderAddressComponent[]) => {
 export async function POST(request: NextRequest) {
   try {
     const body: GeocodeRequest = await request.json();
-    const apiKey = process.env.NEXT_PUBLIC_GOOGLE_API_KEY;
+    const apiKey = process.env.GOOGLE_MAPS_API_KEY;
 
     if (!apiKey) {
       return NextResponse.json(
@@ -78,7 +80,7 @@ export async function POST(request: NextRequest) {
       const encodedAddress = encodeURIComponent(body.address);
       url = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodedAddress}&components=country:ar&key=${apiKey}`;
     } else if (body.lat !== undefined && body.lon !== undefined) {
-      // Reverse geocoding
+      // Reverse geocoding with precision parameters
       if (typeof body.lat !== "number" || typeof body.lon !== "number") {
         return NextResponse.json(
           { error: "Valid lat and lon are required" },
@@ -86,7 +88,16 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      url = `https://maps.googleapis.com/maps/api/geocode/json?latlng=${body.lat},${body.lon}&key=${apiKey}`;
+      // Build URL with precision parameters: ROOFTOP level + street_address only
+      const baseUrl = "https://maps.googleapis.com/maps/api/geocode/json";
+      const params = new URLSearchParams({
+        latlng: `${body.lat},${body.lon}`,
+        result_type: "street_address", // Only street addresses
+        location_type: "ROOFTOP", // Maximum precision (5-15m)
+        language: "es", // Results in Spanish
+        key: apiKey,
+      });
+      url = `${baseUrl}?${params.toString()}`;
     } else {
       return NextResponse.json(
         {
@@ -107,14 +118,97 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const data: GoogleGeocodeResponse = await response.json();
+    let data: GoogleGeocodeResponse = await response.json();
 
+    // Fallback strategy for areas without ROOFTOP precision
+    // Attempt 1: ROOFTOP + street_address (99% precision)
     if (data.status !== "OK" || !data.results || data.results.length === 0) {
-      return NextResponse.json({ error: "No results found" }, { status: 404 });
+      console.log(
+        "⚠️ [GEOCODE] ROOFTOP failed, attempting RANGE_INTERPOLATED fallback",
+        { lat: body.lat, lon: body.lon },
+      );
+
+      // Fallback 2: RANGE_INTERPOLATED + street_address (95% precision)
+      const baseUrl = "https://maps.googleapis.com/maps/api/geocode/json";
+      const fallbackParams = new URLSearchParams({
+        latlng: `${body.lat},${body.lon}`,
+        result_type: "street_address",
+        location_type: "RANGE_INTERPOLATED",
+        language: "es",
+        key: apiKey,
+      });
+
+      const fallbackResponse = await fetch(
+        `${baseUrl}?${fallbackParams.toString()}`,
+      );
+      data = await fallbackResponse.json();
+
+      // DEBUG: Log Fallback 2 response
+      console.log("🔍 [GEOCODE] Fallback 2 raw response:", {
+        status: data.status,
+        resultCount: data.results?.length || 0,
+        firstResultTypes: data.results?.[0]?.types,
+        firstResult: data.results?.[0]?.formatted_address,
+      });
     }
 
+    // Fallback 3: No result_type filter - accept ANY result (route, locality, etc.)
+    if (data.status !== "OK" || !data.results || data.results.length === 0) {
+      console.log(
+        "⚠️ [GEOCODE] RANGE_INTERPOLATED failed, attempting without result_type filter",
+        { lat: body.lat, lon: body.lon },
+      );
+
+      const baseUrl = "https://maps.googleapis.com/maps/api/geocode/json";
+      const finalParams = new URLSearchParams({
+        latlng: `${body.lat},${body.lon}`,
+        language: "es",
+        key: apiKey,
+        // ✅ NO result_type - accepts route, locality, sublocality, etc.
+      });
+
+      const finalResponse = await fetch(`${baseUrl}?${finalParams.toString()}`);
+      data = await finalResponse.json();
+
+      // DEBUG: Log what Google actually returned
+      console.log("🔍 [GEOCODE] Fallback 3 raw response:", {
+        status: data.status,
+        resultCount: data.results?.length || 0,
+        firstResultTypes: data.results?.[0]?.types,
+        firstResult: data.results?.[0]?.formatted_address,
+      });
+    }
+
+    // Final fallback: return coordinates if no address found
+    if (data.status !== "OK" || !data.results || data.results.length === 0) {
+      console.warn(
+        "⚠️ [GEOCODE] All fallbacks failed, returning coordinates as address",
+        { lat: body.lat, lon: body.lon },
+      );
+
+      return NextResponse.json({
+        address: `Ubicación: ${body.lat?.toFixed(5)}, ${body.lon?.toFixed(5)}`,
+        formattedAddress: "Sin dirección cercana",
+        coordinates: {
+          lat: body.lat,
+          lon: body.lon,
+        },
+        locationType: "APPROXIMATE",
+        isPrecise: false,
+      });
+    }
+
+    // Success: Extract result with precision metadata
     const result = data.results[0];
     const components = extractAddressComponents(result.address_components);
+    const locationType = result.geometry.location_type || "APPROXIMATE";
+    const isPrecise = locationType === "ROOFTOP";
+
+    console.log("✅ [GEOCODE] Success:", {
+      address: result.formatted_address,
+      locationType,
+      isPrecise,
+    });
 
     return NextResponse.json({
       address: result.formatted_address,
@@ -123,6 +217,8 @@ export async function POST(request: NextRequest) {
         lon: result.geometry.location.lng,
       },
       formattedAddress: result.formatted_address,
+      locationType,
+      isPrecise,
       city: components.city,
       state: components.state,
       country: "Argentina",

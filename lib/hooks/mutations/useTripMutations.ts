@@ -131,6 +131,11 @@ export function useCompleteTrip() {
         queryKey: queryKeys.trips.detail(tripId),
       });
 
+      // Invalidate matches to update tripId reference
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.matches.all,
+      });
+
       toast.success("¡Viaje completado!");
     },
 

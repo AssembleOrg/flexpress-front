@@ -23,7 +23,7 @@
 # misc
 .DS_Store
 *.pem
-
+/flexpress-backend/
 # debug
 npm-debug.log*
 yarn-debug.log*

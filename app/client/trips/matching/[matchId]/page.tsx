@@ -10,14 +10,26 @@ import {
   Chip,
   CircularProgress,
   Container,
+  Rating,
   Stack,
   Typography,
 } from "@mui/material";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import toast from "react-hot-toast";
 
 import { ChatWindow } from "@/components/chat/ChatWindow";
+import { FeedbackModal } from "@/components/feedback/FeedbackModal";
+import { ReportModal } from "@/components/modals/ReportModal";
 import { useMatch } from "@/lib/hooks/queries/useTravelMatchQueries";
+import {
+  useCanGiveFeedback,
+  useCharterRating,
+} from "@/lib/hooks/queries/useFeedbackQueries";
+import { useCreateTripFromMatch } from "@/lib/hooks/mutations/useTravelMatchMutations";
+import { useMatchUpdateListener, useTripCompletedListener } from "@/lib/hooks/useWebSocket";
+import { useAuthStore } from "@/lib/stores/authStore";
 import type { User } from "@/lib/types/api";
 import { TravelMatchStatus, UserRole } from "@/lib/types/api";
 
@@ -34,8 +46,92 @@ export default function MatchDetailPage() {
   const params = useParams();
   const router = useRouter();
   const matchId = params.matchId as string;
+  const [feedbackModalOpen, setFeedbackModalOpen] = useState(false);
+  const [reportModalOpen, setReportModalOpen] = useState(false);
 
-  const { data: match, isLoading } = useMatch(matchId);
+  const { user } = useAuthStore();
+  const { data: match, isLoading, refetch: refetchMatch } = useMatch(matchId);
+  const createTripMutation = useCreateTripFromMatch();
+  const [conversationLoadingTimeout, setConversationLoadingTimeout] =
+    useState(false);
+  const [charterFinalized, setCharterFinalized] = useState(false);
+
+  // Feedback/Rating related hooks
+  // Always call hooks (never conditionally) - use enabled option instead
+  const { data: charterRatingData } = useCharterRating(match?.charterId || "", {
+    enabled: !!match?.charterId,
+  });
+  const { data: canGiveFeedback } = useCanGiveFeedback(match?.tripId || "", {
+    enabled: !!match?.tripId,
+  });
+
+  // Determine if current user is the charter or the client
+  const isCharter = user?.id === match?.charterId;
+  const isClient = user?.id === match?.userId;
+
+  // Listen to WebSocket match updates (charter accepts/rejects)
+  useMatchUpdateListener(matchId, (newStatus) => {
+    console.log(
+      `📬 [CLIENT PAGE] Match status updated via WebSocket: ${newStatus}`,
+    );
+    // React Query will auto-refetch via WebSocket invalidation
+  });
+
+  // Handle conversation loading timeout and retry logic
+  useEffect(() => {
+    if (
+      match?.status === TravelMatchStatus.ACCEPTED &&
+      !match.conversation?.id &&
+      !conversationLoadingTimeout
+    ) {
+      // Set timeout after 5 seconds
+      const timeoutId = setTimeout(() => {
+        setConversationLoadingTimeout(true);
+        console.warn(
+          "⚠️ Conversation not loaded after 5s, attempting refetch...",
+        );
+        refetchMatch();
+      }, 5000);
+
+      return () => clearTimeout(timeoutId);
+    }
+  }, [match?.status, match?.conversation?.id, conversationLoadingTimeout, refetchMatch]);
+
+  // Listen for charter finalization (trip completed)
+  useTripCompletedListener(matchId, () => {
+    setCharterFinalized(true);
+    toast.success("🏁 El transportista ha finalizado el viaje");
+    // Refetch match to get updated status
+    refetchMatch();
+  });
+
+  // Handlers for trip confirmation and finalization
+  const handleConfirmTrip = async () => {
+    try {
+      await createTripMutation.mutateAsync(matchId);
+      toast.success("✅ Viaje confirmado. Los créditos han sido deducidos.");
+    } catch (error) {
+      console.error("Error confirming trip:", error);
+      toast.error("Error al confirmar el viaje");
+    }
+  };
+
+  const handleFinalizeTrip = () => {
+    if (!canGiveFeedback) {
+      toast.error("Ya has dado feedback para este viaje");
+      return;
+    }
+    setFeedbackModalOpen(true);
+  };
+
+  // Auto-redirect to chat when match is accepted with conversationId
+  useEffect(() => {
+    if (match?.status === TravelMatchStatus.ACCEPTED && match?.conversationId) {
+      console.log(`✅ [CLIENT PAGE] Match accepted, redirecting to chat`);
+      toast.success("¡Chófer aceptó tu solicitud!");
+      // Page will show ChatWindow via conditional rendering below
+    }
+  }, [match?.status, match?.conversationId]);
 
   // ============================================
   // LOADING STATE
@@ -101,16 +197,28 @@ export default function MatchDetailPage() {
         </Box>
 
         {/* Waiting for response alert */}
-        <Alert severity="info" sx={{ mb: 3 }}>
+        <Alert severity="warning" sx={{ mb: 3 }}>
           <Typography variant="h6" sx={{ fontWeight: 600, mb: 1 }}>
-            ⏳ Esperando confirmación del chófer
+            {isCharter
+              ? "⏳ Solicitud Pendiente de Respuesta"
+              : "⏳ Pendiente de Respuesta"}
           </Typography>
           <Typography variant="body2" sx={{ mb: 2 }}>
-            El chófer <strong>{match.charter?.name || "Chófer"}</strong> tiene
-            hasta las {timeRemaining} para responder a tu solicitud.
+            {isCharter ? (
+              <>
+                Tienes una solicitud de viaje de{" "}
+                <strong>{match.user?.name || "Cliente"}</strong>. Tienes hasta
+                las {timeRemaining} para responder.
+              </>
+            ) : (
+              <>
+                El chófer <strong>{match.charter?.name || "Chófer"}</strong>{" "}
+                tiene hasta las {timeRemaining} para responder a tu solicitud.
+              </>
+            )}
           </Typography>
           <Typography variant="caption" color="text.secondary">
-            Mientras esperas, puedes revisar los detalles de tu solicitud abajo.
+            Mientras esperas, puedes revisar los detalles abajo.
           </Typography>
         </Alert>
 
@@ -245,8 +353,18 @@ export default function MatchDetailPage() {
             ❌ Solicitud Rechazada
           </Typography>
           <Typography variant="body2">
-            El chófer <strong>{match.charter?.name || "Chófer"}</strong> rechazó
-            tu solicitud de viaje. Puedes buscar otro chófer disponible.
+            {isCharter ? (
+              <>
+                Rechazaste la solicitud de viaje de{" "}
+                <strong>{match.user?.name || "Cliente"}</strong>.
+              </>
+            ) : (
+              <>
+                El chófer <strong>{match.charter?.name || "Chófer"}</strong>{" "}
+                rechazó tu solicitud de viaje. Puedes buscar otro chófer
+                disponible.
+              </>
+            )}
           </Typography>
         </Alert>
 
@@ -366,25 +484,74 @@ export default function MatchDetailPage() {
   // ACCEPTED STATE: Show chat window
   // ============================================
   if (match.status === TravelMatchStatus.ACCEPTED) {
-    // Determine the other user (charter driver)
-    const otherUser: User = {
-      id: match.charter?.id || match.charterId || "",
-      name: match.charter?.name || "Chófer",
-      email: match.charter?.email || "",
-      role: UserRole.CHARTER,
-      credits: match.charter?.credits || 0,
-      address: match.charter?.address || "",
-      number: match.charter?.number || "",
-      avatar: match.charter?.avatar || null,
-      originAddress: match.charter?.originAddress || null,
-      originLatitude: match.charter?.originLatitude || null,
-      originLongitude: match.charter?.originLongitude || null,
-      createdAt: match.charter?.createdAt || new Date().toISOString(),
-      updatedAt: match.charter?.updatedAt || new Date().toISOString(),
-    };
+    // Determine the other user based on current user's role
+    const otherUser: User = isCharter
+      ? {
+          // Charter sees CLIENT as otherUser
+          id: match.user?.id || match.userId || "",
+          name: match.user?.name || "Cliente",
+          email: match.user?.email || "",
+          role: UserRole.USER,
+          credits: match.user?.credits || 0,
+          address: match.user?.address || "",
+          number: match.user?.number || "",
+          avatar: match.user?.avatar || null,
+          originAddress: match.user?.originAddress || null,
+          originLatitude: match.user?.originLatitude || null,
+          originLongitude: match.user?.originLongitude || null,
+          createdAt: match.user?.createdAt || new Date().toISOString(),
+          updatedAt: match.user?.updatedAt || new Date().toISOString(),
+        }
+      : {
+          // Client sees CHARTER as otherUser
+          id: match.charter?.id || match.charterId || "",
+          name: match.charter?.name || "Chófer",
+          email: match.charter?.email || "",
+          role: UserRole.CHARTER,
+          credits: match.charter?.credits || 0,
+          address: match.charter?.address || "",
+          number: match.charter?.number || "",
+          avatar: match.charter?.avatar || null,
+          originAddress: match.charter?.originAddress || null,
+          originLatitude: match.charter?.originLatitude || null,
+          originLongitude: match.charter?.originLongitude || null,
+          createdAt: match.charter?.createdAt || new Date().toISOString(),
+          updatedAt: match.charter?.updatedAt || new Date().toISOString(),
+        };
 
-    // Use conversationId if available, fallback to matchId
-    const conversationId = match.conversationId || matchId;
+    // Validar que el match tenga conversación antes de mostrar el chat
+    if (!match.conversation?.id) {
+      return (
+        <Container maxWidth="md" sx={{ py: 4, textAlign: "center" }}>
+          <Box sx={{ my: 4 }}>
+            <CircularProgress sx={{ mb: 2 }} />
+            <Typography variant="h6" color="textSecondary">
+              Preparando el chat...
+            </Typography>
+            <Typography variant="body2" color="textSecondary" sx={{ mt: 1 }}>
+              Por favor espera mientras configuramos la conversación.
+            </Typography>
+
+            {/* Show fallback button after timeout */}
+            {conversationLoadingTimeout && (
+              <Box sx={{ mt: 3 }}>
+                <Alert severity="warning" sx={{ mb: 2 }}>
+                  La conversación está tardando más de lo esperado. Intenta
+                  volver al dashboard y acceder nuevamente.
+                </Alert>
+                <Link href="/client/dashboard">
+                  <Button variant="contained" color="secondary">
+                    Volver al Dashboard
+                  </Button>
+                </Link>
+              </Box>
+            )}
+          </Box>
+        </Container>
+      );
+    }
+
+    const conversationId = match.conversation.id;
 
     return (
       <Container maxWidth="lg" sx={{ py: 4 }}>
@@ -407,12 +574,54 @@ export default function MatchDetailPage() {
             <Typography variant="h4" component="h1" sx={{ fontWeight: 700 }}>
               Detalles del Viaje
             </Typography>
-            <Chip label="✅ Aceptado" color="success" />
+            {/* Dynamic status chip based on match state */}
+            <Chip
+              label={
+                !match.tripId
+                  ? "En Conversación"
+                  : match.trip?.status === "completed"
+                    ? "Finalizado"
+                    : "✅ Confirmado"
+              }
+              color={
+                !match.tripId
+                  ? "info"
+                  : match.trip?.status === "completed"
+                    ? "success"
+                    : "success"
+              }
+            />
           </Box>
 
-          <Typography variant="body1" color="text.secondary">
-            Chófer: <strong>{match.charter?.name || "Chófer"}</strong>
-          </Typography>
+          <Box
+            sx={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              gap: 2,
+            }}
+          >
+            <Box>
+              <Typography variant="body1" color="text.secondary">
+                Chófer: <strong>{match.charter?.name || "Chófer"}</strong>
+              </Typography>
+              {charterRatingData && (
+                <Box
+                  sx={{ display: "flex", alignItems: "center", gap: 1, mt: 1 }}
+                >
+                  <Rating
+                    value={charterRatingData.averageRating || 0}
+                    readOnly
+                    size="small"
+                  />
+                  <Typography variant="caption" color="text.secondary">
+                    {charterRatingData.averageRating?.toFixed(1) || "0.0"} (
+                    {charterRatingData.totalFeedbacks || 0})
+                  </Typography>
+                </Box>
+              )}
+            </Box>
+          </Box>
         </Box>
 
         {/* Main content grid */}
@@ -521,126 +730,125 @@ export default function MatchDetailPage() {
             </Card>
           </Box>
 
-          {/* Right column: Chat */}
-          <Box>
-            <Box sx={{ position: "relative", height: "100%" }}>
+          {/* Right column: Chat + Actions */}
+          <Stack spacing={2}>
+            <Box sx={{ position: "relative", minHeight: "300px" }}>
               <ChatWindow
                 conversationId={conversationId}
                 otherUser={otherUser}
                 onClose={() => router.push("/client/dashboard")}
               />
             </Box>
-          </Box>
+
+            {/* Action Buttons */}
+            <Stack spacing={1}>
+              {/* Charter Finalized Alert - Show when charter completes the trip */}
+              {charterFinalized && (
+                <Alert severity="success" sx={{ mb: 2 }}>
+                  <Typography variant="h6" sx={{ fontWeight: 600, mb: 1 }}>
+                    🏁 Viaje Finalizado
+                  </Typography>
+                  <Typography variant="body2">
+                    El transportista ha completado el viaje. Tus créditos han
+                    sido transferidos.
+                  </Typography>
+                </Alert>
+              )}
+
+              {/* Trip Confirmed Alert - Show when trip is confirmed */}
+              {match.tripId && !charterFinalized && (
+                <Alert severity="success" sx={{ mb: 2 }}>
+                  <Typography variant="h6" sx={{ fontWeight: 600, mb: 1 }}>
+                    ✅ Viaje Confirmado
+                  </Typography>
+                  <Typography variant="body2">
+                    Has confirmado el viaje con{" "}
+                    <strong>{match.charter?.name || "el chófer"}</strong>. Los
+                    créditos han sido reservados y se transferirán al completar
+                    el transporte.
+                  </Typography>
+                </Alert>
+              )}
+
+              {/* Confirm Trip Button - Only if trip not created yet */}
+              {!match.tripId && (
+                <Button
+                  variant="contained"
+                  color="success"
+                  fullWidth
+                  onClick={handleConfirmTrip}
+                  disabled={createTripMutation.isPending}
+                  size="large"
+                >
+                  {createTripMutation.isPending ? (
+                    <CircularProgress size={20} />
+                  ) : (
+                    "✅ Confirmar Viaje"
+                  )}
+                </Button>
+              )}
+
+              {/* Report Button - Only if trip created */}
+              {match.tripId && (
+                <Button
+                  variant="outlined"
+                  color="error"
+                  fullWidth
+                  onClick={() => setReportModalOpen(true)}
+                  size="small"
+                >
+                  ⚠️ Tuve un problema
+                </Button>
+              )}
+
+              {/* Finalize Trip Button - Only if trip created and not yet given feedback */}
+              {match.tripId && canGiveFeedback && (
+                <Button
+                  variant="contained"
+                  color="primary"
+                  fullWidth
+                  onClick={handleFinalizeTrip}
+                  size="large"
+                >
+                  🏁 Finalizar Viaje
+                </Button>
+              )}
+
+              {/* Trip Completed Alert - Show if already gave feedback */}
+              {match.tripId && !canGiveFeedback && (
+                <Alert severity="success" sx={{ mb: 1 }}>
+                  ✅ Viaje completado. Gracias por tu calificación.
+                </Alert>
+              )}
+            </Stack>
+          </Stack>
         </Box>
+
+        {/* Feedback Modal */}
+        {match.charter && (
+          <FeedbackModal
+            open={feedbackModalOpen}
+            onClose={() => setFeedbackModalOpen(false)}
+            tripId={match.tripId || ""}
+            toUserId={match.charter.id}
+            recipientName={match.charter.name || "Chófer"}
+          />
+        )}
+
+        {/* Report Modal */}
+        {match.conversation && match.charter && (
+          <ReportModal
+            open={reportModalOpen}
+            onClose={() => setReportModalOpen(false)}
+            conversationId={match.conversation.id}
+            reportedUserId={match.charter.id}
+            reportedUserName={match.charter.name || "Chófer"}
+          />
+        )}
       </Container>
     );
   }
 
-  // ============================================
-  // COMPLETED STATE: Trip finished successfully
-  // ============================================
-  if (match.status === TravelMatchStatus.COMPLETED) {
-    return (
-      <Container maxWidth="md" sx={{ py: 4 }}>
-        {/* Header */}
-        <Box mb={4}>
-          <Link href="/client/dashboard">
-            <Button startIcon={<ArrowBack />} variant="outlined" sx={{ mb: 2 }}>
-              Volver
-            </Button>
-          </Link>
-
-          <Typography variant="h4" component="h1" sx={{ fontWeight: 700 }}>
-            Viaje Completado
-          </Typography>
-        </Box>
-
-        {/* Success alert */}
-        <Alert severity="success" sx={{ mb: 3 }}>
-          <Typography variant="h6" sx={{ fontWeight: 600, mb: 1 }}>
-            ✅ Viaje Completado Exitosamente
-          </Typography>
-          <Typography variant="body2">
-            Tu viaje con <strong>{match.charter?.name || "el chófer"}</strong>
-            {""}ha sido completado. Los créditos han sido transferidos.
-          </Typography>
-        </Alert>
-
-        {/* Trip summary */}
-        <Card sx={{ mb: 3 }}>
-          <CardContent>
-            <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 2 }}>
-              📍 Resumen del Viaje
-            </Typography>
-
-            <Box sx={{ mb: 2 }}>
-              <Typography variant="caption" color="text.secondary">
-                Origen
-              </Typography>
-              <Typography variant="body2">
-                {match.pickupAddress || "No especificado"}
-              </Typography>
-            </Box>
-
-            <Box sx={{ mb: 2 }}>
-              <Typography variant="caption" color="text.secondary">
-                Destino
-              </Typography>
-              <Typography variant="body2">
-                {match.destinationAddress || "No especificado"}
-              </Typography>
-            </Box>
-
-            <Box
-              sx={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 2 }}
-            >
-              <Box>
-                <Typography variant="caption" color="text.secondary">
-                  Distancia Recorrida
-                </Typography>
-                <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                  {match.distanceKm
-                    ? `${match.distanceKm.toFixed(1)} km`
-                    : "N/A"}
-                </Typography>
-              </Box>
-
-              <Box>
-                <Typography variant="caption" color="text.secondary">
-                  Créditos Utilizados
-                </Typography>
-                <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                  {match.estimatedCredits || 0} pts
-                </Typography>
-              </Box>
-            </Box>
-          </CardContent>
-        </Card>
-
-        {/* Action buttons */}
-        <Stack spacing={2}>
-          {match.tripId && (
-            <Button
-              variant="outlined"
-              color="primary"
-              onClick={() => router.push(`/client/trips/${match.tripId}`)}
-              fullWidth
-            >
-              Ver Detalles del Viaje
-            </Button>
-          )}
-          <Button
-            variant="contained"
-            color="primary"
-            onClick={() => router.push("/client/dashboard")}
-            fullWidth
-          >
-            Volver al Dashboard
-          </Button>
-        </Stack>
-      </Container>
-    );
-  }
 
   // ============================================
   // CANCELLED STATE: Trip was cancelled

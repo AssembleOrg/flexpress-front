@@ -6,27 +6,33 @@ import {
   Button,
   Card,
   CardContent,
-  Chip,
   CircularProgress,
   Container,
   Typography,
 } from "@mui/material";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
 import toast from "react-hot-toast";
+import { geoApi } from "@/lib/api/geo";
 import { AddressInput } from "@/components/ui/AddressInput";
+import { LocationChip } from "@/components/ui/LocationChip";
 // biome-ignore lint/suspicious/noShadowRestrictedNames: exported as alias from Map component
-import { Map } from "@/components/ui/Map";
+import { Map, type MapHandle } from "@/components/ui/Map";
 import { useCreateMatch } from "@/lib/hooks/mutations/useTravelMatchMutations";
+import { useUserMatches } from "@/lib/hooks/queries/useTravelMatchQueries";
 import { useHydrated } from "@/lib/hooks/useHydrated";
 import { useAuthStore } from "@/lib/stores/authStore";
 import { useTravelMatchStore } from "@/lib/stores/travelMatchStore";
+import { isMatchExpired } from "@/lib/utils/matchHelpers";
 
 export default function NewTripPage() {
   const router = useRouter();
   const hydrated = useHydrated();
   const { isAuthenticated } = useAuthStore();
+
+  // Check for existing active trip
+  const { data: myMatches = [] } = useUserMatches();
 
   // Redirigir a login si no está autenticado
   useEffect(() => {
@@ -35,6 +41,28 @@ export default function NewTripPage() {
       router.push("/login");
     }
   }, [hydrated, isAuthenticated, router]);
+
+  // Check if user has active trip
+  const activeTrip = myMatches.find((match) => {
+    if (
+      match.status === "rejected" ||
+      match.status === "cancelled" ||
+      match.status === "expired"
+    ) {
+      return false;
+    }
+    if (match.status === "pending" && isMatchExpired(match)) {
+      return false;
+    }
+    if (
+      match.tripId &&
+      match.trip?.status === "completed" &&
+      match.canGiveFeedback === false
+    ) {
+      return false;
+    }
+    return match.status === "pending" || match.status === "accepted";
+  });
 
   // Form state from Zustand
   const {
@@ -48,6 +76,75 @@ export default function NewTripPage() {
 
   // Mutation for creating match
   const createMatchMutation = useCreateMatch();
+
+  // Estado para coordenadas pendientes (esperando geocodificación)
+  const [pendingCoords, setPendingCoords] = useState<{
+    type: "pickup" | "destination";
+    lat: number;
+    lon: number;
+  } | null>(null);
+
+  // Ref para controlar el mapa desde los chips
+  const mapRef = useRef<MapHandle>(null);
+
+  // Handle marker drag from map
+  const handleMarkerDrag = (
+    type: "pickup" | "destination" | "charter",
+    lat: number,
+    lon: number,
+  ) => {
+    // Solo actualizar estado pendiente
+    if (type === "pickup" || type === "destination") {
+      setPendingCoords({ type, lat, lon });
+    }
+  };
+
+  // Vigilante reactivo: geocodifica cuando hay coordenadas pendientes
+  useEffect(() => {
+    if (!pendingCoords) return;
+
+    const { type, lat, lon } = pendingCoords;
+
+    // Debounce: esperar 500ms antes de llamar a la API
+    const timeoutId = setTimeout(async () => {
+      try {
+        console.log("🔄 [PAGE] Calling reverse geocode from React context:", {
+          type,
+          lat,
+          lon,
+        });
+
+        const result = await geoApi.reverseGeocode(lat, lon);
+
+        if (result) {
+          const address = result.formattedAddress || result.address;
+
+          // Actualizar Zustand store
+          if (type === "pickup") {
+            setPickupLocation(address, { lat, lon });
+            toast.success("📍 Origen ajustado en el mapa");
+          } else if (type === "destination") {
+            setDestinationLocation(address, { lat, lon });
+            toast.success("🎯 Destino ajustado en el mapa");
+          }
+
+          console.log("✅ [PAGE] Reverse geocode successful:", address);
+        } else {
+          console.warn("⚠️ [PAGE] No address found for coordinates");
+          toast.error("No se encontró dirección para esta ubicación");
+        }
+      } catch (error) {
+        console.error("❌ [PAGE] Error in reverse geocode:", error);
+        toast.error("Error al obtener dirección");
+      } finally {
+        // Limpiar estado pendiente
+        setPendingCoords(null);
+      }
+    }, 500); // Debounce de 500ms
+
+    // Cleanup
+    return () => clearTimeout(timeoutId);
+  }, [pendingCoords, setPickupLocation, setDestinationLocation]);
 
   // Mostrar loading mientras se hidrata
   if (!hydrated) {
@@ -64,6 +161,25 @@ export default function NewTripPage() {
     !!destinationAddress &&
     !!pickupCoords &&
     !!destinationCoords;
+
+  // Handle centering map on pickup location
+  const handleCenterOnPickup = () => {
+    if (pickupCoords) {
+      mapRef.current?.centerOnMarker(pickupCoords.lat, pickupCoords.lon);
+      toast.success("Centrando en Origen");
+    }
+  };
+
+  // Handle centering map on destination location
+  const handleCenterOnDestination = () => {
+    if (destinationCoords) {
+      mapRef.current?.centerOnMarker(
+        destinationCoords.lat,
+        destinationCoords.lon,
+      );
+      toast.success("Centrando en Destino");
+    }
+  };
 
   const handleCreateMatch = () => {
     if (!isFormComplete) return;
@@ -84,6 +200,40 @@ export default function NewTripPage() {
       },
     );
   };
+
+  // If user already has active trip, show message and redirect link
+  if (activeTrip) {
+    return (
+      <Container maxWidth="md" sx={{ py: 4 }}>
+        <Box mb={4}>
+          <Link href="/client/dashboard">
+            <Button startIcon={<ArrowBack />} variant="outlined" sx={{ mb: 2 }}>
+              Volver al Dashboard
+            </Button>
+          </Link>
+        </Box>
+
+        <Card sx={{ mb: 3 }}>
+          <CardContent sx={{ textAlign: "center", py: 4 }}>
+            <LocalShipping
+              sx={{ fontSize: 48, color: "warning.main", mb: 2 }}
+            />
+            <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
+              Ya tienes un viaje activo
+            </Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+              Completa o cancela tu viaje actual antes de solicitar otro flete.
+            </Typography>
+            <Link href="/client/dashboard">
+              <Button variant="contained" color="primary" size="large">
+                Volver a Mi Viaje
+              </Button>
+            </Link>
+          </CardContent>
+        </Card>
+      </Container>
+    );
+  }
 
   return (
     <Container maxWidth="md" sx={{ py: 4 }}>
@@ -141,23 +291,21 @@ export default function NewTripPage() {
             />
           </Box>
 
-          {/* Chips informativos */}
+          {/* Chips informativos con iconos de ubicación */}
           {(pickupAddress || destinationAddress) && (
             <Box sx={{ mb: 3, display: "flex", gap: 1, flexWrap: "wrap" }}>
               {pickupAddress && (
-                <Chip
-                  label={`📍 Origen: ${pickupAddress.slice(0, 30)}...`}
-                  color="primary"
-                  size="small"
-                  variant="outlined"
+                <LocationChip
+                  type="pickup"
+                  address={pickupAddress}
+                  onClick={handleCenterOnPickup}
                 />
               )}
               {destinationAddress && (
-                <Chip
-                  label={`🎯 Destino: ${destinationAddress.slice(0, 30)}...`}
-                  color="secondary"
-                  size="small"
-                  variant="outlined"
+                <LocationChip
+                  type="destination"
+                  address={destinationAddress}
+                  onClick={handleCenterOnDestination}
                 />
               )}
             </Box>
@@ -168,7 +316,15 @@ export default function NewTripPage() {
             <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1 }}>
               📍 Vista del trayecto
             </Typography>
+            <Typography
+              variant="caption"
+              color="text.secondary"
+              sx={{ mb: 1, display: "block" }}
+            >
+              💡 Arrastra los pines en el mapa para ajustar la ubicación exacta
+            </Typography>
             <Map
+              ref={mapRef}
               markers={[
                 ...(pickupCoords
                   ? [
@@ -192,6 +348,8 @@ export default function NewTripPage() {
                   : []),
               ]}
               height="300px"
+              allowDragging={true}
+              onMarkerDrag={handleMarkerDrag}
             />
           </Box>
 

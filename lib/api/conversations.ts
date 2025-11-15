@@ -100,17 +100,36 @@ export const conversationApi = {
         { content },
       );
 
-      // Validar que el backend devolvió el mensaje creado
-      if (!response.data.data || !response.data.data.id) {
+      // Handle potential double-wrapper from backend
+      // Backend may return: { success: true, data: { id, content, ... } }
+      const responseData = response.data.data;
+
+      let message: Message;
+      if (
+        responseData &&
+        typeof responseData === "object" &&
+        "data" in responseData &&
+        !("id" in responseData)
+      ) {
+        // Double wrapper: response.data.data = { success, data }
+        message = (responseData as { data: Message }).data;
+      } else if (
+        responseData &&
+        typeof responseData === "object" &&
+        "id" in responseData
+      ) {
+        // Direct message: response.data.data = { id, content, ... }
+        message = responseData as Message;
+      } else {
         throw new Error(
           "Backend no devolvió el mensaje creado con estructura válida",
         );
       }
 
       console.log("✅ [CONVERSATIONS] Message sent successfully");
-      console.log("📊 Message ID:", response.data.data.id);
+      console.log("📊 Message ID:", message.id);
 
-      return response.data.data;
+      return message;
     } catch (error) {
       console.error("❌ [CONVERSATIONS] Failed to send message:", error);
 

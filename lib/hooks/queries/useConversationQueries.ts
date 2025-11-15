@@ -17,16 +17,22 @@ export const conversationKeys = {
  * Used by: ChatWindow component
  *
  * Caching strategy:
- * - staleTime: 30s (messages change rarely during chat)
- * - gcTime: 5min (keep in cache for quick navigation back)
+ * - staleTime: 2h (sufficient for complete negotiation + transport cycle)
+ * - gcTime: 2h (keep in cache for full duration of trip)
  * - refetchOnWindowFocus: true (update if user switches tabs)
+ * - refetchOnReconnect: true (update when connection restored)
+ *
+ * Why 2 hours? Average time from match acceptance to trip completion.
+ * - Negotiation: 15-30 min
+ * - Transport: 60-90 min
+ * - Buffer: 30+ min
  */
 export function useConversationMessages(conversationId: string) {
   return useQuery({
     queryKey: conversationKeys.messages(conversationId),
     queryFn: () => conversationApi.getMessages(conversationId),
-    staleTime: 30 * 1000, // 30 seconds
-    gcTime: 5 * 60 * 1000, // 5 minutes
+    staleTime: 2 * 60 * 60 * 1000, // 2 hours
+    gcTime: 2 * 60 * 60 * 1000, // 2 hours
     refetchOnWindowFocus: true,
     refetchOnReconnect: true,
     enabled: !!conversationId, // Only fetch if conversationId is provided

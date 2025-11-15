@@ -24,6 +24,8 @@ export function useSendMessage() {
       content: string;
     }) => conversationApi.sendMessage(conversationId, content),
 
+    retry: false,
+
     onSuccess: (message, variables) => {
       console.log("✅ [useSendMessage] Message sent successfully");
       console.log("📝 Message:", message);
@@ -38,8 +40,8 @@ export function useSendMessage() {
         return;
       }
 
-      // Emit via WebSocket for real-time delivery to other user
-      socketEmit.sendMessage(variables.conversationId, message.content);
+      // El backend ya emite el evento WebSocket después de persistir
+      // No necesitamos emitir aquí también (evita duplicados)
 
       // Update React Query cache with the new message
       queryClient.setQueryData(
@@ -66,23 +68,6 @@ export function useSendMessage() {
   });
 }
 
-/**
- * Notify that user is typing (for typing indicator in other user's chat)
- * Note: This is emitted via WebSocket, not HTTP
- */
-export function useNotifyTyping() {
-  const socketEmit = useSocketEmit();
-
-  return {
-    notifyTyping: (conversationId: string) => {
-      socketEmit.notifyTyping(conversationId);
-    },
-
-    notifyStopTyping: (conversationId: string) => {
-      socketEmit.notifyStopTyping(conversationId);
-    },
-  };
-}
 
 /**
  * Create a conversation from a match

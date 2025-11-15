@@ -20,13 +20,18 @@ export default function ClientDashboard() {
   const router = useRouter();
   const { data: myMatches = [], isLoading } = useUserMatches();
 
-  const activeMatches = myMatches.filter((match) => {
-    // 1. Verificar status
-    if (match.status !== "pending" && match.status !== "accepted") {
+  // Find the ONE active trip (only one trip at a time allowed)
+  const activeTrip = myMatches.find((match) => {
+    // Exclude non-active statuses
+    if (
+      match.status === "rejected" ||
+      match.status === "cancelled" ||
+      match.status === "expired"
+    ) {
       return false;
     }
 
-    // 2. Verificar expiración (solo para pending)
+    // Exclude if pending and expired
     if (match.status === "pending" && isMatchExpired(match)) {
       console.warn(
         `⏰ [CLIENT DASHBOARD] Match ${match.id} has expired, filtering out`,
@@ -34,10 +39,27 @@ export default function ClientDashboard() {
       return false;
     }
 
-    return true;
+    // Exclude if trip completed AND feedback already given
+    if (
+      match.tripId &&
+      match.trip?.status === "completed" &&
+      match.canGiveFeedback === false
+    ) {
+      return false;
+    }
+
+    // Include: PENDING (not expired) or ACCEPTED
+    return match.status === "pending" || match.status === "accepted";
   });
 
   const handleRequestFreight = () => {
+    // Prevent creating new trip if one is already active
+    if (activeTrip) {
+      alert(
+        "Ya tienes un viaje activo. Completa o cancela antes de solicitar otro.",
+      );
+      return;
+    }
     router.push("/client/trips/new");
   };
 
@@ -45,27 +67,24 @@ export default function ClientDashboard() {
     router.push(`/client/trips/matching/${matchId}`);
   };
 
-  const getStatusLabel = (status: string) => {
-    const labels: Record<
-      string,
-      {
-        label: string;
-        color:
-          | "default"
-          | "primary"
-          | "secondary"
-          | "error"
-          | "info"
-          | "success"
-          | "warning";
+  const getStatusLabel = (status: string, match?: typeof activeTrip) => {
+    // Show status based on match state
+    if (status === "pending") {
+      return { label: "Pendiente de Respuesta", color: "warning" as const };
+    }
+
+    if (status === "accepted") {
+      // Distinguish between: chatting vs confirmed vs completed
+      if (!match?.tripId) {
+        return { label: "En Conversación", color: "info" as const };
       }
-    > = {
-      pending: { label: "Esperando", color: "warning" },
-      accepted: { label: "Aceptado", color: "success" },
-      rejected: { label: "Rechazado", color: "error" },
-      completed: { label: "Completado", color: "default" },
-    };
-    return labels[status] || { label: status, color: "default" };
+      if (match?.trip?.status === "completed") {
+        return { label: "Finalizado", color: "success" as const };
+      }
+      return { label: "Confirmado", color: "success" as const };
+    }
+
+    return { label: status, color: "default" as const };
   };
 
   return (
@@ -149,78 +168,98 @@ export default function ClientDashboard() {
           </Button>
         </Box>
 
-        {/* Active Trips - Condensed */}
+        {/* Active Trip - Single Trip Only */}
         <Box>
           <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
-            Mis Solicitudes Activas
+            Tu Viaje Activo
           </Typography>
 
           {isLoading ? (
             <Box textAlign="center" py={4}>
               <CircularProgress />
             </Box>
-          ) : activeMatches.length === 0 ? (
+          ) : !activeTrip ? (
             <Box textAlign="center" py={4}>
               <LocalShipping sx={{ fontSize: 48, color: "grey.300", mb: 2 }} />
               <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                No tienes solicitudes activas
+                No tienes viajes activos
               </Typography>
               <Typography variant="caption" color="text.secondary">
                 Cuando solicites un flete aparecerá aquí
               </Typography>
             </Box>
           ) : (
-            <Box display="flex" flexDirection="column" gap={2}>
-              {activeMatches.map((match) => {
-                const statusInfo = getStatusLabel(match.status);
-                return (
-                  <Card key={match.id}>
-                    <CardContent>
-                      <Box
-                        display="flex"
-                        justifyContent="space-between"
-                        alignItems="start"
-                        mb={1}
-                      >
-                        <Typography
-                          variant="subtitle2"
-                          sx={{ fontWeight: 600 }}
-                        >
-                          Solicitud de Flete
-                        </Typography>
-                        <Chip
-                          label={statusInfo.label}
-                          color={statusInfo.color}
-                          size="small"
-                        />
-                      </Box>
-                      <Typography
-                        variant="caption"
-                        color="text.secondary"
-                        display="block"
-                        mb={1}
-                      >
-                        De: {match.pickupAddress || "Origen"}
-                      </Typography>
-                      <Typography
-                        variant="caption"
-                        color="text.secondary"
-                        display="block"
-                        mb={2}
-                      >
-                        A: {match.destinationAddress || "Destino"}
-                      </Typography>
-                      <Button
-                        size="small"
-                        onClick={() => handleViewMatch(match.id)}
-                      >
-                        Ver Detalles
-                      </Button>
-                    </CardContent>
-                  </Card>
-                );
-              })}
-            </Box>
+            <Card>
+              <CardContent>
+                <Box
+                  display="flex"
+                  justifyContent="space-between"
+                  alignItems="start"
+                  mb={2}
+                >
+                  <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+                    Solicitud de Flete
+                  </Typography>
+                  <Chip
+                    label={getStatusLabel(activeTrip.status, activeTrip).label}
+                    color={getStatusLabel(activeTrip.status, activeTrip).color}
+                    size="small"
+                  />
+                </Box>
+
+                <Typography
+                  variant="caption"
+                  color="text.secondary"
+                  display="block"
+                  mb={1}
+                >
+                  De: {activeTrip.pickupAddress || "Origen"}
+                </Typography>
+                <Typography
+                  variant="caption"
+                  color="text.secondary"
+                  display="block"
+                  mb={2}
+                >
+                  A: {activeTrip.destinationAddress || "Destino"}
+                </Typography>
+
+                {/* Show charter name if accepted */}
+                {activeTrip.status === "accepted" && activeTrip.charter && (
+                  <Typography
+                    variant="caption"
+                    color="text.secondary"
+                    display="block"
+                    mb={2}
+                  >
+                    Chófer: <strong>{activeTrip.charter.name}</strong>
+                  </Typography>
+                )}
+
+                <Box display="flex" gap={1}>
+                  {/* Direct chat access if conversation exists */}
+                  {activeTrip.conversation?.id ? (
+                    <Button
+                      variant="contained"
+                      color="primary"
+                      fullWidth
+                      onClick={() => handleViewMatch(activeTrip.id)}
+                    >
+                      Volver al Chat
+                    </Button>
+                  ) : (
+                    <Button
+                      variant="contained"
+                      color="primary"
+                      fullWidth
+                      onClick={() => handleViewMatch(activeTrip.id)}
+                    >
+                      Ver Detalles
+                    </Button>
+                  )}
+                </Box>
+              </CardContent>
+            </Card>
           )}
         </Box>
 
