@@ -1,7 +1,7 @@
 "use client";
 
 import { useParams, useRouter } from "next/navigation";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Box,
   Button,
@@ -14,11 +14,13 @@ import {
   Stack,
   CircularProgress,
 } from "@mui/material";
+import { ArrowBack } from "@mui/icons-material";
+import Link from "next/link";
 import toast from "react-hot-toast";
 import { ChatWindow } from "@/components/chat/ChatWindow";
 import { useMatch } from "@/lib/hooks/queries/useTravelMatchQueries";
 import { useTrip } from "@/lib/hooks/queries/useTripQueries";
-import { useCompleteTrip } from "@/lib/hooks/mutations/useTripMutations";
+import { useCharterCompleteTrip } from "@/lib/hooks/mutations/useTripMutations";
 import { useAuthStore } from "@/lib/stores/authStore";
 
 export default function DriverMatchingDetailPage() {
@@ -27,19 +29,29 @@ export default function DriverMatchingDetailPage() {
   const matchId = params.matchId as string;
   const { user } = useAuthStore();
 
-  const { data: match, isLoading: matchLoading } = useMatch(matchId);
+  const { data: match, isLoading: matchLoading, refetch } = useMatch(matchId);
   const tripId = match?.tripId;
   const { data: trip, isLoading: tripLoading } = useTrip(tripId || "", {
     enabled: !!tripId,
   });
 
-  const completeTripMutation = useCompleteTrip();
+  const charterCompleteTripMutation = useCharterCompleteTrip();
 
-  const handleCompleteTrip = async () => {
+  // Temporal MVP: Poll when waiting for client confirmation
+  useEffect(() => {
+    if (match?.trip?.status === 'charter_completed') {
+      const interval = setInterval(() => {
+        refetch();
+      }, 3000);
+      return () => clearInterval(interval);
+    }
+  }, [match?.trip?.status, refetch]);
+
+  const handleCharterCompleteTrip = async () => {
     if (!tripId) return;
     try {
-      await completeTripMutation.mutateAsync(tripId);
-      router.push(`/driver/trips/${tripId}`);
+      await charterCompleteTripMutation.mutateAsync(tripId);
+      // ✅ NO redirect! Se queda en la misma página
     } catch (error) {
       console.error("Error completing trip:", error);
     }
@@ -61,15 +73,37 @@ export default function DriverMatchingDetailPage() {
     );
   }
 
-  const isCompletingTrip = completeTripMutation.isPending;
+  const isCompletingTrip = charterCompleteTripMutation.isPending;
   const tripCompleted = trip?.status === "completed";
 
   return (
     <Container maxWidth="lg" sx={{ py: 4 }}>
+      {/* Header with back button */}
+      <Box mb={3}>
+        <Link href="/driver/dashboard">
+          <Button startIcon={<ArrowBack />} variant="outlined" sx={{ mb: 2 }}>
+            Volver al Dashboard
+          </Button>
+        </Link>
+      </Box>
+
       <Grid container spacing={3}>
         {/* Chat Section */}
         <Grid item xs={12} md={8}>
-          {match.conversation && (
+          {!match.conversation?.id ? (
+            <Card>
+              <CardContent sx={{ textAlign: "center", py: 6 }}>
+                <CircularProgress sx={{ mb: 2 }} />
+                <Typography variant="h6" color="textSecondary" sx={{ mb: 1 }}>
+                  Preparando el chat...
+                </Typography>
+                <Typography variant="caption" color="textSecondary">
+                  La conversación se está configurando. Esto toma solo unos
+                  segundos.
+                </Typography>
+              </CardContent>
+            </Card>
+          ) : (
             <ChatWindow
               conversationId={match.conversation.id}
               otherUser={match.user}
@@ -146,52 +180,81 @@ export default function DriverMatchingDetailPage() {
                   <Typography
                     variant="body2"
                     sx={{
-                      textTransform: "capitalize",
                       fontWeight: 600,
-                      color: tripCompleted ? "success.main" : "info.main",
+                      color: trip.status === "completed"
+                        ? "success.main"
+                        : trip.status === "charter_completed"
+                          ? "warning.main"
+                          : "info.main",
                     }}
                   >
-                    {trip.status}
+                    {trip.status === "pending"
+                      ? "En Progreso"
+                      : trip.status === "charter_completed"
+                        ? "Esperando Confirmación del Cliente"
+                        : trip.status === "completed"
+                          ? "Completado"
+                          : trip.status}
                   </Typography>
                 </CardContent>
               </Card>
             )}
 
             {/* Action Buttons */}
-            <Stack spacing={1}>
-              {/* Waiting for client confirmation */}
+            <Stack spacing={2}>
+              {/* Estado 1: Esperando que cliente confirme el viaje */}
               {!tripId && (
                 <Alert severity="info">
                   ℹ️ Esperando que el cliente confirme el viaje...
                 </Alert>
               )}
 
-              {tripId && !tripCompleted && (
-                <Alert severity="success" sx={{ mb: 2 }}>
-                  ✅ El cliente confirmó el viaje. Los créditos están
-                  reservados.
+              {/* Estado 2: Trip confirmado, charter puede finalizar */}
+              {tripId && trip?.status === "pending" && (
+                <>
+                  <Alert severity="success">
+                    ✅ Viaje confirmado. Los créditos están reservados. Puedes
+                    finalizarlo cuando termines el trabajo.
+                  </Alert>
+                  <Button
+                    variant="contained"
+                    color="primary"
+                    fullWidth
+                    onClick={handleCharterCompleteTrip}
+                    disabled={isCompletingTrip}
+                    size="large"
+                  >
+                    {isCompletingTrip ? (
+                      <CircularProgress size={20} />
+                    ) : (
+                      "🏁 Finalizar Viaje"
+                    )}
+                  </Button>
+                </>
+              )}
+
+              {/* Estado 3: Charter finalizó, esperando cliente */}
+              {tripId && trip?.status === "charter_completed" && (
+                <Alert severity="warning">
+                  ⏳ Has finalizado el viaje. Esperando confirmación del
+                  cliente...
                 </Alert>
               )}
 
-              {tripId && !tripCompleted && (
-                <Button
-                  variant="contained"
-                  color="success"
-                  fullWidth
-                  onClick={handleCompleteTrip}
-                  disabled={isCompletingTrip}
-                  size="large"
-                >
-                  {isCompletingTrip ? (
-                    <CircularProgress size={20} />
-                  ) : (
-                    "🏁 Finalizar Viaje"
-                  )}
-                </Button>
-              )}
-
-              {tripCompleted && (
-                <Alert severity="success">✅ Viaje completado</Alert>
+              {/* Estado 4: Viaje completado por AMBOS */}
+              {tripId && trip?.status === "completed" && (
+                <>
+                  <Alert severity="success">
+                    ✅ Viaje completado. Créditos transferidos exitosamente.
+                  </Alert>
+                  <Button
+                    variant="outlined"
+                    onClick={() => router.push("/driver/dashboard")}
+                    fullWidth
+                  >
+                    Volver al Dashboard
+                  </Button>
+                </>
               )}
             </Stack>
           </Stack>

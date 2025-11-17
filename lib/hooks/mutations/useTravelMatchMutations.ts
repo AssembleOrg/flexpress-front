@@ -27,6 +27,9 @@ export function useCreateMatch() {
       travelMatchingApi.create(data),
 
     onSuccess: (result) => {
+      // Clear any previous persisted match data before creating new one
+      useTravelMatchStore.getState().clearPersistedMatch();
+
       // Cache the new match
       queryClient.setQueryData(
         queryKeys.matches.detail(result.match.id),
@@ -79,19 +82,13 @@ export function useSelectCharter() {
     }) => travelMatchingApi.selectCharter(matchId, charterId),
 
     onSuccess: async (_result, { matchId }) => {
-      console.log("🔄 [SELECT] Starting cache invalidation");
+      console.log("🔄 [SELECT] Starting cache refetch");
 
-      // Invalidate user's matches list and WAIT for refetch
-      await queryClient.invalidateQueries({
-        queryKey: queryKeys.matches.user(user?.id || ""),
+      // Refetch all matches (force immediate update)
+      await queryClient.refetchQueries({
+        queryKey: queryKeys.matches.all,
       });
-      console.log("✅ [SELECT] User matches invalidated");
-
-      // Invalidate specific match detail and WAIT for refetch
-      await queryClient.invalidateQueries({
-        queryKey: queryKeys.matches.detail(matchId),
-      });
-      console.log("✅ [SELECT] Match detail invalidated");
+      console.log("✅ [SELECT] Matches refetched");
 
       toast.success("Chófer seleccionado. Esperando confirmación...");
     },
@@ -117,12 +114,12 @@ export function useRespondToMatch() {
     mutationFn: ({ matchId, accept }: { matchId: string; accept: boolean }) =>
       travelMatchingApi.respondToMatch(matchId, accept),
 
-    onSuccess: (result, { matchId, accept }) => {
-      // Update the match in cache
+    onSuccess: async (result, { matchId, accept }) => {
+      // Update the match in cache (optimistic update)
       queryClient.setQueryData(queryKeys.matches.detail(matchId), result);
 
-      // Invalidate all matches to ensure fresh data from server
-      queryClient.invalidateQueries({
+      // Refetch all matches to ensure fresh data from server (force immediate update)
+      await queryClient.refetchQueries({
         queryKey: queryKeys.matches.all,
       });
 
@@ -155,13 +152,13 @@ export function useCreateTripFromMatch() {
     mutationFn: (matchId: string) =>
       travelMatchingApi.createTripFromMatch(matchId),
 
-    onSuccess: () => {
-      // Invalidate everything related to matches and trips
-      queryClient.invalidateQueries({
+    onSuccess: async () => {
+      // Refetch everything related to matches and trips (force immediate update)
+      await queryClient.refetchQueries({
         queryKey: queryKeys.matches.all,
       });
 
-      queryClient.invalidateQueries({
+      await queryClient.refetchQueries({
         queryKey: queryKeys.trips.all,
       });
 

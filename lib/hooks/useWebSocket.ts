@@ -128,7 +128,6 @@ export function useWebSocket(): UseWebSocketReturn {
       }
     });
 
-
     /**
      * Evento: match:updated
      * Recibido cuando el estado de un match cambia (ej: charter acepta/rechaza)
@@ -148,14 +147,9 @@ export function useWebSocket(): UseWebSocketReturn {
         const { matchId, status } = data;
         console.log(`🔄 [WebSocket] Match ${matchId} actualizado: ${status}`);
 
-        // Invalidar queries relacionadas a matches cuando el estado cambia
-        // Use same queryKeys as React Query to ensure cache consistency
-        queryClient.invalidateQueries({ queryKey: queryKeys.matches.user("") });
-        queryClient.invalidateQueries({
-          queryKey: queryKeys.matches.charter(""),
-        });
-        queryClient.invalidateQueries({
-          queryKey: queryKeys.matches.detail(matchId),
+        // Refetch all matches (force immediate update for real-time updates)
+        queryClient.refetchQueries({
+          queryKey: queryKeys.matches.all,
         });
       },
     );
@@ -178,15 +172,15 @@ export function useWebSocket(): UseWebSocketReturn {
         const { tripId, matchId } = data;
         console.log(`🏁 [WebSocket] Trip ${tripId} completado`);
 
-        // Invalidar queries para refrescar estado del viaje y match
+        // Refetch all trips and matches (force immediate update for real-time updates)
         if (tripId) {
-          queryClient.invalidateQueries({
-            queryKey: ["trips", tripId],
+          queryClient.refetchQueries({
+            queryKey: queryKeys.trips.all,
           });
         }
         if (matchId) {
-          queryClient.invalidateQueries({
-            queryKey: queryKeys.matches.detail(matchId),
+          queryClient.refetchQueries({
+            queryKey: queryKeys.matches.all,
           });
         }
       },
@@ -258,7 +252,6 @@ export function useSocketEmit() {
   };
 }
 
-
 export function useMatchUpdateListener(
   matchId: string | undefined,
   onMatchUpdated?: (status: string) => void,
@@ -302,7 +295,10 @@ export function useTripCompletedListener(
       return;
     }
 
-    const handleTripCompleted = (data: { tripId?: string; matchId?: string }) => {
+    const handleTripCompleted = (data: {
+      tripId?: string;
+      matchId?: string;
+    }) => {
       if (data?.matchId === matchId) {
         console.log(
           `🏁 [TRIP COMPLETED LISTENER] Trip completado para match ${matchId}`,

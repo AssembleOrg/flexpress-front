@@ -20,14 +20,9 @@ import {
 import { useEffect, useRef, useState } from "react";
 import { MessageBubble } from "@/components/chat/MessageBubble";
 import { ReportModal } from "@/components/modals/ReportModal";
-import {
-  useSendMessage,
-} from "@/lib/hooks/mutations/useConversationMutations";
+import { useSendMessage } from "@/lib/hooks/mutations/useConversationMutations";
 import { useConversationMessages } from "@/lib/hooks/queries/useConversationQueries";
-import {
-  useWebSocket,
-  useSocketEmit,
-} from "@/lib/hooks/useWebSocket";
+import { useWebSocket, useSocketEmit } from "@/lib/hooks/useWebSocket";
 import { useAuthStore } from "@/lib/stores/authStore";
 import type { User } from "@/lib/types/api";
 
@@ -62,10 +57,8 @@ export function ChatWindow({
     const yesterday = new Date(today);
     yesterday.setDate(yesterday.getDate() - 1);
 
-    const isToday =
-      date.toDateString() === today.toDateString();
-    const isYesterday =
-      date.toDateString() === yesterday.toDateString();
+    const isToday = date.toDateString() === today.toDateString();
+    const isYesterday = date.toDateString() === yesterday.toDateString();
 
     if (isToday) return "Hoy";
     if (isYesterday) return "Ayer";
@@ -206,7 +199,6 @@ export function ChatWindow({
     }
   };
 
-
   if (!user) {
     return (
       <Card>
@@ -309,7 +301,10 @@ export function ChatWindow({
             }
 
             const previousMessage = index > 0 ? messages[index - 1] : undefined;
-            const showDateSeparator = shouldShowDateSeparator(message, previousMessage);
+            const showDateSeparator = shouldShowDateSeparator(
+              message,
+              previousMessage,
+            );
 
             return (
               <Box key={message.id}>
@@ -324,11 +319,15 @@ export function ChatWindow({
                       opacity: 0.5,
                     }}
                   >
-                    <Box sx={{ flex: 1, height: 1, backgroundColor: "divider" }} />
+                    <Box
+                      sx={{ flex: 1, height: 1, backgroundColor: "divider" }}
+                    />
                     <Typography variant="caption" color="textSecondary">
                       {formatDateSeparator(message.createdAt)}
                     </Typography>
-                    <Box sx={{ flex: 1, height: 1, backgroundColor: "divider" }} />
+                    <Box
+                      sx={{ flex: 1, height: 1, backgroundColor: "divider" }}
+                    />
                   </Box>
                 )}
                 <MessageBubble

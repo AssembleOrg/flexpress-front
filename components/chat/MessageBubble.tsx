@@ -82,7 +82,9 @@ export function MessageBubble({ message, isOwn }: MessageBubbleProps) {
             <Typography
               variant="caption"
               sx={{
-                color: message.isRead ? "primary.contrastText" : "primary.contrastText",
+                color: message.isRead
+                  ? "primary.contrastText"
+                  : "primary.contrastText",
                 opacity: 0.7,
                 fontSize: "0.75rem",
               }}

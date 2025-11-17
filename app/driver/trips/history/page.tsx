@@ -46,17 +46,15 @@ export default function DriverTripHistory() {
   const completedTrips = trips.filter((trip) => trip.status === "completed");
 
   const handleOpenFeedback = (trip: Trip) => {
-    // toUserId is the client who requested the trip
-    const clientId = trip.clientId || "";
-    const clientName = trip.client?.firstName
-      ? `${trip.client.firstName} ${trip.client.lastName || ""}`
-      : "el cliente";
+    // toUserId is the user (client) who requested the trip
+    const userId = trip.userId || "";
+    const userName = trip.user?.name || "el cliente";
 
     setFeedbackModal({
       open: true,
       tripId: trip.id,
-      toUserId: clientId,
-      recipientName: clientName,
+      toUserId: userId,
+      recipientName: userName,
     });
   };
 
@@ -149,9 +147,9 @@ function TripHistoryCard({
   onOpenFeedback: (trip: Trip) => void;
 }) {
   const { data: canGive } = useCanGiveFeedback(trip.id);
-  const { data: clientFeedback } = useUserFeedback(trip.clientId || "");
+  const { data: clientFeedback } = useUserFeedback(trip.userId || "");
 
-  // Get the average rating given by others to this client
+  // Get the average rating given by others to this user (client)
   const clientAverageRating = clientFeedback?.averageRating || 0;
 
   return (
@@ -166,10 +164,10 @@ function TripHistoryCard({
         >
           <Box flex={1}>
             <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
-              Viaje a {trip.destination || "destino"}
+              Viaje a {trip.travelMatch?.destinationAddress || trip.address || "destino"}
             </Typography>
             <Typography variant="caption" color="text.secondary">
-              Desde: {trip.origin || "origen"}
+              Desde: {trip.travelMatch?.pickupAddress || "origen"}
             </Typography>
           </Box>
           <Chip label="Completado" color="success" size="small" />
@@ -184,7 +182,7 @@ function TripHistoryCard({
               Cliente
             </Typography>
             <Typography variant="body2" sx={{ fontWeight: 500 }}>
-              {trip.client?.firstName || "Cliente"}
+              {trip.user?.name || "Cliente"}
             </Typography>
           </Box>
 

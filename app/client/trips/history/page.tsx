@@ -46,17 +46,15 @@ export default function ClientTripHistory() {
   const completedTrips = trips.filter((trip) => trip.status === "completed");
 
   const handleOpenFeedback = (trip: Trip) => {
-    // toUserId is typically the driver (for a user giving feedback)
-    const driverId = trip.driverId || "";
-    const driverName = trip.driver?.firstName
-      ? `${trip.driver.firstName} ${trip.driver.lastName || ""}`
-      : "el conductor";
+    // toUserId is the charter (for a client giving feedback)
+    const charterId = trip.charterId || "";
+    const charterName = trip.charter?.name || "el charter";
 
     setFeedbackModal({
       open: true,
       tripId: trip.id,
-      toUserId: driverId,
-      recipientName: driverName,
+      toUserId: charterId,
+      recipientName: charterName,
     });
   };
 
@@ -149,10 +147,10 @@ function TripHistoryCard({
   onOpenFeedback: (trip: Trip) => void;
 }) {
   const { data: canGive } = useCanGiveFeedback(trip.id);
-  const { data: recipientFeedback } = useUserFeedback(trip.driverId || "");
+  const { data: recipientFeedback } = useUserFeedback(trip.charterId || "");
 
-  // Get the average rating given by others to this driver
-  const driverAverageRating = recipientFeedback?.averageRating || 0;
+  // Get the average rating given by others to this charter
+  const charterAverageRating = recipientFeedback?.averageRating || 0;
 
   return (
     <Card>
@@ -166,10 +164,10 @@ function TripHistoryCard({
         >
           <Box flex={1}>
             <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
-              Viaje a {trip.destination || "destino"}
+              Viaje a {trip.travelMatch?.destinationAddress || trip.address || "destino"}
             </Typography>
             <Typography variant="caption" color="text.secondary">
-              Desde: {trip.origin || "origen"}
+              Desde: {trip.travelMatch?.pickupAddress || "origen"}
             </Typography>
           </Box>
           <Chip label="Completado" color="success" size="small" />
@@ -181,15 +179,15 @@ function TripHistoryCard({
         <Stack gap={1.5} mb={2}>
           <Box>
             <Typography variant="caption" color="text.secondary">
-              Conductor
+              Charter
             </Typography>
             <Typography variant="body2" sx={{ fontWeight: 500 }}>
-              {trip.driver?.firstName || "Conductor"}
+              {trip.charter?.name || "Charter"}
             </Typography>
           </Box>
 
-          {/* Driver Rating */}
-          {driverAverageRating > 0 && (
+          {/* Charter Rating */}
+          {charterAverageRating > 0 && (
             <Box>
               <Typography
                 variant="caption"
@@ -197,11 +195,11 @@ function TripHistoryCard({
                 display="block"
                 mb={0.5}
               >
-                Calificación del conductor
+                Calificación del charter
               </Typography>
-              <Rating value={driverAverageRating} readOnly size="small" />
+              <Rating value={charterAverageRating} readOnly size="small" />
               <Typography variant="caption" color="text.secondary">
-                {driverAverageRating.toFixed(1)} estrellas
+                {charterAverageRating.toFixed(1)} estrellas
               </Typography>
             </Box>
           )}

@@ -39,17 +39,13 @@ export default function ClientDashboard() {
       return false;
     }
 
-    // Exclude if trip completed AND feedback already given
-    if (
-      match.tripId &&
-      match.trip?.status === "completed" &&
-      match.canGiveFeedback === false
-    ) {
+    // Exclude if trip completed (regardless of feedback status)
+    if (match.tripId && match.trip?.status === "completed") {
       return false;
     }
 
-    // Include: PENDING (not expired) or ACCEPTED
-    return match.status === "pending" || match.status === "accepted";
+    // Include: PENDING (not expired), ACCEPTED, or COMPLETED
+    return match.status === "pending" || match.status === "accepted" || match.status === "completed";
   });
 
   const handleRequestFreight = () => {
@@ -73,14 +69,25 @@ export default function ClientDashboard() {
       return { label: "Pendiente de Respuesta", color: "warning" as const };
     }
 
-    if (status === "accepted") {
+    if (status === "accepted" || status === "completed") {
       // Distinguish between: chatting vs confirmed vs completed
       if (!match?.tripId) {
         return { label: "En Conversación", color: "info" as const };
       }
+
+      // Check trip status for more granular state
       if (match?.trip?.status === "completed") {
-        return { label: "Finalizado", color: "success" as const };
+        return { label: "Completado", color: "success" as const };
       }
+
+      if (match?.trip?.status === "charter_completed") {
+        return { label: "Esperando tu Confirmación", color: "warning" as const };
+      }
+
+      if (match?.trip?.status === "pending") {
+        return { label: "En Progreso", color: "info" as const };
+      }
+
       return { label: "Confirmado", color: "success" as const };
     }
 

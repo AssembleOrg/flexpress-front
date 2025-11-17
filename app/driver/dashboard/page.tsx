@@ -7,6 +7,7 @@ import {
   Button,
   Card,
   CardContent,
+  Chip,
   CircularProgress,
   Container,
   FormControlLabel,
@@ -65,9 +66,17 @@ export default function DriverDashboard() {
     return true;
   });
 
-  // Filter active conversations (accepted matches)
+  // Filter active conversations (accepted or completed matches with active trips)
+  // Only show matches where client has confirmed the trip (tripId exists)
   const activeConversations = charterMatches.filter((match) => {
-    return match?.id && match.status === "accepted" && match.conversation?.id;
+    // Must have valid match ID and tripId (client confirmed)
+    if (!match?.id || !match.tripId) return false;
+
+    // Exclude trips that are already completed (should appear in history instead)
+    if (match.trip?.status === "completed") return false;
+
+    // Include accepted and completed matches with confirmed trips
+    return match.status === "accepted" || match.status === "completed";
   });
 
   const handleAvailabilityChange = (
@@ -311,8 +320,9 @@ export default function DriverDashboard() {
                     <Box
                       display="flex"
                       justifyContent="space-between"
-                      alignItems="center"
+                      alignItems="start"
                       mb={2}
+                      gap={2}
                     >
                       <Box flex={1}>
                         <Typography
@@ -325,6 +335,27 @@ export default function DriverDashboard() {
                           📍 {match.pickupAddress}
                         </Typography>
                       </Box>
+
+                      {/* Status Chip */}
+                      <Chip
+                        label={
+                          match.trip?.status === "completed"
+                            ? "Completado"
+                            : match.trip?.status === "charter_completed"
+                              ? "Esperando Cliente"
+                              : match.trip?.status === "pending"
+                                ? "En Progreso"
+                                : "Confirmado"
+                        }
+                        color={
+                          match.trip?.status === "completed"
+                            ? "success"
+                            : match.trip?.status === "charter_completed"
+                              ? "warning"
+                              : "info"
+                        }
+                        size="small"
+                      />
                     </Box>
 
                     <Button
