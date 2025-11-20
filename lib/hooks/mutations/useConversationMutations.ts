@@ -24,7 +24,21 @@ export function useSendMessage() {
       content: string;
     }) => conversationApi.sendMessage(conversationId, content),
 
-    retry: false,
+    retry: (failureCount, error) => {
+      // Only retry on network errors, not on HTTP errors like 400/401
+      if (failureCount >= 2) return false;
+      if (error instanceof Error) {
+        const errorMsg = error.message.toLowerCase();
+        // Retry on network errors
+        return (
+          errorMsg.includes("network") ||
+          errorMsg.includes("econnrefused") ||
+          errorMsg.includes("econnreset") ||
+          errorMsg.includes("socket hang up")
+        );
+      }
+      return false;
+    },
 
     onSuccess: (message, variables) => {
       console.log("✅ [useSendMessage] Message sent successfully");
@@ -67,7 +81,6 @@ export function useSendMessage() {
     },
   });
 }
-
 
 /**
  * Create a conversation from a match

@@ -14,21 +14,32 @@ import {
   Stack,
   Typography,
 } from "@mui/material";
+import { CheckCircle, Warning } from "@mui/icons-material";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { ChatWindow } from "@/components/chat/ChatWindow";
 import { FeedbackModal } from "@/components/feedback/FeedbackModal";
 import { ReportModal } from "@/components/modals/ReportModal";
+import { MobileContainer } from "@/components/layout/MobileContainer";
+import { MobileHeader } from "@/components/layout/MobileHeader";
+import { TripDetailsCard } from "@/components/trip/TripDetailsCard";
+import { TripMetricsCard } from "@/components/trip/TripMetricsCard";
+import { MOBILE_BOTTOM_NAV_HEIGHT } from "@/lib/constants/mobileDesign";
 import { useMatch } from "@/lib/hooks/queries/useTravelMatchQueries";
 import {
   useCanGiveFeedback,
   useCharterRating,
 } from "@/lib/hooks/queries/useFeedbackQueries";
 import { useCreateTripFromMatch } from "@/lib/hooks/mutations/useTravelMatchMutations";
-import { useMatchUpdateListener, useTripCompletedListener } from "@/lib/hooks/useWebSocket";
+import { useClientConfirmCompletion } from "@/lib/hooks/mutations/useTripMutations";
+import {
+  useMatchUpdateListener,
+  useTripCompletedListener,
+} from "@/lib/hooks/useWebSocket";
 import { useAuthStore } from "@/lib/stores/authStore";
 import type { User } from "@/lib/types/api";
 import { TravelMatchStatus, UserRole } from "@/lib/types/api";
@@ -52,6 +63,7 @@ export default function MatchDetailPage() {
   const { user } = useAuthStore();
   const { data: match, isLoading, refetch: refetchMatch } = useMatch(matchId);
   const createTripMutation = useCreateTripFromMatch();
+  const clientConfirmCompletionMutation = useClientConfirmCompletion();
   const [conversationLoadingTimeout, setConversationLoadingTimeout] =
     useState(false);
   const [charterFinalized, setCharterFinalized] = useState(false);
@@ -63,6 +75,14 @@ export default function MatchDetailPage() {
   });
   const { data: canGiveFeedback } = useCanGiveFeedback(match?.tripId || "", {
     enabled: !!match?.tripId,
+  });
+
+  console.log("🔍 [FEEDBACK] Debug info:", {
+    canGiveFeedback,
+    tripId: match?.tripId,
+    tripStatus: match?.trip?.status,
+    charterId: match?.charterId,
+    charterName: match?.charter?.name,
   });
 
   // Determine if current user is the charter or the client
@@ -95,7 +115,12 @@ export default function MatchDetailPage() {
 
       return () => clearTimeout(timeoutId);
     }
-  }, [match?.status, match?.conversation?.id, conversationLoadingTimeout, refetchMatch]);
+  }, [
+    match?.status,
+    match?.conversation?.id,
+    conversationLoadingTimeout,
+    refetchMatch,
+  ]);
 
   // Listen for charter finalization (trip completed)
   useTripCompletedListener(matchId, () => {
@@ -122,6 +147,15 @@ export default function MatchDetailPage() {
       return;
     }
     setFeedbackModalOpen(true);
+  };
+
+  const handleClientConfirmCompletion = async () => {
+    if (!match?.tripId) return;
+    try {
+      await clientConfirmCompletionMutation.mutateAsync(match.tripId);
+    } catch (error) {
+      console.error("Error confirming completion:", error);
+    }
   };
 
   // Auto-redirect to chat when match is accepted with conversationId
@@ -481,9 +515,12 @@ export default function MatchDetailPage() {
   }
 
   // ============================================
-  // ACCEPTED STATE: Show chat window
+  // ACCEPTED & COMPLETED STATE: Show chat window
   // ============================================
-  if (match.status === TravelMatchStatus.ACCEPTED) {
+  if (
+    match.status === TravelMatchStatus.ACCEPTED ||
+    match.status === TravelMatchStatus.COMPLETED
+  ) {
     // Determine the other user based on current user's role
     const otherUser: User = isCharter
       ? {
@@ -553,224 +590,128 @@ export default function MatchDetailPage() {
 
     const conversationId = match.conversation.id;
 
+    // Determine trip status for UI
+    const getStatusInfo = () => {
+      if (!match.tripId) {
+        return { label: "En Conversación", color: "primary" as const };
+      }
+      if (match.trip?.status === "completed") {
+        return { label: "Completado", color: "success" as const };
+      }
+      if (match.trip?.status === "charter_completed") {
+        return { label: "Esperando tu Confirmación", color: "warning" as const };
+      }
+      if (match.trip?.status === "pending") {
+        return { label: "En Progreso", color: "primary" as const };
+      }
+      return { label: "Confirmado", color: "success" as const };
+    };
+
+    const statusInfo = getStatusInfo();
+
     return (
-      <Container maxWidth="lg" sx={{ py: 4 }}>
-        {/* Header */}
-        <Box mb={4}>
-          <Link href="/client/dashboard">
-            <Button startIcon={<ArrowBack />} variant="outlined" sx={{ mb: 2 }}>
-              Volver
-            </Button>
-          </Link>
+      <>
+        {/* Mobile Header */}
+        <MobileHeader
+          title="Chat con Chófer"
+          onBack={() => router.push("/client/dashboard")}
+        />
 
-          <Box
-            sx={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              mb: 2,
-            }}
-          >
-            <Typography variant="h4" component="h1" sx={{ fontWeight: 700 }}>
-              Detalles del Viaje
-            </Typography>
-            {/* Dynamic status chip based on match state */}
-            <Chip
-              label={
-                !match.tripId
-                  ? "En Conversación"
-                  : match.trip?.status === "completed"
-                    ? "Finalizado"
-                    : "✅ Confirmado"
-              }
-              color={
-                !match.tripId
-                  ? "info"
-                  : match.trip?.status === "completed"
-                    ? "success"
-                    : "success"
-              }
-            />
-          </Box>
+        <MobileContainer withBottomNav>
+          {/* Desktop Header */}
+          <Box sx={{ display: { xs: "none", md: "block" }, mb: 4 }}>
+            <Link href="/client/dashboard">
+              <Button startIcon={<ArrowBack />} variant="outlined" sx={{ mb: 2 }}>
+                Volver
+              </Button>
+            </Link>
 
-          <Box
-            sx={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              gap: 2,
-            }}
-          >
-            <Box>
-              <Typography variant="body1" color="text.secondary">
-                Chófer: <strong>{match.charter?.name || "Chófer"}</strong>
+            <Box
+              sx={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+              }}
+            >
+              <Typography variant="h4" component="h1" sx={{ fontWeight: 700 }}>
+                Detalles del Viaje
               </Typography>
-              {charterRatingData && (
-                <Box
-                  sx={{ display: "flex", alignItems: "center", gap: 1, mt: 1 }}
-                >
-                  <Rating
-                    value={charterRatingData.averageRating || 0}
-                    readOnly
-                    size="small"
-                  />
-                  <Typography variant="caption" color="text.secondary">
-                    {charterRatingData.averageRating?.toFixed(1) || "0.0"} (
-                    {charterRatingData.totalFeedbacks || 0})
-                  </Typography>
-                </Box>
-              )}
+              <Chip
+                label={statusInfo.label}
+                color={statusInfo.color}
+                size="small"
+                sx={{ fontWeight: 600 }}
+              />
             </Box>
           </Box>
-        </Box>
 
-        {/* Main content grid */}
-        <Box
-          sx={{
-            display: "grid",
-            gridTemplateColumns: { xs: "1fr", md: "1fr 1fr" },
-            gap: 3,
-          }}
-        >
-          {/* Left column: Trip details */}
-          <Box>
-            {/* Pickup and Destination */}
-            <Card sx={{ mb: 3 }}>
-              <CardContent>
-                <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 2 }}>
-                  📍 Ruta del Viaje
-                </Typography>
+          {/* Main content grid */}
+          <Box
+            sx={{
+              display: "grid",
+              gridTemplateColumns: { xs: "1fr", md: "1fr 1fr" },
+              gap: 1.5,
+            }}
+          >
+            {/* Left column: Trip details - order 2 on mobile (appears below chat) */}
+            <Box sx={{ order: { xs: 2, md: 1 } }}>
+              {/* Trip Details Card */}
+              <TripDetailsCard
+                origin={match.pickupAddress || "No especificado"}
+                destination={match.destinationAddress || "No especificado"}
+                scheduledDate={
+                  match.scheduledDate
+                    ? new Date(match.scheduledDate).toLocaleDateString("es-ES", {
+                        year: "numeric",
+                        month: "long",
+                        day: "numeric",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })
+                    : undefined
+                }
+                otherUser={{
+                  name: match.charter?.name || "Chófer",
+                  avatar: match.charter?.avatar ?? undefined,
+                  role: "Chófer",
+                  rating: charterRatingData
+                    ? {
+                        average: charterRatingData.averageRating || 0,
+                        count: charterRatingData.totalFeedbacks || 0,
+                      }
+                    : undefined,
+                }}
+                status={statusInfo}
+              />
 
-                <Box sx={{ mb: 2 }}>
-                  <Typography variant="caption" color="text.secondary">
-                    Punto de Recogida
-                  </Typography>
-                  <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                    {match.pickupAddress || "No especificado"}
-                  </Typography>
-                </Box>
-
-                <Box sx={{ mb: 2 }}>
-                  <Typography variant="caption" color="text.secondary">
-                    Punto de Destino
-                  </Typography>
-                  <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                    {match.destinationAddress || "No especificado"}
-                  </Typography>
-                </Box>
-
-                {match.scheduledDate && (
-                  <Box>
-                    <Typography variant="caption" color="text.secondary">
-                      Fecha Programada
-                    </Typography>
-                    <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                      {new Date(match.scheduledDate).toLocaleDateString(
-                        "es-ES",
-                        {
-                          year: "numeric",
-                          month: "long",
-                          day: "numeric",
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        },
-                      )}
-                    </Typography>
-                  </Box>
-                )}
-              </CardContent>
-            </Card>
-
-            {/* Match Details */}
-            <Card>
-              <CardContent>
-                <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 2 }}>
-                  💼 Detalles
-                </Typography>
-
-                <Box
-                  sx={{
-                    display: "grid",
-                    gridTemplateColumns: "1fr 1fr",
-                    gap: 2,
-                  }}
-                >
-                  <Box>
-                    <Typography variant="caption" color="text.secondary">
-                      Distancia
-                    </Typography>
-                    <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                      {match.distanceKm
-                        ? `${match.distanceKm.toFixed(1)} km`
-                        : "N/A"}
-                    </Typography>
-                  </Box>
-
-                  <Box>
-                    <Typography variant="caption" color="text.secondary">
-                      Créditos Estimados
-                    </Typography>
-                    <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                      {match.estimatedCredits || 0} pts
-                    </Typography>
-                  </Box>
-
-                  {match.workersCount && (
-                    <Box>
-                      <Typography variant="caption" color="text.secondary">
-                        Número de Trabajadores
-                      </Typography>
-                      <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                        {match.workersCount}
-                      </Typography>
-                    </Box>
-                  )}
-                </Box>
-              </CardContent>
-            </Card>
-          </Box>
-
-          {/* Right column: Chat + Actions */}
-          <Stack spacing={2}>
-            <Box sx={{ position: "relative", minHeight: "300px" }}>
-              <ChatWindow
-                conversationId={conversationId}
-                otherUser={otherUser}
-                onClose={() => router.push("/client/dashboard")}
+              {/* Trip Metrics Card */}
+              <TripMetricsCard
+                distance={match.distanceKm ?? undefined}
+                credits={match.estimatedCredits ?? undefined}
               />
             </Box>
 
-            {/* Action Buttons */}
-            <Stack spacing={1}>
-              {/* Charter Finalized Alert - Show when charter completes the trip */}
-              {charterFinalized && (
-                <Alert severity="success" sx={{ mb: 2 }}>
-                  <Typography variant="h6" sx={{ fontWeight: 600, mb: 1 }}>
-                    🏁 Viaje Finalizado
-                  </Typography>
-                  <Typography variant="body2">
-                    El transportista ha completado el viaje. Tus créditos han
-                    sido transferidos.
-                  </Typography>
-                </Alert>
-              )}
+            {/* Right column: Chat + Action Buttons - order 1 on mobile (appears first) */}
+            <Box sx={{ order: { xs: 1, md: 2 } }}>
+              <Box
+                sx={{
+                  position: "relative",
+                  minHeight: { xs: "450px", md: "600px" },
+                }}
+              >
+                <ErrorBoundary>
+                  <ChatWindow
+                    conversationId={conversationId}
+                    otherUser={otherUser}
+                    onClose={() => router.push("/client/dashboard")}
+                  />
+                </ErrorBoundary>
+              </Box>
 
-              {/* Trip Confirmed Alert - Show when trip is confirmed */}
-              {match.tripId && !charterFinalized && (
-                <Alert severity="success" sx={{ mb: 2 }}>
-                  <Typography variant="h6" sx={{ fontWeight: 600, mb: 1 }}>
-                    ✅ Viaje Confirmado
-                  </Typography>
-                  <Typography variant="body2">
-                    Has confirmado el viaje con{" "}
-                    <strong>{match.charter?.name || "el chófer"}</strong>. Los
-                    créditos han sido reservados y se transferirán al completar
-                    el transporte.
-                  </Typography>
-                </Alert>
-              )}
+              {/* Action Buttons - directly below chat */}
+              <Stack spacing={1} sx={{ mt: 1.5 }}>
 
-              {/* Confirm Trip Button - Only if trip not created yet */}
+              {/* Estado 1: Botón Confirmar Viaje */}
               {!match.tripId && (
                 <Button
                   variant="contained"
@@ -779,6 +720,7 @@ export default function MatchDetailPage() {
                   onClick={handleConfirmTrip}
                   disabled={createTripMutation.isPending}
                   size="large"
+                  sx={{ minHeight: 48 }}
                 >
                   {createTripMutation.isPending ? (
                     <CircularProgress size={20} />
@@ -788,55 +730,184 @@ export default function MatchDetailPage() {
                 </Button>
               )}
 
-              {/* Report Button - Only if trip created */}
-              {match.tripId && (
-                <Button
-                  variant="outlined"
-                  color="error"
-                  fullWidth
-                  onClick={() => setReportModalOpen(true)}
-                  size="small"
-                >
-                  ⚠️ Tuve un problema
-                </Button>
+              {/* Estado 2: Trip confirmado, esperando charter */}
+              {match.tripId && match.trip?.status === "pending" && (
+                <>
+                  <Box
+                    sx={{
+                      display: "grid",
+                      gridTemplateColumns: { xs: "1fr 1fr", md: "2fr 1fr" },
+                      gap: 1,
+                      mb: 1.5,
+                    }}
+                  >
+                    {/* Status box */}
+                    <Box
+                      sx={{
+                        gridColumn: { xs: "1 / -1", md: "1 / 2" },
+                        bgcolor: "success.light",
+                        borderLeft: "4px solid",
+                        borderLeftColor: "success.main",
+                        borderRadius: 1.5,
+                        p: 1.5,
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 1.5,
+                      }}
+                    >
+                      <CheckCircle sx={{ fontSize: 24, color: "success.main" }} />
+                      <Box>
+                        <Typography
+                          variant="body2"
+                          sx={{ fontWeight: 700, fontSize: "0.85rem", color: "success.dark" }}
+                        >
+                          Viaje Confirmado
+                        </Typography>
+                        <Typography variant="caption" sx={{ fontSize: "0.7rem" }} color="text.secondary">
+                          Créditos reservados
+                        </Typography>
+                      </Box>
+                    </Box>
+
+                    {/* Problem button */}
+                    <Button
+                      variant="outlined"
+                      color="error"
+                      fullWidth
+                      size="small"
+                      startIcon={<Warning sx={{ fontSize: 18 }} />}
+                      onClick={() => setReportModalOpen(true)}
+                      sx={{
+                        gridColumn: { xs: "1 / -1", md: "2 / 3" },
+                        minHeight: { xs: 40, md: "100%" },
+                        fontSize: "0.8rem",
+                      }}
+                    >
+                      Tuve un problema
+                    </Button>
+                  </Box>
+                </>
               )}
 
-              {/* Finalize Trip Button - Only if trip created and not yet given feedback */}
-              {match.tripId && canGiveFeedback && (
-                <Button
-                  variant="contained"
-                  color="primary"
-                  fullWidth
-                  onClick={handleFinalizeTrip}
-                  size="large"
-                >
-                  🏁 Finalizar Viaje
-                </Button>
+              {/* Estado 3: Charter finalizó, cliente debe confirmar */}
+              {match.tripId && match.trip?.status === "charter_completed" && (
+                <Stack spacing={1}>
+                  <Box
+                    sx={{
+                      bgcolor: "info.light",
+                      borderLeft: "4px solid",
+                      borderLeftColor: "info.main",
+                      borderRadius: 1.5,
+                      p: 1.5,
+                    }}
+                  >
+                    <Typography variant="body2" sx={{ fontWeight: 700, fontSize: "0.85rem", mb: 0.5 }}>
+                      🏁 El Transportista Finalizó el Viaje
+                    </Typography>
+                    <Typography variant="caption" sx={{ fontSize: "0.7rem" }} color="text.secondary">
+                      Por favor confirma que has recibido tu carga correctamente.
+                    </Typography>
+                  </Box>
+                  <Box
+                    sx={{
+                      display: "grid",
+                      gridTemplateColumns: { xs: "1fr 1fr", md: "1fr" },
+                      gap: 1,
+                    }}
+                  >
+                    <Button
+                      variant="contained"
+                      color="success"
+                      fullWidth
+                      onClick={handleClientConfirmCompletion}
+                      sx={{
+                        gridColumn: { xs: "1 / -1", md: "auto" },
+                        minHeight: 44,
+                        fontWeight: 700,
+                        fontSize: "0.85rem",
+                      }}
+                    >
+                      ✅ Confirmar Recepción
+                    </Button>
+                    <Button
+                      variant="outlined"
+                      color="error"
+                      fullWidth
+                      size="small"
+                      startIcon={<Warning sx={{ fontSize: 18 }} />}
+                      onClick={() => setReportModalOpen(true)}
+                      sx={{
+                        gridColumn: { xs: "1 / -1", md: "auto" },
+                        minHeight: 40,
+                        fontSize: "0.8rem",
+                      }}
+                    >
+                      Reportar Problema
+                    </Button>
+                  </Box>
+                </Stack>
               )}
 
-              {/* Trip Completed Alert - Show if already gave feedback */}
-              {match.tripId && !canGiveFeedback && (
-                <Alert severity="success" sx={{ mb: 1 }}>
-                  ✅ Viaje completado. Gracias por tu calificación.
-                </Alert>
+              {/* Estado 4: Viaje completado por AMBOS */}
+              {match.tripId && match.trip?.status === "completed" && (
+                <>
+                  <Alert severity="success" sx={{ mb: 1 }}>
+                    <Typography variant="body2" sx={{ fontWeight: 600, mb: 0.5 }}>
+                      ✅ Viaje Completado
+                    </Typography>
+                    <Typography variant="caption">
+                      Los créditos han sido transferidos exitosamente.
+                    </Typography>
+                  </Alert>
+
+                  {/* Show rating button ONLY if can give feedback */}
+                  {canGiveFeedback ? (
+                    <Button
+                      variant="contained"
+                      color="primary"
+                      fullWidth
+                      onClick={() => {
+                        console.log("🎯 [FEEDBACK] Button clicked, opening modal");
+                        console.log("📊 [FEEDBACK] Before:", { feedbackModalOpen });
+                        setFeedbackModalOpen(true);
+                        console.log("📊 [FEEDBACK] After setState called");
+                      }}
+                      size="large"
+                      sx={{ minHeight: 48 }}
+                    >
+                      ⭐ Dar Calificación
+                    </Button>
+                  ) : (
+                    <Alert severity="info" sx={{ mb: 1 }}>
+                      <Typography variant="caption">
+                        ✅ Gracias por tu calificación.
+                      </Typography>
+                    </Alert>
+                  )}
+                </>
               )}
-            </Stack>
-          </Stack>
-        </Box>
+              </Stack>
+            </Box>
+          </Box>
+        </MobileContainer>
 
         {/* Feedback Modal */}
-        {match.charter && (
-          <FeedbackModal
-            open={feedbackModalOpen}
-            onClose={() => setFeedbackModalOpen(false)}
-            tripId={match.tripId || ""}
-            toUserId={match.charter.id}
-            recipientName={match.charter.name || "Chófer"}
-          />
-        )}
+        {console.log("🎨 [FEEDBACK] Rendering modal with:", {
+          open: feedbackModalOpen,
+          tripId: match.tripId,
+          toUserId: match.charterId,
+          recipientName: match.charter?.name,
+        })}
+        <FeedbackModal
+          open={feedbackModalOpen}
+          onClose={() => setFeedbackModalOpen(false)}
+          tripId={match.tripId || ""}
+          toUserId={match.charterId || ""}
+          recipientName={match.charter?.name || "Charter"}
+        />
 
         {/* Report Modal */}
-        {match.conversation && match.charter && (
+        {match.conversation && match.charter?.id && (
           <ReportModal
             open={reportModalOpen}
             onClose={() => setReportModalOpen(false)}
@@ -845,10 +916,9 @@ export default function MatchDetailPage() {
             reportedUserName={match.charter.name || "Chófer"}
           />
         )}
-      </Container>
+      </>
     );
   }
-
 
   // ============================================
   // CANCELLED STATE: Trip was cancelled

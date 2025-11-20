@@ -90,10 +90,12 @@ export interface TravelMatch {
     createdAt: string;
   };
   tripId?: string | null;
+  trip?: Trip; // Trip relation (populated when tripId exists)
   createdAt: string;
   updatedAt: string;
   user?: Partial<User>;
   charter?: Partial<User>;
+  canGiveFeedback?: boolean; // Added by useMatch hook (frontend-only)
 }
 
 export interface AvailableCharter {

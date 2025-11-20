@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { BottomNavbar } from "@/components/layout/BottomNavbar";
 
 export const metadata: Metadata = {
   title: "Cliente - Flexpress",
@@ -12,8 +13,8 @@ export default function ClientLayout({
 }) {
   return (
     <div className="client-layout">
-      {/* Add client-specific navigation/header here if needed */}
       {children}
+      <BottomNavbar />
     </div>
   );
 }

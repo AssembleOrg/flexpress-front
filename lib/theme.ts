@@ -105,6 +105,15 @@ export const flexpressTheme = createTheme({
     },
   },
   components: {
+    // Global CSS Baseline con animaciones
+    MuiCssBaseline: {
+      styleOverrides: `
+        @keyframes pulse {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.6; }
+        }
+      `,
+    },
     // Botones personalizados
     MuiButton: {
       styleOverrides: {
@@ -112,11 +121,25 @@ export const flexpressTheme = createTheme({
           borderRadius: 8,
           fontWeight: 700,
           padding: "10px 24px",
+          // Mobile-first: Aumentar altura mínima para touch targets
+          minHeight: 48,
+          transition: "all 0.2s ease-in-out",
+        },
+        sizeSmall: {
+          minHeight: 40,
+          padding: "8px 16px",
+        },
+        sizeLarge: {
+          minHeight: 56,
+          padding: "14px 32px",
+          fontSize: "1.1rem",
         },
         containedPrimary: {
           backgroundColor: "#380116",
           "&:hover": {
             backgroundColor: "#4b011d",
+            transform: "translateY(-1px)",
+            boxShadow: "0px 4px 12px rgba(56, 1, 22, 0.3)",
           },
         },
         containedSecondary: {
@@ -124,6 +147,8 @@ export const flexpressTheme = createTheme({
           color: "#212121",
           "&:hover": {
             backgroundColor: "#B7850D",
+            transform: "translateY(-1px)",
+            boxShadow: "0px 4px 12px rgba(220, 166, 33, 0.4)",
           },
         },
       },
@@ -134,8 +159,22 @@ export const flexpressTheme = createTheme({
         root: {
           borderRadius: 12,
           boxShadow: "0px 2px 8px rgba(0, 0, 0, 0.08)",
+          transition: "all 0.2s ease-in-out",
           "&:hover": {
             boxShadow: "0px 4px 16px rgba(0, 0, 0, 0.12)",
+          },
+        },
+      },
+    },
+    // Container con spacing mobile-first
+    MuiContainer: {
+      styleOverrides: {
+        root: {
+          paddingLeft: 16,
+          paddingRight: 16,
+          "@media (min-width: 600px)": {
+            paddingLeft: 24,
+            paddingRight: 24,
           },
         },
       },
@@ -177,6 +216,69 @@ export const flexpressTheme = createTheme({
         root: {
           "& .MuiOutlinedInput-root": {
             borderRadius: 8,
+          },
+        },
+      },
+    },
+    // BottomNavigation con estilo brand
+    MuiBottomNavigation: {
+      styleOverrides: {
+        root: {
+          backgroundColor: "#FFFFFF",
+          borderTop: "1px solid rgba(56, 1, 22, 0.08)",
+          boxShadow: "0px -2px 8px rgba(0, 0, 0, 0.08)",
+          height: 64,
+        },
+      },
+    },
+    MuiBottomNavigationAction: {
+      styleOverrides: {
+        root: {
+          color: "#503933",
+          minWidth: 64,
+          padding: "6px 12px 8px",
+          transition: "all 0.2s ease-in-out",
+          "&.Mui-selected": {
+            color: "#DCA621",
+            "& .MuiBottomNavigationAction-label": {
+              fontSize: "0.75rem",
+              fontWeight: 700,
+            },
+          },
+        },
+        label: {
+          fontSize: "0.7rem",
+          fontWeight: 500,
+          "&.Mui-selected": {
+            fontSize: "0.75rem",
+          },
+        },
+      },
+    },
+    // Tabs para chat/detalles deslizables
+    MuiTabs: {
+      styleOverrides: {
+        root: {
+          minHeight: 48,
+        },
+        indicator: {
+          backgroundColor: "#DCA621",
+          height: 3,
+        },
+      },
+    },
+    MuiTab: {
+      styleOverrides: {
+        root: {
+          minHeight: 48,
+          textTransform: "none",
+          fontWeight: 600,
+          fontSize: "0.95rem",
+          color: "#503933",
+          transition: "all 0.2s ease-in-out",
+          "&.Mui-selected": {
+            color: "#380116",
+            fontWeight: 700,
           },
         },
       },

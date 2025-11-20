@@ -1,99 +1,120 @@
 "use client";
 
-import { Box, Button, Typography } from "@mui/material";
-import { motion } from "framer-motion";
-import type { ReactNode } from "react";
+import { Box, Typography, Button } from "@mui/material";
+import { type ReactNode } from "react";
 
 interface EmptyStateProps {
-  icon?: ReactNode;
+  /**
+   * Icon to display (ReactNode for flexibility)
+   */
+  icon: ReactNode;
+  /**
+   * Main message
+   */
   title: string;
-  description?: string;
+  /**
+   * Secondary message (optional)
+   */
+  subtitle?: string;
+  /**
+   * Action button (optional)
+   */
   action?: {
     label: string;
     onClick: () => void;
   };
+  /**
+   * Custom styles
+   */
+  sx?: Record<string, any>;
 }
 
+/**
+ * EmptyState Component
+ *
+ * Generic empty state component for lists and sections.
+ * Mobile-first with centered layout.
+ *
+ * Features:
+ * - Customizable icon
+ * - Title + subtitle
+ * - Optional CTA button
+ * - Clean, minimal design
+ *
+ * @example
+ * ```tsx
+ * <EmptyState
+ *   icon={<History sx={{ fontSize: 64, color: "grey.300" }} />}
+ *   title="No tienes viajes completados"
+ *   subtitle="Cuando completes un viaje aparecerá aquí"
+ *   action={{
+ *     label: "Solicitar Flete",
+ *     onClick: () => router.push('/client/trips/new')
+ *   }}
+ * />
+ * ```
+ */
 export function EmptyState({
   icon,
   title,
-  description,
+  subtitle,
   action,
+  sx = {},
 }: EmptyStateProps) {
   return (
     <Box
-      display="flex"
-      flexDirection="column"
-      alignItems="center"
-      justifyContent="center"
-      minHeight="40vh"
-      gap={2}
-      py={4}
+      sx={{
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+        textAlign: "center",
+        py: { xs: 6, md: 8 },
+        px: 3,
+        ...sx,
+      }}
     >
-      {icon && (
-        <motion.div
-          initial={{ scale: 0, rotate: -180 }}
-          animate={{ scale: 1, rotate: 0 }}
-          transition={{ duration: 0.5, ease: "easeOut" }}
-        >
-          <Box
-            sx={{
-              fontSize: 64,
-              color: "primary.main",
-              opacity: 0.5,
-            }}
-          >
-            {icon}
-          </Box>
-        </motion.div>
-      )}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.2, duration: 0.4 }}
+      {/* Icon */}
+      <Box mb={3}>{icon}</Box>
+
+      {/* Title */}
+      <Typography
+        variant="h6"
+        sx={{
+          fontWeight: 700,
+          mb: 1,
+          fontSize: { xs: "1rem", md: "1.25rem" },
+        }}
       >
+        {title}
+      </Typography>
+
+      {/* Subtitle */}
+      {subtitle && (
         <Typography
-          variant="h5"
-          color="text.primary"
-          textAlign="center"
-          fontWeight={600}
+          variant="body2"
+          color="text.secondary"
+          sx={{ mb: action ? 3 : 0, maxWidth: 400 }}
         >
-          {title}
+          {subtitle}
         </Typography>
-      </motion.div>
-      {description && (
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3, duration: 0.4 }}
-        >
-          <Typography
-            variant="body1"
-            color="text.secondary"
-            textAlign="center"
-            maxWidth={400}
-          >
-            {description}
-          </Typography>
-        </motion.div>
       )}
+
+      {/* Action Button */}
       {action && (
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.4, duration: 0.4 }}
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
+        <Button
+          variant="contained"
+          color="secondary"
+          size="large"
+          onClick={action.onClick}
+          sx={{
+            minHeight: 48,
+            fontWeight: 700,
+            px: 4,
+          }}
         >
-          <Button
-            variant="contained"
-            color="secondary"
-            onClick={action.onClick}
-            sx={{ mt: 2 }}
-          >
-            {action.label}
-          </Button>
-        </motion.div>
+          {action.label}
+        </Button>
       )}
     </Box>
   );

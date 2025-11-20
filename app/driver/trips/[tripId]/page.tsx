@@ -11,7 +11,6 @@ import {
   Stack,
   CircularProgress,
   Alert,
-  Grid,
 } from "@mui/material";
 import { FeedbackModal } from "@/components/feedback/FeedbackModal";
 import { useTrip } from "@/lib/hooks/queries/useTripQueries";
@@ -59,11 +58,9 @@ export default function DriverTripDetailPage() {
           Detalles del Viaje
         </Typography>
 
-        <Grid container spacing={2}>
-          <Grid item xs={12}>
-            <Card>
-              <CardContent>
-                <Stack spacing={2}>
+        <Card>
+          <CardContent>
+            <Stack spacing={2}>
                   <Box>
                     <Typography variant="caption" color="textSecondary">
                       Estado
@@ -88,7 +85,7 @@ export default function DriverTripDetailPage() {
                       Cliente
                     </Typography>
                     <Typography variant="body2">
-                      {trip.client?.name || "N/A"}
+                      {trip.user?.name || "N/A"}
                     </Typography>
                   </Box>
 
@@ -97,7 +94,7 @@ export default function DriverTripDetailPage() {
                       Origen
                     </Typography>
                     <Typography variant="body2">
-                      {trip.origin || "N/A"}
+                      {trip.travelMatch?.pickupAddress || "N/A"}
                     </Typography>
                   </Box>
 
@@ -106,25 +103,27 @@ export default function DriverTripDetailPage() {
                       Destino
                     </Typography>
                     <Typography variant="body2">
-                      {trip.destination || "N/A"}
+                      {trip.travelMatch?.destinationAddress || trip.address || "N/A"}
                     </Typography>
                   </Box>
 
-                  <Box>
-                    <Typography variant="caption" color="textSecondary">
-                      Precio Sugerido
-                    </Typography>
-                    <Typography variant="body2">
-                      ${trip.suggestedPrice || 0}
-                    </Typography>
-                  </Box>
+                  {trip.travelMatch?.distanceKm && (
+                    <Box>
+                      <Typography variant="caption" color="textSecondary">
+                        Distancia
+                      </Typography>
+                      <Typography variant="body2">
+                        {trip.travelMatch.distanceKm.toFixed(1)} km
+                      </Typography>
+                    </Box>
+                  )}
 
                   <Box>
                     <Typography variant="caption" color="textSecondary">
-                      Precio Final
+                      Créditos Estimados
                     </Typography>
                     <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                      ${trip.finalPrice || trip.suggestedPrice || 0}
+                      {trip.travelMatch?.estimatedCredits || 0} créditos
                     </Typography>
                   </Box>
 
@@ -133,21 +132,19 @@ export default function DriverTripDetailPage() {
                       ✅ Viaje completado. Los créditos han sido transferidos.
                     </Alert>
                   )}
-                </Stack>
-              </CardContent>
-            </Card>
-          </Grid>
-        </Grid>
+            </Stack>
+          </CardContent>
+        </Card>
       </Stack>
 
       {/* Feedback Modal - Opens automatically when trip is completed */}
-      {trip.client && (
+      {trip.user && (
         <FeedbackModal
           open={feedbackModalOpen}
           onClose={handleFeedbackClose}
           tripId={trip.id}
-          toUserId={trip.client.id}
-          recipientName={trip.client.name}
+          toUserId={trip.user.id}
+          recipientName={trip.user.name}
         />
       )}
     </Container>

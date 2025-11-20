@@ -1,24 +1,58 @@
 "use client";
 
-import { Box, Typography } from "@mui/material";
+import { Avatar, Box } from "@mui/material";
 
 interface TypingIndicatorProps {
   userName?: string;
+  userAvatar?: string;
 }
 
 /**
  * Typing indicator component
  * Shows animated dots to indicate that the other user is typing
+ * Now with avatar support for better visual
  */
 export function TypingIndicator({
-  userName = "El otro usuario",
+  userName = "Usuario",
+  userAvatar,
 }: TypingIndicatorProps) {
   return (
-    <Box display="flex" alignItems="center" gap={0.5} my={2}>
-      <Typography variant="caption" color="text.secondary">
-        {userName} está escribiendo
-      </Typography>
-      <Box display="flex" gap={0.3}>
+    <Box
+      display="flex"
+      justifyContent="flex-start"
+      mb={1}
+      alignItems="flex-end"
+      gap={1}
+    >
+      {/* Avatar */}
+      <Avatar
+        src={userAvatar}
+        alt={userName}
+        sx={{
+          width: 32,
+          height: 32,
+          bgcolor: "secondary.main",
+          color: "primary.main",
+          fontSize: "0.875rem",
+          fontWeight: 700,
+        }}
+      >
+        {userName[0]}
+      </Avatar>
+
+      {/* Typing bubble with animated dots */}
+      <Box
+        sx={{
+          borderRadius: 2,
+          px: 2,
+          py: 1.5,
+          backgroundColor: "grey.200",
+          display: "flex",
+          alignItems: "center",
+          gap: 0.5,
+          minHeight: 40,
+        }}
+      >
         <TypingDot delay={0} />
         <TypingDot delay={0.15} />
         <TypingDot delay={0.3} />

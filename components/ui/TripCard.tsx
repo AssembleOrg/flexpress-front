@@ -30,8 +30,8 @@ export default function TripCard({
   const isClientView = variant === "client";
   const isAdminView = variant === "admin";
 
-  const displayUser = isClientView ? trip.driver : trip.client;
-  const showPrice = trip.finalPrice || trip.suggestedPrice;
+  const displayUser = isClientView ? trip.charter : trip.user;
+  const showPrice = trip.travelMatch?.estimatedCredits || 0;
 
   return (
     <Card
@@ -60,7 +60,7 @@ export default function TripCard({
               color: "secondary.main",
             }}
           >
-            ${showPrice.toLocaleString()}
+            {showPrice.toLocaleString()} créditos
           </Typography>
         </Box>
 
@@ -69,25 +69,25 @@ export default function TripCard({
           <Box display="flex" alignItems="center" mb={1}>
             <LocationOn sx={{ color: "primary.main", mr: 1 }} />
             <Typography variant="body1" sx={{ fontWeight: 500 }}>
-              Origen: {trip.origin}
+              Origen: {trip.travelMatch?.pickupAddress || "N/A"}
             </Typography>
           </Box>
           <Box display="flex" alignItems="center">
             <Route sx={{ color: "primary.main", mr: 1 }} />
             <Typography variant="body1" sx={{ fontWeight: 500 }}>
-              Destino: {trip.destination}
+              Destino: {trip.travelMatch?.destinationAddress || trip.address}
             </Typography>
           </Box>
         </Box>
 
-        {/* Descripción */}
-        {trip.description && (
+        {/* Distancia */}
+        {trip.travelMatch?.distanceKm && (
           <Typography
             variant="body2"
             color="text.secondary"
-            sx={{ mb: 2, fontStyle: "italic" }}
+            sx={{ mb: 2 }}
           >
-            "{trip.description}"
+            Distancia: {trip.travelMatch.distanceKm.toFixed(1)} km
           </Typography>
         )}
 
@@ -102,12 +102,12 @@ export default function TripCard({
             >
               <UserProfile
                 user={{
-                  firstName: displayUser.firstName,
-                  lastName: displayUser.lastName,
+                  firstName: displayUser.name.split(" ")[0] || displayUser.name,
+                  lastName: displayUser.name.split(" ").slice(1).join(" ") || "",
                   avatar: displayUser.avatar,
-                  rating: displayUser.rating,
+                  rating: undefined,
                 }}
-                subtitle={isClientView ? "Conductor" : "Cliente"}
+                subtitle={isClientView ? "Charter" : "Cliente"}
               />
             </Box>
           </>
@@ -115,20 +115,7 @@ export default function TripCard({
 
         {/* Botones de acción */}
         <Box display="flex" gap={1} mt={2}>
-          {isDriverView && trip.status === "searching" && onAccept && (
-            <Button
-              variant="contained"
-              color="secondary"
-              fullWidth
-              size="large"
-              onClick={() => onAccept(trip.id)}
-              sx={{ fontWeight: 600 }}
-            >
-              Aceptar Viaje
-            </Button>
-          )}
-
-          {(isClientView || isAdminView) && onView && (
+          {onView && (
             <Button
               variant="outlined"
               color="primary"
@@ -139,28 +126,16 @@ export default function TripCard({
             </Button>
           )}
 
-          {trip.status === "negotiating" && onView && (
+          {trip.status === "pending" && onCancel && (
             <Button
-              variant="contained"
-              color="primary"
-              onClick={() => onView(trip.id)}
-              sx={{ flexGrow: 1, fontWeight: 600 }}
+              variant="outlined"
+              color="error"
+              onClick={() => onCancel(trip.id)}
+              size="small"
             >
-              Ir al Chat
+              Cancelar
             </Button>
           )}
-
-          {(trip.status === "searching" || trip.status === "negotiating") &&
-            onCancel && (
-              <Button
-                variant="outlined"
-                color="error"
-                onClick={() => onCancel(trip.id)}
-                size="small"
-              >
-                Cancelar
-              </Button>
-            )}
         </Box>
       </CardContent>
     </Card>

@@ -1,6 +1,12 @@
 "use client";
 
-import { Add, History, LocalShipping } from "@mui/icons-material";
+import {
+  Add,
+  LocalShipping,
+  LocationOn,
+  Flag,
+  Person,
+} from "@mui/icons-material";
 import {
   Box,
   Button,
@@ -8,11 +14,12 @@ import {
   CardContent,
   Chip,
   CircularProgress,
-  Container,
   Typography,
+  Avatar,
+  Badge,
 } from "@mui/material";
 import { useRouter } from "next/navigation";
-import { AuthNavbar } from "@/components/layout/AuthNavbar";
+import { MobileContainer } from "@/components/layout/MobileContainer";
 import { useUserMatches } from "@/lib/hooks/queries/useTravelMatchQueries";
 import { isMatchExpired } from "@/lib/utils/matchHelpers";
 
@@ -39,17 +46,17 @@ export default function ClientDashboard() {
       return false;
     }
 
-    // Exclude if trip completed AND feedback already given
-    if (
-      match.tripId &&
-      match.trip?.status === "completed" &&
-      match.canGiveFeedback === false
-    ) {
+    // Exclude if trip completed (regardless of feedback status)
+    if (match.tripId && match.trip?.status === "completed") {
       return false;
     }
 
-    // Include: PENDING (not expired) or ACCEPTED
-    return match.status === "pending" || match.status === "accepted";
+    // Include: PENDING (not expired), ACCEPTED, or COMPLETED
+    return (
+      match.status === "pending" ||
+      match.status === "accepted" ||
+      match.status === "completed"
+    );
   });
 
   const handleRequestFreight = () => {
@@ -73,207 +80,280 @@ export default function ClientDashboard() {
       return { label: "Pendiente de Respuesta", color: "warning" as const };
     }
 
-    if (status === "accepted") {
+    if (status === "accepted" || status === "completed") {
       // Distinguish between: chatting vs confirmed vs completed
       if (!match?.tripId) {
-        return { label: "En Conversación", color: "info" as const };
+        return { label: "En Conversación", color: "primary" as const };
       }
+
+      // Check trip status for more granular state
       if (match?.trip?.status === "completed") {
-        return { label: "Finalizado", color: "success" as const };
+        return { label: "Completado", color: "success" as const };
       }
+
+      if (match?.trip?.status === "charter_completed") {
+        return {
+          label: "Esperando tu Confirmación",
+          color: "warning" as const,
+        };
+      }
+
+      if (match?.trip?.status === "pending") {
+        return { label: "En Progreso", color: "primary" as const };
+      }
+
       return { label: "Confirmado", color: "success" as const };
     }
 
     return { label: status, color: "default" as const };
   };
 
+  const getStatusColor = (status: string, match?: typeof activeTrip) => {
+    const statusData = getStatusLabel(status, match);
+    const colorMap = {
+      warning: "warning.main",
+      primary: "primary.main",
+      info: "primary.main",
+      success: "success.main",
+      default: "grey.400",
+    };
+    return colorMap[statusData.color] || "grey.400";
+  };
+
   return (
-    <Box sx={{ backgroundColor: "background.default", minHeight: "100vh" }}>
-      <AuthNavbar />
-
-      <Container maxWidth="sm" sx={{ py: 4, px: 2 }}>
-        {/* CTA Principal*/}
-        <Card sx={{ mb: 3, overflow: "visible" }}>
-          <CardContent sx={{ p: 3, textAlign: "center", position: "relative" }}>
-            {/* Quick action icons */}
-            <Box display="flex" justifyContent="center" gap={1} mb={3}>
-              <Box
-                sx={{
-                  width: 8,
-                  height: 8,
-                  borderRadius: "50%",
-                  bgcolor: "success.main",
-                }}
-              />
-              <Typography
-                variant="caption"
-                color="success.main"
-                sx={{ fontWeight: 600 }}
-              >
-                Conductores disponibles ahora
-              </Typography>
-            </Box>
-
-            <LocalShipping
-              sx={{ fontSize: 40, color: "primary.main", mb: 2 }}
-            />
-            <Typography variant="h6" sx={{ fontWeight: 600, mb: 1 }}>
-              ¿Necesitás transportar algo?
-            </Typography>
-
-            <Button
-              variant="contained"
-              color="secondary"
-              size="large"
-              fullWidth
-              startIcon={<Add />}
-              onClick={handleRequestFreight}
-              sx={{
-                py: 2,
-                fontSize: "1.1rem",
-                fontWeight: 600,
-                borderRadius: 3,
-              }}
-            >
-              Solicitar Flete
-            </Button>
-
-            {/* Delivery estimate */}
+    <MobileContainer withBottomNav>
+      {/* CTA Principal */}
+      <Card
+        sx={{
+          mb: 3,
+          overflow: "visible",
+          transition: "all 0.2s ease-in-out",
+        }}
+      >
+        <CardContent
+          sx={{
+            p: { xs: 2.5, md: 3 },
+            textAlign: "center",
+            position: "relative",
+          }}
+        >
+          {/* Indicador de conductores disponibles con animación */}
+          <Badge
+            badgeContent="●"
+            color="success"
+            sx={{
+              mb: 2,
+              "& .MuiBadge-badge": {
+                animation: "pulse 2s infinite",
+              },
+            }}
+          >
             <Typography
               variant="caption"
-              color="text.secondary"
-              sx={{ mt: 2, display: "block" }}
+              color="success.main"
+              sx={{ fontWeight: 600, pr: 2 }}
             >
-              Conductores disponibles en tu zona
+              Conductores disponibles ahora
             </Typography>
-          </CardContent>
-        </Card>
+          </Badge>
 
-        {/* Quick Actions */}
-        <Box display="flex" gap={2} mb={3}>
-          <Button
-            variant="outlined"
-            startIcon={<History />}
-            onClick={() => router.push("/client/trips/history")}
-            sx={{ flex: 1, py: 1.5 }}
+          {/* Ícono de camión con animación sutil */}
+          <Box
+            sx={{
+              animation: activeTrip ? "none" : "pulse 3s infinite",
+            }}
           >
-            Historial
-          </Button>
-          <Button
-            variant="outlined"
-            onClick={() => router.push("/support")}
-            sx={{ flex: 1, py: 1.5 }}
-          >
-            Soporte
-          </Button>
-        </Box>
+            <LocalShipping
+              sx={{
+                fontSize: { xs: 50, md: 40 },
+                color: "primary.main",
+                mb: 2,
+              }}
+            />
+          </Box>
 
-        {/* Active Trip - Single Trip Only */}
-        <Box>
-          <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
-            Tu Viaje Activo
+          <Typography
+            variant="h6"
+            sx={{ fontWeight: 700, mb: 2, fontSize: { xs: "1.15rem", md: "1.25rem" } }}
+          >
+            ¿Necesitás transportar algo?
           </Typography>
 
-          {isLoading ? (
-            <Box textAlign="center" py={4}>
-              <CircularProgress />
-            </Box>
-          ) : !activeTrip ? (
-            <Box textAlign="center" py={4}>
-              <LocalShipping sx={{ fontSize: 48, color: "grey.300", mb: 2 }} />
-              <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+          <Button
+            variant="contained"
+            color="secondary"
+            size="large"
+            fullWidth
+            startIcon={<Add />}
+            onClick={handleRequestFreight}
+            disabled={!!activeTrip}
+            sx={{
+              py: { xs: 2, md: 1.5 },
+              fontSize: { xs: "1.1rem", md: "1rem" },
+              fontWeight: 700,
+              borderRadius: 3,
+              minHeight: { xs: 56, md: 48 },
+            }}
+          >
+            Solicitar Flete
+          </Button>
+
+          <Typography
+            variant="caption"
+            color="text.secondary"
+            sx={{ mt: 2, display: "block" }}
+          >
+            Conductores disponibles en tu zona
+          </Typography>
+        </CardContent>
+      </Card>
+
+      {/* Active Trip - Single Trip Only */}
+      <Box>
+        <Typography
+          variant="h6"
+          sx={{
+            fontWeight: 700,
+            mb: 2,
+            fontSize: { xs: "1.1rem", md: "1.25rem" },
+          }}
+        >
+          Tu Viaje Activo
+        </Typography>
+
+        {isLoading ? (
+          <Box textAlign="center" py={4}>
+            <CircularProgress />
+          </Box>
+        ) : !activeTrip ? (
+          <Card>
+            <CardContent sx={{ textAlign: "center", py: 4 }}>
+              <LocalShipping
+                sx={{ fontSize: 48, color: "grey.300", mb: 2 }}
+              />
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
                 No tienes viajes activos
               </Typography>
               <Typography variant="caption" color="text.secondary">
                 Cuando solicites un flete aparecerá aquí
               </Typography>
-            </Box>
-          ) : (
-            <Card>
-              <CardContent>
+            </CardContent>
+          </Card>
+        ) : (
+          <Card
+            sx={{
+              borderLeft: "4px solid",
+              borderLeftColor: getStatusColor(activeTrip.status, activeTrip),
+              transition: "all 0.2s ease-in-out",
+            }}
+          >
+            <CardContent sx={{ p: 2 }}>
+              {/* Header: Title + Status */}
+              <Box
+                display="flex"
+                justifyContent="space-between"
+                alignItems="flex-start"
+                mb={2}
+              >
+                <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
+                  Solicitud de Flete
+                </Typography>
+                <Chip
+                  label={getStatusLabel(activeTrip.status, activeTrip).label}
+                  color={getStatusLabel(activeTrip.status, activeTrip).color}
+                  size="small"
+                  sx={{ fontWeight: 600 }}
+                />
+              </Box>
+
+              {/* Route Info with Icons */}
+              <Box mb={2}>
+                {/* Origin */}
+                <Box display="flex" alignItems="flex-start" gap={1} mb={1}>
+                  <LocationOn
+                    sx={{
+                      fontSize: 20,
+                      color: "primary.main",
+                      mt: 0.2,
+                    }}
+                  />
+                  <Typography variant="body2" fontSize="0.9rem">
+                    {activeTrip.pickupAddress || "Origen"}
+                  </Typography>
+                </Box>
+
+                {/* Destination */}
+                <Box display="flex" alignItems="flex-start" gap={1}>
+                  <Flag
+                    sx={{
+                      fontSize: 20,
+                      color: "secondary.main",
+                      mt: 0.2,
+                    }}
+                  />
+                  <Typography
+                    variant="body2"
+                    fontSize="0.9rem"
+                    fontWeight={600}
+                  >
+                    {activeTrip.destinationAddress || "Destino"}
+                  </Typography>
+                </Box>
+              </Box>
+
+              {/* Show charter info if accepted */}
+              {activeTrip.status === "accepted" && activeTrip.charter && (
                 <Box
                   display="flex"
-                  justifyContent="space-between"
-                  alignItems="start"
+                  alignItems="center"
+                  gap={1}
                   mb={2}
+                  p={1.5}
+                  sx={{
+                    bgcolor: "background.default",
+                    borderRadius: 2,
+                  }}
                 >
-                  <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
-                    Solicitud de Flete
-                  </Typography>
-                  <Chip
-                    label={getStatusLabel(activeTrip.status, activeTrip).label}
-                    color={getStatusLabel(activeTrip.status, activeTrip).color}
-                    size="small"
-                  />
-                </Box>
-
-                <Typography
-                  variant="caption"
-                  color="text.secondary"
-                  display="block"
-                  mb={1}
-                >
-                  De: {activeTrip.pickupAddress || "Origen"}
-                </Typography>
-                <Typography
-                  variant="caption"
-                  color="text.secondary"
-                  display="block"
-                  mb={2}
-                >
-                  A: {activeTrip.destinationAddress || "Destino"}
-                </Typography>
-
-                {/* Show charter name if accepted */}
-                {activeTrip.status === "accepted" && activeTrip.charter && (
-                  <Typography
-                    variant="caption"
-                    color="text.secondary"
-                    display="block"
-                    mb={2}
+                  <Avatar
+                    sx={{
+                      width: 32,
+                      height: 32,
+                      bgcolor: "secondary.main",
+                      color: "primary.main",
+                      fontSize: "0.9rem",
+                      fontWeight: 700,
+                    }}
                   >
-                    Chófer: <strong>{activeTrip.charter.name}</strong>
-                  </Typography>
-                )}
-
-                <Box display="flex" gap={1}>
-                  {/* Direct chat access if conversation exists */}
-                  {activeTrip.conversation?.id ? (
-                    <Button
-                      variant="contained"
-                      color="primary"
-                      fullWidth
-                      onClick={() => handleViewMatch(activeTrip.id)}
-                    >
-                      Volver al Chat
-                    </Button>
-                  ) : (
-                    <Button
-                      variant="contained"
-                      color="primary"
-                      fullWidth
-                      onClick={() => handleViewMatch(activeTrip.id)}
-                    >
-                      Ver Detalles
-                    </Button>
-                  )}
+                    {activeTrip.charter?.name?.[0] ?? "?"}
+                  </Avatar>
+                  <Box>
+                    <Typography variant="caption" color="text.secondary">
+                      Chófer
+                    </Typography>
+                    <Typography variant="body2" fontWeight={600}>
+                      {activeTrip.charter?.name ?? "Sin asignar"}
+                    </Typography>
+                  </Box>
                 </Box>
-              </CardContent>
-            </Card>
-          )}
-        </Box>
+              )}
 
-        {/* Acceso rápido al historial */}
-        <Button
-          variant="outlined"
-          fullWidth
-          startIcon={<History />}
-          onClick={() => router.push("/client/trips/history")}
-          sx={{ mt: 2 }}
-        >
-          Ver Historial Completo
-        </Button>
-      </Container>
-    </Box>
+              {/* Action Button */}
+              <Button
+                variant="contained"
+                color="primary"
+                fullWidth
+                onClick={() => handleViewMatch(activeTrip.id)}
+                sx={{
+                  minHeight: 44,
+                  fontWeight: 700,
+                }}
+              >
+                {activeTrip.conversation?.id ? "Volver al Chat" : "Ver Detalles"}
+              </Button>
+            </CardContent>
+          </Card>
+        )}
+      </Box>
+    </MobileContainer>
   );
 }

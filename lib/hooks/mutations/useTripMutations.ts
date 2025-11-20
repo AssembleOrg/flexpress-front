@@ -23,15 +23,10 @@ export function useAcceptTrip() {
   return useMutation({
     mutationFn: (tripId: string) => tripsApi.accept(tripId),
 
-    onSuccess: (_result, tripId) => {
-      // Invalidate all trips (invalidar por raíz)
-      queryClient.invalidateQueries({
+    onSuccess: async (_result, tripId) => {
+      // Refetch all trips (force immediate update)
+      await queryClient.refetchQueries({
         queryKey: queryKeys.trips.all,
-      });
-
-      // Invalidate specific trip detail
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.trips.detail(tripId),
       });
 
       toast.success("¡Viaje aceptado!");
@@ -59,15 +54,10 @@ export function useConfirmTrip() {
       finalPrice?: number;
     }) => tripsApi.confirm(tripId, finalPrice),
 
-    onSuccess: (_result, { tripId }) => {
-      // Invalidate all trips (invalidar por raíz)
-      queryClient.invalidateQueries({
+    onSuccess: async (_result, { tripId }) => {
+      // Refetch all trips (force immediate update)
+      await queryClient.refetchQueries({
         queryKey: queryKeys.trips.all,
-      });
-
-      // Invalidate specific trip detail
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.trips.detail(tripId),
       });
 
       toast.success("¡Viaje confirmado!");
@@ -90,15 +80,10 @@ export function useCancelTrip() {
     mutationFn: ({ tripId, reason }: { tripId: string; reason?: string }) =>
       tripsApi.cancel(tripId, reason),
 
-    onSuccess: (_result, { tripId }) => {
-      // Invalidate all trips (invalidar por raíz)
-      queryClient.invalidateQueries({
+    onSuccess: async (_result, { tripId }) => {
+      // Refetch all trips (force immediate update)
+      await queryClient.refetchQueries({
         queryKey: queryKeys.trips.all,
-      });
-
-      // Invalidate specific trip detail
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.trips.detail(tripId),
       });
 
       toast.success("Viaje cancelado");
@@ -120,19 +105,14 @@ export function useCompleteTrip() {
   return useMutation({
     mutationFn: (tripId: string) => tripsApi.complete(tripId),
 
-    onSuccess: (_result, tripId) => {
-      // Invalidate all trips (invalidar por raíz)
-      queryClient.invalidateQueries({
+    onSuccess: async (_result, tripId) => {
+      // Refetch all trips (force immediate update)
+      await queryClient.refetchQueries({
         queryKey: queryKeys.trips.all,
       });
 
-      // Invalidate specific trip detail
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.trips.detail(tripId),
-      });
-
-      // Invalidate matches to update tripId reference
-      queryClient.invalidateQueries({
+      // Refetch matches to update tripId reference
+      await queryClient.refetchQueries({
         queryKey: queryKeys.matches.all,
       });
 
@@ -141,6 +121,66 @@ export function useCompleteTrip() {
 
     onError: () => {
       toast.error("Error al completar viaje");
+    },
+  });
+}
+
+/**
+ * Charter completes their work (marks trip as charter_completed)
+ * PUT /trips/:tripId/charter-complete
+ */
+export function useCharterCompleteTrip() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (tripId: string) => tripsApi.charterComplete(tripId),
+
+    onSuccess: async (_result, tripId) => {
+      // Refetch all trips (force immediate update)
+      await queryClient.refetchQueries({
+        queryKey: queryKeys.trips.all,
+      });
+
+      // Refetch matches to update trip status (client needs to see change)
+      await queryClient.refetchQueries({
+        queryKey: queryKeys.matches.all,
+      });
+
+      toast.success("🏁 Viaje finalizado. Esperando confirmación del cliente...");
+    },
+
+    onError: () => {
+      toast.error("Error al finalizar viaje");
+    },
+  });
+}
+
+/**
+ * Client confirms reception of work (marks trip as completed)
+ * PUT /trips/:tripId/client-confirm
+ */
+export function useClientConfirmCompletion() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (tripId: string) => tripsApi.clientConfirm(tripId),
+
+    onSuccess: async (_result, tripId) => {
+      // Refetch all trips (force immediate update)
+      await queryClient.refetchQueries({
+        queryKey: queryKeys.trips.all,
+      });
+
+      // Refetch matches to update trip status (both dashboards need instant update)
+      await queryClient.refetchQueries({
+        queryKey: queryKeys.matches.all,
+      });
+
+      toast.success("✅ Viaje completado. ¡Gracias por usar FlexPress!");
+    },
+
+    onError: () => {
+      toast.error("Error al confirmar finalización");
     },
   });
 }

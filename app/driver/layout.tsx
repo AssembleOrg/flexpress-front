@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { BottomNavbar } from "@/components/layout/BottomNavbar";
 
 export const metadata: Metadata = {
   title: "Conductor - Flexpress",
@@ -12,8 +13,8 @@ export default function DriverLayout({
 }) {
   return (
     <div className="driver-layout">
-      {/* Add driver-specific navigation/header here if needed */}
       {children}
+      <BottomNavbar />
     </div>
   );
 }
