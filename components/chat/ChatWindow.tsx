@@ -19,12 +19,13 @@ import {
 } from "@mui/material";
 import { useEffect, useRef, useState } from "react";
 import { MessageBubble } from "@/components/chat/MessageBubble";
+import { TypingIndicator } from "@/components/chat/TypingIndicator";
 import { ReportModal } from "@/components/modals/ReportModal";
 import { useSendMessage } from "@/lib/hooks/mutations/useConversationMutations";
 import { useConversationMessages } from "@/lib/hooks/queries/useConversationQueries";
 import { useWebSocket, useSocketEmit } from "@/lib/hooks/useWebSocket";
 import { useAuthStore } from "@/lib/stores/authStore";
-import type { User } from "@/lib/types/api";
+import type { Message, User } from "@/lib/types/api";
 
 interface ChatWindowProps {
   conversationId: string; // This is the matchId
@@ -215,7 +216,8 @@ export function ChatWindow({
         display: "flex",
         flexDirection: "column",
         height: "100%",
-        maxHeight: "600px",
+        maxHeight: { xs: "450px", md: "none" },
+        minHeight: { md: "550px" },
       }}
     >
       {/* Header */}
@@ -333,17 +335,24 @@ export function ChatWindow({
                 <MessageBubble
                   message={message}
                   isOwn={message.senderId === user?.id}
+                  senderAvatar={
+                    message.senderId !== user?.id ? (otherUser.avatar ?? undefined) : undefined
+                  }
+                  senderName={
+                    message.senderId !== user?.id ? otherUser.name : undefined
+                  }
                 />
               </Box>
             );
           })
         )}
 
-        {/* Typing indicator - simple "..." text */}
+        {/* Typing indicator - improved with avatar */}
         {otherUserTyping && (
-          <Typography variant="caption" color="text.secondary" sx={{ pl: 1 }}>
-            {otherUser?.name || "El otro usuario"} está escribiendo...
-          </Typography>
+          <TypingIndicator
+            userName={otherUser?.name || "Usuario"}
+            userAvatar={otherUser?.avatar ?? undefined}
+          />
         )}
 
         <div ref={messagesEndRef} />

@@ -71,6 +71,7 @@ export function AuthNavbar() {
         sx={{
           bgcolor: "primary.main",
           boxShadow: "0 2px 12px rgba(56, 1, 22, 0.15)",
+          display: { xs: "none", md: "flex" }, // Ocultar en mobile (usamos BottomNavbar)
         }}
       >
         <Toolbar>
