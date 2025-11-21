@@ -12,8 +12,8 @@ import { queryKeys } from "./queryFactory";
  * Handles fetching travel matches for both users and charters.
  * Caching strategy:
  * - userMatches: 10s stale, 3min cache (user waiting for response)
- * - charterMatches: 5s stale, 2min cache + 10s refresh (real-time dashboard)
- * - match detail: 15s stale, 5min cache (status updates via WebSocket)
+ * - charterMatches: 5s stale, 2min cache + 30s refresh (WebSocket primary)
+ * - match detail: 15s stale, 5min cache + 15s refresh (WebSocket primary)
  */
 
 /**
@@ -46,7 +46,7 @@ export function useCharterMatches() {
     queryFn: () => travelMatchingApi.getCharterMatches(),
     staleTime: 5 * 1000, // 5 seconds - charters need near real-time updates
     gcTime: 2 * 60 * 1000, // 2 minutes
-    refetchInterval: 10 * 1000, // Auto-refresh every 10 seconds
+    refetchInterval: 30 * 1000, // Auto-refresh every 30 seconds (WebSocket handles real-time)
     refetchOnWindowFocus: true,
     refetchOnReconnect: true,
     enabled: user?.role === "charter", // Only fetch if charter
@@ -57,9 +57,8 @@ export function useCharterMatches() {
  * Get a single match by ID
  * Used by: Match detail page, matching page
  *
- * Includes polling fallback: polls every 5 seconds as a fallback in case
- * WebSocket updates are missed. Polling stops automatically when match
- * leaves "pending" state (via staleTime and refetchOnWindowFocus).
+ * Includes polling fallback: polls every 15 seconds as a fallback in case
+ * WebSocket updates are missed. WebSocket is the primary update mechanism.
  */
 export function useMatch(matchId: string) {
   return useQuery({
@@ -68,7 +67,7 @@ export function useMatch(matchId: string) {
     staleTime: 15 * 1000, // 15 seconds
     gcTime: 5 * 60 * 1000, // 5 minutes
     refetchOnWindowFocus: true,
-    refetchInterval: 5 * 1000, // Poll every 5s as fallback (will stop refetching when match is no longer pending)
+    refetchInterval: 15 * 1000, // Poll every 15s as fallback (WebSocket handles real-time)
     enabled: !!matchId, // Only fetch if matchId provided
   });
 }

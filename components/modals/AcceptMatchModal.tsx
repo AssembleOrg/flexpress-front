@@ -64,8 +64,8 @@ export function AcceptMatchModal({
         Nueva Solicitud de Viaje
       </DialogTitle>
 
-      <DialogContent sx={{ py: 3 }}>
-        <Stack spacing={3}>
+      <DialogContent sx={{ py: 2 }}>
+        <Stack spacing={2}>
           {/* Error Message (si existe) */}
           {error && (
             <Box
@@ -128,8 +128,6 @@ export function AcceptMatchModal({
               </Box>
             </Stack>
           </Box>
-
-          <Divider />
 
           {/* Trip Details */}
           <Box>
@@ -214,8 +212,6 @@ export function AcceptMatchModal({
               )}
             </Stack>
           </Box>
-
-          <Divider />
 
           {/* Info Message */}
           <Typography variant="caption" color="text.secondary" sx={{ p: 1 }}>

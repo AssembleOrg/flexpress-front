@@ -24,6 +24,8 @@ import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { ChatWindow } from "@/components/chat/ChatWindow";
 import { FeedbackModal } from "@/components/feedback/FeedbackModal";
 import { ReportModal } from "@/components/modals/ReportModal";
+import { ConfirmTripModal } from "@/components/modals/ConfirmTripModal";
+import { ConfirmCompletionModal } from "@/components/modals/ConfirmCompletionModal";
 import { MobileContainer } from "@/components/layout/MobileContainer";
 import { MobileHeader } from "@/components/layout/MobileHeader";
 import { TripDetailsCard } from "@/components/trip/TripDetailsCard";
@@ -59,6 +61,8 @@ export default function MatchDetailPage() {
   const matchId = params.matchId as string;
   const [feedbackModalOpen, setFeedbackModalOpen] = useState(false);
   const [reportModalOpen, setReportModalOpen] = useState(false);
+  const [confirmTripModalOpen, setConfirmTripModalOpen] = useState(false);
+  const [confirmCompletionModalOpen, setConfirmCompletionModalOpen] = useState(false);
 
   const { user } = useAuthStore();
   const { data: match, isLoading, refetch: refetchMatch } = useMatch(matchId);
@@ -135,6 +139,7 @@ export default function MatchDetailPage() {
     try {
       await createTripMutation.mutateAsync(matchId);
       toast.success("✅ Viaje confirmado. Los créditos han sido deducidos.");
+      setConfirmTripModalOpen(false);
     } catch (error) {
       console.error("Error confirming trip:", error);
       toast.error("Error al confirmar el viaje");
@@ -153,6 +158,7 @@ export default function MatchDetailPage() {
     if (!match?.tripId) return;
     try {
       await clientConfirmCompletionMutation.mutateAsync(match.tripId);
+      setConfirmCompletionModalOpen(false);
     } catch (error) {
       console.error("Error confirming completion:", error);
     }
@@ -166,6 +172,13 @@ export default function MatchDetailPage() {
       // Page will show ChatWindow via conditional rendering below
     }
   }, [match?.status, match?.conversationId]);
+
+  // Auto-open feedback modal when trip is completed
+  useEffect(() => {
+    if (match?.trip?.status === "completed" && canGiveFeedback === true && !feedbackModalOpen) {
+      setFeedbackModalOpen(true);
+    }
+  }, [match?.trip?.status, canGiveFeedback, feedbackModalOpen]);
 
   // ============================================
   // LOADING STATE
@@ -649,7 +662,7 @@ export default function MatchDetailPage() {
           <Box
             sx={{
               display: "grid",
-              gridTemplateColumns: { xs: "1fr", md: "1fr 1fr" },
+              gridTemplateColumns: { xs: "1fr", md: "2fr 1fr" },
               gap: 1.5,
             }}
           >
@@ -717,75 +730,60 @@ export default function MatchDetailPage() {
                   variant="contained"
                   color="success"
                   fullWidth
-                  onClick={handleConfirmTrip}
-                  disabled={createTripMutation.isPending}
+                  onClick={() => setConfirmTripModalOpen(true)}
                   size="large"
                   sx={{ minHeight: 48 }}
                 >
-                  {createTripMutation.isPending ? (
-                    <CircularProgress size={20} />
-                  ) : (
-                    "✅ Confirmar Viaje"
-                  )}
+                  ✅ Confirmar Viaje
                 </Button>
               )}
 
               {/* Estado 2: Trip confirmado, esperando charter */}
               {match.tripId && match.trip?.status === "pending" && (
                 <>
+                  {/* Status box */}
                   <Box
                     sx={{
-                      display: "grid",
-                      gridTemplateColumns: { xs: "1fr 1fr", md: "2fr 1fr" },
-                      gap: 1,
-                      mb: 1.5,
+                      bgcolor: "success.light",
+                      borderLeft: "4px solid",
+                      borderLeftColor: "success.main",
+                      borderRadius: 1.5,
+                      p: 1.5,
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 1.5,
+                      mb: 1,
                     }}
                   >
-                    {/* Status box */}
-                    <Box
-                      sx={{
-                        gridColumn: { xs: "1 / -1", md: "1 / 2" },
-                        bgcolor: "success.light",
-                        borderLeft: "4px solid",
-                        borderLeftColor: "success.main",
-                        borderRadius: 1.5,
-                        p: 1.5,
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 1.5,
-                      }}
-                    >
-                      <CheckCircle sx={{ fontSize: 24, color: "success.main" }} />
-                      <Box>
-                        <Typography
-                          variant="body2"
-                          sx={{ fontWeight: 700, fontSize: "0.85rem", color: "success.dark" }}
-                        >
-                          Viaje Confirmado
-                        </Typography>
-                        <Typography variant="caption" sx={{ fontSize: "0.7rem" }} color="text.secondary">
-                          Créditos reservados
-                        </Typography>
-                      </Box>
+                    <CheckCircle sx={{ fontSize: 24, color: "success.main" }} />
+                    <Box>
+                      <Typography
+                        variant="body2"
+                        sx={{ fontWeight: 700, fontSize: "0.85rem", color: "success.dark" }}
+                      >
+                        Viaje Confirmado
+                      </Typography>
+                      <Typography variant="caption" sx={{ fontSize: "0.7rem" }} color="text.secondary">
+                        Créditos reservados
+                      </Typography>
                     </Box>
-
-                    {/* Problem button */}
-                    <Button
-                      variant="outlined"
-                      color="error"
-                      fullWidth
-                      size="small"
-                      startIcon={<Warning sx={{ fontSize: 18 }} />}
-                      onClick={() => setReportModalOpen(true)}
-                      sx={{
-                        gridColumn: { xs: "1 / -1", md: "2 / 3" },
-                        minHeight: { xs: 40, md: "100%" },
-                        fontSize: "0.8rem",
-                      }}
-                    >
-                      Tuve un problema
-                    </Button>
                   </Box>
+
+                  {/* Problem button */}
+                  <Button
+                    variant="outlined"
+                    color="error"
+                    fullWidth
+                    size="small"
+                    startIcon={<Warning sx={{ fontSize: 18 }} />}
+                    onClick={() => setReportModalOpen(true)}
+                    sx={{
+                      minHeight: 40,
+                      fontSize: "0.8rem",
+                    }}
+                  >
+                    Tuve un problema
+                  </Button>
                 </>
               )}
 
@@ -808,43 +806,37 @@ export default function MatchDetailPage() {
                       Por favor confirma que has recibido tu carga correctamente.
                     </Typography>
                   </Box>
-                  <Box
+
+                  {/* Primary action button - fullwidth */}
+                  <Button
+                    variant="contained"
+                    color="success"
+                    fullWidth
+                    onClick={() => setConfirmCompletionModalOpen(true)}
                     sx={{
-                      display: "grid",
-                      gridTemplateColumns: { xs: "1fr 1fr", md: "1fr" },
-                      gap: 1,
+                      minHeight: 48,
+                      fontWeight: 700,
+                      fontSize: "0.9rem",
                     }}
                   >
-                    <Button
-                      variant="contained"
-                      color="success"
-                      fullWidth
-                      onClick={handleClientConfirmCompletion}
-                      sx={{
-                        gridColumn: { xs: "1 / -1", md: "auto" },
-                        minHeight: 44,
-                        fontWeight: 700,
-                        fontSize: "0.85rem",
-                      }}
-                    >
-                      ✅ Confirmar Recepción
-                    </Button>
-                    <Button
-                      variant="outlined"
-                      color="error"
-                      fullWidth
-                      size="small"
-                      startIcon={<Warning sx={{ fontSize: 18 }} />}
-                      onClick={() => setReportModalOpen(true)}
-                      sx={{
-                        gridColumn: { xs: "1 / -1", md: "auto" },
-                        minHeight: 40,
-                        fontSize: "0.8rem",
-                      }}
-                    >
-                      Reportar Problema
-                    </Button>
-                  </Box>
+                    ✅ Confirmar Recepción
+                  </Button>
+
+                  {/* Secondary action button - fullwidth */}
+                  <Button
+                    variant="outlined"
+                    color="error"
+                    fullWidth
+                    size="small"
+                    startIcon={<Warning sx={{ fontSize: 18 }} />}
+                    onClick={() => setReportModalOpen(true)}
+                    sx={{
+                      minHeight: 40,
+                      fontSize: "0.8rem",
+                    }}
+                  >
+                    Reportar Problema
+                  </Button>
                 </Stack>
               )}
 
@@ -916,6 +908,26 @@ export default function MatchDetailPage() {
             reportedUserName={match.charter.name || "Chófer"}
           />
         )}
+
+        {/* Confirm Trip Modal */}
+        <ConfirmTripModal
+          open={confirmTripModalOpen}
+          onClose={() => setConfirmTripModalOpen(false)}
+          onConfirm={handleConfirmTrip}
+          estimatedCredits={match.estimatedCredits || 0}
+          userCredits={user?.credits || 0}
+          isLoading={createTripMutation.isPending}
+        />
+
+        {/* Confirm Completion Modal */}
+        <ConfirmCompletionModal
+          open={confirmCompletionModalOpen}
+          onClose={() => setConfirmCompletionModalOpen(false)}
+          onConfirm={handleClientConfirmCompletion}
+          charterName={match.charter?.name || "Transportista"}
+          estimatedCredits={match.estimatedCredits || 0}
+          isLoading={clientConfirmCompletionMutation.isPending}
+        />
       </>
     );
   }

@@ -68,9 +68,9 @@ export function ConfirmMatchModal({
         Confirmar Selección de Chófer
       </DialogTitle>
 
-      <DialogContent sx={{ py: 3 }}>
+      <DialogContent sx={{ py: 2 }}>
         {/* Charter Info Section */}
-        <Stack spacing={3}>
+        <Stack spacing={2}>
           {/* Charter Card */}
           <Box
             sx={{
@@ -100,8 +100,6 @@ export function ConfirmMatchModal({
               </Typography>
             </Box>
           </Box>
-
-          <Divider />
 
           {/* Trip Details */}
           <Box>
@@ -197,8 +195,6 @@ export function ConfirmMatchModal({
             </Stack>
           </Box>
 
-          <Divider />
-
           {/* Credits Validation Section */}
           <Box>
             <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 2 }}>
@@ -258,8 +254,6 @@ export function ConfirmMatchModal({
               )}
             </Stack>
           </Box>
-
-          <Divider />
 
           {/* Info Message */}
           <Typography variant="caption" color="text.secondary" sx={{ p: 1 }}>

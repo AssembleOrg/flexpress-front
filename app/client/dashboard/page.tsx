@@ -29,11 +29,12 @@ export default function ClientDashboard() {
 
   // Find the ONE active trip (only one trip at a time allowed)
   const activeTrip = myMatches.find((match) => {
-    // Exclude non-active statuses
+    // Exclude non-active statuses (including completed)
     if (
       match.status === "rejected" ||
       match.status === "cancelled" ||
-      match.status === "expired"
+      match.status === "expired" ||
+      match.status === "completed"
     ) {
       return false;
     }
@@ -51,12 +52,8 @@ export default function ClientDashboard() {
       return false;
     }
 
-    // Include: PENDING (not expired), ACCEPTED, or COMPLETED
-    return (
-      match.status === "pending" ||
-      match.status === "accepted" ||
-      match.status === "completed"
-    );
+    // Include ONLY: PENDING (not expired) or ACCEPTED
+    return match.status === "pending" || match.status === "accepted";
   });
 
   const handleRequestFreight = () => {

@@ -18,6 +18,7 @@ import { ArrowBack, CheckCircle } from "@mui/icons-material";
 import Link from "next/link";
 import toast from "react-hot-toast";
 import { ChatWindow } from "@/components/chat/ChatWindow";
+import { FinalizeTripModal } from "@/components/modals/FinalizeTripModal";
 import { MobileContainer } from "@/components/layout/MobileContainer";
 import { MobileHeader } from "@/components/layout/MobileHeader";
 import { TripDetailsCard } from "@/components/trip/TripDetailsCard";
@@ -40,24 +41,20 @@ export default function DriverMatchingDetailPage() {
   const { data: trip, isLoading: tripLoading } = useTrip(tripId || "");
 
   const charterCompleteTripMutation = useCharterCompleteTrip();
+  const [finalizeTripModalOpen, setFinalizeTripModalOpen] = useState(false);
 
-  // Temporal MVP: Poll when waiting for client confirmation
-  useEffect(() => {
-    if (match?.trip?.status === 'charter_completed') {
-      const interval = setInterval(() => {
-        refetch();
-      }, 3000);
-      return () => clearInterval(interval);
-    }
-  }, [match?.trip?.status, refetch]);
+  // Polling eliminado - useMatch ya tiene refetchInterval de 15s
+  // WebSocket maneja updates en tiempo real
 
   const handleCharterCompleteTrip = async () => {
     if (!tripId) return;
     try {
       await charterCompleteTripMutation.mutateAsync(tripId);
-      // ✅ NO redirect! Se queda en la misma página
+      setFinalizeTripModalOpen(false);
+      toast.success("✅ Viaje finalizado. Esperando confirmación del cliente.");
     } catch (error) {
       console.error("Error completing trip:", error);
+      toast.error("Error al finalizar el viaje");
     }
   };
 
@@ -121,7 +118,7 @@ export default function DriverMatchingDetailPage() {
         <Box
           sx={{
             display: "grid",
-            gridTemplateColumns: { xs: "1fr", md: "3fr 1fr" },
+            gridTemplateColumns: { xs: "1fr", md: "2fr 1fr" },
             gap: 1.5,
             mb: { xs: 0, md: 0 },
           }}
@@ -224,8 +221,7 @@ export default function DriverMatchingDetailPage() {
                   variant="contained"
                   color="primary"
                   fullWidth
-                  onClick={handleCharterCompleteTrip}
-                  disabled={isCompletingTrip}
+                  onClick={() => setFinalizeTripModalOpen(true)}
                   sx={{
                     gridColumn: { xs: "1 / -1", md: "2 / 3" },
                     minHeight: { xs: 44, md: "100%" },
@@ -233,11 +229,7 @@ export default function DriverMatchingDetailPage() {
                     fontSize: "0.85rem",
                   }}
                 >
-                  {isCompletingTrip ? (
-                    <CircularProgress size={20} />
-                  ) : (
-                    "🏁 Finalizar Viaje"
-                  )}
+                  🏁 Finalizar Viaje
                 </Button>
               </Box>
             )}
@@ -309,6 +301,16 @@ export default function DriverMatchingDetailPage() {
           </Box>
         </Box>
       </MobileContainer>
+
+      {/* Finalize Trip Modal */}
+      <FinalizeTripModal
+        open={finalizeTripModalOpen}
+        onClose={() => setFinalizeTripModalOpen(false)}
+        onConfirm={handleCharterCompleteTrip}
+        clientName={match.user?.name || "Cliente"}
+        estimatedCredits={match.estimatedCredits || 0}
+        isLoading={charterCompleteTripMutation.isPending}
+      />
     </>
   );
 }

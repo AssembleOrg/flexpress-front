@@ -3,6 +3,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import toast from "react-hot-toast";
 import { travelMatchingApi } from "@/lib/api/travelMatching";
+import { conversationApi } from "@/lib/api/conversations";
 import { queryKeys } from "@/lib/hooks/queries/queryFactory";
 import { useAuthStore } from "@/lib/stores/authStore";
 import { useTravelMatchStore } from "@/lib/stores/travelMatchStore";
@@ -104,8 +105,7 @@ export function useSelectCharter() {
  * Charter responds to a match (accept or reject)
  * PUT /travel-matching/charter/matches/:matchId/respond
  *
- * Note: Conversation creation is handled by a reactive watcher in DriverDashboard
- * when it detects an accepted match without a conversation.
+ * Creates conversation immediately when accepting to avoid race conditions.
  */
 export function useRespondToMatch() {
   const queryClient = useQueryClient();
@@ -118,7 +118,20 @@ export function useRespondToMatch() {
       // Update the match in cache (optimistic update)
       queryClient.setQueryData(queryKeys.matches.detail(matchId), result);
 
-      // Refetch all matches to ensure fresh data from server (force immediate update)
+      // If accepted, create conversation immediately
+      if (accept) {
+        try {
+          console.log("🔄 [RESPOND] Creating conversation for match:", matchId);
+          await conversationApi.createFromMatch(matchId);
+          console.log("✅ [RESPOND] Conversation created successfully");
+        } catch (error) {
+          console.error("❌ [RESPOND] Failed to create conversation:", error);
+          // Don't fail the entire mutation - conversation can be created later
+          // but log the error for debugging
+        }
+      }
+
+      // Refetch all matches to get fresh data with conversationId
       await queryClient.refetchQueries({
         queryKey: queryKeys.matches.all,
       });
@@ -129,9 +142,6 @@ export function useRespondToMatch() {
       } else {
         toast.success("Solicitud rechazada");
       }
-
-      // Note: Conversation creation will be triggered by the reactive watcher
-      // in DriverDashboard when it detects status='accepted' without conversationId
     },
 
     onError: (error) => {
