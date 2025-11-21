@@ -29,31 +29,40 @@ export default function ClientDashboard() {
 
   // Find the ONE active trip (only one trip at a time allowed)
   const activeTrip = myMatches.find((match) => {
-    // Exclude non-active statuses (including completed)
+    if (!match?.id) return false;
+
+    // Exclude non-active statuses
     if (
       match.status === "rejected" ||
       match.status === "cancelled" ||
-      match.status === "expired" ||
-      match.status === "completed"
+      match.status === "expired"
     ) {
       return false;
     }
 
-    // Exclude if pending and expired
-    if (match.status === "pending" && isMatchExpired(match)) {
-      console.warn(
-        `⏰ [CLIENT DASHBOARD] Match ${match.id} has expired, filtering out`,
-      );
+    // Exclude completed trips (both match AND trip are completed)
+    if (match.status === "completed" && match.trip?.status === "completed") {
       return false;
     }
 
-    // Exclude if trip completed (regardless of feedback status)
-    if (match.tripId && match.trip?.status === "completed") {
-      return false;
+    // Check if pending but expired
+    if (match.status === "pending" && match.expiresAt) {
+      if (new Date(match.expiresAt) < new Date()) {
+        return false;
+      }
     }
 
-    // Include ONLY: PENDING (not expired) or ACCEPTED
-    return match.status === "pending" || match.status === "accepted";
+    // Include pending matches (not expired)
+    if (match.status === "pending") {
+      return true;
+    }
+
+    // Include accepted matches that have a conversation (charter accepted)
+    if (match.status === "accepted" && match.conversationId) {
+      return true;
+    }
+
+    return false;
   });
 
   const handleRequestFreight = () => {
@@ -345,7 +354,7 @@ export default function ClientDashboard() {
                   fontWeight: 700,
                 }}
               >
-                {activeTrip.conversation?.id ? "Volver al Chat" : "Ver Detalles"}
+                {activeTrip.conversationId ? "Volver al Chat" : "Ver Detalles"}
               </Button>
             </CardContent>
           </Card>

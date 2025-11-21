@@ -19,6 +19,9 @@ import { queryKeys } from "./queryFactory";
 /**
  * Get all matches for the authenticated user
  * Used by: Client dashboard, matching page
+ *
+ * 🔧 FIX: Smart polling - only polls when there's an accepted match without conversationId
+ * This ensures the navbar updates quickly after charter accepts, without constant polling.
  */
 export function useUserMatches() {
   const { user } = useAuthStore();
@@ -31,6 +34,16 @@ export function useUserMatches() {
     refetchOnWindowFocus: true,
     refetchOnReconnect: true,
     enabled: !!user?.id, // Only fetch if logged in
+    // 🔧 Smart polling: Only poll if there's an incomplete match
+    refetchInterval: (query) => {
+      const matches = query.state.data || [];
+      // Check if any accepted match is missing conversationId (DB field)
+      const hasIncompleteMatch = matches.some(
+        (match) => match.status === "accepted" && !match.conversationId,
+      );
+      // Poll every 5s if incomplete, otherwise no polling
+      return hasIncompleteMatch ? 5 * 1000 : false;
+    },
   });
 }
 

@@ -1,6 +1,7 @@
 "use client";
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import axios from "axios";
 import toast from "react-hot-toast";
 import { travelMatchingApi } from "@/lib/api/travelMatching";
 import { conversationApi } from "@/lib/api/conversations";
@@ -124,14 +125,29 @@ export function useRespondToMatch() {
           console.log("🔄 [RESPOND] Creating conversation for match:", matchId);
           await conversationApi.createFromMatch(matchId);
           console.log("✅ [RESPOND] Conversation created successfully");
+
+          // 🔧 FIX: Wait for DB propagation (backend updates travelMatch.conversationId)
+          console.log("⏳ [RESPOND] Waiting 300ms for DB propagation...");
+          await new Promise((resolve) => setTimeout(resolve, 300));
+
+          // Invalidate specific match first (forces refetch)
+          console.log("🔄 [RESPOND] Invalidating match cache...");
+          await queryClient.invalidateQueries({
+            queryKey: queryKeys.matches.detail(matchId),
+          });
         } catch (error) {
-          console.error("❌ [RESPOND] Failed to create conversation:", error);
+          // Distinguir entre error esperado (409 - conversación ya existe) y errores reales
+          if (axios.isAxiosError(error) && error.response?.status === 409) {
+            console.log("ℹ️ [RESPOND] Conversation already exists (expected behavior)");
+          } else {
+            console.error("❌ [RESPOND] Failed to create conversation:", error);
+          }
           // Don't fail the entire mutation - conversation can be created later
-          // but log the error for debugging
         }
       }
 
       // Refetch all matches to get fresh data with conversationId
+      console.log("🔄 [RESPOND] Refetching all matches...");
       await queryClient.refetchQueries({
         queryKey: queryKeys.matches.all,
       });
@@ -154,6 +170,8 @@ export function useRespondToMatch() {
 /**
  * Create a trip from an accepted match
  * POST /travel-matching/matches/:matchId/create-trip
+ *
+ * 🔧 FIX: Added delay and invalidation to prevent race condition
  */
 export function useCreateTripFromMatch() {
   const queryClient = useQueryClient();
@@ -162,8 +180,16 @@ export function useCreateTripFromMatch() {
     mutationFn: (matchId: string) =>
       travelMatchingApi.createTripFromMatch(matchId),
 
-    onSuccess: async () => {
-      // Refetch everything related to matches and trips (force immediate update)
+    onSuccess: async (result, matchId) => {
+      // 🔧 FIX: Wait for DB propagation (backend updates travelMatch.tripId)
+      await new Promise((resolve) => setTimeout(resolve, 300));
+
+      // Invalidate specific match first (forces refetch)
+      await queryClient.invalidateQueries({
+        queryKey: queryKeys.matches.detail(matchId),
+      });
+
+      // Refetch everything related to matches and trips
       await queryClient.refetchQueries({
         queryKey: queryKeys.matches.all,
       });

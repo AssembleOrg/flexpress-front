@@ -56,7 +56,7 @@ export function BottomNavbar() {
 
   // Determinar match activo con conversación
   const activeMatch = matches.find((match) => {
-    // Client: pending (no expirado), accepted, completed (pending feedback)
+    // Client: accepted with conversation (pending is pre-conversation)
     if (!isCharter) {
       if (
         match.status === "rejected" ||
@@ -75,10 +75,8 @@ export function BottomNavbar() {
       ) {
         return false;
       }
-      return (
-        (match.status === "pending" || match.status === "accepted") &&
-        match.conversation?.id
-      );
+      // 🔧 FIX: Align with dashboard - only accepted matches with conversationId
+      return match.status === "accepted" && match.conversationId;
     }
 
     // Driver: accepted/completed con tripId
@@ -86,7 +84,7 @@ export function BottomNavbar() {
     if (match.trip?.status === "completed") return false;
     return (
       (match.status === "accepted" || match.status === "completed") &&
-      match.conversation?.id
+      match.conversationId
     );
   });
 
@@ -168,7 +166,7 @@ export function BottomNavbar() {
               <Badge
                 color="secondary"
                 variant="dot"
-                invisible={!activeMatch.conversation?.id}
+                invisible={!activeMatch.conversationId}
               >
                 <Chat />
               </Badge>

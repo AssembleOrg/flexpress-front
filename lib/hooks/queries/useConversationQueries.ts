@@ -20,7 +20,7 @@ export const conversationKeys = {
  * - staleTime: 2h (sufficient for complete negotiation + transport cycle)
  * - gcTime: 2h (keep in cache for full duration of trip)
  * - refetchOnWindowFocus: true (update if user switches tabs)
- * - refetchOnReconnect: true (update when connection restored)
+ * - refetchOnReconnect: false (WebSocket handles real-time updates)
  *
  * Why 2 hours? Average time from match acceptance to trip completion.
  * - Negotiation: 15-30 min
@@ -34,7 +34,7 @@ export function useConversationMessages(conversationId: string) {
     staleTime: 2 * 60 * 60 * 1000, // 2 hours
     gcTime: 2 * 60 * 60 * 1000, // 2 hours
     refetchOnWindowFocus: true,
-    refetchOnReconnect: true,
+    refetchOnReconnect: false, // WebSocket handles reconnection updates
     enabled: !!conversationId, // Only fetch if conversationId is provided
   });
 }

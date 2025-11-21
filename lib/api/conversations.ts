@@ -62,8 +62,32 @@ export const conversationApi = {
         `/conversations/${conversationId}/messages`,
       );
 
-      // Validar que la respuesta contiene datos
-      if (!response.data.data || !Array.isArray(response.data.data)) {
+      // 🔧 UNWRAP: Manejar doble wrapper del backend
+      let messagesArray: Message[];
+
+      if (response.data.data && typeof response.data.data === "object") {
+        // Caso 1: Doble wrapper { success, data: { success, data: [...] } }
+        if (
+          "data" in response.data.data &&
+          Array.isArray((response.data.data as { data: Message[] }).data)
+        ) {
+          console.log("📦 [DEBUG] Doble wrapper detectado - unwrapping...");
+          messagesArray = (response.data.data as { data: Message[] }).data;
+        }
+        // Caso 2: Wrapper simple { success, data: [...] }
+        else if (Array.isArray(response.data.data)) {
+          console.log("📦 [DEBUG] Wrapper simple detectado");
+          messagesArray = response.data.data;
+        }
+        // Caso 3: Estructura inválida
+        else {
+          console.warn(
+            "⚠️ [CONVERSATIONS] Estructura inesperada:",
+            response.data.data,
+          );
+          return [];
+        }
+      } else {
         console.warn(
           "⚠️ [CONVERSATIONS] Backend devolvió data inválida o vacía:",
           response.data.data,
@@ -71,12 +95,9 @@ export const conversationApi = {
         return [];
       }
 
-      console.log(
-        "✅ [CONVERSATIONS] Messages fetched:",
-        response.data.data.length,
-      );
+      console.log("✅ [CONVERSATIONS] Messages fetched:", messagesArray.length);
 
-      return response.data.data;
+      return messagesArray;
     } catch (error) {
       console.error("❌ [CONVERSATIONS] Failed to fetch messages:", error);
       throw error;

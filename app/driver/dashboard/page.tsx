@@ -417,8 +417,6 @@ export default function DriverDashboard() {
                 queryKey: queryKeys.matches.all,
               });
 
-              toast.success("¡Solicitud aceptada!");
-
               // Now redirect to the chat page
               // The conversation should now be available in the cached data
               router.push(`/driver/trips/matching/${selectedMatchForAccept?.id}`);

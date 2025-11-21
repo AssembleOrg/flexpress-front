@@ -125,7 +125,7 @@ export default function DriverMatchingDetailPage() {
         >
           {/* Left column: Chat + Action Buttons */}
           <Box>
-            {!match.conversation?.id ? (
+            {!match.conversationId ? (
               <Card>
                 <CardContent sx={{ textAlign: "center", py: 6 }}>
                   <CircularProgress sx={{ mb: 2 }} />
@@ -146,7 +146,7 @@ export default function DriverMatchingDetailPage() {
                 }}
               >
                 <ChatWindow
-                  conversationId={match.conversation.id}
+                  conversationId={match.conversationId}
                   otherUser={{
                     id: match.user?.id || "",
                     email: match.user?.email || "",

@@ -105,7 +105,7 @@ export default function MatchDetailPage() {
   useEffect(() => {
     if (
       match?.status === TravelMatchStatus.ACCEPTED &&
-      !match.conversation?.id &&
+      !match.conversationId &&
       !conversationLoadingTimeout
     ) {
       // Set timeout after 5 seconds
@@ -121,7 +121,7 @@ export default function MatchDetailPage() {
     }
   }, [
     match?.status,
-    match?.conversation?.id,
+    match?.conversationId,
     conversationLoadingTimeout,
     refetchMatch,
   ]);
@@ -129,7 +129,6 @@ export default function MatchDetailPage() {
   // Listen for charter finalization (trip completed)
   useTripCompletedListener(matchId, () => {
     setCharterFinalized(true);
-    toast.success("🏁 El transportista ha finalizado el viaje");
     // Refetch match to get updated status
     refetchMatch();
   });
@@ -570,7 +569,7 @@ export default function MatchDetailPage() {
         };
 
     // Validar que el match tenga conversación antes de mostrar el chat
-    if (!match.conversation?.id) {
+    if (!match.conversationId) {
       return (
         <Container maxWidth="md" sx={{ py: 4, textAlign: "center" }}>
           <Box sx={{ my: 4 }}>
@@ -601,7 +600,7 @@ export default function MatchDetailPage() {
       );
     }
 
-    const conversationId = match.conversation.id;
+    const conversationId = match.conversationId;
 
     // Determine trip status for UI
     const getStatusInfo = () => {
