@@ -30,13 +30,18 @@ import { MobileContainer } from "@/components/layout/MobileContainer";
 import { MobileHeader } from "@/components/layout/MobileHeader";
 import { TripDetailsCard } from "@/components/trip/TripDetailsCard";
 import { TripMetricsCard } from "@/components/trip/TripMetricsCard";
+import { ReceiptButton } from "@/components/trip/ReceiptButton";
+import LeafletMap, { type MapMarker } from "@/components/ui/LeafletMap";
 import { MOBILE_BOTTOM_NAV_HEIGHT } from "@/lib/constants/mobileDesign";
 import { useMatch } from "@/lib/hooks/queries/useTravelMatchQueries";
 import {
   useCanGiveFeedback,
   useCharterRating,
 } from "@/lib/hooks/queries/useFeedbackQueries";
-import { useCreateTripFromMatch } from "@/lib/hooks/mutations/useTravelMatchMutations";
+import {
+  useCreateTripFromMatch,
+  useCancelMatch,
+} from "@/lib/hooks/mutations/useTravelMatchMutations";
 import { useClientConfirmCompletion } from "@/lib/hooks/mutations/useTripMutations";
 import {
   useMatchUpdateListener,
@@ -67,6 +72,7 @@ export default function MatchDetailPage() {
   const { user } = useAuthStore();
   const { data: match, isLoading, refetch: refetchMatch } = useMatch(matchId);
   const createTripMutation = useCreateTripFromMatch();
+  const cancelMatchMutation = useCancelMatch();
   const clientConfirmCompletionMutation = useClientConfirmCompletion();
   const [conversationLoadingTimeout, setConversationLoadingTimeout] =
     useState(false);
@@ -160,6 +166,16 @@ export default function MatchDetailPage() {
       setConfirmCompletionModalOpen(false);
     } catch (error) {
       console.error("Error confirming completion:", error);
+    }
+  };
+
+  const handleCancelMatch = async () => {
+    if (!match?.id) return;
+    try {
+      await cancelMatchMutation.mutateAsync(match.id);
+      router.push("/client/dashboard");
+    } catch (error) {
+      console.error("Error cancelling match:", error);
     }
   };
 
@@ -701,6 +717,36 @@ export default function MatchDetailPage() {
                 distance={match.distanceKm ?? undefined}
                 credits={match.estimatedCredits ?? undefined}
               />
+
+              {/* Map Card */}
+              <Card sx={{ mb: 1.5 }}>
+                <CardContent sx={{ p: 1.5 }}>
+                  <Typography
+                    variant="caption"
+                    color="text.secondary"
+                    sx={{ fontWeight: 600, mb: 1, display: "block", fontSize: "0.7rem" }}
+                  >
+                    Mapa del Viaje
+                  </Typography>
+                  <LeafletMap
+                    markers={[
+                      {
+                        lat: Number.parseFloat(match.pickupLatitude),
+                        lon: Number.parseFloat(match.pickupLongitude),
+                        label: "Origen",
+                        type: "pickup",
+                      },
+                      {
+                        lat: Number.parseFloat(match.destinationLatitude),
+                        lon: Number.parseFloat(match.destinationLongitude),
+                        label: "Destino",
+                        type: "destination",
+                      },
+                    ]}
+                    height="250px"
+                  />
+                </CardContent>
+              </Card>
             </Box>
 
             {/* Right column: Chat + Action Buttons - order 1 on mobile (appears first) */}
@@ -723,18 +769,34 @@ export default function MatchDetailPage() {
               {/* Action Buttons - directly below chat */}
               <Stack spacing={1} sx={{ mt: 1.5 }}>
 
-              {/* Estado 1: Botón Confirmar Viaje */}
+              {/* Estado 1: Botón Confirmar Viaje + Cancelar */}
               {!match.tripId && (
-                <Button
-                  variant="contained"
-                  color="success"
-                  fullWidth
-                  onClick={() => setConfirmTripModalOpen(true)}
-                  size="large"
-                  sx={{ minHeight: 48 }}
-                >
-                  ✅ Confirmar Viaje
-                </Button>
+                <>
+                  <Button
+                    variant="contained"
+                    color="success"
+                    fullWidth
+                    onClick={() => setConfirmTripModalOpen(true)}
+                    size="large"
+                    sx={{ minHeight: 48 }}
+                  >
+                    ✅ Confirmar Viaje
+                  </Button>
+                  <Button
+                    variant="outlined"
+                    color="error"
+                    fullWidth
+                    size="small"
+                    onClick={handleCancelMatch}
+                    disabled={cancelMatchMutation.isPending || match.status === "completed"}
+                    sx={{
+                      minHeight: 40,
+                      fontSize: "0.8rem",
+                    }}
+                  >
+                    {cancelMatchMutation.isPending ? "Cancelando..." : "No Confirmar Viaje"}
+                  </Button>
+                </>
               )}
 
               {/* Estado 2: Trip confirmado, esperando charter */}
@@ -850,6 +912,13 @@ export default function MatchDetailPage() {
                       Los créditos han sido transferidos exitosamente.
                     </Typography>
                   </Alert>
+
+                  {/* Receipt Download Button */}
+                  {match.trip && (
+                    <Box sx={{ mb: 1 }}>
+                      <ReceiptButton trip={match.trip} type="client" />
+                    </Box>
+                  )}
 
                   {/* Show rating button ONLY if can give feedback */}
                   {canGiveFeedback ? (

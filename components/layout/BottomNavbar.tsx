@@ -22,7 +22,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useAuthStore } from "@/lib/stores/authStore";
 import { useUserMatches, useCharterMatches } from "@/lib/hooks/queries/useTravelMatchQueries";
-import { isMatchExpired } from "@/lib/utils/matchHelpers";
+import { isActiveTrip } from "@/lib/utils/matchHelpers";
 import { MOBILE_BOTTOM_NAV_HEIGHT, Z_INDEX } from "@/lib/constants/mobileDesign";
 
 /**
@@ -56,27 +56,9 @@ export function BottomNavbar() {
 
   // Determinar match activo con conversación
   const activeMatch = matches.find((match) => {
-    // Client: accepted with conversation (pending is pre-conversation)
+    // Client: Use centralized logic
     if (!isCharter) {
-      if (
-        match.status === "rejected" ||
-        match.status === "cancelled" ||
-        match.status === "expired"
-      ) {
-        return false;
-      }
-      if (match.status === "pending" && isMatchExpired(match)) {
-        return false;
-      }
-      if (
-        match.tripId &&
-        match.trip?.status === "completed" &&
-        match.canGiveFeedback === false
-      ) {
-        return false;
-      }
-      // 🔧 FIX: Align with dashboard - only accepted matches with conversationId
-      return match.status === "accepted" && match.conversationId;
+      return isActiveTrip(match);
     }
 
     // Driver: accepted/completed con tripId

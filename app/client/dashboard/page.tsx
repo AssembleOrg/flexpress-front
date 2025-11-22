@@ -5,7 +5,9 @@ import {
   LocalShipping,
   LocationOn,
   Flag,
-  Person,
+  AccountBalanceWallet,
+  Email,
+  Phone,
 } from "@mui/icons-material";
 import {
   Box,
@@ -17,53 +19,27 @@ import {
   Typography,
   Avatar,
   Badge,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Fab,
 } from "@mui/material";
 import { useRouter } from "next/navigation";
+import { useState } from "react";
 import { MobileContainer } from "@/components/layout/MobileContainer";
 import { useUserMatches } from "@/lib/hooks/queries/useTravelMatchQueries";
-import { isMatchExpired } from "@/lib/utils/matchHelpers";
+import { isActiveTrip } from "@/lib/utils/matchHelpers";
+import { useAuthStore } from "@/lib/stores/authStore";
 
 export default function ClientDashboard() {
   const router = useRouter();
+  const { user } = useAuthStore();
   const { data: myMatches = [], isLoading } = useUserMatches();
+  const [rechargeModalOpen, setRechargeModalOpen] = useState(false);
 
   // Find the ONE active trip (only one trip at a time allowed)
-  const activeTrip = myMatches.find((match) => {
-    if (!match?.id) return false;
-
-    // Exclude non-active statuses
-    if (
-      match.status === "rejected" ||
-      match.status === "cancelled" ||
-      match.status === "expired"
-    ) {
-      return false;
-    }
-
-    // Exclude completed trips (both match AND trip are completed)
-    if (match.status === "completed" && match.trip?.status === "completed") {
-      return false;
-    }
-
-    // Check if pending but expired
-    if (match.status === "pending" && match.expiresAt) {
-      if (new Date(match.expiresAt) < new Date()) {
-        return false;
-      }
-    }
-
-    // Include pending matches (not expired)
-    if (match.status === "pending") {
-      return true;
-    }
-
-    // Include accepted matches that have a conversation (charter accepted)
-    if (match.status === "accepted" && match.conversationId) {
-      return true;
-    }
-
-    return false;
-  });
+  const activeTrip = myMatches.find(isActiveTrip);
 
   const handleRequestFreight = () => {
     // Prevent creating new trip if one is already active
@@ -128,6 +104,43 @@ export default function ClientDashboard() {
 
   return (
     <MobileContainer withBottomNav>
+      {/* Credits Card */}
+      <Card
+        sx={{
+          mb: 3,
+          bgcolor: "primary.main",
+          color: "white",
+        }}
+      >
+        <CardContent
+          sx={{
+            p: { xs: 2.5, md: 3 },
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+          }}
+        >
+          <Box>
+            <Typography variant="caption" sx={{ opacity: 0.9, display: "block", mb: 0.5 }}>
+              Créditos Disponibles
+            </Typography>
+            <Typography variant="h4" sx={{ fontWeight: 700, color: "inherit" }}>
+              {user?.credits || 0}
+            </Typography>
+          </Box>
+          <Fab
+            color="secondary"
+            size="medium"
+            onClick={() => setRechargeModalOpen(true)}
+            sx={{
+              boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+            }}
+          >
+            <Add />
+          </Fab>
+        </CardContent>
+      </Card>
+
       {/* CTA Principal */}
       <Card
         sx={{
@@ -253,54 +266,55 @@ export default function ClientDashboard() {
               transition: "all 0.2s ease-in-out",
             }}
           >
-            <CardContent sx={{ p: 2 }}>
+            <CardContent sx={{ p: 1.5 }}>
               {/* Header: Title + Status */}
               <Box
                 display="flex"
                 justifyContent="space-between"
                 alignItems="flex-start"
-                mb={2}
+                mb={1.5}
               >
-                <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
+                <Typography variant="subtitle2" sx={{ fontWeight: 700, fontSize: "0.9rem" }}>
                   Solicitud de Flete
                 </Typography>
                 <Chip
                   label={getStatusLabel(activeTrip.status, activeTrip).label}
                   color={getStatusLabel(activeTrip.status, activeTrip).color}
                   size="small"
-                  sx={{ fontWeight: 600 }}
+                  sx={{ fontWeight: 600, fontSize: "0.7rem", height: 22 }}
                 />
               </Box>
 
               {/* Route Info with Icons */}
-              <Box mb={2}>
+              <Box mb={1.5}>
                 {/* Origin */}
-                <Box display="flex" alignItems="flex-start" gap={1} mb={1}>
+                <Box display="flex" alignItems="flex-start" gap={0.75} mb={0.75}>
                   <LocationOn
                     sx={{
-                      fontSize: 20,
+                      fontSize: 18,
                       color: "primary.main",
-                      mt: 0.2,
+                      mt: 0.1,
                     }}
                   />
-                  <Typography variant="body2" fontSize="0.9rem">
+                  <Typography variant="body2" fontSize="0.85rem" lineHeight={1.4}>
                     {activeTrip.pickupAddress || "Origen"}
                   </Typography>
                 </Box>
 
                 {/* Destination */}
-                <Box display="flex" alignItems="flex-start" gap={1}>
+                <Box display="flex" alignItems="flex-start" gap={0.75}>
                   <Flag
                     sx={{
-                      fontSize: 20,
+                      fontSize: 18,
                       color: "secondary.main",
-                      mt: 0.2,
+                      mt: 0.1,
                     }}
                   />
                   <Typography
                     variant="body2"
-                    fontSize="0.9rem"
+                    fontSize="0.85rem"
                     fontWeight={600}
+                    lineHeight={1.4}
                   >
                     {activeTrip.destinationAddress || "Destino"}
                   </Typography>
@@ -360,6 +374,46 @@ export default function ClientDashboard() {
           </Card>
         )}
       </Box>
+
+      {/* Recharge Credits Modal */}
+      <Dialog
+        open={rechargeModalOpen}
+        onClose={() => setRechargeModalOpen(false)}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>
+          <Box display="flex" alignItems="center" gap={1}>
+            <AccountBalanceWallet color="primary" />
+            <Typography variant="h6" sx={{ fontWeight: 700 }}>
+              Recargar Créditos
+            </Typography>
+          </Box>
+        </DialogTitle>
+        <DialogContent>
+          <Typography variant="body1" sx={{ mb: 2 }}>
+            Para recargar créditos, por favor contacta al administrador:
+          </Typography>
+          <Card sx={{ bgcolor: "background.default", p: 2 }}>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 1, display: "flex", alignItems: "center", gap: 1 }}>
+              <Email fontSize="small" />
+              Email: admin@flexpress.com
+            </Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+              <Phone fontSize="small" />
+              Teléfono: +54 11 1234-5678
+            </Typography>
+          </Card>
+          <Typography variant="caption" color="text.secondary" sx={{ mt: 2, display: "block" }}>
+            El administrador procesará tu solicitud y acreditará los créditos a tu cuenta.
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setRechargeModalOpen(false)} variant="contained">
+            Entendido
+          </Button>
+        </DialogActions>
+      </Dialog>
     </MobileContainer>
   );
 }

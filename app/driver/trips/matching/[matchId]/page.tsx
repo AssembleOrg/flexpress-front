@@ -23,6 +23,7 @@ import { MobileContainer } from "@/components/layout/MobileContainer";
 import { MobileHeader } from "@/components/layout/MobileHeader";
 import { TripDetailsCard } from "@/components/trip/TripDetailsCard";
 import { TripMetricsCard } from "@/components/trip/TripMetricsCard";
+import { ReceiptButton } from "@/components/trip/ReceiptButton";
 import { MOBILE_BOTTOM_NAV_HEIGHT } from "@/lib/constants/mobileDesign";
 import { useMatch } from "@/lib/hooks/queries/useTravelMatchQueries";
 import { useTrip } from "@/lib/hooks/queries/useTripQueries";
@@ -255,6 +256,14 @@ export default function DriverMatchingDetailPage() {
                     Créditos transferidos exitosamente.
                   </Typography>
                 </Alert>
+
+                {/* Receipt Download Button */}
+                {trip && (
+                  <Box sx={{ mb: 1 }}>
+                    <ReceiptButton trip={trip} type="charter" />
+                  </Box>
+                )}
+
                 <Button
                   variant="outlined"
                   onClick={() => router.push("/driver/dashboard")}

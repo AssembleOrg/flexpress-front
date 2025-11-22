@@ -335,6 +335,21 @@ export const travelMatchingApi = {
   },
 
   /**
+   * Cancel a match (before trip is created)
+   * PUT /travel-matching/matches/:matchId/cancel
+   */
+  cancelMatch: async (matchId: string): Promise<TravelMatch> => {
+    console.log(`🚫 [MATCHING] Cancelling match: ${matchId}`);
+    const response = await api.put<ApiResponse<TravelMatch>>(
+      `/travel-matching/matches/${matchId}/cancel`,
+      {},
+    );
+    console.log(`✅ [MATCHING] Match cancelled: ${matchId}`);
+    // biome-ignore lint/style/noNonNullAssertion: axios response guarantees data
+    return response.data.data!;
+  },
+
+  /**
    * Create a trip from an accepted match
    */
   createTripFromMatch: async (matchId: string) => {

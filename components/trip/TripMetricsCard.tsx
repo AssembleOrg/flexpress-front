@@ -82,8 +82,18 @@ export function TripMetricsCard({
   if (credits !== undefined) {
     metrics.push({
       icon: <AttachMoney sx={{ fontSize: 20, color: "secondary.main" }} />,
-      label: "Créditos",
-      value: credits,
+      label: "Este viaje costará",
+      value: `${credits} créditos`,
+    });
+  }
+
+  // Add credits per km if both distance and credits are available
+  if (credits !== undefined && distance !== undefined && distance > 0) {
+    const creditsPerKm = (credits / distance).toFixed(1);
+    metrics.push({
+      icon: <TrendingUp sx={{ fontSize: 20, color: "success.main" }} />,
+      label: "Créditos por km",
+      value: creditsPerKm,
     });
   }
 

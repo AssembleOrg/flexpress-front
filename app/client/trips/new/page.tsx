@@ -24,7 +24,7 @@ import { useUserMatches } from "@/lib/hooks/queries/useTravelMatchQueries";
 import { useHydrated } from "@/lib/hooks/useHydrated";
 import { useAuthStore } from "@/lib/stores/authStore";
 import { useTravelMatchStore } from "@/lib/stores/travelMatchStore";
-import { isMatchExpired } from "@/lib/utils/matchHelpers";
+import { isActiveTrip } from "@/lib/utils/matchHelpers";
 
 export default function NewTripPage() {
   const router = useRouter();
@@ -43,26 +43,7 @@ export default function NewTripPage() {
   }, [hydrated, isAuthenticated, router]);
 
   // Check if user has active trip
-  const activeTrip = myMatches.find((match) => {
-    if (
-      match.status === "rejected" ||
-      match.status === "cancelled" ||
-      match.status === "expired"
-    ) {
-      return false;
-    }
-    if (match.status === "pending" && isMatchExpired(match)) {
-      return false;
-    }
-    if (
-      match.tripId &&
-      match.trip?.status === "completed" &&
-      match.canGiveFeedback === false
-    ) {
-      return false;
-    }
-    return match.status === "pending" || match.status === "accepted";
-  });
+  const activeTrip = myMatches.find(isActiveTrip);
 
   // Form state from Zustand
   const {

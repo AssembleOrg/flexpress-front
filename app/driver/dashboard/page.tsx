@@ -2,6 +2,13 @@
 
 import { useQueryClient } from "@tanstack/react-query";
 import {
+  Assignment,
+  Chat,
+  Person,
+  LocationOn,
+  Flag,
+} from "@mui/icons-material";
+import {
   Box,
   Button,
   Card,
@@ -28,10 +35,12 @@ import { useCharterMatches } from "@/lib/hooks/queries/useTravelMatchQueries";
 import { queryKeys } from "@/lib/hooks/queries/queryFactory";
 import type { TravelMatch } from "@/lib/types/api";
 import { isMatchExpired } from "@/lib/utils/matchHelpers";
+import { useAuthStore } from "@/lib/stores/authStore";
 
 export default function DriverDashboard() {
   const router = useRouter();
   const queryClient = useQueryClient();
+  const { user } = useAuthStore();
   const [isAvailable, setIsAvailable] = useState(false);
   const toggleMutation = useToggleAvailability();
   const { data: charterMatches = [], isLoading: matchesLoading } =
@@ -167,8 +176,7 @@ export default function DriverDashboard() {
         </CardContent>
       </Card>
 
-      {/* Earnings Summary - Quick Stats */}
-      {/* TODO: Integrar datos reales de earnings del backend */}
+      {/* Credits Summary */}
       {isAvailable && (
         <Box display="flex" gap={2} mb={3}>
           <Card sx={{ flex: 1, p: 2, textAlign: "center" }}>
@@ -176,19 +184,23 @@ export default function DriverDashboard() {
               variant="h6"
               sx={{ fontWeight: 700, color: "success.main" }}
             >
-              $1,250
+              {user?.credits || 0}
             </Typography>
             <Typography variant="caption" color="text.secondary">
-              Esta semana
+              Créditos Actuales
             </Typography>
           </Card>
           <Card sx={{ flex: 1, p: 2, textAlign: "center" }}>
-            <Typography variant="h6" sx={{ fontWeight: 700 }}>
-              0
-            </Typography>
-            <Typography variant="caption" color="text.secondary">
-              Viajes completados
-            </Typography>
+            <Button
+              variant="outlined"
+              color="primary"
+              size="small"
+              fullWidth
+              onClick={() => router.push("/driver/trips/history")}
+              sx={{ fontWeight: 600 }}
+            >
+              Ver Historial
+            </Button>
           </Card>
         </Box>
       )}
@@ -207,9 +219,13 @@ export default function DriverDashboard() {
               sx={{
                 fontWeight: 700,
                 fontSize: { xs: "1.1rem", md: "1.25rem" },
+                display: "flex",
+                alignItems: "center",
+                gap: 1,
               }}
             >
-              📋 Solicitudes Pendientes
+              <Assignment fontSize="small" />
+              Solicitudes Pendientes
             </Typography>
             {pendingMatches.length > 0 && (
               <Chip
@@ -301,9 +317,13 @@ export default function DriverDashboard() {
               sx={{
                 fontWeight: 700,
                 fontSize: { xs: "1.1rem", md: "1.25rem" },
+                display: "flex",
+                alignItems: "center",
+                gap: 1,
               }}
             >
-              💬 Conversaciones Activas
+              <Chat fontSize="small" />
+              Conversaciones Activas
             </Typography>
             <Chip
               label={activeConversations.length}
@@ -337,15 +357,27 @@ export default function DriverDashboard() {
                     gap={2}
                   >
                     <Box flex={1}>
-                      <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
-                        👤 {match.user?.name}
+                      <Typography variant="subtitle2" sx={{ fontWeight: 700, display: "flex", alignItems: "center", gap: 0.5 }}>
+                        <Person fontSize="small" sx={{ color: "primary.main" }} />
+                        {match.user?.name}
                       </Typography>
                       <Typography
                         variant="caption"
                         color="text.secondary"
                         display="block"
+                        sx={{ mb: 0.5, display: "flex", alignItems: "flex-start", gap: 0.5 }}
                       >
-                        📍 {match.pickupAddress}
+                        <LocationOn fontSize="small" sx={{ color: "primary.main", mt: 0.1 }} />
+                        {match.pickupAddress}
+                      </Typography>
+                      <Typography
+                        variant="caption"
+                        color="text.secondary"
+                        display="block"
+                        sx={{ fontWeight: 600, display: "flex", alignItems: "flex-start", gap: 0.5 }}
+                      >
+                        <Flag fontSize="small" sx={{ color: "secondary.main", mt: 0.1 }} />
+                        {match.destinationAddress}
                       </Typography>
                     </Box>
 
@@ -370,6 +402,50 @@ export default function DriverDashboard() {
                       size="small"
                       sx={{ fontWeight: 600 }}
                     />
+                  </Box>
+
+                  {/* Trip Info Row */}
+                  <Box
+                    display="flex"
+                    gap={2}
+                    mb={2}
+                    sx={{
+                      p: 1.5,
+                      bgcolor: "background.default",
+                      borderRadius: 1.5,
+                    }}
+                  >
+                    {match.distanceKm && (
+                      <Box flex={1} textAlign="center">
+                        <Typography
+                          variant="caption"
+                          color="text.secondary"
+                          display="block"
+                        >
+                          Distancia
+                        </Typography>
+                        <Typography variant="body2" sx={{ fontWeight: 700 }}>
+                          {match.distanceKm.toFixed(1)} km
+                        </Typography>
+                      </Box>
+                    )}
+                    {match.estimatedCredits && (
+                      <Box flex={1} textAlign="center">
+                        <Typography
+                          variant="caption"
+                          color="text.secondary"
+                          display="block"
+                        >
+                          Créditos
+                        </Typography>
+                        <Typography
+                          variant="body2"
+                          sx={{ fontWeight: 700, color: "success.main" }}
+                        >
+                          {match.estimatedCredits}
+                        </Typography>
+                      </Box>
+                    )}
                   </Box>
 
                   <Button

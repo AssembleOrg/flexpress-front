@@ -168,6 +168,40 @@ export function useRespondToMatch() {
 }
 
 /**
+ * Cancel a match (before trip is created)
+ * PUT /travel-matching/matches/:matchId/cancel
+ */
+export function useCancelMatch() {
+  const queryClient = useQueryClient();
+  const { user } = useAuthStore();
+
+  return useMutation({
+    mutationFn: (matchId: string) => travelMatchingApi.cancelMatch(matchId),
+
+    onSuccess: async (result, matchId) => {
+      // Update the match in cache
+      queryClient.setQueryData(queryKeys.matches.detail(matchId), result);
+
+      // Refetch all matches
+      await queryClient.refetchQueries({
+        queryKey: queryKeys.matches.user(user?.id || ""),
+      });
+
+      await queryClient.refetchQueries({
+        queryKey: queryKeys.matches.all,
+      });
+
+      toast.success("Viaje cancelado exitosamente");
+    },
+
+    onError: (error) => {
+      console.error("❌ useCancelMatch error:", error);
+      toast.error("Error al cancelar viaje");
+    },
+  });
+}
+
+/**
  * Create a trip from an accepted match
  * POST /travel-matching/matches/:matchId/create-trip
  *
