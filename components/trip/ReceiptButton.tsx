@@ -27,11 +27,21 @@ export function ReceiptButton({ trip, type }: ReceiptButtonProps) {
 
   return (
     <Button
-      variant="outlined"
-      size="small"
+      variant="contained"
+      fullWidth
+      size="large"
       startIcon={<Download />}
       onClick={handleDownload}
-      sx={{ fontWeight: 600 }}
+      sx={{
+        fontWeight: 700,
+        minHeight: 48,
+        bgcolor: "secondary.main",
+        color: "white",
+        "&:hover": {
+          bgcolor: "secondary.dark",
+        },
+        boxShadow: 2,
+      }}
     >
       Descargar Comprobante
     </Button>

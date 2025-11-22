@@ -28,6 +28,8 @@ interface LeafletMapProps {
     lon: number,
   ) => void;
   allowDragging?: boolean;
+  disableInteraction?: boolean; // Deshabilita zoom, pan, y toda interacción (solo lectura)
+  autoFitBounds?: boolean; // Si true, ejecuta fitBounds automáticamente (default: true)
 }
 
 export interface LeafletMapHandle {
@@ -85,6 +87,8 @@ const LeafletMap = forwardRef<LeafletMapHandle, LeafletMapProps>(
       isLoading = false,
       onMarkerDrag,
       allowDragging = false,
+      disableInteraction = false,
+      autoFitBounds = true,
     },
     ref,
   ) => {
@@ -93,6 +97,7 @@ const LeafletMap = forwardRef<LeafletMapHandle, LeafletMapProps>(
     const markersRef = useRef<L.Marker[]>([]);
     const polylineRef = useRef<L.Polyline | null>(null);
     const [isMapReady, setIsMapReady] = useState(false);
+    const hasInitialFitBounds = useRef(false); // Track si ya se hizo fitBounds inicial
 
     // Expose methods to parent component
     useImperativeHandle(ref, () => ({
@@ -118,6 +123,12 @@ const LeafletMap = forwardRef<LeafletMapHandle, LeafletMapProps>(
         mapRef.current = L.map(containerRef.current, {
           minZoom: 16, // Prevent zooming out too far for better precision
           maxZoom: 20, // Allow higher zoom levels
+          // Deshabilitar interacción si disableInteraction={true}
+          scrollWheelZoom: !disableInteraction,
+          doubleClickZoom: !disableInteraction,
+          touchZoom: !disableInteraction,
+          dragging: !disableInteraction,
+          zoomControl: !disableInteraction, // Ocultar botones +/-
         }).setView(
           [-34.6037, -58.3816],
           18, // Zoom 18 shows buildings individually (5-15m precision)
@@ -219,12 +230,23 @@ const LeafletMap = forwardRef<LeafletMapHandle, LeafletMapProps>(
       });
 
       // Fit map to markers with padding
-      if (markers.length === 1) {
-        // For single marker, set zoom level
-        mapRef.current.setView([markers[0].lat, markers[0].lon], 14);
-      } else {
-        // For multiple markers, fit bounds
-        mapRef.current.fitBounds(bounds, { padding: [50, 50] });
+      // Si autoFitBounds=true: SIEMPRE fitBounds (útil para vista informativa)
+      // Si autoFitBounds=false: Solo fitBounds la PRIMERA vez, luego mantener vista del usuario
+      const shouldFitBounds = autoFitBounds || !hasInitialFitBounds.current;
+
+      if (shouldFitBounds && markers.length > 0) {
+        if (markers.length === 1) {
+          // For single marker, set zoom level
+          mapRef.current.setView([markers[0].lat, markers[0].lon], 14);
+        } else {
+          // For multiple markers, fit bounds con padding
+          // SIN maxZoom para permitir zoom out necesario (50km, 100km, etc)
+          mapRef.current.fitBounds(bounds, {
+            padding: [80, 80],
+          });
+        }
+        // Marcar que ya se hizo el fitBounds inicial
+        hasInitialFitBounds.current = true;
       }
 
       // Draw polyline connecting markers if there are multiple
@@ -239,7 +261,7 @@ const LeafletMap = forwardRef<LeafletMapHandle, LeafletMapProps>(
           dashArray: "5, 5",
         }).addTo(mapRef.current);
       }
-    }, [markers, isMapReady]);
+    }, [markers, isMapReady, allowDragging, autoFitBounds, onMarkerDrag]);
 
     if (isLoading) {
       return (

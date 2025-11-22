@@ -76,13 +76,13 @@ export function ConfirmCompletionModal({
               Créditos a transferir
             </Typography>
             <Typography variant="h6" sx={{ fontWeight: 600, color: "primary.main" }}>
-              {estimatedCredits} pts → {charterName}
+              {estimatedCredits} → {charterName}
             </Typography>
           </Box>
 
           {/* Warning Info */}
           <Typography variant="caption" color="text.secondary">
-            ⚠️ Al confirmar, los créditos serán transferidos y el viaje se
+            Al confirmar, los créditos serán transferidos y el viaje se
             marcará como completado. Si hay algún problema, usa el botón
             "Reportar Problema" antes de confirmar.
           </Typography>

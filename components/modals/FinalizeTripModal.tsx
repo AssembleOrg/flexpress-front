@@ -85,7 +85,7 @@ export function FinalizeTripModal({
 
           {/* Warning Info */}
           <Typography variant="caption" color="text.secondary">
-            ℹ️ Al finalizar, el cliente recibirá una notificación para confirmar
+            Al finalizar, el cliente recibirá una notificación para confirmar
             la entrega. Los créditos se transferirán automáticamente después de
             su confirmación.
           </Typography>
@@ -101,7 +101,10 @@ export function FinalizeTripModal({
           onClick={onConfirm}
           disabled={isLoading}
           variant="contained"
-          color="primary"
+          sx={{
+            bgcolor: "success.main",
+            "&:hover": { bgcolor: "success.dark" }
+          }}
           startIcon={isLoading ? <CircularProgress size={18} /> : undefined}
         >
           {isLoading ? "Finalizando..." : "Finalizar Viaje"}

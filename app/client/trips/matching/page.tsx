@@ -381,7 +381,7 @@ export default function MatchingPage() {
                       display: "flex",
                       alignItems: "center",
                       gap: 1,
-                      backgroundColor: "info.main",
+                      backgroundColor: "primary.main",
                       color: "white",
                       px: 2,
                       py: 1,

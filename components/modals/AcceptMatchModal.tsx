@@ -68,7 +68,7 @@ export function AcceptMatchModal({
   return (
     <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
       <DialogTitle sx={{ fontWeight: 700, pb: 1, fontSize: "1.1rem" }}>
-        📋 Nueva Solicitud
+        Nueva Solicitud
       </DialogTitle>
 
       <DialogContent sx={{ py: 1.5 }}>
@@ -223,13 +223,14 @@ export function AcceptMatchModal({
         </Stack>
       </DialogContent>
 
-      <DialogActions sx={{ p: 1.5, gap: 1 }}>
+      <DialogActions sx={{ p: 2, gap: 1.5, display: 'flex', justifyContent: 'space-between' }}>
         <Button
           onClick={onReject}
           disabled={isLoading || !isValidState}
           variant="outlined"
           color="error"
-          size="medium"
+          size="large"
+          sx={{ flex: 1, minHeight: 48 }}
         >
           Rechazar
         </Button>
@@ -238,9 +239,13 @@ export function AcceptMatchModal({
           onClick={onAccept}
           disabled={isLoading || !isValidState}
           variant="contained"
-          color="success"
-          size="large"
-          sx={{ flex: 1, minHeight: 44, fontWeight: 700 }}
+          sx={{
+            flex: 1,
+            minHeight: 48,
+            fontWeight: 700,
+            bgcolor: "secondary.main",
+            "&:hover": { bgcolor: "secondary.dark" }
+          }}
           startIcon={isLoading ? <CircularProgress size={20} /> : undefined}
         >
           {isLoading ? "Aceptando..." : "Aceptar"}

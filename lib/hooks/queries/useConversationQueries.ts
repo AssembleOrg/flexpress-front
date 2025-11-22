@@ -16,25 +16,48 @@ export const conversationKeys = {
  * Fetch all messages from a conversation
  * Used by: ChatWindow component
  *
- * Caching strategy:
- * - staleTime: 2h (sufficient for complete negotiation + transport cycle)
- * - gcTime: 2h (keep in cache for full duration of trip)
- * - refetchOnWindowFocus: true (update if user switches tabs)
- * - refetchOnReconnect: false (WebSocket handles real-time updates)
+ * Adaptive polling strategy (React Query as source of truth):
+ * - Adjusts polling frequency based on chat activity
+ * - Active chat (< 1 min idle) → 5 seconds
+ * - Moderate idle (< 5 min) → 10 seconds
+ * - Long idle (> 5 min) → 15 seconds
  *
- * Why 2 hours? Average time from match acceptance to trip completion.
- * - Negotiation: 15-30 min
- * - Transport: 60-90 min
- * - Buffer: 30+ min
+ * Why this approach:
+ * - Simple and reliable (no WebSocket race conditions)
+ * - Chat works even if WebSocket fails
+ * - Intelligent resource usage (saves 50-70% requests on idle chats)
+ * - Single source of truth (React Query cache)
+ * - Proven to work (original working approach)
+ *
+ * Mobile-friendly: Reduces data consumption while maintaining good UX
  */
 export function useConversationMessages(conversationId: string) {
   return useQuery({
     queryKey: conversationKeys.messages(conversationId),
     queryFn: () => conversationApi.getMessages(conversationId),
-    staleTime: 2 * 60 * 60 * 1000, // 2 hours
-    gcTime: 2 * 60 * 60 * 1000, // 2 hours
-    refetchOnWindowFocus: true,
-    refetchOnReconnect: false, // WebSocket handles reconnection updates
+    staleTime: 0, // Always stale - always allows refetch
+    gcTime: 10 * 60 * 1000, // 10 minutes - keep in cache while navigating
+    refetchOnWindowFocus: true, // Refetch when user returns to tab
+    refetchOnReconnect: true, // Refetch when connection restored
+    refetchInterval: (data) => {
+      // Adaptive polling based on activity
+      if (!data || data.length === 0) return 5000; // Empty chat → 5s
+
+      const lastMessage = data[data.length - 1];
+      if (!lastMessage?.createdAt) return 5000; // Defensive: invalid message → 5s
+
+      const timeSinceLastMessage =
+        Date.now() - new Date(lastMessage.createdAt).getTime();
+
+      // Recent activity → fast polling (5s)
+      if (timeSinceLastMessage < 60000) return 5000; // < 1 minute
+
+      // Moderate idle → medium polling (10s)
+      if (timeSinceLastMessage < 300000) return 10000; // < 5 minutes
+
+      // Long idle → slow polling (15s)
+      return 15000; // > 5 minutes
+    },
     enabled: !!conversationId, // Only fetch if conversationId is provided
   });
 }

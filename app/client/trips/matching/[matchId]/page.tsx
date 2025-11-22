@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowBack } from "@mui/icons-material";
+import { ArrowBack, LocationOn, Flag } from "@mui/icons-material";
 import {
   Alert,
   Box,
@@ -17,7 +17,7 @@ import {
 import { CheckCircle, Warning } from "@mui/icons-material";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import toast from "react-hot-toast";
 
 import { ErrorBoundary } from "@/components/ErrorBoundary";
@@ -31,7 +31,7 @@ import { MobileHeader } from "@/components/layout/MobileHeader";
 import { TripDetailsCard } from "@/components/trip/TripDetailsCard";
 import { TripMetricsCard } from "@/components/trip/TripMetricsCard";
 import { ReceiptButton } from "@/components/trip/ReceiptButton";
-import LeafletMap, { type MapMarker } from "@/components/ui/LeafletMap";
+import LeafletMap, { type MapMarker, type LeafletMapHandle } from "@/components/ui/LeafletMap";
 import { MOBILE_BOTTOM_NAV_HEIGHT } from "@/lib/constants/mobileDesign";
 import { useMatch } from "@/lib/hooks/queries/useTravelMatchQueries";
 import {
@@ -77,6 +77,8 @@ export default function MatchDetailPage() {
   const [conversationLoadingTimeout, setConversationLoadingTimeout] =
     useState(false);
   const [charterFinalized, setCharterFinalized] = useState(false);
+  const hasShownAcceptToast = useRef(false);
+  const mapRef = useRef<LeafletMapHandle>(null);
 
   // Feedback/Rating related hooks
   // Always call hooks (never conditionally) - use enabled option instead
@@ -183,7 +185,12 @@ export default function MatchDetailPage() {
   useEffect(() => {
     if (match?.status === TravelMatchStatus.ACCEPTED && match?.conversationId) {
       console.log(`✅ [CLIENT PAGE] Match accepted, redirecting to chat`);
-      toast.success("¡Chófer aceptó tu solicitud!");
+
+      // Fix: Solo mostrar toast una vez para evitar duplicados
+      if (!hasShownAcceptToast.current) {
+        toast.success("¡Chófer aceptó tu solicitud!");
+        hasShownAcceptToast.current = true;
+      }
       // Page will show ChatWindow via conditional rendering below
     }
   }, [match?.status, match?.conversationId]);
@@ -729,6 +736,7 @@ export default function MatchDetailPage() {
                     Mapa del Viaje
                   </Typography>
                   <LeafletMap
+                    ref={mapRef}
                     markers={[
                       {
                         lat: Number.parseFloat(match.pickupLatitude),
@@ -744,7 +752,41 @@ export default function MatchDetailPage() {
                       },
                     ]}
                     height="250px"
+                    disableInteraction={true}
+                    autoFitBounds={true}
                   />
+
+                  {/* Map navigation buttons */}
+                  <Box sx={{ mt: 1.5, display: 'flex', gap: 1 }}>
+                    <Button
+                      variant="outlined"
+                      size="small"
+                      fullWidth
+                      startIcon={<LocationOn />}
+                      onClick={() => {
+                        mapRef.current?.centerOnMarker(
+                          Number.parseFloat(match.pickupLatitude),
+                          Number.parseFloat(match.pickupLongitude)
+                        );
+                      }}
+                    >
+                      Ver Origen
+                    </Button>
+                    <Button
+                      variant="outlined"
+                      size="small"
+                      fullWidth
+                      startIcon={<Flag />}
+                      onClick={() => {
+                        mapRef.current?.centerOnMarker(
+                          Number.parseFloat(match.destinationLatitude),
+                          Number.parseFloat(match.destinationLongitude)
+                        );
+                      }}
+                    >
+                      Ver Destino
+                    </Button>
+                  </Box>
                 </CardContent>
               </Card>
             </Box>
@@ -805,9 +847,9 @@ export default function MatchDetailPage() {
                   {/* Status box */}
                   <Box
                     sx={{
-                      bgcolor: "success.light",
-                      borderLeft: "4px solid",
-                      borderLeftColor: "success.main",
+                      bgcolor: "background.paper",
+                      border: "2px solid",
+                      borderColor: "success.main",
                       borderRadius: 1.5,
                       p: 1.5,
                       display: "flex",
@@ -820,7 +862,7 @@ export default function MatchDetailPage() {
                     <Box>
                       <Typography
                         variant="body2"
-                        sx={{ fontWeight: 700, fontSize: "0.85rem", color: "success.dark" }}
+                        sx={{ fontWeight: 700, fontSize: "0.85rem", color: "text.primary" }}
                       >
                         Viaje Confirmado
                       </Typography>
@@ -853,17 +895,17 @@ export default function MatchDetailPage() {
                 <Stack spacing={1}>
                   <Box
                     sx={{
-                      bgcolor: "info.light",
+                      bgcolor: "primary.main",
                       borderLeft: "4px solid",
-                      borderLeftColor: "info.main",
+                      borderLeftColor: "primary.dark",
                       borderRadius: 1.5,
                       p: 1.5,
                     }}
                   >
-                    <Typography variant="body2" sx={{ fontWeight: 700, fontSize: "0.85rem", mb: 0.5 }}>
-                      🏁 El Transportista Finalizó el Viaje
+                    <Typography variant="body2" sx={{ fontWeight: 700, fontSize: "0.85rem", mb: 0.5, color: "white" }}>
+                      El Transportista Finalizó el Viaje
                     </Typography>
-                    <Typography variant="caption" sx={{ fontSize: "0.7rem" }} color="text.secondary">
+                    <Typography variant="caption" sx={{ fontSize: "0.7rem", color: "white", opacity: 0.9 }}>
                       Por favor confirma que has recibido tu carga correctamente.
                     </Typography>
                   </Box>
@@ -904,7 +946,7 @@ export default function MatchDetailPage() {
               {/* Estado 4: Viaje completado por AMBOS */}
               {match.tripId && match.trip?.status === "completed" && (
                 <>
-                  <Alert severity="success" sx={{ mb: 1 }}>
+                  <Alert severity="success" sx={{ mb: 1.5 }}>
                     <Typography variant="body2" sx={{ fontWeight: 600, mb: 0.5 }}>
                       ✅ Viaje Completado
                     </Typography>
@@ -913,11 +955,9 @@ export default function MatchDetailPage() {
                     </Typography>
                   </Alert>
 
-                  {/* Receipt Download Button */}
+                  {/* Receipt Download Button - PRIMERO para destacar */}
                   {match.trip && (
-                    <Box sx={{ mb: 1 }}>
-                      <ReceiptButton trip={match.trip} type="client" />
-                    </Box>
+                    <ReceiptButton trip={match.trip} type="client" />
                   )}
 
                   {/* Show rating button ONLY if can give feedback */}

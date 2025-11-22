@@ -146,7 +146,7 @@ export function useCharterCompleteTrip() {
         queryKey: queryKeys.matches.all,
       });
 
-      toast.success("🏁 Viaje finalizado. Esperando confirmación del cliente...");
+      // Toast movido al componente para evitar duplicación
     },
 
     onError: () => {

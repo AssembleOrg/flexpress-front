@@ -44,17 +44,12 @@ export function useSendMessage() {
     },
 
     onSuccess: (message, variables) => {
-      // Add message to cache immediately so sender sees it
-      queryClient.setQueryData<Message[]>(
-        conversationKeys.messages(variables.conversationId),
-        (old = []) => {
-          // Avoid duplicates (WebSocket might have added it already)
-          if (old.some((msg) => msg.id === message.id)) {
-            return old;
-          }
-          return [...old, message];
-        },
-      );
+      // Invalidate queries to trigger refetch
+      // This ensures BOTH users see the message via polling
+      // Simple and reliable approach - no race conditions
+      queryClient.invalidateQueries({
+        queryKey: conversationKeys.messages(variables.conversationId),
+      });
     },
 
     onError: (error) => {

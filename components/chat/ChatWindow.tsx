@@ -96,7 +96,11 @@ export function ChatWindow({
   // useLayoutEffect ejecuta ANTES del repaint del navegador (más fluido visualmente)
   // Depende de messages.length en vez del array completo (evita re-renders por cambios internos)
   useLayoutEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    messagesEndRef.current?.scrollIntoView({
+      behavior: "smooth",
+      block: "nearest",    // NO hacer scroll del viewport si ya está visible
+      inline: "nearest"    // NO hacer scroll horizontal
+    });
   }, [messages.length]);
 
   // 🔧 OPTIMIZACIÓN: Join conversation room for real-time messaging

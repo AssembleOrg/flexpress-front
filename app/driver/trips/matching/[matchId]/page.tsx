@@ -1,7 +1,7 @@
 "use client";
 
 import { useParams, useRouter } from "next/navigation";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   Box,
   Button,
@@ -47,12 +47,21 @@ export default function DriverMatchingDetailPage() {
   // Polling eliminado - useMatch ya tiene refetchInterval de 15s
   // WebSocket maneja updates en tiempo real
 
+  // Detectar cuando el cliente rechaza
+  const hasShownRejectionToast = useRef(false);
+  useEffect(() => {
+    if (match?.status === "rejected" && !hasShownRejectionToast.current) {
+      toast.error("❌ El cliente rechazó la solicitud de viaje");
+      hasShownRejectionToast.current = true;
+    }
+  }, [match?.status]);
+
   const handleCharterCompleteTrip = async () => {
     if (!tripId) return;
     try {
       await charterCompleteTripMutation.mutateAsync(tripId);
       setFinalizeTripModalOpen(false);
-      toast.success("✅ Viaje finalizado. Esperando confirmación del cliente.");
+      toast.success("🏁 Viaje finalizado. Esperando confirmación del cliente.");
     } catch (error) {
       console.error("Error completing trip:", error);
       toast.error("Error al finalizar el viaje");
@@ -193,9 +202,9 @@ export default function DriverMatchingDetailPage() {
                 <Box
                   sx={{
                     gridColumn: { xs: "1 / -1", md: "1 / 2" },
-                    bgcolor: "success.light",
-                    borderLeft: "4px solid",
-                    borderLeftColor: "success.main",
+                    bgcolor: "background.paper",
+                    border: "2px solid",
+                    borderColor: "success.main",
                     borderRadius: 1.5,
                     p: 1.5,
                     display: "flex",
@@ -207,7 +216,7 @@ export default function DriverMatchingDetailPage() {
                   <Box>
                     <Typography
                       variant="body2"
-                      sx={{ fontWeight: 700, fontSize: "0.85rem", color: "success.dark" }}
+                      sx={{ fontWeight: 700, fontSize: "0.85rem", color: "text.primary" }}
                     >
                       Viaje Confirmado
                     </Typography>
@@ -220,7 +229,6 @@ export default function DriverMatchingDetailPage() {
                 {/* Complete trip button */}
                 <Button
                   variant="contained"
-                  color="primary"
                   fullWidth
                   onClick={() => setFinalizeTripModalOpen(true)}
                   sx={{
@@ -228,9 +236,11 @@ export default function DriverMatchingDetailPage() {
                     minHeight: { xs: 44, md: "100%" },
                     fontWeight: 700,
                     fontSize: "0.85rem",
+                    bgcolor: "success.main",
+                    "&:hover": { bgcolor: "success.dark" }
                   }}
                 >
-                  🏁 Finalizar Viaje
+                  Finalizar Viaje
                 </Button>
               </Box>
             )}
@@ -248,7 +258,7 @@ export default function DriverMatchingDetailPage() {
             {/* Estado 4: Viaje completado por AMBOS */}
             {tripId && trip?.status === "completed" && (
               <>
-                <Alert severity="success" sx={{ mb: 1 }}>
+                <Alert severity="success" sx={{ mb: 1.5 }}>
                   <Typography variant="body2" sx={{ fontWeight: 600, mb: 0.5 }}>
                     ✅ Viaje Completado
                   </Typography>
@@ -257,18 +267,16 @@ export default function DriverMatchingDetailPage() {
                   </Typography>
                 </Alert>
 
-                {/* Receipt Download Button */}
+                {/* Receipt Download Button - PRIMERO para destacar */}
                 {trip && (
-                  <Box sx={{ mb: 1 }}>
-                    <ReceiptButton trip={trip} type="charter" />
-                  </Box>
+                  <ReceiptButton trip={trip} type="charter" />
                 )}
 
                 <Button
                   variant="outlined"
                   onClick={() => router.push("/driver/dashboard")}
                   fullWidth
-                  sx={{ minHeight: 48 }}
+                  sx={{ minHeight: 48, mt: 1.5 }}
                 >
                   Volver al Dashboard
                 </Button>

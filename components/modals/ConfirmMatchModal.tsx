@@ -214,8 +214,14 @@ export function ConfirmMatchModal({
         </Stack>
       </DialogContent>
 
-      <DialogActions sx={{ p: 1.5, gap: 1 }}>
-        <Button onClick={onClose} disabled={isLoading} variant="outlined" size="medium">
+      <DialogActions sx={{ p: 2, gap: 1.5, display: 'flex', justifyContent: 'space-between' }}>
+        <Button
+          onClick={onClose}
+          disabled={isLoading}
+          variant="outlined"
+          size="large"
+          sx={{ flex: 1, minHeight: 48 }}
+        >
           Cancelar
         </Button>
 
@@ -223,9 +229,14 @@ export function ConfirmMatchModal({
           onClick={onConfirm}
           disabled={isLoading || !hasEnoughCredits}
           variant="contained"
-          color="success"
           size="large"
-          sx={{ flex: 1, minHeight: 44, fontWeight: 700 }}
+          sx={{
+            flex: 1,
+            minHeight: 48,
+            fontWeight: 700,
+            bgcolor: "secondary.main",
+            "&:hover": { bgcolor: "secondary.dark" }
+          }}
           startIcon={isLoading ? <CircularProgress size={20} /> : undefined}
         >
           {isLoading ? "Confirmando..." : "Confirmar"}

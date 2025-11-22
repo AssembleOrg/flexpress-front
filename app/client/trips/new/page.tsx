@@ -75,6 +75,7 @@ export default function NewTripPage() {
     lon: number,
   ) => {
     // Solo actualizar estado pendiente
+    // NO centrar automáticamente - dejar que el usuario mantenga su vista
     if (type === "pickup" || type === "destination") {
       setPendingCoords({ type, lat, lon });
     }
