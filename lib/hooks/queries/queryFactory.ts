@@ -1,4 +1,10 @@
 import { type UseQueryOptions, useQuery } from "@tanstack/react-query";
+import type {
+  UserFilters,
+  ReportFilters,
+  TripFilters,
+  PaymentFilters,
+} from "@/lib/types/admin";
 
 /**
  * Query Key Factory
@@ -62,14 +68,36 @@ export const queryKeys = {
       [...queryKeys.conversations.detail(conversationId), "messages"] as const,
   },
 
-  // Reports / Abuse Reporting
-  reports: {
-    all: ["reports"] as const,
-    admin: () => [...queryKeys.reports.all, "admin"] as const,
-    user: (userId: string) =>
-      [...queryKeys.reports.all, "user", userId] as const,
-    conversation: (conversationId: string) =>
-      [...queryKeys.reports.all, "conversation", conversationId] as const,
+  // Admin
+  admin: {
+    all: ["admin"] as const,
+    users: {
+      all: () => [...queryKeys.admin.all, "users"] as const,
+      // NOTE: Removed list() because we now fetch ALL users client-side
+      // and handle filtering/pagination on the client
+      detail: (userId: string) =>
+        [...queryKeys.admin.all, "users", userId] as const,
+    },
+    reports: {
+      all: () => [...queryKeys.admin.all, "reports"] as const,
+      list: (filters: ReportFilters) =>
+        [...queryKeys.admin.all, "reports", "list", filters] as const,
+      detail: (reportId: string) =>
+        [...queryKeys.admin.all, "reports", reportId] as const,
+    },
+    trips: {
+      all: () => [...queryKeys.admin.all, "trips"] as const,
+      list: (filters: TripFilters) =>
+        [...queryKeys.admin.all, "trips", "list", filters] as const,
+    },
+    payments: {
+      all: () => [...queryKeys.admin.all, "payments"] as const,
+      list: (filters: PaymentFilters) =>
+        [...queryKeys.admin.all, "payments", "list", filters] as const,
+    },
+    systemConfigs: {
+      all: () => [...queryKeys.admin.all, "system-configs"] as const,
+    },
   },
 };
 

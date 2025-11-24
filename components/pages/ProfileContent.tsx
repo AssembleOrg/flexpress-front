@@ -197,7 +197,7 @@ export function ProfileContent() {
                           px: 1.5,
                           py: 0.5,
                           bgcolor: "primary.light",
-                          color: "primary.dark",
+                          color: "white",
                           borderRadius: 1,
                           fontSize: "0.875rem",
                           fontWeight: 600,

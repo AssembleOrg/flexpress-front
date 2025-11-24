@@ -33,12 +33,21 @@ export function useLogin() {
       toast.success(`¡Bienvenido ${response.user.name}!`);
 
       // Redirect basado en role
-      const targetPath =
-        response.user.role === "charter"
-          ? "/driver/dashboard"
-          : "/client/dashboard";
+      let targetPath = "/client/dashboard"; // Default
 
-      console.log("🔄 [useLogin] Redirigiendo a:", targetPath);
+      if (response.user.role === "admin" || response.user.role === "subadmin") {
+        targetPath = "/admin";
+      } else if (response.user.role === "charter") {
+        targetPath = "/driver/dashboard";
+      } else if (response.user.role === "user") {
+        targetPath = "/client/dashboard";
+      }
+
+      console.log(
+        "🔄 [useLogin] Redirigiendo a:",
+        targetPath,
+        `(role: ${response.user.role})`,
+      );
       router.push(targetPath);
     },
 
