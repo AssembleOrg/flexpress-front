@@ -14,6 +14,7 @@ import {
   Typography,
 } from "@mui/material";
 import { useEffect, useState } from "react";
+import { geoApi } from "@/lib/api/geo";
 
 interface MapModalProps {
   open: boolean;
@@ -53,25 +54,17 @@ export default function MapModal({
     }
   }, [open]);
 
-  // Reverse geocoding function
+  // Reverse geocoding function using centralized geoApi
   const reverseGeocode = async (lat: number, lng: number): Promise<string> => {
     try {
-      const response = await fetch(
-        `https://geocode.maps.co/reverse?lat=${lat}&lon=${lng}&format=json`,
-      );
+      const result = await geoApi.reverseGeocode(lat, lng);
 
-      if (!response.ok) throw new Error("Geocoding API error");
-
-      const data = await response.json();
-
-      if (data.display_name) {
-        // Extraer partes relevantes para Buenos Aires
-        const parts = data.display_name.split(", ");
-        const relevantParts = parts.slice(0, 3).join(", ");
-        return relevantParts || data.display_name;
+      if (result) {
+        return result.formattedAddress || result.address;
       }
 
-      throw new Error("No address found");
+      // Fallback: return coordinates if no address found
+      return `Lat: ${lat.toFixed(4)}, Lng: ${lng.toFixed(4)}`;
     } catch (error) {
       console.error("Reverse geocoding error:", error);
       return `Lat: ${lat.toFixed(4)}, Lng: ${lng.toFixed(4)}`;

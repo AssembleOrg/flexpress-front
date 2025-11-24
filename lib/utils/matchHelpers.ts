@@ -49,3 +49,61 @@ export function getFormattedExpirationTime(match: TravelMatch): string | null {
     minute: "2-digit",
   });
 }
+
+/**
+ * Verifica si un match representa un viaje activo para el usuario
+ *
+ * Un viaje es considerado ACTIVO si:
+ * - Status = "pending" (no expirado) - Usuario esperando respuesta de charter
+ * - Status = "accepted" con conversationId - Charter aceptó, en negociación
+ * - Status = "completed" pero trip.status !== "completed" - Viaje en progreso
+ *
+ * Un viaje NO es activo si:
+ * - Status = "completed" Y trip.status = "completed" (todo terminado)
+ * - Status = "rejected", "cancelled", "expired"
+ * - Status = "pending" pero ha expirado
+ *
+ * @param match - Match a verificar
+ * @returns true si el match representa un viaje activo, false en caso contrario
+ */
+export function isActiveTrip(match: TravelMatch | null | undefined): boolean {
+  if (!match?.id) return false;
+
+  // Exclude non-active statuses
+  if (
+    match.status === "rejected" ||
+    match.status === "cancelled" ||
+    match.status === "expired"
+  ) {
+    return false;
+  }
+
+  // Exclude completed trips (both match AND trip are completed)
+  if (match.status === "completed" && match.trip?.status === "completed") {
+    return false;
+  }
+
+  // Check if pending but expired
+  if (match.status === "pending" && match.expiresAt) {
+    if (new Date(match.expiresAt) < new Date()) {
+      return false;
+    }
+  }
+
+  // Include pending matches (not expired)
+  if (match.status === "pending") {
+    return true;
+  }
+
+  // Include accepted matches that have a conversation (charter accepted)
+  if (match.status === "accepted" && match.conversationId) {
+    return true;
+  }
+
+  // Include completed matches with active trips (trip in progress)
+  if (match.status === "completed" && match.tripId && match.trip?.status !== "completed") {
+    return true;
+  }
+
+  return false;
+}

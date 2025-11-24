@@ -1,6 +1,7 @@
 "use client";
 
 import CloseIcon from "@mui/icons-material/Close";
+import MoreVertIcon from "@mui/icons-material/MoreVert";
 import SendIcon from "@mui/icons-material/Send";
 import {
   Box,
@@ -11,20 +12,20 @@ import {
   CircularProgress,
   Divider,
   IconButton,
+  Menu,
+  MenuItem,
   TextField,
   Typography,
 } from "@mui/material";
-import { useEffect, useRef, useState } from "react";
-
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { MessageBubble } from "@/components/chat/MessageBubble";
-import {
-  useNotifyTyping,
-  useSendMessage,
-} from "@/lib/hooks/mutations/useConversationMutations";
+import { TypingIndicator } from "@/components/chat/TypingIndicator";
+import { ReportModal } from "@/components/modals/ReportModal";
+import { useSendMessage } from "@/lib/hooks/mutations/useConversationMutations";
 import { useConversationMessages } from "@/lib/hooks/queries/useConversationQueries";
-import { useWebSocket } from "@/lib/hooks/useWebSocket";
+import { useWebSocket, useSocketEmit } from "@/lib/hooks/useWebSocket";
 import { useAuthStore } from "@/lib/stores/authStore";
-import type { User } from "@/lib/types/api";
+import type { Message, User } from "@/lib/types/api";
 
 interface ChatWindowProps {
   conversationId: string; // This is the matchId
@@ -44,9 +45,40 @@ export function ChatWindow({
 }: ChatWindowProps) {
   const { user } = useAuthStore();
   const [messageContent, setMessageContent] = useState("");
-  const [isTyping, setIsTyping] = useState(false);
+  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const [reportModalOpen, setReportModalOpen] = useState(false);
+  const [otherUserTyping, setOtherUserTyping] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Helper function to format date separator
+  const formatDateSeparator = (dateString: string): string => {
+    const date = new Date(dateString);
+    const today = new Date();
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+
+    const isToday = date.toDateString() === today.toDateString();
+    const isYesterday = date.toDateString() === yesterday.toDateString();
+
+    if (isToday) return "Hoy";
+    if (isYesterday) return "Ayer";
+    return date.toLocaleDateString("es-ES", {
+      month: "short",
+      day: "numeric",
+    });
+  };
+
+  // Helper function to check if we should show date separator
+  const shouldShowDateSeparator = (
+    currentMessage: Message,
+    previousMessage: Message | undefined,
+  ): boolean => {
+    if (!previousMessage) return true;
+    const currentDate = new Date(currentMessage.createdAt).toDateString();
+    const previousDate = new Date(previousMessage.createdAt).toDateString();
+    return currentDate !== previousDate;
+  };
 
   // Fetch messages from backend
   const { data: messages = [], isLoading } =
@@ -54,15 +86,88 @@ export function ChatWindow({
 
   // Send message mutation
   const sendMessageMutation = useSendMessage();
-  const typingNotify = useNotifyTyping();
 
   // WebSocket connection for real-time events
-  const { isConnected } = useWebSocket();
+  const { socket, isConnected } = useWebSocket();
+  const socketEmit = useSocketEmit();
+  const userId = user?.id;
 
-  // Auto-scroll to bottom when new messages arrive
+  // 🔧 OPTIMIZACIÓN: Auto-scroll to bottom when new messages arrive
+  // useLayoutEffect ejecuta ANTES del repaint del navegador (más fluido visualmente)
+  // Depende de messages.length en vez del array completo (evita re-renders por cambios internos)
+  useLayoutEffect(() => {
+    messagesEndRef.current?.scrollIntoView({
+      behavior: "smooth",
+      block: "nearest",    // NO hacer scroll del viewport si ya está visible
+      inline: "nearest"    // NO hacer scroll horizontal
+    });
+  }, [messages.length]);
+
+  // 🔧 OPTIMIZACIÓN: Join conversation room for real-time messaging
+  // Usa el objeto memoizado socketEmit que ahora es estable entre renders
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, []);
+    if (conversationId && userId && isConnected) {
+      console.log(`🔌 Uniéndose a conversación: ${conversationId}`);
+      socketEmit.joinConversation(conversationId);
+
+      return () => {
+        console.log(`🔌 Saliendo de conversación: ${conversationId}`);
+        socketEmit.leaveConversation(conversationId);
+      };
+    }
+  }, [conversationId, userId, isConnected, socketEmit]);
+
+  // 🔧 OPTIMIZACIÓN: Simple typing indicator
+  // Usa socket directamente (más estable que socketEmit.socket)
+  useEffect(() => {
+    if (!socket) return;
+
+    const handleTyping = () => {
+      setOtherUserTyping(true);
+      // Clear previous timeout
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+      }
+      // Hide typing indicator after 3 seconds
+      typingTimeoutRef.current = setTimeout(() => {
+        setOtherUserTyping(false);
+      }, 3000);
+    };
+
+    socket.on("typing", handleTyping);
+    return () => {
+      socket.off("typing", handleTyping);
+    };
+  }, [socket]);
+
+  /**
+   * Handle menu open
+   */
+  const handleMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
+    setAnchorEl(event.currentTarget);
+  };
+
+  /**
+   * Handle menu close
+   */
+  const handleMenuClose = () => {
+    setAnchorEl(null);
+  };
+
+  /**
+   * Handle report click - open modal and close menu
+   */
+  const handleReportClick = () => {
+    setReportModalOpen(true);
+    handleMenuClose();
+  };
+
+  /**
+   * Handle report modal close
+   */
+  const handleReportModalClose = () => {
+    setReportModalOpen(false);
+  };
 
   /**
    * Handle sending a message
@@ -72,7 +177,6 @@ export function ChatWindow({
 
     const content = messageContent;
     setMessageContent("");
-    typingNotify.notifyStopTyping(conversationId);
 
     await sendMessageMutation.mutateAsync({
       conversationId,
@@ -81,31 +185,17 @@ export function ChatWindow({
   };
 
   /**
-   * Handle typing indicator
-   * Notifies other user that this user is typing
+   * Handle message input change
+   * Emits typing indicator every time user types
    */
   const handleMessageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const newContent = event.target.value;
     setMessageContent(newContent);
 
-    // Clear previous timeout
-    if (typingTimeoutRef.current) {
-      clearTimeout(typingTimeoutRef.current);
+    // Emit typing event when user types
+    if (newContent && newContent.length > 0) {
+      socketEmit.notifyTyping(conversationId);
     }
-
-    // Notify other user that this user is typing
-    if (newContent && !isTyping) {
-      setIsTyping(true);
-      typingNotify.notifyTyping(conversationId);
-    }
-
-    // Stop typing notification after 2 seconds of inactivity
-    typingTimeoutRef.current = setTimeout(() => {
-      if (newContent) {
-        setIsTyping(false);
-        typingNotify.notifyStopTyping(conversationId);
-      }
-    }, 2000);
   };
 
   /**
@@ -117,15 +207,6 @@ export function ChatWindow({
       handleSendMessage();
     }
   };
-
-  // Cleanup typing timeout on unmount
-  useEffect(() => {
-    return () => {
-      if (typingTimeoutRef.current) {
-        clearTimeout(typingTimeoutRef.current);
-      }
-    };
-  }, []);
 
   if (!user) {
     return (
@@ -143,7 +224,8 @@ export function ChatWindow({
         display: "flex",
         flexDirection: "column",
         height: "100%",
-        maxHeight: "600px",
+        maxHeight: { xs: "450px", md: "none" },
+        minHeight: { md: "550px" },
       }}
     >
       {/* Header */}
@@ -161,12 +243,28 @@ export function ChatWindow({
           )
         }
         action={
-          <IconButton size="small" onClick={onClose}>
-            <CloseIcon />
-          </IconButton>
+          <Box sx={{ display: "flex", gap: 1 }}>
+            <IconButton size="small" onClick={handleMenuOpen}>
+              <MoreVertIcon />
+            </IconButton>
+            <IconButton size="small" onClick={onClose}>
+              <CloseIcon />
+            </IconButton>
+          </Box>
         }
         sx={{ pb: 1 }}
       />
+
+      {/* Menu */}
+      <Menu
+        anchorEl={anchorEl}
+        open={Boolean(anchorEl)}
+        onClose={handleMenuClose}
+      >
+        <MenuItem onClick={handleReportClick}>
+          ⚠️ Reportar esta conversación
+        </MenuItem>
+      </Menu>
 
       <Divider />
 
@@ -202,7 +300,7 @@ export function ChatWindow({
             </Typography>
           </Box>
         ) : (
-          messages.map((message) => {
+          messages.map((message, index) => {
             // Validar que el mensaje tenga estructura válida
             if (!message?.id || !message?.senderId) {
               console.warn(
@@ -212,19 +310,58 @@ export function ChatWindow({
               return null;
             }
 
+            const previousMessage = index > 0 ? messages[index - 1] : undefined;
+            const showDateSeparator = shouldShowDateSeparator(
+              message,
+              previousMessage,
+            );
+
             return (
-              <MessageBubble
-                key={message.id}
-                message={message}
-                isOwn={message.senderId === user?.id}
-              />
+              <Box key={message.id}>
+                {/* Date separator */}
+                {showDateSeparator && (
+                  <Box
+                    sx={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 1,
+                      my: 2,
+                      opacity: 0.5,
+                    }}
+                  >
+                    <Box
+                      sx={{ flex: 1, height: 1, backgroundColor: "divider" }}
+                    />
+                    <Typography variant="caption" color="textSecondary">
+                      {formatDateSeparator(message.createdAt)}
+                    </Typography>
+                    <Box
+                      sx={{ flex: 1, height: 1, backgroundColor: "divider" }}
+                    />
+                  </Box>
+                )}
+                <MessageBubble
+                  message={message}
+                  isOwn={message.senderId === user?.id}
+                  senderAvatar={
+                    message.senderId !== user?.id ? (otherUser.avatar ?? undefined) : undefined
+                  }
+                  senderName={
+                    message.senderId !== user?.id ? otherUser.name : undefined
+                  }
+                />
+              </Box>
             );
           })
         )}
 
-        {/* Typing indicator */}
-        {/* TODO: Implement typing state from WebSocket event */}
-        {/* {otherUserIsTyping && <TypingIndicator userName={otherUser.name} />} */}
+        {/* Typing indicator - improved with avatar */}
+        {otherUserTyping && (
+          <TypingIndicator
+            userName={otherUser?.name || "Usuario"}
+            userAvatar={otherUser?.avatar ?? undefined}
+          />
+        )}
 
         <div ref={messagesEndRef} />
       </Box>
@@ -279,6 +416,15 @@ export function ChatWindow({
           </Typography>
         </Box>
       )}
+
+      {/* Report Modal */}
+      <ReportModal
+        open={reportModalOpen}
+        onClose={handleReportModalClose}
+        conversationId={conversationId}
+        reportedUserId={otherUser.id}
+        reportedUserName={otherUser.name}
+      />
     </Card>
   );
 }

@@ -52,6 +52,11 @@ export function AddressInput({
     setSessionToken(new places.AutocompleteSessionToken());
   }, [places]);
 
+  // Sync inputValue with external value changes (e.g., from pin drag on map)
+  useEffect(() => {
+    setInputValue(value);
+  }, [value]);
+
   const fetchSuggestions = useCallback(
     async (searchText: string) => {
       if (

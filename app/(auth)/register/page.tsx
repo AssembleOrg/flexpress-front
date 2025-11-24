@@ -24,6 +24,7 @@ import { useSearchParams } from "next/navigation";
 import { Suspense, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
+import { AddressInput } from "@/components/ui/AddressInput";
 import Logo from "@/components/ui/Logo";
 import { PageTransition } from "@/components/ui/PageTransition";
 import { useRegister } from "@/lib/hooks/mutations/useAuthMutations";
@@ -49,6 +50,8 @@ type RegisterForm = z.infer<typeof registerSchema>;
 function RegisterFormContent() {
   const [userRole, setUserRole] = useState<"client" | "driver">("client");
   const [acceptedTerms, setAcceptedTerms] = useState(false);
+  const [originAddress, setOriginAddress] = useState("");
+  const [originCoords, setOriginCoords] = useState<{ lat: number; lon: number } | null>(null);
   const searchParams = useSearchParams();
   const registerMutation = useRegister();
 
@@ -79,11 +82,23 @@ function RegisterFormContent() {
       number: data.number,
       address: data.address,
       role: userRole === "driver" ? ("charter" as const) : ("user" as const),
+      // Campos de charter: ubicación de origen
+      ...(userRole === "driver" && originCoords
+        ? {
+            originAddress,
+            originLatitude: originCoords.lat.toString(),
+            originLongitude: originCoords.lon.toString(),
+          }
+        : {}),
     };
 
     console.log("📝 [RegisterForm] Triggering mutation...");
     console.log("   Email:", data.email);
     console.log("   Role:", registerData.role);
+    if (userRole === "driver") {
+      console.log("   Origin Address:", originAddress);
+      console.log("   Origin Coords:", originCoords);
+    }
 
     registerMutation.mutate(registerData);
   };
@@ -271,6 +286,30 @@ function RegisterFormContent() {
                     helperText={errors.address?.message}
                     placeholder="Ej: Av. San Martín 123, Buenos Aires"
                   />
+
+                  {/* Campo adicional para conductores: Ubicación de operaciones */}
+                  {userRole === "driver" && (
+                    <Box sx={{ mt: 2, mb: 1 }}>
+                      <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1, fontWeight: 600 }}>
+                        Ubicación de Operaciones
+                      </Typography>
+                      <AddressInput
+                        label="¿Desde dónde operas habitualmente?"
+                        placeholder="Ej: Av. Corrientes 1234, CABA"
+                        value={originAddress}
+                        onAddressSelect={(address, lat, lon) => {
+                          setOriginAddress(address);
+                          setOriginCoords({ lat, lon });
+                        }}
+                        helperText={
+                          originCoords
+                            ? "✓ Ubicación establecida - Aparecerás en búsquedas cercanas"
+                            : "Necesario para aparecer en búsquedas de clientes cercanos"
+                        }
+                        error={!originCoords && registerMutation.isError}
+                      />
+                    </Box>
+                  )}
 
                   <Box display="flex" gap={2} sx={{ mt: 2 }}>
                     <TextField

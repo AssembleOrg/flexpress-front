@@ -50,14 +50,19 @@ export function useMyFeedback() {
 /**
  * Check if user can give feedback for a specific trip
  * Used by: Trip completion, feedback eligibility check
+ * Supports optional React Query options (e.g., enabled)
  */
-export function useCanGiveFeedback(tripId: string) {
+export function useCanGiveFeedback(
+  tripId: string,
+  options?: Record<string, unknown>,
+) {
   return useQuery({
     queryKey: [...queryKeys.feedback.all, "can-give", tripId],
     queryFn: () => feedbackApi.canGiveFeedback(tripId),
     staleTime: 30 * 1000, // 30 seconds
     gcTime: 2 * 60 * 1000, // 2 minutes
     enabled: !!tripId,
+    ...options,
   });
 }
 
@@ -65,7 +70,19 @@ export function useCanGiveFeedback(tripId: string) {
  * Get ratings for a specific charter
  * Alias for useUserFeedback with more descriptive name
  * Used by: Charter cards showing average rating
+ * Supports optional React Query options (e.g., enabled)
  */
-export function useCharterRating(charterId: string) {
-  return useUserFeedback(charterId);
+export function useCharterRating(
+  charterId: string,
+  options?: Record<string, unknown>,
+) {
+  return useQuery({
+    queryKey: queryKeys.feedback.user(charterId),
+    queryFn: () => feedbackApi.getUserFeedback(charterId),
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    gcTime: 30 * 60 * 1000, // 30 minutes
+    refetchOnWindowFocus: false,
+    enabled: !!charterId,
+    ...options,
+  });
 }

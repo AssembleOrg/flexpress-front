@@ -1,3 +1,5 @@
+import type { Trip } from "./trip";
+
 // ============================================
 // ENUMS
 // ============================================
@@ -64,29 +66,6 @@ export interface AuthResponse {
   token: string;
 }
 
-export interface Trip {
-  id: string;
-  userId: string;
-  charterId: string;
-  address: string; // Dirección completa
-  latitude: string;
-  longitude: string;
-  workersCount: number;
-  scheduledDate: string | null;
-  createdAt: string;
-  updatedAt: string;
-  user?: {
-    id: string;
-    name: string;
-    email: string;
-  };
-  charter?: {
-    id: string;
-    name: string;
-    email: string;
-  };
-}
-
 export interface TravelMatch {
   id: string;
   userId: string;
@@ -105,11 +84,18 @@ export interface TravelMatch {
   scheduledDate: string | null;
   expiresAt: string | null;
   conversationId?: string; // Created when charter accepts match
+  conversation?: {
+    id: string;
+    status: ConversationStatus;
+    createdAt: string;
+  };
   tripId?: string | null;
+  trip?: Trip; // Trip relation (populated when tripId exists)
   createdAt: string;
   updatedAt: string;
   user?: Partial<User>;
   charter?: Partial<User>;
+  canGiveFeedback?: boolean; // Added by useMatch hook (frontend-only)
 }
 
 export interface AvailableCharter {
@@ -261,3 +247,6 @@ export interface ConversationClosedEvent {
   closedBy: string;
   timestamp: string;
 }
+
+// Re-export Trip for convenience (single source of truth: lib/types/trip.ts)
+export type { Trip };

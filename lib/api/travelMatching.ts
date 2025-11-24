@@ -290,25 +290,63 @@ export const travelMatchingApi = {
   /**
    * Get single match by ID
    * GET /travel-matching/matches/:matchId
+   *
+   * Handles double-wrapped response from backend:
+   * { data: { success: true, data: { ...match... } } }
    */
   getMatch: async (matchId: string): Promise<TravelMatch> => {
     console.log(`🔍 [MATCHING] Fetching match detail: ${matchId}`);
 
-    const response = await api.get<ApiResponse<TravelMatch>>(
-      `/travel-matching/matches/${matchId}`, // Fixed: added /matches
-    );
+    const response = await api.get<
+      ApiResponse<{ success: boolean; data: TravelMatch } | TravelMatch>
+    >(`/travel-matching/matches/${matchId}`);
 
-    // Defensive: validate response structure
-    if (!response.data.data) {
-      console.error(
-        "❌ [MATCHING] Backend returned invalid match:",
-        response.data,
+    console.log("🔍 [DEBUG] response.data:", response.data);
+    console.log("🔍 [DEBUG] response.data.data:", response.data.data);
+
+    // Manejar doble wrapper del backend
+    const responseData = response.data.data;
+
+    // Si tiene doble nesting (response.data.data.data)
+    if (
+      responseData &&
+      typeof responseData === "object" &&
+      "data" in responseData
+    ) {
+      const match = (responseData as { data: TravelMatch }).data;
+      console.log(
+        `✅ [MATCHING] Match detail fetched (doble wrapper): ${matchId}`,
       );
-      throw new Error("Backend devolvió match con estructura inválida");
+      return match;
     }
 
-    console.log(`✅ [MATCHING] Match detail fetched: ${matchId}`);
-    return response.data.data;
+    // Si es objeto directo (fallback)
+    if (responseData && typeof responseData === "object") {
+      console.log(`✅ [MATCHING] Match detail fetched (directo): ${matchId}`);
+      return responseData as TravelMatch;
+    }
+
+    // Si no hay match, error
+    console.error(
+      "❌ [MATCHING] Backend returned invalid match:",
+      response.data,
+    );
+    throw new Error("Backend devolvió match con estructura inválida");
+  },
+
+  /**
+   * Cancel a match (before trip is created)
+   * PUT /travel-matching/matches/:matchId/cancel
+   */
+  cancelMatch: async (matchId: string): Promise<TravelMatch> => {
+    console.log(`🚫 [MATCHING] Cancelling match: ${matchId}`);
+    const response = await api.put<ApiResponse<TravelMatch>>(
+      `/travel-matching/matches/${matchId}/cancel`,
+      {},
+    );
+    console.log(`✅ [MATCHING] Match cancelled: ${matchId}`);
+    // biome-ignore lint/style/noNonNullAssertion: axios response guarantees data
+    return response.data.data!;
   },
 
   /**
@@ -317,7 +355,7 @@ export const travelMatchingApi = {
   createTripFromMatch: async (matchId: string) => {
     const response = await api.post(
       `/travel-matching/matches/${matchId}/create-trip`,
-      null,
+      {},
     );
     // biome-ignore lint/style/noNonNullAssertion: axios response guarantees data
     return response.data.data!;

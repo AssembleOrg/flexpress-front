@@ -1,34 +1,41 @@
 export interface Trip {
   id: string;
-  clientId: string;
-  driverId?: string;
-  origin: string;
-  destination: string;
-  description: string;
-  suggestedPrice: number;
-  finalPrice?: number;
+  userId: string;
+  charterId: string;
+  address: string;
+  latitude: string;
+  longitude: string;
+  workersCount: number;
+  scheduledDate: string | null;
   status:
-    | "searching"
-    | "negotiating"
-    | "confirmed"
-    | "in_progress"
+    | "pending"
+    | "charter_completed"
     | "completed"
     | "cancelled";
   createdAt: string;
   updatedAt: string;
-  client?: {
+
+  // Relations
+  user?: {
     id: string;
-    firstName: string;
-    lastName: string;
+    name: string;
+    email: string;
     avatar?: string;
-    rating?: number;
   };
-  driver?: {
+  charter?: {
     id: string;
-    firstName: string;
-    lastName: string;
+    name: string;
+    email: string;
     avatar?: string;
-    rating?: number;
+  };
+
+  // TravelMatch relation for origin/destination/pricing data
+  travelMatch?: {
+    id: string;
+    pickupAddress: string;
+    destinationAddress: string;
+    estimatedCredits: number;
+    distanceKm: number | null;
   };
 }
 

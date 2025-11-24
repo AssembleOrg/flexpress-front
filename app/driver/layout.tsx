@@ -1,4 +1,7 @@
 import type { Metadata } from "next";
+import { BottomNavbar } from "@/components/layout/BottomNavbar";
+import { AuthGuard } from "@/components/guards/AuthGuard";
+import { RoleGuard } from "@/components/guards/RoleGuard";
 
 export const metadata: Metadata = {
   title: "Conductor - Flexpress",
@@ -11,9 +14,13 @@ export default function DriverLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="driver-layout">
-      {/* Add driver-specific navigation/header here if needed */}
-      {children}
-    </div>
+    <AuthGuard>
+      <RoleGuard requiredRole="charter">
+        <div className="driver-layout">
+          {children}
+          <BottomNavbar />
+        </div>
+      </RoleGuard>
+    </AuthGuard>
   );
 }

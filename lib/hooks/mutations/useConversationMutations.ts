@@ -4,16 +4,19 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import toast from "react-hot-toast";
 import { conversationApi } from "@/lib/api/conversations";
 import { conversationKeys } from "@/lib/hooks/queries/useConversationQueries";
-import { useSocketEmit } from "@/lib/hooks/useWebSocket";
+import { useAuthStore } from "@/lib/stores/authStore";
 import type { Message } from "@/lib/types/api";
 
 /**
  * Send a message to a conversation
  * POST /conversations/:conversationId/messages
+ *
+ * Adds message to cache immediately so sender sees their own message
+ * WebSocket handles real-time updates for other user
  */
 export function useSendMessage() {
   const queryClient = useQueryClient();
-  const socketEmit = useSocketEmit();
+  const { user } = useAuthStore();
 
   return useMutation({
     mutationFn: ({
@@ -24,64 +27,36 @@ export function useSendMessage() {
       content: string;
     }) => conversationApi.sendMessage(conversationId, content),
 
-    onSuccess: (message, variables) => {
-      console.log("✅ [useSendMessage] Message sent successfully");
-      console.log("📝 Message:", message);
-
-      // Validar que el mensaje devuelto es válido
-      if (!message?.id || !message?.content) {
-        console.error(
-          "❌ [useSendMessage] Backend devolvió mensaje inválido:",
-          message,
+    retry: (failureCount, error) => {
+      // Only retry on network errors, not on HTTP errors like 400/401
+      if (failureCount >= 2) return false;
+      if (error instanceof Error) {
+        const errorMsg = error.message.toLowerCase();
+        // Retry on network errors
+        return (
+          errorMsg.includes("network") ||
+          errorMsg.includes("econnrefused") ||
+          errorMsg.includes("econnreset") ||
+          errorMsg.includes("socket hang up")
         );
-        toast.error("Error: Mensaje inválido del servidor");
-        return;
       }
+      return false;
+    },
 
-      // Emit via WebSocket for real-time delivery to other user
-      socketEmit.sendMessage(variables.conversationId, message.content);
-
-      // Update React Query cache with the new message
-      queryClient.setQueryData(
-        conversationKeys.messages(variables.conversationId),
-        (old: Message[] | undefined) => {
-          // Si no hay data previa, devolver array con el nuevo mensaje
-          if (!old || !Array.isArray(old)) return [message];
-
-          // Prevent duplicates (same message ID)
-          const isDuplicate = old.some((msg) => msg?.id === message.id);
-          if (isDuplicate) return old;
-
-          return [...old, message];
-        },
-      );
-
-      console.log("✅ [useSendMessage] Cache updated with new message");
+    onSuccess: (message, variables) => {
+      // Invalidate queries to trigger refetch
+      // This ensures BOTH users see the message via polling
+      // Simple and reliable approach - no race conditions
+      queryClient.invalidateQueries({
+        queryKey: conversationKeys.messages(variables.conversationId),
+      });
     },
 
     onError: (error) => {
-      console.error("❌ [useSendMessage] Failed to send message:", error);
+      console.error("❌ Failed to send message:", error);
       toast.error("Error al enviar mensaje. Intenta de nuevo.");
     },
   });
-}
-
-/**
- * Notify that user is typing (for typing indicator in other user's chat)
- * Note: This is emitted via WebSocket, not HTTP
- */
-export function useNotifyTyping() {
-  const socketEmit = useSocketEmit();
-
-  return {
-    notifyTyping: (conversationId: string) => {
-      socketEmit.notifyTyping(conversationId);
-    },
-
-    notifyStopTyping: (conversationId: string) => {
-      socketEmit.notifyStopTyping(conversationId);
-    },
-  };
 }
 
 /**

@@ -1,9 +1,11 @@
 "use client";
 
 import { useQueryClient } from "@tanstack/react-query";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { io, type Socket } from "socket.io-client";
 import { useAuthStore } from "@/lib/stores/authStore";
+import { queryKeys } from "@/lib/hooks/queries/queryFactory";
+import { conversationKeys } from "@/lib/hooks/queries/useConversationQueries";
 import type { Message } from "@/lib/types/api";
 
 interface UseWebSocketReturn {
@@ -61,7 +63,8 @@ export function useWebSocket(): UseWebSocketReturn {
       reconnection: true,
       reconnectionDelay: 1000,
       reconnectionDelayMax: 5000,
-      reconnectionAttempts: 5,
+      reconnectionAttempts: 20, // Aumentado de 5 a 20 intentos
+      timeout: 20000, // 20s timeout para la conexión inicial
       transports: ["websocket", "polling"],
     });
 
@@ -93,27 +96,53 @@ export function useWebSocket(): UseWebSocketReturn {
     /**
      * Evento: new-message
      * Recibido cuando otra persona envía un mensaje en la conversación
+     *
+     * 🔧 MEJORADO: Logging detallado para debugging
      */
     socket.on("new-message", (message: Message) => {
-      console.log("💬 [WebSocket] Nuevo mensaje recibido:", message);
+      console.log("💬 [WebSocket] Nuevo mensaje recibido:", {
+        id: message?.id,
+        conversationId: message?.conversationId,
+        senderId: message?.senderId,
+        content: message?.content?.substring(0, 50) + "...",
+        timestamp: new Date().toISOString(),
+      });
 
       // Validar estructura del mensaje
       if (!message?.id || !message?.conversationId || !message?.content) {
         console.error(
           "❌ [WebSocket] Mensaje inválido - falta estructura requerida:",
-          message,
+          {
+            hasId: !!message?.id,
+            hasConversationId: !!message?.conversationId,
+            hasContent: !!message?.content,
+            fullMessage: message,
+          },
         );
         return;
       }
 
       // Actualizar cache de React Query con el nuevo mensaje
+      console.log(
+        `🔄 [WebSocket] Actualizando cache para conversación: ${message.conversationId}`,
+      );
       queryClient.setQueryData(
-        ["conversations", message.conversationId, "messages"],
+        conversationKeys.messages(message.conversationId),
         (old: Message[] | undefined) => {
-          if (!old) return [message];
+          if (!old) {
+            console.log("📝 [WebSocket] Cache vacío, creando con 1 mensaje");
+            return [message];
+          }
           // Evitar duplicados
           const isDuplicate = old.some((msg) => msg?.id === message.id);
-          return isDuplicate ? old : [...old, message];
+          if (isDuplicate) {
+            console.log("⚠️  [WebSocket] Mensaje duplicado ignorado:", message.id);
+            return old;
+          }
+          console.log(
+            `✅ [WebSocket] Mensaje agregado al cache (${old.length} → ${old.length + 1})`,
+          );
+          return [...old, message];
         },
       );
 
@@ -124,46 +153,6 @@ export function useWebSocket(): UseWebSocketReturn {
           icon: "/logo.svg",
         });
       }
-    });
-
-    /**
-     * Evento: user-typing
-     * Recibido cuando el otro usuario está escribiendo
-     */
-    socket.on(
-      "user-typing",
-      (data: { conversationId?: string; userId?: string }) => {
-        // Validar estructura del evento
-        if (!data?.conversationId || !data?.userId) {
-          console.warn(
-            "⚠️ [WebSocket] Evento user-typing con estructura inválida:",
-            data,
-          );
-          return;
-        }
-        const { conversationId, userId } = data;
-        console.log(
-          `⌨️  [WebSocket] ${userId} está escribiendo en ${conversationId}`,
-        );
-        // El componente ChatWindow escuchará este evento a través del hook
-      },
-    );
-
-    /**
-     * Evento: user-stop-typing
-     * Recibido cuando el otro usuario deja de escribir
-     */
-    socket.on("user-stop-typing", (data: { userId?: string }) => {
-      // Validar estructura del evento
-      if (!data?.userId) {
-        console.warn(
-          "⚠️ [WebSocket] Evento user-stop-typing con estructura inválida:",
-          data,
-        );
-        return;
-      }
-      const { userId } = data;
-      console.log(`⌨️  [WebSocket] ${userId} dejó de escribir`);
     });
 
     /**
@@ -185,10 +174,42 @@ export function useWebSocket(): UseWebSocketReturn {
         const { matchId, status } = data;
         console.log(`🔄 [WebSocket] Match ${matchId} actualizado: ${status}`);
 
-        // Invalidar queries relacionadas a matches cuando el estado cambia
-        queryClient.invalidateQueries({ queryKey: ["userMatches"] });
-        queryClient.invalidateQueries({ queryKey: ["charterMatches"] });
-        queryClient.invalidateQueries({ queryKey: ["match", matchId] });
+        // Refetch all matches (force immediate update for real-time updates)
+        queryClient.refetchQueries({
+          queryKey: queryKeys.matches.all,
+        });
+      },
+    );
+
+    /**
+     * Evento: trip:completed
+     * Recibido cuando el charter finaliza el viaje
+     */
+    socket.on(
+      "trip:completed",
+      (data: { tripId?: string; matchId?: string }) => {
+        if (!data?.tripId && !data?.matchId) {
+          console.warn(
+            "⚠️ [WebSocket] Evento trip:completed con estructura inválida:",
+            data,
+          );
+          return;
+        }
+
+        const { tripId, matchId } = data;
+        console.log(`🏁 [WebSocket] Trip ${tripId} completado`);
+
+        // Refetch all trips and matches (force immediate update for real-time updates)
+        if (tripId) {
+          queryClient.refetchQueries({
+            queryKey: queryKeys.trips.all,
+          });
+        }
+        if (matchId) {
+          queryClient.refetchQueries({
+            queryKey: queryKeys.matches.all,
+          });
+        }
       },
     );
 
@@ -215,19 +236,41 @@ export function useWebSocket(): UseWebSocketReturn {
 /**
  * Hook personalizado para usar la instancia de socket en un componente
  * Útil para emitir eventos desde componentes
+ *
+ * 🔧 OPTIMIZACIÓN: Todas las funciones están memoizadas con useCallback
+ * para evitar re-renders innecesarios en componentes que dependen de ellas.
  */
 export function useSocketEmit() {
   const { socket } = useWebSocket();
+  const { user } = useAuthStore();
+  const userId = user?.id;
 
-  return {
-    joinConversation: (conversationId: string) => {
+  // 🔧 MEMOIZE: Cada función es estable entre renders si sus dependencias no cambian
+  const joinConversation = useCallback(
+    (conversationId: string) => {
       if (socket?.connected) {
         console.log("📍 [WebSocket] Uniéndose a conversación:", conversationId);
-        socket.emit("join-conversation", { conversationId });
+        socket.emit("join-conversation", {
+          conversationId,
+          userId,
+        });
       }
     },
+    [socket, userId],
+  );
 
-    sendMessage: (conversationId: string, content: string) => {
+  const leaveConversation = useCallback(
+    (conversationId: string) => {
+      if (socket?.connected) {
+        console.log("📍 [WebSocket] Saliendo de conversación:", conversationId);
+        socket.emit("leave-conversation", { conversationId });
+      }
+    },
+    [socket],
+  );
+
+  const sendMessage = useCallback(
+    (conversationId: string, content: string) => {
       if (socket?.connected) {
         console.log("💬 [WebSocket] Enviando mensaje:", content);
         socket.emit("send-message", { conversationId, content });
@@ -237,25 +280,32 @@ export function useSocketEmit() {
         );
       }
     },
+    [socket],
+  );
 
-    notifyTyping: (conversationId: string) => {
+  const notifyTyping = useCallback(
+    (conversationId: string) => {
       if (socket?.connected) {
         socket.emit("typing", { conversationId });
       }
     },
+    [socket],
+  );
 
-    notifyStopTyping: (conversationId: string) => {
-      if (socket?.connected) {
-        socket.emit("stop-typing", { conversationId });
-      }
-    },
-  };
+  // 🔧 MEMOIZE: El objeto retornado también es estable
+  // Solo se recrea si alguna de sus propiedades cambia
+  return useMemo(
+    () => ({
+      socket,
+      joinConversation,
+      leaveConversation,
+      sendMessage,
+      notifyTyping,
+    }),
+    [socket, joinConversation, leaveConversation, sendMessage, notifyTyping],
+  );
 }
 
-/**
- * Hook para suscribirse a cambios de estado de un match específico
- * Útil para la página de matching para detectar cuando charter acepta
- */
 export function useMatchUpdateListener(
   matchId: string | undefined,
   onMatchUpdated?: (status: string) => void,
@@ -282,4 +332,39 @@ export function useMatchUpdateListener(
       socket.off("match:updated", handleMatchUpdate);
     };
   }, [socket, matchId, onMatchUpdated]);
+}
+
+/**
+ * Hook para escuchar cuando un viaje es completado por el charter
+ * Útil para notificar al cliente cuando el transporte está listo
+ */
+export function useTripCompletedListener(
+  matchId: string | undefined,
+  onTripCompleted?: () => void,
+): void {
+  const { socket } = useWebSocket();
+
+  useEffect(() => {
+    if (!socket?.connected || !matchId) {
+      return;
+    }
+
+    const handleTripCompleted = (data: {
+      tripId?: string;
+      matchId?: string;
+    }) => {
+      if (data?.matchId === matchId) {
+        console.log(
+          `🏁 [TRIP COMPLETED LISTENER] Trip completado para match ${matchId}`,
+        );
+        onTripCompleted?.();
+      }
+    };
+
+    socket.on("trip:completed", handleTripCompleted);
+
+    return () => {
+      socket.off("trip:completed", handleTripCompleted);
+    };
+  }, [socket, matchId, onTripCompleted]);
 }

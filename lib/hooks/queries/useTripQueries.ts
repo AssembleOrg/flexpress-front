@@ -72,6 +72,8 @@ export function useTripHistory() {
 /**
  * Get a single trip by ID
  * Used by: Trip detail page
+ *
+ * 🔧 FIX: Added polling fallback in case WebSocket fails
  */
 export function useTrip(tripId: string) {
   return useQuery({
@@ -80,6 +82,7 @@ export function useTrip(tripId: string) {
     staleTime: 1 * 60 * 1000, // 1 minute
     gcTime: 5 * 60 * 1000, // 5 minutes
     refetchOnWindowFocus: true,
+    refetchInterval: 15 * 1000, // 🔧 Poll every 15s as fallback (WebSocket is primary)
     enabled: !!tripId,
   });
 }

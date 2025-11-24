@@ -14,6 +14,9 @@ import {
   Stack,
   Typography,
 } from "@mui/material";
+import { Route, AttachMoney } from "@mui/icons-material";
+import { RatingDisplay } from "@/components/ui/RatingDisplay";
+import { useCharterRating } from "@/lib/hooks/queries/useFeedbackQueries";
 import type { AvailableCharter, TravelMatch } from "@/lib/types/api";
 
 /**
@@ -56,6 +59,9 @@ export function ConfirmMatchModal({
     return null;
   }
 
+  // Fetch charter rating
+  const { data: charterRating } = useCharterRating(selectedCharter.charterId);
+
   // Validación de créditos
   const estimatedCredits = selectedCharter.estimatedCredits || 0;
   const hasEnoughCredits = userCredits >= estimatedCredits;
@@ -64,213 +70,142 @@ export function ConfirmMatchModal({
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
-      <DialogTitle sx={{ fontWeight: 700, pb: 1 }}>
-        Confirmar Selección de Chófer
+      <DialogTitle sx={{ fontWeight: 700, pb: 1, fontSize: "1.1rem" }}>
+        ✅ Confirmar Selección
       </DialogTitle>
 
-      <DialogContent sx={{ py: 3 }}>
+      <DialogContent sx={{ py: 1.5 }}>
         {/* Charter Info Section */}
-        <Stack spacing={3}>
-          {/* Charter Card */}
+        <Stack spacing={1.5}>
+          {/* Charter Card - Compact */}
           <Box
             sx={{
               display: "flex",
               alignItems: "center",
-              gap: 2,
-              p: 2,
+              gap: 1.5,
+              p: 1.5,
               bgcolor: "action.hover",
-              borderRadius: 1,
+              borderRadius: 1.5,
             }}
           >
             {/* Avatar */}
             <Avatar
               src={selectedCharter.charterAvatar || undefined}
-              sx={{ width: 56, height: 56 }}
+              sx={{ width: 48, height: 48 }}
             >
               {selectedCharter.charterName?.charAt(0).toUpperCase()}
             </Avatar>
 
             {/* Charter Details */}
             <Box sx={{ flex: 1 }}>
-              <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
+              <Typography
+                variant="subtitle2"
+                sx={{ fontWeight: 600, fontSize: "0.95rem" }}
+              >
                 {selectedCharter.charterName || "Chófer"}
               </Typography>
-              <Typography variant="body2" color="text.secondary">
-                {selectedCharter.charterEmail}
+              {/* Rating */}
+              <Box mt={0.5}>
+                <RatingDisplay
+                  averageRating={charterRating?.averageRating || 0}
+                  totalReviews={charterRating?.totalFeedbacks || 0}
+                  size="small"
+                  showCount={false}
+                />
+              </Box>
+            </Box>
+          </Box>
+
+          {/* Trip Summary - Compact */}
+          <Box
+            sx={{
+              p: 1.5,
+              bgcolor: "background.default",
+              borderRadius: 1.5,
+            }}
+          >
+            <Typography variant="caption" color="text.secondary" display="block" sx={{ mb: 1, fontSize: "0.7rem", fontWeight: 600 }}>
+              📍 Origen → Destino
+            </Typography>
+            <Typography variant="body2" sx={{ fontSize: "0.85rem", lineHeight: 1.4, mb: 0.5 }}>
+              {match.pickupAddress || "No especificado"}
+            </Typography>
+            <Typography variant="body2" sx={{ fontSize: "0.85rem", fontWeight: 600, lineHeight: 1.4 }}>
+              {match.destinationAddress || "No especificado"}
+            </Typography>
+          </Box>
+
+          {/* Key Metrics - Compact Grid */}
+          <Box
+            sx={{
+              display: "grid",
+              gridTemplateColumns: "1fr 1fr",
+              gap: 1.5,
+            }}
+          >
+            <Box
+              sx={{
+                p: 1.5,
+                bgcolor: "background.default",
+                borderRadius: 1.5,
+                textAlign: "center",
+              }}
+            >
+              <Route sx={{ fontSize: 20, color: "primary.main", mb: 0.5 }} />
+              <Typography variant="h6" sx={{ fontWeight: 700, fontSize: "1rem" }}>
+                {selectedCharter.totalDistance?.toFixed(1) || "0"} km
+              </Typography>
+              <Typography variant="caption" color="text.secondary" sx={{ fontSize: "0.65rem" }}>
+                Distancia
+              </Typography>
+            </Box>
+
+            <Box
+              sx={{
+                p: 1.5,
+                bgcolor: "background.default",
+                borderRadius: 1.5,
+                textAlign: "center",
+              }}
+            >
+              <AttachMoney sx={{ fontSize: 20, color: "success.main", mb: 0.5 }} />
+              <Typography variant="h6" sx={{ fontWeight: 700, fontSize: "1rem", color: "success.main" }}>
+                {selectedCharter.estimatedCredits || 0}
+              </Typography>
+              <Typography variant="caption" color="text.secondary" sx={{ fontSize: "0.65rem" }}>
+                Créditos
               </Typography>
             </Box>
           </Box>
 
-          <Divider />
-
-          {/* Trip Details */}
-          <Box>
-            <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 2 }}>
-              📍 Detalles del Viaje
-            </Typography>
-
-            <Stack spacing={1.5}>
-              {/* Origen */}
-              <Box>
-                <Typography variant="caption" color="text.secondary">
-                  Origen
-                </Typography>
-                <Typography variant="body2">
-                  {match.pickupAddress || "No especificado"}
-                </Typography>
-              </Box>
-
-              {/* Destino */}
-              <Box>
-                <Typography variant="caption" color="text.secondary">
-                  Destino
-                </Typography>
-                <Typography variant="body2">
-                  {match.destinationAddress || "No especificado"}
-                </Typography>
-              </Box>
-
-              <Divider sx={{ my: 0.5 }} />
-
-              {/* Distancia y Créditos */}
-              <Box
-                sx={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 2 }}
-              >
-                <Box>
-                  <Typography variant="caption" color="text.secondary">
-                    Distancia Total
-                  </Typography>
-                  <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                    {selectedCharter.totalDistance?.toFixed(1) || "0"} km
-                  </Typography>
-                </Box>
-
-                <Box>
-                  <Typography variant="caption" color="text.secondary">
-                    Créditos Estimados
-                  </Typography>
-                  <Typography
-                    variant="body2"
-                    sx={{ fontWeight: 600, color: "primary.main" }}
-                  >
-                    {selectedCharter.estimatedCredits || 0}
-                  </Typography>
-                </Box>
-              </Box>
-
-              {/* Distancia del Chófer al Pickup */}
-              <Box>
-                <Typography variant="caption" color="text.secondary">
-                  Distancia del Chófer a tu Pickup
-                </Typography>
-                <Typography variant="body2">
-                  {selectedCharter.distanceToPickup?.toFixed(1) || "0"} km
-                </Typography>
-              </Box>
-
-              {/* Trabajadores (si aplica) */}
-              {match.workersCount && match.workersCount > 0 && (
-                <Box>
-                  <Typography variant="caption" color="text.secondary">
-                    Número de Trabajadores
-                  </Typography>
-                  <Typography variant="body2">{match.workersCount}</Typography>
-                </Box>
-              )}
-
-              {/* Fecha Programada (si aplica) */}
-              {match.scheduledDate && (
-                <Box>
-                  <Typography variant="caption" color="text.secondary">
-                    Fecha Programada
-                  </Typography>
-                  <Typography variant="body2">
-                    {new Date(match.scheduledDate).toLocaleDateString("es-ES", {
-                      weekday: "long",
-                      year: "numeric",
-                      month: "long",
-                      day: "numeric",
-                    })}
-                  </Typography>
-                </Box>
-              )}
-            </Stack>
-          </Box>
-
-          <Divider />
-
-          {/* Credits Validation Section */}
-          <Box>
-            <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 2 }}>
-              💳 Resumen de Créditos
-            </Typography>
-
-            <Stack spacing={1.5}>
-              {/* Credits Needed */}
-              <Box
-                sx={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 2 }}
-              >
-                <Box>
-                  <Typography variant="caption" color="text.secondary">
-                    Créditos Necesarios
-                  </Typography>
-                  <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                    {estimatedCredits}
-                  </Typography>
-                </Box>
-
-                <Box>
-                  <Typography variant="caption" color="text.secondary">
-                    Tus Créditos Disponibles
-                  </Typography>
-                  <Typography
-                    variant="body2"
-                    sx={{
-                      fontWeight: 600,
-                      color: hasEnoughCredits ? "success.main" : "error.main",
-                    }}
-                  >
-                    {userCredits}
-                  </Typography>
-                </Box>
-              </Box>
-
-              {/* Credit Status Alert */}
-              {hasEnoughCredits ? (
-                <Alert severity="success" sx={{ mt: 1 }}>
-                  <Typography variant="body2" sx={{ fontWeight: 600, mb: 0.5 }}>
-                    ✅ Créditos Suficientes
-                  </Typography>
-                  <Typography variant="caption">
-                    Te quedarán {creditsAfter} créditos después de esta
-                    transacción
-                  </Typography>
-                </Alert>
-              ) : (
-                <Alert severity="error" sx={{ mt: 1 }}>
-                  <Typography variant="body2" sx={{ fontWeight: 600, mb: 0.5 }}>
-                    ❌ Créditos Insuficientes
-                  </Typography>
-                  <Typography variant="caption">
-                    Te faltan {creditsDifference} créditos para continuar
-                  </Typography>
-                </Alert>
-              )}
-            </Stack>
-          </Box>
-
-          <Divider />
-
-          {/* Info Message */}
-          <Typography variant="caption" color="text.secondary" sx={{ p: 1 }}>
-            ℹ️ Al confirmar, el chófer será notificado y podrá aceptar o rechazar
-            tu solicitud. Podrán comunicarse por chat mientras se confirma.
-          </Typography>
+          {/* Credit Status Alert - Simplified */}
+          {!hasEnoughCredits ? (
+            <Alert severity="error" sx={{ py: 1 }}>
+              <Typography variant="body2" sx={{ fontWeight: 600, fontSize: "0.85rem" }}>
+                ❌ Créditos Insuficientes
+              </Typography>
+              <Typography variant="caption" sx={{ fontSize: "0.75rem" }}>
+                Te faltan {creditsDifference} créditos. Disponibles: {userCredits}
+              </Typography>
+            </Alert>
+          ) : (
+            <Alert severity="success" sx={{ py: 1 }}>
+              <Typography variant="caption" sx={{ fontSize: "0.75rem" }}>
+                ✅ Te quedarán {creditsAfter} créditos después
+              </Typography>
+            </Alert>
+          )}
         </Stack>
       </DialogContent>
 
-      <DialogActions sx={{ p: 2, gap: 1 }}>
-        <Button onClick={onClose} disabled={isLoading} variant="outlined">
+      <DialogActions sx={{ p: 2, gap: 1.5, display: 'flex', justifyContent: 'space-between' }}>
+        <Button
+          onClick={onClose}
+          disabled={isLoading}
+          variant="outlined"
+          size="large"
+          sx={{ flex: 1, minHeight: 48 }}
+        >
           Cancelar
         </Button>
 
@@ -278,9 +213,17 @@ export function ConfirmMatchModal({
           onClick={onConfirm}
           disabled={isLoading || !hasEnoughCredits}
           variant="contained"
+          size="large"
+          sx={{
+            flex: 1,
+            minHeight: 48,
+            fontWeight: 700,
+            bgcolor: "secondary.main",
+            "&:hover": { bgcolor: "secondary.dark" }
+          }}
           startIcon={isLoading ? <CircularProgress size={20} /> : undefined}
         >
-          {isLoading ? "Confirmando..." : "Confirmar Selección"}
+          {isLoading ? "Confirmando..." : "Confirmar"}
         </Button>
       </DialogActions>
     </Dialog>

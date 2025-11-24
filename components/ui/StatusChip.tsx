@@ -6,22 +6,14 @@ interface StatusChipProps {
   size?: ChipProps["size"];
 }
 
-const statusConfig = {
-  searching: {
-    label: "Buscando Conductor",
-    color: "primary" as const,
-  },
-  negotiating: {
-    label: "Negociando",
+const statusConfig: Record<Trip["status"], { label: string; color: "primary" | "warning" | "success" | "error" }> = {
+  pending: {
+    label: "Pendiente",
     color: "warning" as const,
   },
-  confirmed: {
-    label: "Confirmado",
+  charter_completed: {
+    label: "Esperando Confirmación",
     color: "primary" as const,
-  },
-  in_progress: {
-    label: "En Viaje",
-    color: "warning" as const,
   },
   completed: {
     label: "Finalizado",
