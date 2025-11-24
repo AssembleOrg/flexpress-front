@@ -90,12 +90,6 @@ export function TripsTable() {
       renderCell: (params) => params.row.address.substring(0, 50),
     },
     {
-      field: "workersCount",
-      headerName: "Trabajadores",
-      width: 120,
-      type: "number",
-    },
-    {
       field: "scheduledDate",
       headerName: "Fecha Programada",
       width: 150,

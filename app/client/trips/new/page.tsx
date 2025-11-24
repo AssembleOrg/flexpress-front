@@ -383,24 +383,6 @@ export default function NewTripPage() {
             />
           </Box>
 
-          {/* Trabajadores */}
-          {/* <Typography
-            variant='subtitle2'
-            sx={{ fontWeight: 600, mb: 2, mt: 3 }}
-          >
-            👥 Número de Trabajadores (Opcional)
-          </Typography>
-
-          <TextField
-            type='number'
-            label='Cantidad de trabajadores'
-            value={workersCount}
-            onChange={(e) => setWorkersCount(parseInt(e.target.value, 10) || 0)}
-            inputProps={{ min: 0, max: 100 }}
-            sx={{ mb: 4 }}
-            helperText='Número de personas que viajarán contigo'
-          /> */}
-
           {/* Botón de búsqueda */}
           <Box textAlign="center">
             <MotionButton

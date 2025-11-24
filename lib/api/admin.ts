@@ -11,6 +11,7 @@ import type {
   Trip,
   Payment,
   SystemConfig,
+  VerificationStatus,
 } from "@/lib/types/api";
 import type {
   UserFilters,
@@ -361,6 +362,46 @@ export const adminApi = {
     const response = await api.patch<ApiResponse<SystemConfig>>(
       `/system-config/${id}`,
       data,
+    );
+
+    // biome-ignore lint/style/noNonNullAssertion: axios response guarantees data
+    return response.data.data!;
+  },
+
+  // ============================================
+  // CHARTER VERIFICATION
+  // ============================================
+
+  /**
+   * Get all pending charters awaiting verification
+   */
+  getPendingCharters: async (): Promise<User[]> => {
+    const response = await api.get<ApiResponse<User[]>>("/users/charters/pending");
+
+    // biome-ignore lint/style/noNonNullAssertion: axios response guarantees data
+    const responseData = response.data.data!;
+
+    if (Array.isArray(responseData)) {
+      return responseData;
+    }
+
+    return [];
+  },
+
+  /**
+   * Verify or reject a charter
+   */
+  verifyCharter: async (
+    charterId: string,
+    status: "verified" | "rejected",
+    rejectionReason?: string,
+  ): Promise<User> => {
+    const response = await api.patch<ApiResponse<User>>(
+      `/users/${charterId}/verify`,
+      {
+        status,
+        rejectionReason,
+      },
     );
 
     // biome-ignore lint/style/noNonNullAssertion: axios response guarantees data

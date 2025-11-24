@@ -41,6 +41,12 @@ export enum PaymentStatus {
   ACCEPTED = "accepted",
 }
 
+export enum VerificationStatus {
+  PENDING = "pending",
+  VERIFIED = "verified",
+  REJECTED = "rejected",
+}
+
 // ============================================
 // INTERFACES
 // ============================================
@@ -57,6 +63,12 @@ export interface User {
   originAddress: string | null; // Solo charters
   originLatitude: string | null;
   originLongitude: string | null;
+  documentationFrontUrl: string | null; // Solo charters
+  documentationBackUrl: string | null; // Solo charters
+  verificationStatus: VerificationStatus; // Charter verification status
+  rejectionReason: string | null; // Reason if rejected
+  verifiedAt: string | null;
+  verifiedBy: string | null;
   createdAt: string;
   updatedAt: string;
 }

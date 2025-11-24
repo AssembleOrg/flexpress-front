@@ -126,3 +126,19 @@ export function useSystemConfigs() {
     gcTime: 1000 * 60 * 30, // 30 minutes
   });
 }
+
+// ============================================
+// CHARTER VERIFICATION
+// ============================================
+
+/**
+ * Get all pending charters awaiting verification
+ */
+export function usePendingCharters() {
+  return useQuery<User[]>({
+    queryKey: queryKeys.admin.charters.pending(),
+    queryFn: () => adminApi.getPendingCharters(),
+    staleTime: 1000 * 60, // 1 minute - new charters can register anytime
+    gcTime: 1000 * 60 * 5, // 5 minutes
+  });
+}

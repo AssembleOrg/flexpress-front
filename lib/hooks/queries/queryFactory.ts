@@ -98,6 +98,9 @@ export const queryKeys = {
     systemConfigs: {
       all: () => [...queryKeys.admin.all, "system-configs"] as const,
     },
+    charters: {
+      pending: () => [...queryKeys.admin.all, "charters", "pending"] as const,
+    },
   },
 };
 

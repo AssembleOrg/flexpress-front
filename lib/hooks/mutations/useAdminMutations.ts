@@ -149,3 +149,50 @@ export function useUpdateSystemConfig() {
     },
   });
 }
+
+// ============================================
+// CHARTER VERIFICATION
+// ============================================
+
+/**
+ * Verify or reject a charter
+ * PATCH /users/:id/verify
+ */
+export function useVerifyCharter() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      charterId,
+      status,
+      rejectionReason,
+    }: {
+      charterId: string;
+      status: "verified" | "rejected";
+      rejectionReason?: string;
+    }) => adminApi.verifyCharter(charterId, status, rejectionReason),
+
+    onSuccess: (_, { status }) => {
+      // Invalidate pending charters list
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.admin.charters.pending(),
+      });
+
+      // Also invalidate all users since verification status changed
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.admin.users.all(),
+      });
+
+      if (status === "verified") {
+        toast.success("Charter verificado correctamente");
+      } else {
+        toast.success("Charter rechazado correctamente");
+      }
+    },
+
+    onError: (error) => {
+      console.error("Error verifying charter:", error);
+      toast.error("Error al procesar la verificación del charter");
+    },
+  });
+}

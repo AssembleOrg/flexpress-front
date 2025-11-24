@@ -4,8 +4,10 @@ import {
   Assignment,
   Chat,
   Flag,
+  HourglassEmpty,
   LocationOn,
   Person,
+  Block,
 } from "@mui/icons-material";
 import {
   Box,
@@ -36,7 +38,7 @@ import {
 import { queryKeys } from "@/lib/hooks/queries/queryFactory";
 import { useCharterMatches } from "@/lib/hooks/queries/useTravelMatchQueries";
 import { useAuthStore } from "@/lib/stores/authStore";
-import type { TravelMatch } from "@/lib/types/api";
+import { VerificationStatus, type TravelMatch } from "@/lib/types/api";
 import { isMatchExpired } from "@/lib/utils/matchHelpers";
 
 const MotionCard = motion.create(Card);
@@ -109,6 +111,109 @@ export default function DriverDashboard() {
       accept: false,
     });
   };
+
+  // Check verification status
+  const isPending = user?.verificationStatus === VerificationStatus.PENDING;
+  const isRejected = user?.verificationStatus === VerificationStatus.REJECTED;
+  const isNotVerified = isPending || isRejected;
+
+  // If charter is not verified, show blocking screen
+  if (isNotVerified) {
+    return (
+      <MobileContainer withBottomNav>
+        <WelcomeHeader userName={user?.name} userRole="charter" />
+
+        <MotionCard
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          sx={{
+            mt: 4,
+            textAlign: "center",
+            p: 4,
+            borderTop: "4px solid",
+            borderTopColor: isPending ? "warning.main" : "error.main",
+          }}
+        >
+          <Box
+            sx={{
+              width: 80,
+              height: 80,
+              borderRadius: "50%",
+              bgcolor: isPending ? "warning.light" : "error.light",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              mx: "auto",
+              mb: 3,
+            }}
+          >
+            {isPending ? (
+              <HourglassEmpty sx={{ fontSize: 40, color: "warning.dark" }} />
+            ) : (
+              <Block sx={{ fontSize: 40, color: "error.dark" }} />
+            )}
+          </Box>
+
+          <Typography variant="h5" fontWeight={700} mb={2}>
+            {isPending ? "Cuenta en Verificación" : "Cuenta Rechazada"}
+          </Typography>
+
+          {isPending ? (
+            <>
+              <Typography variant="body1" color="text.secondary" mb={2}>
+                Tu cuenta está siendo revisada por nuestro equipo de
+                administración.
+              </Typography>
+              <Typography variant="body2" color="text.secondary" mb={3}>
+                Este proceso puede tomar hasta <strong>48 horas</strong>.
+                Te notificaremos por correo electrónico cuando tu cuenta sea
+                aprobada.
+              </Typography>
+              <Chip
+                icon={<HourglassEmpty />}
+                label="Pendiente de Aprobación"
+                color="warning"
+                sx={{ fontWeight: 600 }}
+              />
+            </>
+          ) : (
+            <>
+              <Typography variant="body1" color="text.secondary" mb={2}>
+                Lo sentimos, tu solicitud de registro como conductor ha sido
+                rechazada.
+              </Typography>
+              {user?.rejectionReason && (
+                <Box
+                  sx={{
+                    bgcolor: "error.light",
+                    p: 2,
+                    borderRadius: 2,
+                    mb: 3,
+                  }}
+                >
+                  <Typography
+                    variant="subtitle2"
+                    fontWeight={700}
+                    color="error.dark"
+                    mb={1}
+                  >
+                    Motivo del rechazo:
+                  </Typography>
+                  <Typography variant="body2" color="error.dark">
+                    {user.rejectionReason}
+                  </Typography>
+                </Box>
+              )}
+              <Typography variant="body2" color="text.secondary">
+                Si crees que esto es un error, por favor contacta a soporte.
+              </Typography>
+            </>
+          )}
+        </MotionCard>
+      </MobileContainer>
+    );
+  }
 
   return (
     <MobileContainer withBottomNav>
