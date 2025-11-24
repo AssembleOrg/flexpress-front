@@ -190,7 +190,7 @@ export function ReportsTable() {
           paginationModel={paginationModel}
           onPaginationModelChange={setPaginationModel}
           loading={isLoading}
-          disableSelectionOnClick
+          disableRowSelectionOnClick
         />
       </Box>
     </Box>

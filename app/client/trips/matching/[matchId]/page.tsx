@@ -557,7 +557,7 @@ export default function MatchDetailPage() {
     match.status === TravelMatchStatus.COMPLETED
   ) {
     // Determine the other user based on current user's role
-    const otherUser: User = isCharter
+    const otherUser = isCharter
       ? {
           // Charter sees CLIENT as otherUser
           id: match.user?.id || match.userId || "",

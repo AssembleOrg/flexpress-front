@@ -23,7 +23,7 @@ import {
   useTheme,
 } from "@mui/material";
 import { ArrowBack as ArrowBackIcon } from "@mui/icons-material";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { useAdminReportDetail } from "@/lib/hooks/queries/useAdminQueries";
 import { useUpdateReport } from "@/lib/hooks/mutations/useAdminMutations";
@@ -53,7 +53,7 @@ export default function ReportDetailPage() {
   });
 
   // Update form when report data changes
-  React.useEffect(() => {
+  useEffect(() => {
     if (report) {
       reset({
         status: report.status as any,

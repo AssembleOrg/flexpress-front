@@ -146,7 +146,7 @@ export function PaymentsTable() {
           paginationModel={paginationModel}
           onPaginationModelChange={setPaginationModel}
           loading={isLoading}
-          disableSelectionOnClick
+          disableRowSelectionOnClick
         />
       </Box>
     </Box>

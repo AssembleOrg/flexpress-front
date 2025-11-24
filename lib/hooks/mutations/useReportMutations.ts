@@ -35,7 +35,7 @@ export function useCreateReport() {
 
       // Invalidate admin reports query (prepares for future admin moderation dashboard)
       queryClient.invalidateQueries({
-        queryKey: queryKeys.reports.admin(),
+        queryKey: queryKeys.admin.reports.all(),
       });
     },
 
@@ -61,7 +61,7 @@ export function useGetConversationReports(conversationId: string) {
     onSuccess: () => {
       // Refresh reports cache
       queryClient.invalidateQueries({
-        queryKey: queryKeys.reports.conversation(conversationId),
+        queryKey: queryKeys.admin.reports.all(),
       });
     },
   });

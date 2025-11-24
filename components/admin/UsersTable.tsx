@@ -290,7 +290,7 @@ export function UsersTable() {
           onPaginationModelChange={setPaginationModel}
           paginationMode="client"
           loading={isLoading}
-          disableSelectionOnClick
+          disableRowSelectionOnClick
           sx={{
             "& .MuiDataGrid-cell": {
               overflow: "visible",

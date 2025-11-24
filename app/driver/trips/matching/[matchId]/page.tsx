@@ -161,18 +161,8 @@ export default function DriverMatchingDetailPage() {
                   conversationId={match.conversationId}
                   otherUser={{
                     id: match.user?.id || "",
-                    email: match.user?.email || "",
                     name: match.user?.name || "Usuario",
-                    role: (match.user?.role || "user") as UserRole,
-                    credits: match.user?.credits || 0,
-                    address: match.user?.address || "",
-                    number: match.user?.number || "",
                     avatar: match.user?.avatar ?? null,
-                    originAddress: null,
-                    originLatitude: null,
-                    originLongitude: null,
-                    createdAt: match.user?.createdAt || new Date().toISOString(),
-                    updatedAt: match.user?.updatedAt || new Date().toISOString(),
                   }}
                   onClose={() => router.push("/driver/dashboard")}
                 />

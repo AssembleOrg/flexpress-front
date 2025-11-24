@@ -139,6 +139,7 @@ export interface Conversation {
   charter?: Partial<User>;
   lastMessage?: Message;
   unreadCount?: number;
+  messages?: Message[]; // For admin report detail view
 }
 
 export interface Message {

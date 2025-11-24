@@ -128,7 +128,7 @@ export function TripsTable() {
           paginationModel={paginationModel}
           onPaginationModelChange={setPaginationModel}
           loading={isLoading}
-          disableSelectionOnClick
+          disableRowSelectionOnClick
         />
       </Box>
     </Box>

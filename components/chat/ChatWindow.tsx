@@ -25,11 +25,15 @@ import { useSendMessage } from "@/lib/hooks/mutations/useConversationMutations";
 import { useConversationMessages } from "@/lib/hooks/queries/useConversationQueries";
 import { useWebSocket, useSocketEmit } from "@/lib/hooks/useWebSocket";
 import { useAuthStore } from "@/lib/stores/authStore";
-import type { Message, User } from "@/lib/types/api";
+import type { Message } from "@/lib/types/api";
 
 interface ChatWindowProps {
   conversationId: string; // This is the matchId
-  otherUser: User;
+  otherUser: {
+    id: string;
+    name: string;
+    avatar?: string | null;
+  };
   onClose: () => void;
 }
 
