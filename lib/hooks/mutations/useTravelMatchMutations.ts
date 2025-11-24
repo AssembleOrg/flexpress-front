@@ -1,8 +1,10 @@
 "use client";
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import axios from "axios";
 import toast from "react-hot-toast";
 import { travelMatchingApi } from "@/lib/api/travelMatching";
+import { conversationApi } from "@/lib/api/conversations";
 import { queryKeys } from "@/lib/hooks/queries/queryFactory";
 import { useAuthStore } from "@/lib/stores/authStore";
 import { useTravelMatchStore } from "@/lib/stores/travelMatchStore";
@@ -104,8 +106,7 @@ export function useSelectCharter() {
  * Charter responds to a match (accept or reject)
  * PUT /travel-matching/charter/matches/:matchId/respond
  *
- * Note: Conversation creation is handled by a reactive watcher in DriverDashboard
- * when it detects an accepted match without a conversation.
+ * Creates conversation immediately when accepting to avoid race conditions.
  */
 export function useRespondToMatch() {
   const queryClient = useQueryClient();
@@ -118,7 +119,35 @@ export function useRespondToMatch() {
       // Update the match in cache (optimistic update)
       queryClient.setQueryData(queryKeys.matches.detail(matchId), result);
 
-      // Refetch all matches to ensure fresh data from server (force immediate update)
+      // If accepted, create conversation immediately
+      if (accept) {
+        try {
+          console.log("🔄 [RESPOND] Creating conversation for match:", matchId);
+          await conversationApi.createFromMatch(matchId);
+          console.log("✅ [RESPOND] Conversation created successfully");
+
+          // 🔧 FIX: Wait for DB propagation (backend updates travelMatch.conversationId)
+          console.log("⏳ [RESPOND] Waiting 300ms for DB propagation...");
+          await new Promise((resolve) => setTimeout(resolve, 300));
+
+          // Invalidate specific match first (forces refetch)
+          console.log("🔄 [RESPOND] Invalidating match cache...");
+          await queryClient.invalidateQueries({
+            queryKey: queryKeys.matches.detail(matchId),
+          });
+        } catch (error) {
+          // Distinguir entre error esperado (409 - conversación ya existe) y errores reales
+          if (axios.isAxiosError(error) && error.response?.status === 409) {
+            console.log("ℹ️ [RESPOND] Conversation already exists (expected behavior)");
+          } else {
+            console.error("❌ [RESPOND] Failed to create conversation:", error);
+          }
+          // Don't fail the entire mutation - conversation can be created later
+        }
+      }
+
+      // Refetch all matches to get fresh data with conversationId
+      console.log("🔄 [RESPOND] Refetching all matches...");
       await queryClient.refetchQueries({
         queryKey: queryKeys.matches.all,
       });
@@ -129,9 +158,6 @@ export function useRespondToMatch() {
       } else {
         toast.success("Solicitud rechazada");
       }
-
-      // Note: Conversation creation will be triggered by the reactive watcher
-      // in DriverDashboard when it detects status='accepted' without conversationId
     },
 
     onError: (error) => {
@@ -142,8 +168,44 @@ export function useRespondToMatch() {
 }
 
 /**
+ * Cancel a match (before trip is created)
+ * PUT /travel-matching/matches/:matchId/cancel
+ */
+export function useCancelMatch() {
+  const queryClient = useQueryClient();
+  const { user } = useAuthStore();
+
+  return useMutation({
+    mutationFn: (matchId: string) => travelMatchingApi.cancelMatch(matchId),
+
+    onSuccess: async (result, matchId) => {
+      // Update the match in cache
+      queryClient.setQueryData(queryKeys.matches.detail(matchId), result);
+
+      // Refetch all matches
+      await queryClient.refetchQueries({
+        queryKey: queryKeys.matches.user(user?.id || ""),
+      });
+
+      await queryClient.refetchQueries({
+        queryKey: queryKeys.matches.all,
+      });
+
+      toast.success("Viaje cancelado exitosamente");
+    },
+
+    onError: (error) => {
+      console.error("❌ useCancelMatch error:", error);
+      toast.error("Error al cancelar viaje");
+    },
+  });
+}
+
+/**
  * Create a trip from an accepted match
  * POST /travel-matching/matches/:matchId/create-trip
+ *
+ * 🔧 FIX: Added delay and invalidation to prevent race condition
  */
 export function useCreateTripFromMatch() {
   const queryClient = useQueryClient();
@@ -152,8 +214,16 @@ export function useCreateTripFromMatch() {
     mutationFn: (matchId: string) =>
       travelMatchingApi.createTripFromMatch(matchId),
 
-    onSuccess: async () => {
-      // Refetch everything related to matches and trips (force immediate update)
+    onSuccess: async (result, matchId) => {
+      // 🔧 FIX: Wait for DB propagation (backend updates travelMatch.tripId)
+      await new Promise((resolve) => setTimeout(resolve, 300));
+
+      // Invalidate specific match first (forces refetch)
+      await queryClient.invalidateQueries({
+        queryKey: queryKeys.matches.detail(matchId),
+      });
+
+      // Refetch everything related to matches and trips
       await queryClient.refetchQueries({
         queryKey: queryKeys.matches.all,
       });

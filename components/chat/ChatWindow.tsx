@@ -17,7 +17,7 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { MessageBubble } from "@/components/chat/MessageBubble";
 import { TypingIndicator } from "@/components/chat/TypingIndicator";
 import { ReportModal } from "@/components/modals/ReportModal";
@@ -88,17 +88,25 @@ export function ChatWindow({
   const sendMessageMutation = useSendMessage();
 
   // WebSocket connection for real-time events
-  const { isConnected } = useWebSocket();
+  const { socket, isConnected } = useWebSocket();
   const socketEmit = useSocketEmit();
+  const userId = user?.id;
 
-  // Auto-scroll to bottom when new messages arrive
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+  // 🔧 OPTIMIZACIÓN: Auto-scroll to bottom when new messages arrive
+  // useLayoutEffect ejecuta ANTES del repaint del navegador (más fluido visualmente)
+  // Depende de messages.length en vez del array completo (evita re-renders por cambios internos)
+  useLayoutEffect(() => {
+    messagesEndRef.current?.scrollIntoView({
+      behavior: "smooth",
+      block: "nearest",    // NO hacer scroll del viewport si ya está visible
+      inline: "nearest"    // NO hacer scroll horizontal
+    });
+  }, [messages.length]);
 
-  // Join conversation room for real-time messaging
+  // 🔧 OPTIMIZACIÓN: Join conversation room for real-time messaging
+  // Usa el objeto memoizado socketEmit que ahora es estable entre renders
   useEffect(() => {
-    if (conversationId && user && isConnected && socketEmit) {
+    if (conversationId && userId && isConnected) {
       console.log(`🔌 Uniéndose a conversación: ${conversationId}`);
       socketEmit.joinConversation(conversationId);
 
@@ -107,11 +115,11 @@ export function ChatWindow({
         socketEmit.leaveConversation(conversationId);
       };
     }
-  }, [conversationId, user, isConnected, socketEmit]);
+  }, [conversationId, userId, isConnected, socketEmit]);
 
-  // Simple typing indicator: listen for typing events from other user
+  // 🔧 OPTIMIZACIÓN: Simple typing indicator
+  // Usa socket directamente (más estable que socketEmit.socket)
   useEffect(() => {
-    const socket = socketEmit.socket;
     if (!socket) return;
 
     const handleTyping = () => {
@@ -130,7 +138,7 @@ export function ChatWindow({
     return () => {
       socket.off("typing", handleTyping);
     };
-  }, [socketEmit.socket]);
+  }, [socket]);
 
   /**
    * Handle menu open

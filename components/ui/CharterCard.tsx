@@ -13,9 +13,9 @@ import {
   Card,
   CardContent,
   Chip,
-  Rating,
   Typography,
 } from "@mui/material";
+import { RatingDisplay } from "@/components/ui/RatingDisplay";
 import type { AvailableCharter } from "@/lib/types/api";
 
 interface CharterCardProps {
@@ -56,21 +56,31 @@ export function CharterCard({
           </Avatar>
 
           <Box sx={{ flex: 1 }}>
-            <Typography variant="h6" sx={{ fontWeight: 600, mb: 0.5 }}>
-              {charter.charterName}
-            </Typography>
+            <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 0.5 }}>
+              <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                {charter.charterName}
+              </Typography>
+              {/* Online indicator */}
+              <Chip
+                label="Disponible"
+                size="small"
+                color="success"
+                sx={{
+                  height: 20,
+                  fontSize: "0.7rem",
+                  fontWeight: 600,
+                }}
+              />
+            </Box>
 
             {/* Rating */}
-            {averageRating > 0 && (
-              <Box
-                sx={{ display: "flex", alignItems: "center", gap: 1, mb: 0.5 }}
-              >
-                <Rating value={averageRating} readOnly size="small" />
-                <Typography variant="caption" color="text.secondary">
-                  {averageRating.toFixed(1)} ({totalReviews} reseñas)
-                </Typography>
-              </Box>
-            )}
+            <Box sx={{ mb: 0.5 }}>
+              <RatingDisplay
+                averageRating={averageRating}
+                totalReviews={totalReviews}
+                size="small"
+              />
+            </Box>
 
             {/* Teléfono */}
             <Box

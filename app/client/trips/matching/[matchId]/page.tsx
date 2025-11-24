@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowBack } from "@mui/icons-material";
+import { ArrowBack, LocationOn, Flag, Map } from "@mui/icons-material";
 import {
   Alert,
   Box,
@@ -14,27 +14,34 @@ import {
   Stack,
   Typography,
 } from "@mui/material";
-import { CheckCircle, Warning } from "@mui/icons-material";
+import { CheckCircle, Warning, ReportProblem } from "@mui/icons-material";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import toast from "react-hot-toast";
 
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { ChatWindow } from "@/components/chat/ChatWindow";
 import { FeedbackModal } from "@/components/feedback/FeedbackModal";
 import { ReportModal } from "@/components/modals/ReportModal";
+import { ConfirmTripModal } from "@/components/modals/ConfirmTripModal";
+import { ConfirmCompletionModal } from "@/components/modals/ConfirmCompletionModal";
 import { MobileContainer } from "@/components/layout/MobileContainer";
 import { MobileHeader } from "@/components/layout/MobileHeader";
 import { TripDetailsCard } from "@/components/trip/TripDetailsCard";
 import { TripMetricsCard } from "@/components/trip/TripMetricsCard";
+import { ReceiptButton } from "@/components/trip/ReceiptButton";
+import LeafletMap, { type MapMarker, type LeafletMapHandle } from "@/components/ui/LeafletMap";
 import { MOBILE_BOTTOM_NAV_HEIGHT } from "@/lib/constants/mobileDesign";
 import { useMatch } from "@/lib/hooks/queries/useTravelMatchQueries";
 import {
   useCanGiveFeedback,
   useCharterRating,
 } from "@/lib/hooks/queries/useFeedbackQueries";
-import { useCreateTripFromMatch } from "@/lib/hooks/mutations/useTravelMatchMutations";
+import {
+  useCreateTripFromMatch,
+  useCancelMatch,
+} from "@/lib/hooks/mutations/useTravelMatchMutations";
 import { useClientConfirmCompletion } from "@/lib/hooks/mutations/useTripMutations";
 import {
   useMatchUpdateListener,
@@ -59,14 +66,19 @@ export default function MatchDetailPage() {
   const matchId = params.matchId as string;
   const [feedbackModalOpen, setFeedbackModalOpen] = useState(false);
   const [reportModalOpen, setReportModalOpen] = useState(false);
+  const [confirmTripModalOpen, setConfirmTripModalOpen] = useState(false);
+  const [confirmCompletionModalOpen, setConfirmCompletionModalOpen] = useState(false);
 
   const { user } = useAuthStore();
   const { data: match, isLoading, refetch: refetchMatch } = useMatch(matchId);
   const createTripMutation = useCreateTripFromMatch();
+  const cancelMatchMutation = useCancelMatch();
   const clientConfirmCompletionMutation = useClientConfirmCompletion();
   const [conversationLoadingTimeout, setConversationLoadingTimeout] =
     useState(false);
   const [charterFinalized, setCharterFinalized] = useState(false);
+  const hasShownAcceptToast = useRef(false);
+  const mapRef = useRef<LeafletMapHandle>(null);
 
   // Feedback/Rating related hooks
   // Always call hooks (never conditionally) - use enabled option instead
@@ -101,7 +113,7 @@ export default function MatchDetailPage() {
   useEffect(() => {
     if (
       match?.status === TravelMatchStatus.ACCEPTED &&
-      !match.conversation?.id &&
+      !match.conversationId &&
       !conversationLoadingTimeout
     ) {
       // Set timeout after 5 seconds
@@ -117,7 +129,7 @@ export default function MatchDetailPage() {
     }
   }, [
     match?.status,
-    match?.conversation?.id,
+    match?.conversationId,
     conversationLoadingTimeout,
     refetchMatch,
   ]);
@@ -125,7 +137,6 @@ export default function MatchDetailPage() {
   // Listen for charter finalization (trip completed)
   useTripCompletedListener(matchId, () => {
     setCharterFinalized(true);
-    toast.success("🏁 El transportista ha finalizado el viaje");
     // Refetch match to get updated status
     refetchMatch();
   });
@@ -135,6 +146,7 @@ export default function MatchDetailPage() {
     try {
       await createTripMutation.mutateAsync(matchId);
       toast.success("✅ Viaje confirmado. Los créditos han sido deducidos.");
+      setConfirmTripModalOpen(false);
     } catch (error) {
       console.error("Error confirming trip:", error);
       toast.error("Error al confirmar el viaje");
@@ -153,8 +165,19 @@ export default function MatchDetailPage() {
     if (!match?.tripId) return;
     try {
       await clientConfirmCompletionMutation.mutateAsync(match.tripId);
+      setConfirmCompletionModalOpen(false);
     } catch (error) {
       console.error("Error confirming completion:", error);
+    }
+  };
+
+  const handleCancelMatch = async () => {
+    if (!match?.id) return;
+    try {
+      await cancelMatchMutation.mutateAsync(match.id);
+      router.push("/client/dashboard");
+    } catch (error) {
+      console.error("Error cancelling match:", error);
     }
   };
 
@@ -162,10 +185,22 @@ export default function MatchDetailPage() {
   useEffect(() => {
     if (match?.status === TravelMatchStatus.ACCEPTED && match?.conversationId) {
       console.log(`✅ [CLIENT PAGE] Match accepted, redirecting to chat`);
-      toast.success("¡Chófer aceptó tu solicitud!");
+
+      // Fix: Solo mostrar toast una vez para evitar duplicados
+      if (!hasShownAcceptToast.current) {
+        toast.success("¡Chófer aceptó tu solicitud!");
+        hasShownAcceptToast.current = true;
+      }
       // Page will show ChatWindow via conditional rendering below
     }
   }, [match?.status, match?.conversationId]);
+
+  // Auto-open feedback modal when trip is completed
+  useEffect(() => {
+    if (match?.trip?.status === "completed" && canGiveFeedback === true && !feedbackModalOpen) {
+      setFeedbackModalOpen(true);
+    }
+  }, [match?.trip?.status, canGiveFeedback, feedbackModalOpen]);
 
   // ============================================
   // LOADING STATE
@@ -557,7 +592,7 @@ export default function MatchDetailPage() {
         };
 
     // Validar que el match tenga conversación antes de mostrar el chat
-    if (!match.conversation?.id) {
+    if (!match.conversationId) {
       return (
         <Container maxWidth="md" sx={{ py: 4, textAlign: "center" }}>
           <Box sx={{ my: 4 }}>
@@ -588,7 +623,7 @@ export default function MatchDetailPage() {
       );
     }
 
-    const conversationId = match.conversation.id;
+    const conversationId = match.conversationId;
 
     // Determine trip status for UI
     const getStatusInfo = () => {
@@ -617,7 +652,7 @@ export default function MatchDetailPage() {
           onBack={() => router.push("/client/dashboard")}
         />
 
-        <MobileContainer withBottomNav>
+        <MobileContainer withBottomNav maxWidth="lg">
           {/* Desktop Header */}
           <Box sx={{ display: { xs: "none", md: "block" }, mb: 4 }}>
             <Link href="/client/dashboard">
@@ -649,7 +684,7 @@ export default function MatchDetailPage() {
           <Box
             sx={{
               display: "grid",
-              gridTemplateColumns: { xs: "1fr", md: "1fr 1fr" },
+              gridTemplateColumns: { xs: "1fr", md: "2fr 1fr" },
               gap: 1.5,
             }}
           >
@@ -689,6 +724,86 @@ export default function MatchDetailPage() {
                 distance={match.distanceKm ?? undefined}
                 credits={match.estimatedCredits ?? undefined}
               />
+
+              {/* Map Card */}
+              <Card sx={{ mb: 1.5 }}>
+                <CardContent sx={{ p: 1.5 }}>
+                  <Typography
+                    variant="caption"
+                    color="text.secondary"
+                    sx={{ fontWeight: 600, mb: 1, display: "block", fontSize: "0.7rem" }}
+                  >
+                    Mapa del Viaje
+                  </Typography>
+                  <LeafletMap
+                    ref={mapRef}
+                    markers={[
+                      {
+                        lat: Number.parseFloat(match.pickupLatitude),
+                        lon: Number.parseFloat(match.pickupLongitude),
+                        label: "Origen",
+                        type: "pickup",
+                      },
+                      {
+                        lat: Number.parseFloat(match.destinationLatitude),
+                        lon: Number.parseFloat(match.destinationLongitude),
+                        label: "Destino",
+                        type: "destination",
+                      },
+                    ]}
+                    height="250px"
+                    disableInteraction={true}
+                  />
+
+                  {/* Map navigation buttons */}
+                  <Box sx={{ mt: 1.5, display: 'flex', gap: 1 }}>
+                    <Button
+                      variant="outlined"
+                      size="small"
+                      fullWidth
+                      startIcon={<LocationOn />}
+                      onClick={() => {
+                        mapRef.current?.centerOnMarker(
+                          Number.parseFloat(match.pickupLatitude),
+                          Number.parseFloat(match.pickupLongitude)
+                        );
+                      }}
+                    >
+                      Ver Origen
+                    </Button>
+                    <Button
+                      variant="outlined"
+                      size="small"
+                      fullWidth
+                      startIcon={<Flag />}
+                      onClick={() => {
+                        mapRef.current?.centerOnMarker(
+                          Number.parseFloat(match.destinationLatitude),
+                          Number.parseFloat(match.destinationLongitude)
+                        );
+                      }}
+                    >
+                      Ver Destino
+                    </Button>
+                    <Button
+                      variant="contained"
+                      size="small"
+                      fullWidth
+                      startIcon={<Map />}
+                      onClick={() => {
+                        mapRef.current?.fitAllMarkers();
+                        toast.success("Mostrando ruta completa");
+                      }}
+                      sx={{
+                        bgcolor: 'secondary.main',
+                        '&:hover': { bgcolor: 'secondary.dark' }
+                      }}
+                    >
+                      Ruta Completa
+                    </Button>
+                  </Box>
+                </CardContent>
+              </Card>
             </Box>
 
             {/* Right column: Chat + Action Buttons - order 1 on mobile (appears first) */}
@@ -711,82 +826,88 @@ export default function MatchDetailPage() {
               {/* Action Buttons - directly below chat */}
               <Stack spacing={1} sx={{ mt: 1.5 }}>
 
-              {/* Estado 1: Botón Confirmar Viaje */}
+              {/* Estado 1: Botón Confirmar Viaje + Cancelar */}
               {!match.tripId && (
-                <Button
-                  variant="contained"
-                  color="success"
-                  fullWidth
-                  onClick={handleConfirmTrip}
-                  disabled={createTripMutation.isPending}
-                  size="large"
-                  sx={{ minHeight: 48 }}
-                >
-                  {createTripMutation.isPending ? (
-                    <CircularProgress size={20} />
-                  ) : (
-                    "✅ Confirmar Viaje"
-                  )}
-                </Button>
+                <>
+                  <Button
+                    variant="contained"
+                    color="success"
+                    fullWidth
+                    onClick={() => setConfirmTripModalOpen(true)}
+                    size="large"
+                    sx={{ minHeight: 48 }}
+                  >
+                    ✅ Confirmar Viaje
+                  </Button>
+                  <Button
+                    variant="outlined"
+                    color="error"
+                    fullWidth
+                    size="small"
+                    onClick={handleCancelMatch}
+                    disabled={cancelMatchMutation.isPending || match.status === "completed"}
+                    sx={{
+                      minHeight: 40,
+                      fontSize: "0.8rem",
+                    }}
+                  >
+                    {cancelMatchMutation.isPending ? "Cancelando..." : "No Confirmar Viaje"}
+                  </Button>
+                </>
               )}
 
               {/* Estado 2: Trip confirmado, esperando charter */}
               {match.tripId && match.trip?.status === "pending" && (
-                <>
+                <Box
+                  sx={{
+                    display: "grid",
+                    gridTemplateColumns: { xs: "1fr", sm: "2fr 1fr" },
+                    gap: 1.5,
+                  }}
+                >
+                  {/* Status box - 2/3 width */}
                   <Box
                     sx={{
-                      display: "grid",
-                      gridTemplateColumns: { xs: "1fr 1fr", md: "2fr 1fr" },
-                      gap: 1,
-                      mb: 1.5,
+                      bgcolor: "background.paper",
+                      border: "2px solid",
+                      borderColor: "success.main",
+                      borderRadius: 1.5,
+                      p: 1.5,
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 1.5,
                     }}
                   >
-                    {/* Status box */}
-                    <Box
-                      sx={{
-                        gridColumn: { xs: "1 / -1", md: "1 / 2" },
-                        bgcolor: "success.light",
-                        borderLeft: "4px solid",
-                        borderLeftColor: "success.main",
-                        borderRadius: 1.5,
-                        p: 1.5,
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 1.5,
-                      }}
-                    >
-                      <CheckCircle sx={{ fontSize: 24, color: "success.main" }} />
-                      <Box>
-                        <Typography
-                          variant="body2"
-                          sx={{ fontWeight: 700, fontSize: "0.85rem", color: "success.dark" }}
-                        >
-                          Viaje Confirmado
-                        </Typography>
-                        <Typography variant="caption" sx={{ fontSize: "0.7rem" }} color="text.secondary">
-                          Créditos reservados
-                        </Typography>
-                      </Box>
+                    <CheckCircle sx={{ fontSize: 24, color: "success.main" }} />
+                    <Box>
+                      <Typography
+                        variant="body2"
+                        sx={{ fontWeight: 700, fontSize: "0.85rem", color: "text.primary" }}
+                      >
+                        Viaje Confirmado
+                      </Typography>
+                      <Typography variant="caption" sx={{ fontSize: "0.7rem" }} color="text.secondary">
+                        Créditos reservados
+                      </Typography>
                     </Box>
-
-                    {/* Problem button */}
-                    <Button
-                      variant="outlined"
-                      color="error"
-                      fullWidth
-                      size="small"
-                      startIcon={<Warning sx={{ fontSize: 18 }} />}
-                      onClick={() => setReportModalOpen(true)}
-                      sx={{
-                        gridColumn: { xs: "1 / -1", md: "2 / 3" },
-                        minHeight: { xs: 40, md: "100%" },
-                        fontSize: "0.8rem",
-                      }}
-                    >
-                      Tuve un problema
-                    </Button>
                   </Box>
-                </>
+
+                  {/* Problem button - 1/3 width */}
+                  <Button
+                    variant="outlined"
+                    color="error"
+                    fullWidth
+                    size="small"
+                    startIcon={<ReportProblem sx={{ fontSize: 18 }} />}
+                    onClick={() => setReportModalOpen(true)}
+                    sx={{
+                      minHeight: { xs: 40, sm: "100%" },
+                      fontSize: "0.8rem",
+                    }}
+                  >
+                    Tuve un problema
+                  </Button>
+                </Box>
               )}
 
               {/* Estado 3: Charter finalizó, cliente debe confirmar */}
@@ -794,64 +915,58 @@ export default function MatchDetailPage() {
                 <Stack spacing={1}>
                   <Box
                     sx={{
-                      bgcolor: "info.light",
+                      bgcolor: "primary.main",
                       borderLeft: "4px solid",
-                      borderLeftColor: "info.main",
+                      borderLeftColor: "primary.dark",
                       borderRadius: 1.5,
                       p: 1.5,
                     }}
                   >
-                    <Typography variant="body2" sx={{ fontWeight: 700, fontSize: "0.85rem", mb: 0.5 }}>
-                      🏁 El Transportista Finalizó el Viaje
+                    <Typography variant="body2" sx={{ fontWeight: 700, fontSize: "0.85rem", mb: 0.5, color: "white" }}>
+                      El Transportista Finalizó el Viaje
                     </Typography>
-                    <Typography variant="caption" sx={{ fontSize: "0.7rem" }} color="text.secondary">
+                    <Typography variant="caption" sx={{ fontSize: "0.7rem", color: "white", opacity: 0.9 }}>
                       Por favor confirma que has recibido tu carga correctamente.
                     </Typography>
                   </Box>
-                  <Box
+
+                  {/* Primary action button - fullwidth */}
+                  <Button
+                    variant="contained"
+                    color="success"
+                    fullWidth
+                    onClick={() => setConfirmCompletionModalOpen(true)}
                     sx={{
-                      display: "grid",
-                      gridTemplateColumns: { xs: "1fr 1fr", md: "1fr" },
-                      gap: 1,
+                      minHeight: 48,
+                      fontWeight: 700,
+                      fontSize: "0.9rem",
                     }}
                   >
-                    <Button
-                      variant="contained"
-                      color="success"
-                      fullWidth
-                      onClick={handleClientConfirmCompletion}
-                      sx={{
-                        gridColumn: { xs: "1 / -1", md: "auto" },
-                        minHeight: 44,
-                        fontWeight: 700,
-                        fontSize: "0.85rem",
-                      }}
-                    >
-                      ✅ Confirmar Recepción
-                    </Button>
-                    <Button
-                      variant="outlined"
-                      color="error"
-                      fullWidth
-                      size="small"
-                      startIcon={<Warning sx={{ fontSize: 18 }} />}
-                      onClick={() => setReportModalOpen(true)}
-                      sx={{
-                        gridColumn: { xs: "1 / -1", md: "auto" },
-                        minHeight: 40,
-                        fontSize: "0.8rem",
-                      }}
-                    >
-                      Reportar Problema
-                    </Button>
-                  </Box>
+                    ✅ Confirmar Recepción
+                  </Button>
+
+                  {/* Secondary action button - fullwidth */}
+                  <Button
+                    variant="outlined"
+                    color="error"
+                    fullWidth
+                    size="small"
+                    startIcon={<Warning sx={{ fontSize: 18 }} />}
+                    onClick={() => setReportModalOpen(true)}
+                    sx={{
+                      minHeight: 40,
+                      fontSize: "0.8rem",
+                    }}
+                  >
+                    Reportar Problema
+                  </Button>
                 </Stack>
               )}
 
               {/* Estado 4: Viaje completado por AMBOS */}
               {match.tripId && match.trip?.status === "completed" && (
                 <>
-                  <Alert severity="success" sx={{ mb: 1 }}>
+                  <Alert severity="success" sx={{ mb: 1.5 }}>
                     <Typography variant="body2" sx={{ fontWeight: 600, mb: 0.5 }}>
                       ✅ Viaje Completado
                     </Typography>
@@ -859,6 +974,11 @@ export default function MatchDetailPage() {
                       Los créditos han sido transferidos exitosamente.
                     </Typography>
                   </Alert>
+
+                  {/* Receipt Download Button - PRIMERO para destacar */}
+                  {match.trip && match.trip.travelMatch && (
+                    <ReceiptButton trip={match.trip} type="client" />
+                  )}
 
                   {/* Show rating button ONLY if can give feedback */}
                   {canGiveFeedback ? (
@@ -916,6 +1036,26 @@ export default function MatchDetailPage() {
             reportedUserName={match.charter.name || "Chófer"}
           />
         )}
+
+        {/* Confirm Trip Modal */}
+        <ConfirmTripModal
+          open={confirmTripModalOpen}
+          onClose={() => setConfirmTripModalOpen(false)}
+          onConfirm={handleConfirmTrip}
+          estimatedCredits={match.estimatedCredits || 0}
+          userCredits={user?.credits || 0}
+          isLoading={createTripMutation.isPending}
+        />
+
+        {/* Confirm Completion Modal */}
+        <ConfirmCompletionModal
+          open={confirmCompletionModalOpen}
+          onClose={() => setConfirmCompletionModalOpen(false)}
+          onConfirm={handleClientConfirmCompletion}
+          charterName={match.charter?.name || "Transportista"}
+          estimatedCredits={match.estimatedCredits || 0}
+          isLoading={clientConfirmCompletionMutation.isPending}
+        />
       </>
     );
   }

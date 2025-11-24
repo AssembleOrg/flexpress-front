@@ -1,7 +1,7 @@
 "use client";
 
 import { useQueryClient } from "@tanstack/react-query";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { io, type Socket } from "socket.io-client";
 import { useAuthStore } from "@/lib/stores/authStore";
 import { queryKeys } from "@/lib/hooks/queries/queryFactory";
@@ -63,7 +63,8 @@ export function useWebSocket(): UseWebSocketReturn {
       reconnection: true,
       reconnectionDelay: 1000,
       reconnectionDelayMax: 5000,
-      reconnectionAttempts: 5,
+      reconnectionAttempts: 20, // Aumentado de 5 a 20 intentos
+      timeout: 20000, // 20s timeout para la conexión inicial
       transports: ["websocket", "polling"],
     });
 
@@ -95,27 +96,53 @@ export function useWebSocket(): UseWebSocketReturn {
     /**
      * Evento: new-message
      * Recibido cuando otra persona envía un mensaje en la conversación
+     *
+     * 🔧 MEJORADO: Logging detallado para debugging
      */
     socket.on("new-message", (message: Message) => {
-      console.log("💬 [WebSocket] Nuevo mensaje recibido:", message);
+      console.log("💬 [WebSocket] Nuevo mensaje recibido:", {
+        id: message?.id,
+        conversationId: message?.conversationId,
+        senderId: message?.senderId,
+        content: message?.content?.substring(0, 50) + "...",
+        timestamp: new Date().toISOString(),
+      });
 
       // Validar estructura del mensaje
       if (!message?.id || !message?.conversationId || !message?.content) {
         console.error(
           "❌ [WebSocket] Mensaje inválido - falta estructura requerida:",
-          message,
+          {
+            hasId: !!message?.id,
+            hasConversationId: !!message?.conversationId,
+            hasContent: !!message?.content,
+            fullMessage: message,
+          },
         );
         return;
       }
 
       // Actualizar cache de React Query con el nuevo mensaje
+      console.log(
+        `🔄 [WebSocket] Actualizando cache para conversación: ${message.conversationId}`,
+      );
       queryClient.setQueryData(
         conversationKeys.messages(message.conversationId),
         (old: Message[] | undefined) => {
-          if (!old) return [message];
+          if (!old) {
+            console.log("📝 [WebSocket] Cache vacío, creando con 1 mensaje");
+            return [message];
+          }
           // Evitar duplicados
           const isDuplicate = old.some((msg) => msg?.id === message.id);
-          return isDuplicate ? old : [...old, message];
+          if (isDuplicate) {
+            console.log("⚠️  [WebSocket] Mensaje duplicado ignorado:", message.id);
+            return old;
+          }
+          console.log(
+            `✅ [WebSocket] Mensaje agregado al cache (${old.length} → ${old.length + 1})`,
+          );
+          return [...old, message];
         },
       );
 
@@ -209,31 +236,41 @@ export function useWebSocket(): UseWebSocketReturn {
 /**
  * Hook personalizado para usar la instancia de socket en un componente
  * Útil para emitir eventos desde componentes
+ *
+ * 🔧 OPTIMIZACIÓN: Todas las funciones están memoizadas con useCallback
+ * para evitar re-renders innecesarios en componentes que dependen de ellas.
  */
 export function useSocketEmit() {
   const { socket } = useWebSocket();
   const { user } = useAuthStore();
+  const userId = user?.id;
 
-  return {
-    socket, // Expose socket for event listeners
-    joinConversation: (conversationId: string) => {
+  // 🔧 MEMOIZE: Cada función es estable entre renders si sus dependencias no cambian
+  const joinConversation = useCallback(
+    (conversationId: string) => {
       if (socket?.connected) {
         console.log("📍 [WebSocket] Uniéndose a conversación:", conversationId);
         socket.emit("join-conversation", {
           conversationId,
-          userId: user?.id,
+          userId,
         });
       }
     },
+    [socket, userId],
+  );
 
-    leaveConversation: (conversationId: string) => {
+  const leaveConversation = useCallback(
+    (conversationId: string) => {
       if (socket?.connected) {
         console.log("📍 [WebSocket] Saliendo de conversación:", conversationId);
         socket.emit("leave-conversation", { conversationId });
       }
     },
+    [socket],
+  );
 
-    sendMessage: (conversationId: string, content: string) => {
+  const sendMessage = useCallback(
+    (conversationId: string, content: string) => {
       if (socket?.connected) {
         console.log("💬 [WebSocket] Enviando mensaje:", content);
         socket.emit("send-message", { conversationId, content });
@@ -243,13 +280,30 @@ export function useSocketEmit() {
         );
       }
     },
+    [socket],
+  );
 
-    notifyTyping: (conversationId: string) => {
+  const notifyTyping = useCallback(
+    (conversationId: string) => {
       if (socket?.connected) {
         socket.emit("typing", { conversationId });
       }
     },
-  };
+    [socket],
+  );
+
+  // 🔧 MEMOIZE: El objeto retornado también es estable
+  // Solo se recrea si alguna de sus propiedades cambia
+  return useMemo(
+    () => ({
+      socket,
+      joinConversation,
+      leaveConversation,
+      sendMessage,
+      notifyTyping,
+    }),
+    [socket, joinConversation, leaveConversation, sendMessage, notifyTyping],
+  );
 }
 
 export function useMatchUpdateListener(

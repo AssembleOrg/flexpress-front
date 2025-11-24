@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  Avatar,
   Box,
   Button,
   CircularProgress,
@@ -8,10 +9,12 @@ import {
   DialogActions,
   DialogContent,
   DialogTitle,
-  Divider,
   Stack,
   Typography,
 } from "@mui/material";
+import { Route, AttachMoney } from "@mui/icons-material";
+import { RatingDisplay } from "@/components/ui/RatingDisplay";
+import { useUserFeedback } from "@/lib/hooks/queries/useFeedbackQueries";
 import type { TravelMatch } from "@/lib/types/api";
 
 /**
@@ -54,18 +57,21 @@ export function AcceptMatchModal({
     return null;
   }
 
+  // Fetch client rating
+  const { data: clientFeedback } = useUserFeedback(match.userId);
+
   // Defensiva: validar que el match esté en estado válido
   const isValidState =
     match.status === "pending" || match.status === "searching";
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
-      <DialogTitle sx={{ fontWeight: 700, pb: 1 }}>
-        Nueva Solicitud de Viaje
+      <DialogTitle sx={{ fontWeight: 700, pb: 1, fontSize: "1.1rem" }}>
+        Nueva Solicitud
       </DialogTitle>
 
-      <DialogContent sx={{ py: 3 }}>
-        <Stack spacing={3}>
+      <DialogContent sx={{ py: 1.5 }}>
+        <Stack spacing={1.5}>
           {/* Error Message (si existe) */}
           {error && (
             <Box
@@ -100,137 +106,111 @@ export function AcceptMatchModal({
             </Box>
           )}
 
-          {/* User Info */}
-          <Box>
-            <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 2 }}>
-              👤 Datos del Usuario
-            </Typography>
+          {/* User Info - Compact */}
+          <Box
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              gap: 1.5,
+              p: 1.5,
+              bgcolor: "action.hover",
+              borderRadius: 1.5,
+            }}
+          >
+            <Avatar
+              src={match.user?.avatar || undefined}
+              sx={{ width: 48, height: 48 }}
+            >
+              {match.user?.name?.[0]?.toUpperCase() || "U"}
+            </Avatar>
 
-            <Stack spacing={1.5}>
-              {/* Nombre del usuario */}
-              <Box>
-                <Typography variant="caption" color="text.secondary">
-                  Nombre
-                </Typography>
-                <Typography variant="body2">
-                  {match.user?.name || "Usuario"}
-                </Typography>
+            <Box sx={{ flex: 1 }}>
+              <Typography variant="subtitle2" sx={{ fontWeight: 600, fontSize: "0.95rem" }}>
+                {match.user?.name || "Cliente"}
+              </Typography>
+              {/* Rating */}
+              <Box mt={0.5}>
+                <RatingDisplay
+                  averageRating={clientFeedback?.averageRating || 0}
+                  totalReviews={clientFeedback?.totalFeedbacks || 0}
+                  size="small"
+                />
               </Box>
-
-              {/* Email del usuario */}
-              <Box>
-                <Typography variant="caption" color="text.secondary">
-                  Correo
-                </Typography>
-                <Typography variant="body2">
-                  {match.user?.email || "No especificado"}
-                </Typography>
-              </Box>
-            </Stack>
+            </Box>
           </Box>
 
-          <Divider />
-
-          {/* Trip Details */}
-          <Box>
-            <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 2 }}>
-              📍 Detalles del Viaje
+          {/* Trip Summary - Compact */}
+          <Box
+            sx={{
+              p: 1.5,
+              bgcolor: "background.default",
+              borderRadius: 1.5,
+            }}
+          >
+            <Typography variant="caption" color="text.secondary" display="block" sx={{ mb: 1, fontSize: "0.7rem", fontWeight: 600 }}>
+              📍 Origen → 🏁 Destino
             </Typography>
-
-            <Stack spacing={1.5}>
-              {/* Origen */}
-              <Box>
-                <Typography variant="caption" color="text.secondary">
-                  Origen
-                </Typography>
-                <Typography variant="body2">
-                  {match.pickupAddress || "No especificado"}
-                </Typography>
-              </Box>
-
-              {/* Destino */}
-              <Box>
-                <Typography variant="caption" color="text.secondary">
-                  Destino
-                </Typography>
-                <Typography variant="body2">
-                  {match.destinationAddress || "No especificado"}
-                </Typography>
-              </Box>
-
-              <Divider sx={{ my: 0.5 }} />
-
-              {/* Distancia y Créditos a Ganar */}
-              <Box
-                sx={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 2 }}
-              >
-                <Box>
-                  <Typography variant="caption" color="text.secondary">
-                    Distancia Total
-                  </Typography>
-                  <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                    {match.distanceKm?.toFixed(1) || "0"} km
-                  </Typography>
-                </Box>
-
-                <Box>
-                  <Typography variant="caption" color="text.secondary">
-                    Créditos a Ganar
-                  </Typography>
-                  <Typography
-                    variant="body2"
-                    sx={{ fontWeight: 600, color: "success.main" }}
-                  >
-                    {match.estimatedCredits || 0}
-                  </Typography>
-                </Box>
-              </Box>
-
-              {/* Trabajadores (si aplica) */}
-              {match.workersCount && match.workersCount > 0 && (
-                <Box>
-                  <Typography variant="caption" color="text.secondary">
-                    Número de Trabajadores
-                  </Typography>
-                  <Typography variant="body2">{match.workersCount}</Typography>
-                </Box>
-              )}
-
-              {/* Fecha Programada (si aplica) */}
-              {match.scheduledDate && (
-                <Box>
-                  <Typography variant="caption" color="text.secondary">
-                    Fecha Programada
-                  </Typography>
-                  <Typography variant="body2">
-                    {new Date(match.scheduledDate).toLocaleDateString("es-ES", {
-                      weekday: "long",
-                      year: "numeric",
-                      month: "long",
-                      day: "numeric",
-                    })}
-                  </Typography>
-                </Box>
-              )}
-            </Stack>
+            <Typography variant="body2" sx={{ fontSize: "0.85rem", lineHeight: 1.4, mb: 0.5 }}>
+              {match.pickupAddress || "No especificado"}
+            </Typography>
+            <Typography variant="body2" sx={{ fontSize: "0.85rem", fontWeight: 600, lineHeight: 1.4 }}>
+              {match.destinationAddress || "No especificado"}
+            </Typography>
           </Box>
 
-          <Divider />
+          {/* Key Metrics - Compact Grid */}
+          <Box
+            sx={{
+              display: "grid",
+              gridTemplateColumns: "1fr 1fr",
+              gap: 1.5,
+            }}
+          >
+            <Box
+              sx={{
+                p: 1.5,
+                bgcolor: "background.default",
+                borderRadius: 1.5,
+                textAlign: "center",
+              }}
+            >
+              <Route sx={{ fontSize: 20, color: "primary.main", mb: 0.5 }} />
+              <Typography variant="h6" sx={{ fontWeight: 700, fontSize: "1rem" }}>
+                {match.distanceKm?.toFixed(1) || "0"} km
+              </Typography>
+              <Typography variant="caption" color="text.secondary" sx={{ fontSize: "0.65rem" }}>
+                Distancia
+              </Typography>
+            </Box>
 
-          {/* Info Message */}
-          <Typography variant="caption" color="text.secondary" sx={{ p: 1 }}>
-            ℹ️ Al aceptar, se habilitará un chat privado con el usuario para
-            confirmar detalles del viaje.
-          </Typography>
+            <Box
+              sx={{
+                p: 1.5,
+                bgcolor: "background.default",
+                borderRadius: 1.5,
+                textAlign: "center",
+              }}
+            >
+              <AttachMoney sx={{ fontSize: 20, color: "success.main", mb: 0.5 }} />
+              <Typography variant="h6" sx={{ fontWeight: 700, fontSize: "1rem", color: "success.main" }}>
+                {match.estimatedCredits || 0}
+              </Typography>
+              <Typography variant="caption" color="text.secondary" sx={{ fontSize: "0.65rem" }}>
+                Créditos
+              </Typography>
+            </Box>
+          </Box>
         </Stack>
       </DialogContent>
 
-      <DialogActions sx={{ p: 2, gap: 1 }}>
+      <DialogActions sx={{ p: 2, gap: 1.5, display: 'flex', justifyContent: 'space-between' }}>
         <Button
           onClick={onReject}
           disabled={isLoading || !isValidState}
           variant="outlined"
           color="error"
+          size="large"
+          sx={{ flex: 1, minHeight: 48 }}
         >
           Rechazar
         </Button>
@@ -239,10 +219,16 @@ export function AcceptMatchModal({
           onClick={onAccept}
           disabled={isLoading || !isValidState}
           variant="contained"
-          color="success"
+          sx={{
+            flex: 1,
+            minHeight: 48,
+            fontWeight: 700,
+            bgcolor: "secondary.main",
+            "&:hover": { bgcolor: "secondary.dark" }
+          }}
           startIcon={isLoading ? <CircularProgress size={20} /> : undefined}
         >
-          {isLoading ? "Aceptando..." : "Aceptar Viaje"}
+          {isLoading ? "Aceptando..." : "Aceptar"}
         </Button>
       </DialogActions>
     </Dialog>

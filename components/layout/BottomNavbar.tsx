@@ -22,7 +22,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useAuthStore } from "@/lib/stores/authStore";
 import { useUserMatches, useCharterMatches } from "@/lib/hooks/queries/useTravelMatchQueries";
-import { isMatchExpired } from "@/lib/utils/matchHelpers";
+import { isActiveTrip } from "@/lib/utils/matchHelpers";
 import { MOBILE_BOTTOM_NAV_HEIGHT, Z_INDEX } from "@/lib/constants/mobileDesign";
 
 /**
@@ -56,29 +56,9 @@ export function BottomNavbar() {
 
   // Determinar match activo con conversación
   const activeMatch = matches.find((match) => {
-    // Client: pending (no expirado), accepted, completed (pending feedback)
+    // Client: Use centralized logic
     if (!isCharter) {
-      if (
-        match.status === "rejected" ||
-        match.status === "cancelled" ||
-        match.status === "expired"
-      ) {
-        return false;
-      }
-      if (match.status === "pending" && isMatchExpired(match)) {
-        return false;
-      }
-      if (
-        match.tripId &&
-        match.trip?.status === "completed" &&
-        match.canGiveFeedback === false
-      ) {
-        return false;
-      }
-      return (
-        (match.status === "pending" || match.status === "accepted") &&
-        match.conversation?.id
-      );
+      return isActiveTrip(match);
     }
 
     // Driver: accepted/completed con tripId
@@ -86,7 +66,7 @@ export function BottomNavbar() {
     if (match.trip?.status === "completed") return false;
     return (
       (match.status === "accepted" || match.status === "completed") &&
-      match.conversation?.id
+      match.conversationId
     );
   });
 
@@ -168,7 +148,7 @@ export function BottomNavbar() {
               <Badge
                 color="secondary"
                 variant="dot"
-                invisible={!activeMatch.conversation?.id}
+                invisible={!activeMatch.conversationId}
               >
                 <Chat />
               </Badge>

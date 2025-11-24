@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import { BottomNavbar } from "@/components/layout/BottomNavbar";
+import { AuthGuard } from "@/components/guards/AuthGuard";
+import { RoleGuard } from "@/components/guards/RoleGuard";
 
 export const metadata: Metadata = {
   title: "Cliente - Flexpress",
@@ -12,9 +14,13 @@ export default function ClientLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="client-layout">
-      {children}
-      <BottomNavbar />
-    </div>
+    <AuthGuard>
+      <RoleGuard requiredRole="user">
+        <div className="client-layout">
+          {children}
+          <BottomNavbar />
+        </div>
+      </RoleGuard>
+    </AuthGuard>
   );
 }

@@ -1,5 +1,10 @@
-import { Chip } from "@mui/material";
+"use client";
+
 import { LocationOn } from "@mui/icons-material";
+import { Chip } from "@mui/material";
+import { motion } from "framer-motion";
+
+const MotionChip = motion.create(Chip);
 
 interface LocationChipProps {
   type: "pickup" | "destination";
@@ -34,12 +39,30 @@ export function LocationChip({
     address.length > maxLength ? `${address.slice(0, maxLength)}...` : address;
 
   return (
-    <Chip
+    <MotionChip
       icon={<LocationOn />}
       label={`${config.label}: ${truncatedAddress}`}
       size="small"
       variant="outlined"
       onClick={onClick}
+      initial={{ opacity: 0, scale: 0.8, y: -10 }}
+      animate={{ opacity: 1, scale: 1, y: 0 }}
+      transition={{
+        type: "spring",
+        stiffness: 120,
+        damping: 15,
+        mass: 0.5,
+      }}
+      whileHover={
+        onClick
+          ? {
+              scale: 1.08,
+              y: -2,
+              transition: { duration: 0.2 },
+            }
+          : {}
+      }
+      whileTap={onClick ? { scale: 0.95 } : {}}
       sx={{
         backgroundColor: config.bgcolor,
         color: config.color,
@@ -49,13 +72,6 @@ export function LocationChip({
         "& .MuiChip-icon": {
           color: config.color,
         },
-        ...(onClick && {
-          "&:hover": {
-            opacity: 0.8,
-            transform: "scale(1.05)",
-            transition: "all 0.2s ease-in-out",
-          },
-        }),
       }}
     />
   );

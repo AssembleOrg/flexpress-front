@@ -1,6 +1,12 @@
 "use client";
 
-import { useQueryClient } from "@tanstack/react-query";
+import {
+  Assignment,
+  Chat,
+  Flag,
+  LocationOn,
+  Person,
+} from "@mui/icons-material";
 import {
   Box,
   Button,
@@ -13,25 +19,33 @@ import {
   Switch,
   Typography,
 } from "@mui/material";
+import { useQueryClient } from "@tanstack/react-query";
+import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import toast from "react-hot-toast";
-import { MobileContainer } from "@/components/layout/MobileContainer";
 import { MobileMatchCard } from "@/components/cards/MobileMatchCard";
+import { MobileContainer } from "@/components/layout/MobileContainer";
 import { MatchExpirationTimer } from "@/components/MatchExpirationTimer";
 import { AcceptMatchModal } from "@/components/modals/AcceptMatchModal";
+import { WelcomeHeader } from "@/components/ui/WelcomeHeader";
 import {
   useRespondToMatch,
   useToggleAvailability,
 } from "@/lib/hooks/mutations/useTravelMatchMutations";
-import { useCharterMatches } from "@/lib/hooks/queries/useTravelMatchQueries";
 import { queryKeys } from "@/lib/hooks/queries/queryFactory";
+import { useCharterMatches } from "@/lib/hooks/queries/useTravelMatchQueries";
+import { useAuthStore } from "@/lib/stores/authStore";
 import type { TravelMatch } from "@/lib/types/api";
 import { isMatchExpired } from "@/lib/utils/matchHelpers";
+
+const MotionCard = motion.create(Card);
+const MotionBox = motion.create(Box);
 
 export default function DriverDashboard() {
   const router = useRouter();
   const queryClient = useQueryClient();
+  const { user } = useAuthStore();
   const [isAvailable, setIsAvailable] = useState(false);
   const toggleMutation = useToggleAvailability();
   const { data: charterMatches = [], isLoading: matchesLoading } =
@@ -98,8 +112,14 @@ export default function DriverDashboard() {
 
   return (
     <MobileContainer withBottomNav>
+      {/* Welcome Header */}
+      <WelcomeHeader userName={user?.name} userRole="charter" />
+
       {/* Status Toggle - Mobile-First */}
-      <Card
+      <MotionCard
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, delay: 0.1 }}
         sx={{
           mb: 3,
           overflow: "visible",
@@ -165,37 +185,51 @@ export default function DriverDashboard() {
               : "Actívate para empezar a ganar"}
           </Typography>
         </CardContent>
-      </Card>
+      </MotionCard>
 
-      {/* Earnings Summary - Quick Stats */}
-      {/* TODO: Integrar datos reales de earnings del backend */}
+      {/* Credits Summary */}
       {isAvailable && (
-        <Box display="flex" gap={2} mb={3}>
+        <MotionBox
+          display="flex"
+          gap={2}
+          mb={3}
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.4, delay: 0.2, type: "spring" }}
+        >
           <Card sx={{ flex: 1, p: 2, textAlign: "center" }}>
             <Typography
               variant="h6"
               sx={{ fontWeight: 700, color: "success.main" }}
             >
-              $1,250
+              {user?.credits || 0}
             </Typography>
             <Typography variant="caption" color="text.secondary">
-              Esta semana
+              Créditos Actuales
             </Typography>
           </Card>
           <Card sx={{ flex: 1, p: 2, textAlign: "center" }}>
-            <Typography variant="h6" sx={{ fontWeight: 700 }}>
-              0
-            </Typography>
-            <Typography variant="caption" color="text.secondary">
-              Viajes completados
-            </Typography>
+            <Button
+              variant="outlined"
+              color="primary"
+              size="small"
+              fullWidth
+              onClick={() => router.push("/driver/trips/history")}
+              sx={{ fontWeight: 600 }}
+            >
+              Ver Historial
+            </Button>
           </Card>
-        </Box>
+        </MotionBox>
       )}
 
       {/* Pending Match Requests */}
       {isAvailable && (
-        <Box mb={3}>
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.5, delay: 0.3 }}
+        >
           <Box
             display="flex"
             justifyContent="space-between"
@@ -207,9 +241,13 @@ export default function DriverDashboard() {
               sx={{
                 fontWeight: 700,
                 fontSize: { xs: "1.1rem", md: "1.25rem" },
+                display: "flex",
+                alignItems: "center",
+                gap: 1,
               }}
             >
-              📋 Solicitudes Pendientes
+              <Assignment fontSize="small" />
+              Solicitudes Pendientes
             </Typography>
             {pendingMatches.length > 0 && (
               <Chip
@@ -284,7 +322,7 @@ export default function DriverDashboard() {
               </CardContent>
             </Card>
           )}
-        </Box>
+        </motion.div>
       )}
 
       {/* Active Conversations Section */}
@@ -301,9 +339,13 @@ export default function DriverDashboard() {
               sx={{
                 fontWeight: 700,
                 fontSize: { xs: "1.1rem", md: "1.25rem" },
+                display: "flex",
+                alignItems: "center",
+                gap: 1,
               }}
             >
-              💬 Conversaciones Activas
+              <Chat fontSize="small" />
+              Conversaciones Activas
             </Typography>
             <Chip
               label={activeConversations.length}
@@ -337,15 +379,54 @@ export default function DriverDashboard() {
                     gap={2}
                   >
                     <Box flex={1}>
-                      <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
-                        👤 {match.user?.name}
+                      <Typography
+                        variant="subtitle2"
+                        sx={{
+                          fontWeight: 700,
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 0.5,
+                        }}
+                      >
+                        <Person
+                          fontSize="small"
+                          sx={{ color: "primary.main" }}
+                        />
+                        {match.user?.name}
                       </Typography>
                       <Typography
                         variant="caption"
                         color="text.secondary"
                         display="block"
+                        sx={{
+                          mb: 0.5,
+                          display: "flex",
+                          alignItems: "flex-start",
+                          gap: 0.5,
+                        }}
                       >
-                        📍 {match.pickupAddress}
+                        <LocationOn
+                          fontSize="small"
+                          sx={{ color: "primary.main", mt: 0.1 }}
+                        />
+                        {match.pickupAddress}
+                      </Typography>
+                      <Typography
+                        variant="caption"
+                        color="text.secondary"
+                        display="block"
+                        sx={{
+                          fontWeight: 600,
+                          display: "flex",
+                          alignItems: "flex-start",
+                          gap: 0.5,
+                        }}
+                      >
+                        <Flag
+                          fontSize="small"
+                          sx={{ color: "secondary.main", mt: 0.1 }}
+                        />
+                        {match.destinationAddress}
                       </Typography>
                     </Box>
 
@@ -370,6 +451,50 @@ export default function DriverDashboard() {
                       size="small"
                       sx={{ fontWeight: 600 }}
                     />
+                  </Box>
+
+                  {/* Trip Info Row */}
+                  <Box
+                    display="flex"
+                    gap={2}
+                    mb={2}
+                    sx={{
+                      p: 1.5,
+                      bgcolor: "background.default",
+                      borderRadius: 1.5,
+                    }}
+                  >
+                    {match.distanceKm && (
+                      <Box flex={1} textAlign="center">
+                        <Typography
+                          variant="caption"
+                          color="text.secondary"
+                          display="block"
+                        >
+                          Distancia
+                        </Typography>
+                        <Typography variant="body2" sx={{ fontWeight: 700 }}>
+                          {match.distanceKm.toFixed(1)} km
+                        </Typography>
+                      </Box>
+                    )}
+                    {match.estimatedCredits && (
+                      <Box flex={1} textAlign="center">
+                        <Typography
+                          variant="caption"
+                          color="text.secondary"
+                          display="block"
+                        >
+                          Créditos
+                        </Typography>
+                        <Typography
+                          variant="body2"
+                          sx={{ fontWeight: 700, color: "success.main" }}
+                        >
+                          {match.estimatedCredits}
+                        </Typography>
+                      </Box>
+                    )}
                   </Box>
 
                   <Button
@@ -417,11 +542,11 @@ export default function DriverDashboard() {
                 queryKey: queryKeys.matches.all,
               });
 
-              toast.success("¡Solicitud aceptada!");
-
               // Now redirect to the chat page
               // The conversation should now be available in the cached data
-              router.push(`/driver/trips/matching/${selectedMatchForAccept?.id}`);
+              router.push(
+                `/driver/trips/matching/${selectedMatchForAccept?.id}`,
+              );
             } catch (error) {
               console.error("❌ Error accepting match:", error);
               toast.error("Error al aceptar solicitud. Intenta de nuevo.");

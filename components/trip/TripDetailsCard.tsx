@@ -7,7 +7,6 @@ import {
   Typography,
   Avatar,
   Chip,
-  Rating,
 } from "@mui/material";
 import {
   LocationOn,
@@ -15,6 +14,7 @@ import {
   CalendarToday,
   AccessTime,
 } from "@mui/icons-material";
+import { RatingDisplay } from "@/components/ui/RatingDisplay";
 
 interface TripDetailsCardProps {
   /**
@@ -142,33 +142,12 @@ export function TripDetailsCard({
                 </Typography>
                 {/* Rating */}
                 {otherUser.rating && (
-                  <Box display="flex" alignItems="center" gap={0.5} mt={0.5}>
-                    {otherUser.rating.count > 0 ? (
-                      <>
-                        <Rating
-                          value={otherUser.rating.average}
-                          readOnly
-                          size="small"
-                          precision={0.1}
-                          sx={{ fontSize: "1rem" }}
-                        />
-                        <Typography variant="caption" color="text.secondary">
-                          {otherUser.rating.average.toFixed(1)} (
-                          {otherUser.rating.count})
-                        </Typography>
-                      </>
-                    ) : (
-                      <Chip
-                        label="Nuevo"
-                        size="small"
-                        color="secondary"
-                        sx={{
-                          height: 20,
-                          fontSize: "0.65rem",
-                          fontWeight: 600,
-                        }}
-                      />
-                    )}
+                  <Box mt={0.5}>
+                    <RatingDisplay
+                      averageRating={otherUser.rating.average}
+                      totalReviews={otherUser.rating.count}
+                      size="small"
+                    />
                   </Box>
                 )}
               </Box>
