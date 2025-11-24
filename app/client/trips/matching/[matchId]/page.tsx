@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowBack, LocationOn, Flag } from "@mui/icons-material";
+import { ArrowBack, LocationOn, Flag, Map } from "@mui/icons-material";
 import {
   Alert,
   Box,
@@ -14,7 +14,7 @@ import {
   Stack,
   Typography,
 } from "@mui/material";
-import { CheckCircle, Warning } from "@mui/icons-material";
+import { CheckCircle, Warning, ReportProblem } from "@mui/icons-material";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState, useRef } from "react";
@@ -652,7 +652,7 @@ export default function MatchDetailPage() {
           onBack={() => router.push("/client/dashboard")}
         />
 
-        <MobileContainer withBottomNav>
+        <MobileContainer withBottomNav maxWidth="lg">
           {/* Desktop Header */}
           <Box sx={{ display: { xs: "none", md: "block" }, mb: 4 }}>
             <Link href="/client/dashboard">
@@ -753,7 +753,6 @@ export default function MatchDetailPage() {
                     ]}
                     height="250px"
                     disableInteraction={true}
-                    autoFitBounds={true}
                   />
 
                   {/* Map navigation buttons */}
@@ -785,6 +784,22 @@ export default function MatchDetailPage() {
                       }}
                     >
                       Ver Destino
+                    </Button>
+                    <Button
+                      variant="contained"
+                      size="small"
+                      fullWidth
+                      startIcon={<Map />}
+                      onClick={() => {
+                        mapRef.current?.fitAllMarkers();
+                        toast.success("Mostrando ruta completa");
+                      }}
+                      sx={{
+                        bgcolor: 'secondary.main',
+                        '&:hover': { bgcolor: 'secondary.dark' }
+                      }}
+                    >
+                      Ruta Completa
                     </Button>
                   </Box>
                 </CardContent>
@@ -843,8 +858,14 @@ export default function MatchDetailPage() {
 
               {/* Estado 2: Trip confirmado, esperando charter */}
               {match.tripId && match.trip?.status === "pending" && (
-                <>
-                  {/* Status box */}
+                <Box
+                  sx={{
+                    display: "grid",
+                    gridTemplateColumns: { xs: "1fr", sm: "2fr 1fr" },
+                    gap: 1.5,
+                  }}
+                >
+                  {/* Status box - 2/3 width */}
                   <Box
                     sx={{
                       bgcolor: "background.paper",
@@ -855,7 +876,6 @@ export default function MatchDetailPage() {
                       display: "flex",
                       alignItems: "center",
                       gap: 1.5,
-                      mb: 1,
                     }}
                   >
                     <CheckCircle sx={{ fontSize: 24, color: "success.main" }} />
@@ -872,22 +892,22 @@ export default function MatchDetailPage() {
                     </Box>
                   </Box>
 
-                  {/* Problem button */}
+                  {/* Problem button - 1/3 width */}
                   <Button
                     variant="outlined"
                     color="error"
                     fullWidth
                     size="small"
-                    startIcon={<Warning sx={{ fontSize: 18 }} />}
+                    startIcon={<ReportProblem sx={{ fontSize: 18 }} />}
                     onClick={() => setReportModalOpen(true)}
                     sx={{
-                      minHeight: 40,
+                      minHeight: { xs: 40, sm: "100%" },
                       fontSize: "0.8rem",
                     }}
                   >
                     Tuve un problema
                   </Button>
-                </>
+                </Box>
               )}
 
               {/* Estado 3: Charter finalizó, cliente debe confirmar */}
@@ -956,7 +976,7 @@ export default function MatchDetailPage() {
                   </Alert>
 
                   {/* Receipt Download Button - PRIMERO para destacar */}
-                  {match.trip && (
+                  {match.trip && match.trip.travelMatch && (
                     <ReceiptButton trip={match.trip} type="client" />
                   )}
 

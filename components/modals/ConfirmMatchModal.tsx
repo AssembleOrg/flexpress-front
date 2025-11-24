@@ -5,18 +5,17 @@ import {
   Avatar,
   Box,
   Button,
-  Chip,
   CircularProgress,
   Dialog,
   DialogActions,
   DialogContent,
   DialogTitle,
   Divider,
-  Rating,
   Stack,
   Typography,
 } from "@mui/material";
 import { Route, AttachMoney } from "@mui/icons-material";
+import { RatingDisplay } from "@/components/ui/RatingDisplay";
 import { useCharterRating } from "@/lib/hooks/queries/useFeedbackQueries";
 import type { AvailableCharter, TravelMatch } from "@/lib/types/api";
 
@@ -99,36 +98,21 @@ export function ConfirmMatchModal({
 
             {/* Charter Details */}
             <Box sx={{ flex: 1 }}>
-              <Typography variant="subtitle2" sx={{ fontWeight: 600, fontSize: "0.95rem" }}>
+              <Typography
+                variant="subtitle2"
+                sx={{ fontWeight: 600, fontSize: "0.95rem" }}
+              >
                 {selectedCharter.charterName || "Chófer"}
               </Typography>
               {/* Rating */}
-              {charterRating && charterRating.totalFeedbacks > 0 ? (
-                <Box display="flex" alignItems="center" gap={0.5} mt={0.5}>
-                  <Rating
-                    value={charterRating.averageRating}
-                    readOnly
-                    size="small"
-                    precision={0.1}
-                    sx={{ fontSize: "1rem" }}
-                  />
-                  <Typography variant="caption" color="text.secondary">
-                    {charterRating.averageRating.toFixed(1)} ({charterRating.totalFeedbacks})
-                  </Typography>
-                </Box>
-              ) : (
-                <Chip
-                  label="Nuevo"
+              <Box mt={0.5}>
+                <RatingDisplay
+                  averageRating={charterRating?.averageRating || 0}
+                  totalReviews={charterRating?.totalFeedbacks || 0}
                   size="small"
-                  color="secondary"
-                  sx={{
-                    height: 18,
-                    fontSize: "0.65rem",
-                    fontWeight: 600,
-                    mt: 0.5,
-                  }}
+                  showCount={false}
                 />
-              )}
+              </Box>
             </Box>
           </Box>
 

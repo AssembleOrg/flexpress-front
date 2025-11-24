@@ -14,7 +14,7 @@ import {
   Stack,
   CircularProgress,
 } from "@mui/material";
-import { ArrowBack, CheckCircle } from "@mui/icons-material";
+import { ArrowBack, CheckCircle, LocationOn, Flag, Map } from "@mui/icons-material";
 import Link from "next/link";
 import toast from "react-hot-toast";
 import { ChatWindow } from "@/components/chat/ChatWindow";
@@ -24,6 +24,7 @@ import { MobileHeader } from "@/components/layout/MobileHeader";
 import { TripDetailsCard } from "@/components/trip/TripDetailsCard";
 import { TripMetricsCard } from "@/components/trip/TripMetricsCard";
 import { ReceiptButton } from "@/components/trip/ReceiptButton";
+import LeafletMap, { type MapMarker, type LeafletMapHandle } from "@/components/ui/LeafletMap";
 import { MOBILE_BOTTOM_NAV_HEIGHT } from "@/lib/constants/mobileDesign";
 import { useMatch } from "@/lib/hooks/queries/useTravelMatchQueries";
 import { useTrip } from "@/lib/hooks/queries/useTripQueries";
@@ -43,6 +44,7 @@ export default function DriverMatchingDetailPage() {
 
   const charterCompleteTripMutation = useCharterCompleteTrip();
   const [finalizeTripModalOpen, setFinalizeTripModalOpen] = useState(false);
+  const mapRef = useRef<LeafletMapHandle>(null);
 
   // Polling eliminado - useMatch ya tiene refetchInterval de 15s
   // WebSocket maneja updates en tiempo real
@@ -114,7 +116,7 @@ export default function DriverMatchingDetailPage() {
         onBack={() => router.push("/driver/dashboard")}
       />
 
-      <MobileContainer withBottomNav>
+      <MobileContainer withBottomNav maxWidth="lg">
         {/* Desktop Header */}
         <Box sx={{ display: { xs: "none", md: "block" }, mb: 3 }}>
           <Link href="/driver/dashboard">
@@ -309,6 +311,87 @@ export default function DriverMatchingDetailPage() {
               }}
               status={statusInfo}
             />
+
+            {/* Trip Map Card */}
+            <Card sx={{ mb: 1.5 }}>
+              <CardContent sx={{ p: 1.5 }}>
+                <Typography
+                  variant="caption"
+                  color="text.secondary"
+                  sx={{ display: "block", mb: 1, fontSize: "0.7rem", fontWeight: 600 }}
+                >
+                  📍 Mapa del Viaje
+                </Typography>
+
+                <LeafletMap
+                  ref={mapRef}
+                  markers={[
+                    {
+                      lat: Number.parseFloat(match.pickupLatitude),
+                      lon: Number.parseFloat(match.pickupLongitude),
+                      label: "Origen",
+                      type: "pickup",
+                    },
+                    {
+                      lat: Number.parseFloat(match.destinationLatitude),
+                      lon: Number.parseFloat(match.destinationLongitude),
+                      label: "Destino",
+                      type: "destination",
+                    },
+                  ]}
+                  height="250px"
+                  disableInteraction={true}
+                />
+
+                {/* Map navigation buttons */}
+                <Box sx={{ mt: 1.5, display: "flex", gap: 1 }}>
+                  <Button
+                    variant="outlined"
+                    size="small"
+                    fullWidth
+                    startIcon={<LocationOn />}
+                    onClick={() => {
+                      mapRef.current?.centerOnMarker(
+                        Number.parseFloat(match.pickupLatitude),
+                        Number.parseFloat(match.pickupLongitude)
+                      );
+                    }}
+                  >
+                    Ver Origen
+                  </Button>
+                  <Button
+                    variant="outlined"
+                    size="small"
+                    fullWidth
+                    startIcon={<Flag />}
+                    onClick={() => {
+                      mapRef.current?.centerOnMarker(
+                        Number.parseFloat(match.destinationLatitude),
+                        Number.parseFloat(match.destinationLongitude)
+                      );
+                    }}
+                  >
+                    Ver Destino
+                  </Button>
+                  <Button
+                    variant="contained"
+                    size="small"
+                    fullWidth
+                    startIcon={<Map />}
+                    onClick={() => {
+                      mapRef.current?.fitAllMarkers();
+                      toast.success("Mostrando ruta completa");
+                    }}
+                    sx={{
+                      bgcolor: "secondary.main",
+                      "&:hover": { bgcolor: "secondary.dark" }
+                    }}
+                  >
+                    Ruta Completa
+                  </Button>
+                </Box>
+              </CardContent>
+            </Card>
 
             {/* Trip Metrics Card */}
             <TripMetricsCard

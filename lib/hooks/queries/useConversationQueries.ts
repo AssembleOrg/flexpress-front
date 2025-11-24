@@ -39,8 +39,9 @@ export function useConversationMessages(conversationId: string) {
     gcTime: 10 * 60 * 1000, // 10 minutes - keep in cache while navigating
     refetchOnWindowFocus: true, // Refetch when user returns to tab
     refetchOnReconnect: true, // Refetch when connection restored
-    refetchInterval: (data) => {
+    refetchInterval: (query) => {
       // Adaptive polling based on activity
+      const data = query.state.data;
       if (!data || data.length === 0) return 5000; // Empty chat → 5s
 
       const lastMessage = data[data.length - 1];

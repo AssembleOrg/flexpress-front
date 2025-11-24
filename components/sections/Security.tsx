@@ -1,9 +1,9 @@
 "use client";
 
 import { CameraAlt, Shield, Support, VerifiedUser } from "@mui/icons-material";
-import { Box, Button, Chip, Container, Paper, Typography } from "@mui/material";
+import { Box, Chip, Container, Paper, Typography } from "@mui/material";
 import { motion } from "framer-motion";
-import { useRouter } from "next/navigation";
+// import { useRouter } from "next/navigation";
 import {
   slideInLeft,
   slideInRight,
@@ -12,11 +12,11 @@ import {
 } from "@/lib/animations/variants";
 
 export function Security() {
-  const router = useRouter();
+  // const router = useRouter();
 
-  const handleKnowMore = () => {
-    router.push("/conoce-mas");
-  };
+  // const handleKnowMore = () => {
+  //   router.push("/conoce-mas");
+  // };
 
   return (
     <Box
@@ -144,7 +144,8 @@ export function Security() {
           </Box>
         </motion.div>
 
-        <motion.div
+        {/* Botón "Conocer Más" comentado temporalmente hasta definir contenido real */}
+        {/* <motion.div
           initial="hidden"
           whileInView="visible"
           viewport={{ once: true, margin: "-100px" }}
@@ -163,7 +164,7 @@ export function Security() {
           >
             Conocer Más
           </Button>
-        </motion.div>
+        </motion.div> */}
       </Container>
     </Box>
   );

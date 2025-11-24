@@ -6,6 +6,7 @@ import {
   authApi,
   type LoginRequest,
   type RegisterRequest,
+  type UpdateUserRequest,
 } from "@/lib/api/auth";
 import { useAuthStore } from "@/lib/stores/authStore";
 
@@ -111,6 +112,37 @@ export function useLogout() {
       // Incluso si hay error, limpiar estado local
       // (la cookie puede estar ya expirada)
       clearAuth();
+    },
+  });
+}
+
+/**
+ * Mutation para actualizar perfil de usuario
+ * Útil para completar datos después del registro (ej: ubicación de charter)
+ */
+export function useUpdateUserProfile() {
+  const queryClient = useQueryClient();
+  const { updateUser } = useAuthStore();
+
+  return useMutation({
+    mutationFn: ({ userId, data }: { userId: string; data: UpdateUserRequest }) =>
+      authApi.updateUser(userId, data),
+
+    onSuccess: (updatedUser) => {
+      console.log("✅ [useUpdateUserProfile] Perfil actualizado:", updatedUser.name);
+
+      // Actualizar usuario en el store
+      updateUser(updatedUser);
+
+      // Invalidar queries relacionadas con el usuario
+      queryClient.invalidateQueries({ queryKey: ["user"] });
+
+      toast.success("Perfil actualizado exitosamente");
+    },
+
+    onError: (error) => {
+      console.error("❌ [useUpdateUserProfile] Error:", error);
+      toast.error("Error al actualizar perfil");
     },
   });
 }

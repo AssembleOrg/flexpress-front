@@ -97,7 +97,6 @@ export function MessageBubble({
             variant='caption'
             sx={{
               color: isOwn ? 'primary.contrastText' : 'text.secondary',
-              opacity: 0.7,
             }}
           >
             {formatTime(message.createdAt)}
@@ -107,10 +106,7 @@ export function MessageBubble({
             <Typography
               variant='caption'
               sx={{
-                color: message.isRead
-                  ? 'primary.contrastText'
-                  : 'primary.contrastText',
-                opacity: 0.7,
+                color: 'primary.contrastText',
                 fontSize: '0.75rem',
               }}
             >

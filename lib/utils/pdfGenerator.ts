@@ -4,11 +4,11 @@ import type { Trip } from "@/lib/types/api";
 
 // Design system colors
 const COLORS = {
-  bordo: [56, 1, 22], // #380116
-  oro: [220, 166, 33], // #DCA621
-  success: [46, 204, 113], // #2ECC71
-  textGray: [100, 100, 100],
-  textBlack: [0, 0, 0],
+  bordo: [56, 1, 22] as [number, number, number], // #380116
+  oro: [220, 166, 33] as [number, number, number], // #DCA621
+  success: [46, 204, 113] as [number, number, number], // #2ECC71
+  textGray: [100, 100, 100] as [number, number, number],
+  textBlack: [0, 0, 0] as [number, number, number],
 };
 
 /**
@@ -16,8 +16,14 @@ const COLORS = {
  */
 export function generateClientReceipt(trip: Trip) {
   const doc = new jsPDF();
-  // Fix: Fallback to trip object if travelMatch is not populated
-  const match = trip.travelMatch || trip;
+
+  // Validación estricta: travelMatch es requerido
+  if (!trip.travelMatch) {
+    console.error("Trip.travelMatch is missing:", trip);
+    throw new Error("No se puede generar el comprobante: datos del viaje incompletos");
+  }
+
+  const match = trip.travelMatch;
   const userName = trip.user?.name || "Cliente";
 
   // ===== HEADER SECTION =====
@@ -146,8 +152,14 @@ export function generateClientReceipt(trip: Trip) {
  */
 export function generateCharterReceipt(trip: Trip) {
   const doc = new jsPDF();
-  // Fix: Fallback to trip object if travelMatch is not populated
-  const match = trip.travelMatch || trip;
+
+  // Validación estricta: travelMatch es requerido
+  if (!trip.travelMatch) {
+    console.error("Trip.travelMatch is missing:", trip);
+    throw new Error("No se puede generar el comprobante: datos del viaje incompletos");
+  }
+
+  const match = trip.travelMatch;
   const charterName = trip.charter?.name || "Chófer";
 
   // ===== HEADER SECTION =====

@@ -4,17 +4,16 @@ import {
   Avatar,
   Box,
   Button,
-  Chip,
   CircularProgress,
   Dialog,
   DialogActions,
   DialogContent,
   DialogTitle,
-  Rating,
   Stack,
   Typography,
 } from "@mui/material";
 import { Route, AttachMoney } from "@mui/icons-material";
+import { RatingDisplay } from "@/components/ui/RatingDisplay";
 import { useUserFeedback } from "@/lib/hooks/queries/useFeedbackQueries";
 import type { TravelMatch } from "@/lib/types/api";
 
@@ -130,32 +129,13 @@ export function AcceptMatchModal({
                 {match.user?.name || "Cliente"}
               </Typography>
               {/* Rating */}
-              {clientFeedback && clientFeedback.totalFeedbacks > 0 ? (
-                <Box display="flex" alignItems="center" gap={0.5} mt={0.5}>
-                  <Rating
-                    value={clientFeedback.averageRating}
-                    readOnly
-                    size="small"
-                    precision={0.1}
-                    sx={{ fontSize: "1rem" }}
-                  />
-                  <Typography variant="caption" color="text.secondary">
-                    {clientFeedback.averageRating.toFixed(1)} ({clientFeedback.totalFeedbacks})
-                  </Typography>
-                </Box>
-              ) : (
-                <Chip
-                  label="Nuevo"
+              <Box mt={0.5}>
+                <RatingDisplay
+                  averageRating={clientFeedback?.averageRating || 0}
+                  totalReviews={clientFeedback?.totalFeedbacks || 0}
                   size="small"
-                  color="secondary"
-                  sx={{
-                    height: 18,
-                    fontSize: "0.65rem",
-                    fontWeight: 600,
-                    mt: 0.5,
-                  }}
                 />
-              )}
+              </Box>
             </Box>
           </Box>
 

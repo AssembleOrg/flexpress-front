@@ -1,30 +1,38 @@
 "use client";
 
-import { ArrowBack, LocalShipping } from "@mui/icons-material";
+import { ArrowBack, LocalShipping, Map as MapIcon } from "@mui/icons-material";
 import {
   Box,
   Button,
   Card,
   CardContent,
+  Chip,
   CircularProgress,
   Container,
+  IconButton,
   Typography,
 } from "@mui/material";
+import { AnimatePresence, motion } from "framer-motion";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import toast from "react-hot-toast";
-import { geoApi } from "@/lib/api/geo";
 import { AddressInput } from "@/components/ui/AddressInput";
+import { InstructionBanner } from "@/components/ui/InstructionBanner";
 import { LocationChip } from "@/components/ui/LocationChip";
 // biome-ignore lint/suspicious/noShadowRestrictedNames: exported as alias from Map component
 import { Map, type MapHandle } from "@/components/ui/Map";
+import { RouteTimeline } from "@/components/ui/RouteTimeline";
+import { geoApi } from "@/lib/api/geo";
 import { useCreateMatch } from "@/lib/hooks/mutations/useTravelMatchMutations";
 import { useUserMatches } from "@/lib/hooks/queries/useTravelMatchQueries";
 import { useHydrated } from "@/lib/hooks/useHydrated";
 import { useAuthStore } from "@/lib/stores/authStore";
 import { useTravelMatchStore } from "@/lib/stores/travelMatchStore";
 import { isActiveTrip } from "@/lib/utils/matchHelpers";
+
+const MotionCard = motion.create(Card);
+const MotionButton = motion.create(Button);
 
 export default function NewTripPage() {
   const router = useRouter();
@@ -218,80 +226,120 @@ export default function NewTripPage() {
   }
 
   return (
-    <Container maxWidth="md" sx={{ py: 4 }}>
-      {/* Header */}
-      <Box mb={4}>
+    <Container
+      maxWidth="md"
+      sx={{ pt: { xs: 2, md: 4 }, pb: { xs: 12, md: 4 } }}
+    >
+      {/* Header Minimalista */}
+      <motion.div
+        initial={{ opacity: 0, x: -20 }}
+        animate={{ opacity: 1, x: 0 }}
+        transition={{ duration: 0.3 }}
+      >
         <Link href="/client/dashboard">
-          <Button startIcon={<ArrowBack />} variant="outlined" sx={{ mb: 2 }}>
-            Volver al Dashboard
-          </Button>
+          <IconButton
+            sx={{
+              mb: 2,
+              bgcolor: "background.paper",
+              boxShadow: 1,
+              "&:hover": {
+                bgcolor: "background.paper",
+                boxShadow: 3,
+              },
+            }}
+          >
+            <ArrowBack />
+          </IconButton>
         </Link>
-
-        <Box display="flex" alignItems="center" gap={2} mb={2}>
-          <LocalShipping sx={{ fontSize: 32, color: "secondary.main" }} />
-          <Typography variant="h4" component="h1" sx={{ fontWeight: 700 }}>
-            Solicitar Viaje
-          </Typography>
-        </Box>
-
-        <Typography variant="body1" color="text.secondary">
-          Completa los detalles de tu viaje y encontraremos el chófer perfecto
-        </Typography>
-      </Box>
+      </motion.div>
 
       {/* Formulario */}
-      <Card>
+      <MotionCard
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{
+          duration: 0.5,
+          delay: 0.4,
+          type: "spring",
+          stiffness: 100,
+        }}
+      >
         <CardContent sx={{ p: 4 }}>
-          {/* Ubicaciones */}
-          <Typography variant="h6" sx={{ fontWeight: 600, mb: 3 }}>
-            📍 Ubicaciones
-          </Typography>
+          {/* Banner de instrucciones */}
+          <InstructionBanner />
 
-          {/* Origen */}
+          {/* Route Timeline con inputs */}
           <Box sx={{ mb: 3 }}>
-            <AddressInput
-              label="Punto de Recogida"
-              placeholder="Ej: Av. Hipólito Yrigoyen 8985, Buenos Aires"
-              value={pickupAddress || ""}
-              onAddressSelect={(address, lat, lon) => {
-                setPickupLocation(address, { lat, lon });
-                toast.success("Origen seleccionado");
-              }}
-            />
-          </Box>
-
-          {/* Destino */}
-          <Box sx={{ mb: 3 }}>
-            <AddressInput
-              label="Punto de Destino"
-              placeholder="Ej: Calle 13 567, La Plata, Buenos Aires"
-              value={destinationAddress || ""}
-              onAddressSelect={(address, lat, lon) => {
-                setDestinationLocation(address, { lat, lon });
-                toast.success("Destino seleccionado");
-              }}
+            <RouteTimeline
+              originInput={
+                <AddressInput
+                  label=""
+                  placeholder="Ej: Av. Hipólito Yrigoyen 8985, Buenos Aires"
+                  value={pickupAddress || ""}
+                  onAddressSelect={(address, lat, lon) => {
+                    setPickupLocation(address, { lat, lon });
+                    mapRef.current?.centerOnMarker(lat, lon, 15);
+                    toast.success("Origen seleccionado");
+                  }}
+                />
+              }
+              destinationInput={
+                <AddressInput
+                  label=""
+                  placeholder="Ej: Calle 13 567, La Plata, Buenos Aires"
+                  value={destinationAddress || ""}
+                  onAddressSelect={(address, lat, lon) => {
+                    setDestinationLocation(address, { lat, lon });
+                    mapRef.current?.centerOnMarker(lat, lon, 15);
+                    toast.success("Destino seleccionado");
+                  }}
+                />
+              }
             />
           </Box>
 
           {/* Chips informativos con iconos de ubicación */}
-          {(pickupAddress || destinationAddress) && (
-            <Box sx={{ mb: 3, display: "flex", gap: 1, flexWrap: "wrap" }}>
-              {pickupAddress && (
-                <LocationChip
-                  type="pickup"
-                  address={pickupAddress}
-                  onClick={handleCenterOnPickup}
-                />
-              )}
-              {destinationAddress && (
-                <LocationChip
-                  type="destination"
-                  address={destinationAddress}
-                  onClick={handleCenterOnDestination}
-                />
-              )}
-            </Box>
-          )}
+          <AnimatePresence mode="wait">
+            {(pickupAddress || destinationAddress) && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: "auto" }}
+                exit={{ opacity: 0, height: 0 }}
+                transition={{ duration: 0.3 }}
+              >
+                <Box sx={{ mb: 3, display: "flex", gap: 1, flexWrap: "wrap" }}>
+                  {pickupAddress && (
+                    <LocationChip
+                      type="pickup"
+                      address={pickupAddress}
+                      onClick={handleCenterOnPickup}
+                    />
+                  )}
+                  {destinationAddress && (
+                    <LocationChip
+                      type="destination"
+                      address={destinationAddress}
+                      onClick={handleCenterOnDestination}
+                    />
+                  )}
+                  {pickupAddress && destinationAddress && (
+                    <Chip
+                      icon={<MapIcon />}
+                      label="Ver Ruta Completa"
+                      onClick={() => {
+                        mapRef.current?.fitAllMarkers();
+                        toast.success("Mostrando ruta completa");
+                      }}
+                      color="secondary"
+                      variant="outlined"
+                      clickable
+                      sx={{ cursor: 'pointer', fontWeight: 600 }}
+                    />
+                  )}
+                </Box>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
           {/* Mapa */}
           <Box sx={{ mb: 3 }}>
@@ -355,33 +403,77 @@ export default function NewTripPage() {
 
           {/* Botón de búsqueda */}
           <Box textAlign="center">
-            <Button
+            <MotionButton
               variant="contained"
               color="secondary"
               size="large"
               onClick={handleCreateMatch}
               disabled={createMatchMutation.isPending || !isFormComplete}
+              whileHover={
+                !createMatchMutation.isPending && isFormComplete
+                  ? {
+                      scale: 1.05,
+                      y: -2,
+                      boxShadow: "0 12px 28px rgba(220, 166, 33, 0.4)",
+                      transition: { duration: 0.2 },
+                    }
+                  : {}
+              }
+              whileTap={
+                !createMatchMutation.isPending && isFormComplete
+                  ? { scale: 0.98 }
+                  : {}
+              }
+              animate={
+                isFormComplete && !createMatchMutation.isPending
+                  ? {
+                      boxShadow: [
+                        "0 4px 12px rgba(220, 166, 33, 0.3)",
+                        "0 6px 20px rgba(220, 166, 33, 0.5)",
+                        "0 4px 12px rgba(220, 166, 33, 0.3)",
+                      ],
+                    }
+                  : {}
+              }
+              transition={
+                isFormComplete && !createMatchMutation.isPending
+                  ? {
+                      boxShadow: {
+                        duration: 2,
+                        repeat: Number.POSITIVE_INFINITY,
+                        ease: "easeInOut",
+                      },
+                    }
+                  : {}
+              }
               sx={{
-                fontSize: "1.125rem",
-                fontWeight: 600,
-                px: 6,
-                py: 1.5,
-                minWidth: 250,
+                fontSize: { xs: "1.2rem", md: "1.125rem" },
+                fontWeight: 700,
+                px: { xs: 4, md: 6 },
+                py: { xs: 2, md: 1.75 },
+                minWidth: { xs: "100%", md: 280 },
+                borderRadius: 3,
               }}
             >
               {createMatchMutation.isPending
                 ? "Buscando chóferes..."
                 : "Buscar Chóferes"}
-            </Button>
+            </MotionButton>
 
-            <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
-              {!isFormComplete
-                ? "Selecciona origen y destino para continuar"
-                : "Se buscarán chóferes disponibles en tu área"}
-            </Typography>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.8 }}
+            >
+              <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
+                {!isFormComplete
+                  ? "Selecciona origen y destino para continuar"
+                  : "Se buscarán chóferes disponibles en tu área"}
+              </Typography>
+            </motion.div>
           </Box>
         </CardContent>
-      </Card>
+      </MotionCard>
     </Container>
   );
 }

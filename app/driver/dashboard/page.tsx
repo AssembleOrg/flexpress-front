@@ -1,12 +1,11 @@
 "use client";
 
-import { useQueryClient } from "@tanstack/react-query";
 import {
   Assignment,
   Chat,
-  Person,
-  LocationOn,
   Flag,
+  LocationOn,
+  Person,
 } from "@mui/icons-material";
 import {
   Box,
@@ -20,22 +19,28 @@ import {
   Switch,
   Typography,
 } from "@mui/material";
+import { useQueryClient } from "@tanstack/react-query";
+import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import toast from "react-hot-toast";
-import { MobileContainer } from "@/components/layout/MobileContainer";
 import { MobileMatchCard } from "@/components/cards/MobileMatchCard";
+import { MobileContainer } from "@/components/layout/MobileContainer";
 import { MatchExpirationTimer } from "@/components/MatchExpirationTimer";
 import { AcceptMatchModal } from "@/components/modals/AcceptMatchModal";
+import { WelcomeHeader } from "@/components/ui/WelcomeHeader";
 import {
   useRespondToMatch,
   useToggleAvailability,
 } from "@/lib/hooks/mutations/useTravelMatchMutations";
-import { useCharterMatches } from "@/lib/hooks/queries/useTravelMatchQueries";
 import { queryKeys } from "@/lib/hooks/queries/queryFactory";
+import { useCharterMatches } from "@/lib/hooks/queries/useTravelMatchQueries";
+import { useAuthStore } from "@/lib/stores/authStore";
 import type { TravelMatch } from "@/lib/types/api";
 import { isMatchExpired } from "@/lib/utils/matchHelpers";
-import { useAuthStore } from "@/lib/stores/authStore";
+
+const MotionCard = motion.create(Card);
+const MotionBox = motion.create(Box);
 
 export default function DriverDashboard() {
   const router = useRouter();
@@ -107,8 +112,14 @@ export default function DriverDashboard() {
 
   return (
     <MobileContainer withBottomNav>
+      {/* Welcome Header */}
+      <WelcomeHeader userName={user?.name} userRole="charter" />
+
       {/* Status Toggle - Mobile-First */}
-      <Card
+      <MotionCard
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, delay: 0.1 }}
         sx={{
           mb: 3,
           overflow: "visible",
@@ -174,11 +185,18 @@ export default function DriverDashboard() {
               : "Actívate para empezar a ganar"}
           </Typography>
         </CardContent>
-      </Card>
+      </MotionCard>
 
       {/* Credits Summary */}
       {isAvailable && (
-        <Box display="flex" gap={2} mb={3}>
+        <MotionBox
+          display="flex"
+          gap={2}
+          mb={3}
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.4, delay: 0.2, type: "spring" }}
+        >
           <Card sx={{ flex: 1, p: 2, textAlign: "center" }}>
             <Typography
               variant="h6"
@@ -202,12 +220,16 @@ export default function DriverDashboard() {
               Ver Historial
             </Button>
           </Card>
-        </Box>
+        </MotionBox>
       )}
 
       {/* Pending Match Requests */}
       {isAvailable && (
-        <Box mb={3}>
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.5, delay: 0.3 }}
+        >
           <Box
             display="flex"
             justifyContent="space-between"
@@ -300,7 +322,7 @@ export default function DriverDashboard() {
               </CardContent>
             </Card>
           )}
-        </Box>
+        </motion.div>
       )}
 
       {/* Active Conversations Section */}
@@ -357,26 +379,53 @@ export default function DriverDashboard() {
                     gap={2}
                   >
                     <Box flex={1}>
-                      <Typography variant="subtitle2" sx={{ fontWeight: 700, display: "flex", alignItems: "center", gap: 0.5 }}>
-                        <Person fontSize="small" sx={{ color: "primary.main" }} />
+                      <Typography
+                        variant="subtitle2"
+                        sx={{
+                          fontWeight: 700,
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 0.5,
+                        }}
+                      >
+                        <Person
+                          fontSize="small"
+                          sx={{ color: "primary.main" }}
+                        />
                         {match.user?.name}
                       </Typography>
                       <Typography
                         variant="caption"
                         color="text.secondary"
                         display="block"
-                        sx={{ mb: 0.5, display: "flex", alignItems: "flex-start", gap: 0.5 }}
+                        sx={{
+                          mb: 0.5,
+                          display: "flex",
+                          alignItems: "flex-start",
+                          gap: 0.5,
+                        }}
                       >
-                        <LocationOn fontSize="small" sx={{ color: "primary.main", mt: 0.1 }} />
+                        <LocationOn
+                          fontSize="small"
+                          sx={{ color: "primary.main", mt: 0.1 }}
+                        />
                         {match.pickupAddress}
                       </Typography>
                       <Typography
                         variant="caption"
                         color="text.secondary"
                         display="block"
-                        sx={{ fontWeight: 600, display: "flex", alignItems: "flex-start", gap: 0.5 }}
+                        sx={{
+                          fontWeight: 600,
+                          display: "flex",
+                          alignItems: "flex-start",
+                          gap: 0.5,
+                        }}
                       >
-                        <Flag fontSize="small" sx={{ color: "secondary.main", mt: 0.1 }} />
+                        <Flag
+                          fontSize="small"
+                          sx={{ color: "secondary.main", mt: 0.1 }}
+                        />
                         {match.destinationAddress}
                       </Typography>
                     </Box>
@@ -495,7 +544,9 @@ export default function DriverDashboard() {
 
               // Now redirect to the chat page
               // The conversation should now be available in the cached data
-              router.push(`/driver/trips/matching/${selectedMatchForAccept?.id}`);
+              router.push(
+                `/driver/trips/matching/${selectedMatchForAccept?.id}`,
+              );
             } catch (error) {
               console.error("❌ Error accepting match:", error);
               toast.error("Error al aceptar solicitud. Intenta de nuevo.");

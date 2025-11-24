@@ -29,11 +29,11 @@ interface LeafletMapProps {
   ) => void;
   allowDragging?: boolean;
   disableInteraction?: boolean; // Deshabilita zoom, pan, y toda interacción (solo lectura)
-  autoFitBounds?: boolean; // Si true, ejecuta fitBounds automáticamente (default: true)
 }
 
 export interface LeafletMapHandle {
   centerOnMarker: (lat: number, lon: number, zoom?: number) => void;
+  fitAllMarkers: () => void;
 }
 
 // Custom marker icons
@@ -88,7 +88,6 @@ const LeafletMap = forwardRef<LeafletMapHandle, LeafletMapProps>(
       onMarkerDrag,
       allowDragging = false,
       disableInteraction = false,
-      autoFitBounds = true,
     },
     ref,
   ) => {
@@ -97,7 +96,6 @@ const LeafletMap = forwardRef<LeafletMapHandle, LeafletMapProps>(
     const markersRef = useRef<L.Marker[]>([]);
     const polylineRef = useRef<L.Polyline | null>(null);
     const [isMapReady, setIsMapReady] = useState(false);
-    const hasInitialFitBounds = useRef(false); // Track si ya se hizo fitBounds inicial
 
     // Expose methods to parent component
     useImperativeHandle(ref, () => ({
@@ -108,6 +106,22 @@ const LeafletMap = forwardRef<LeafletMapHandle, LeafletMapProps>(
           duration: 0.8,
           easeLinearity: 0.25,
         });
+      },
+      fitAllMarkers: () => {
+        if (!mapRef.current || markersRef.current.length === 0) return;
+
+        const bounds = L.latLngBounds([]);
+        markersRef.current.forEach((marker) => {
+          bounds.extend(marker.getLatLng());
+        });
+
+        if (bounds.isValid() && markersRef.current.length > 1) {
+          mapRef.current.fitBounds(bounds, {
+            padding: [50, 50],
+            maxZoom: 15,
+            animate: true, // With animation for manual call
+          });
+        }
       },
     }));
 
@@ -121,7 +135,7 @@ const LeafletMap = forwardRef<LeafletMapHandle, LeafletMapProps>(
         // Create map centered on Argentina (Buenos Aires area)
         // High zoom level (18) to show individual buildings for precision selection
         mapRef.current = L.map(containerRef.current, {
-          minZoom: 16, // Prevent zooming out too far for better precision
+          minZoom: 5, // Allow zoom out for route visualization (50+ km)
           maxZoom: 20, // Allow higher zoom levels
           // Deshabilitar interacción si disableInteraction={true}
           scrollWheelZoom: !disableInteraction,
@@ -229,26 +243,6 @@ const LeafletMap = forwardRef<LeafletMapHandle, LeafletMapProps>(
         markersRef.current.push(leafletMarker);
       });
 
-      // Fit map to markers with padding
-      // Si autoFitBounds=true: SIEMPRE fitBounds (útil para vista informativa)
-      // Si autoFitBounds=false: Solo fitBounds la PRIMERA vez, luego mantener vista del usuario
-      const shouldFitBounds = autoFitBounds || !hasInitialFitBounds.current;
-
-      if (shouldFitBounds && markers.length > 0) {
-        if (markers.length === 1) {
-          // For single marker, set zoom level
-          mapRef.current.setView([markers[0].lat, markers[0].lon], 14);
-        } else {
-          // For multiple markers, fit bounds con padding
-          // SIN maxZoom para permitir zoom out necesario (50km, 100km, etc)
-          mapRef.current.fitBounds(bounds, {
-            padding: [80, 80],
-          });
-        }
-        // Marcar que ya se hizo el fitBounds inicial
-        hasInitialFitBounds.current = true;
-      }
-
       // Draw polyline connecting markers if there are multiple
       if (markers.length > 1) {
         const polylineCoords = markers.map(
@@ -261,7 +255,23 @@ const LeafletMap = forwardRef<LeafletMapHandle, LeafletMapProps>(
           dashArray: "5, 5",
         }).addTo(mapRef.current);
       }
-    }, [markers, isMapReady, allowDragging, autoFitBounds, onMarkerDrag]);
+
+      // Fit bounds to show all markers
+      if (bounds.isValid() && markers.length > 1) {
+        setTimeout(() => {
+          if (!mapRef.current) return;
+          mapRef.current.invalidateSize(); // Ensure dimensions are correct
+          mapRef.current.fitBounds(bounds, {
+            padding: [50, 50], // 50px padding on all sides
+            maxZoom: 15, // Don't zoom in too close
+            animate: false, // No animation on initial load
+          });
+        }, 100);
+      } else if (markers.length === 1) {
+        // If only one marker, center on it
+        mapRef.current?.setView([markers[0].lat, markers[0].lon], 15);
+      }
+    }, [markers, isMapReady, allowDragging, onMarkerDrag]);
 
     if (isLoading) {
       return (
