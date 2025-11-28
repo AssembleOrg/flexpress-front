@@ -24,10 +24,14 @@ import { useSearchParams } from "next/navigation";
 import { Suspense, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
+import { motion } from "framer-motion";
 import { AddressInput } from "@/components/ui/AddressInput";
+import { DniUpload } from "@/components/ui/DniUpload";
 import Logo from "@/components/ui/Logo";
 import { PageTransition } from "@/components/ui/PageTransition";
 import { useRegister } from "@/lib/hooks/mutations/useAuthMutations";
+import { useUpdateDniUrls } from "@/lib/hooks/mutations/useUpdateDniUrls";
+import { uploadFiles } from "@/lib/uploadthing";
 
 const registerSchema = z
   .object({
@@ -52,8 +56,12 @@ function RegisterFormContent() {
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [originAddress, setOriginAddress] = useState("");
   const [originCoords, setOriginCoords] = useState<{ lat: number; lon: number } | null>(null);
+  const [dniFront, setDniFront] = useState<File | null>(null);
+  const [dniBack, setDniBack] = useState<File | null>(null);
+  const [dniError, setDniError] = useState("");
   const searchParams = useSearchParams();
   const registerMutation = useRegister();
+  const updateDniUrlsMutation = useUpdateDniUrls();
 
   // Determine transition direction based on redirect parameter
   const getTransitionDirection = (): "left" | "right" | "default" => {
@@ -74,7 +82,18 @@ function RegisterFormContent() {
     resolver: zodResolver(registerSchema),
   });
 
-  const onSubmit = (data: RegisterForm) => {
+  const onSubmit = async (data: RegisterForm) => {
+    console.log("🔍 [DEBUG] onSubmit iniciado");
+    console.log("   userRole:", userRole);
+    console.log("   dniFront:", dniFront?.name);
+    console.log("   dniBack:", dniBack?.name);
+
+    // Validar DNI FILES para charters (NO URLs)
+    if (userRole === "driver" && (!dniFront || !dniBack)) {
+      setDniError("Debes seleccionar ambas caras del DNI");
+      return;
+    }
+
     const registerData = {
       email: data.email,
       password: data.password,
@@ -93,14 +112,60 @@ function RegisterFormContent() {
     };
 
     console.log("📝 [RegisterForm] Triggering mutation...");
-    console.log("   Email:", data.email);
-    console.log("   Role:", registerData.role);
-    if (userRole === "driver") {
-      console.log("   Origin Address:", originAddress);
-      console.log("   Origin Coords:", originCoords);
-    }
+    console.log("   registerData:", JSON.stringify(registerData, null, 2));
 
-    registerMutation.mutate(registerData);
+    try {
+      // PASO 1: Registrar usuario
+      const user = await registerMutation.mutateAsync(registerData);
+
+      console.log("✅ [DEBUG] Usuario registrado:");
+      console.log("   user object:", JSON.stringify(user, null, 2));
+      console.log("   user.user:", user?.user);
+      console.log("   user.user.id:", user?.user?.id);
+
+      // PASO 2: VERIFICAR CONDICIÓN
+      const condition = userRole === "driver" && dniFront && dniBack && user;
+      console.log("🔍 [DEBUG] Verificando condición para upload:");
+      console.log("   userRole === 'driver':", userRole === "driver");
+      console.log("   dniFront exists:", !!dniFront);
+      console.log("   dniBack exists:", !!dniBack);
+      console.log("   user exists:", !!user);
+      console.log("   user.user exists:", !!user?.user);
+      console.log("   Condición completa:", condition);
+
+      // PASO 2: Si es charter, subir DNI a UploadThing (CON userId)
+      if (condition) {
+        console.log("📤 [RegisterForm] Uploading DNI files with userId:", user.user.id);
+
+        // Upload files con userId en metadata
+        const uploadedFiles = await uploadFiles("dniUploader", {
+          files: [dniFront, dniBack],
+          input: { userId: user.user.id },
+        });
+
+        console.log("✅ [RegisterForm] Files uploaded:");
+        console.log("   URLs:", uploadedFiles.map(f => f.url));
+        console.log("   Front URL:", uploadedFiles[0].url);
+        console.log("   Back URL:", uploadedFiles[1].url);
+
+        // PASO 3: Guardar URLs en DB
+        console.log("💾 [RegisterForm] Saving URLs to DB...");
+        const updateResult = await updateDniUrlsMutation.mutateAsync({
+          userId: user.user.id,
+          documentationFrontUrl: uploadedFiles[0].url,
+          documentationBackUrl: uploadedFiles[1].url,
+        });
+
+        console.log("✅ [RegisterForm] URLs saved to DB:", updateResult);
+      } else {
+        console.log("❌ [DEBUG] Condición NO cumplida - NO se subirán archivos");
+      }
+    } catch (error) {
+      console.error("❌ [RegisterForm] Error completo:", error);
+      console.error("   Error type:", typeof error);
+      console.error("   Error message:", (error as any)?.message);
+      console.error("   Error stack:", (error as any)?.stack);
+    }
   };
 
   const handleRoleChange = (
@@ -177,7 +242,7 @@ function RegisterFormContent() {
             px: 2,
           }}
         >
-          <Container maxWidth="md" sx={{ py: { xs: 4, md: 6 } }}>
+          <Container maxWidth="sm" sx={{ py: { xs: 4, md: 6 } }}>
             <Card
               elevation={0}
               sx={{
@@ -188,7 +253,7 @@ function RegisterFormContent() {
                 boxShadow: "0 8px 32px rgba(0, 0, 0, 0.1)",
               }}
             >
-              <CardContent sx={{ p: { xs: 3, md: 4 } }}>
+              <CardContent sx={{ p: { xs: 2, md: 4 } }}>
                 {/* Título */}
                 <Box textAlign="center" mb={4}>
                   <Typography
@@ -203,30 +268,36 @@ function RegisterFormContent() {
                   </Typography>
 
                   {/* Selector de rol */}
-                  <ToggleButtonGroup
-                    value={userRole}
-                    exclusive
-                    onChange={handleRoleChange}
-                    aria-label="tipo de usuario"
-                    sx={{ mb: 3 }}
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.3, delay: 0, ease: "easeOut" }}
                   >
-                    <ToggleButton
-                      value="client"
-                      aria-label="cliente"
-                      sx={{ px: 3 }}
+                    <ToggleButtonGroup
+                      value={userRole}
+                      exclusive
+                      onChange={handleRoleChange}
+                      aria-label="tipo de usuario"
+                      sx={{ mb: 3 }}
                     >
-                      <Person sx={{ mr: 1 }} />
-                      Soy Cliente
-                    </ToggleButton>
-                    <ToggleButton
-                      value="driver"
-                      aria-label="conductor"
-                      sx={{ px: 3 }}
-                    >
-                      <DriveEta sx={{ mr: 1 }} />
-                      Soy Conductor
-                    </ToggleButton>
-                  </ToggleButtonGroup>
+                      <ToggleButton
+                        value="client"
+                        aria-label="cliente"
+                        sx={{ px: 3 }}
+                      >
+                        <Person sx={{ mr: 1 }} />
+                        Soy Cliente
+                      </ToggleButton>
+                      <ToggleButton
+                        value="driver"
+                        aria-label="conductor"
+                        sx={{ px: 3 }}
+                      >
+                        <DriveEta sx={{ mr: 1 }} />
+                        Soy Conductor
+                      </ToggleButton>
+                    </ToggleButtonGroup>
+                  </motion.div>
 
                   <Typography variant="body2" color="text.secondary" mb={2}>
                     {userRole === "client"
@@ -246,140 +317,224 @@ function RegisterFormContent() {
 
                 {/* Formulario */}
                 <Box component="form" onSubmit={handleSubmit(onSubmit)}>
-                  <TextField
-                    {...register("name")}
-                    label="Nombre Completo"
-                    fullWidth
-                    margin="normal"
-                    error={!!errors.name}
-                    helperText={errors.name?.message}
-                    placeholder="Ej: María García"
-                  />
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.3, delay: 0.08, ease: "easeOut" }}
+                  >
+                    <TextField
+                      {...register("name")}
+                      label="Nombre Completo"
+                      fullWidth
+                      margin="normal"
+                      error={!!errors.name}
+                      helperText={errors.name?.message}
+                      placeholder="Ej: María García"
+                    />
+                  </motion.div>
 
-                  <TextField
-                    {...register("email")}
-                    label="Email"
-                    type="email"
-                    fullWidth
-                    margin="normal"
-                    error={!!errors.email}
-                    helperText={errors.email?.message}
-                  />
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.3, delay: 0.16, ease: "easeOut" }}
+                  >
+                    <TextField
+                      {...register("email")}
+                      label="Email"
+                      type="email"
+                      fullWidth
+                      margin="normal"
+                      error={!!errors.email}
+                      helperText={errors.email?.message}
+                    />
+                  </motion.div>
 
-                  <TextField
-                    {...register("number")}
-                    label="Teléfono"
-                    type="tel"
-                    fullWidth
-                    margin="normal"
-                    error={!!errors.number}
-                    helperText={errors.number?.message}
-                    placeholder="Ej: +54 9 11 1234-5678"
-                  />
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.3, delay: 0.24, ease: "easeOut" }}
+                  >
+                    <TextField
+                      {...register("number")}
+                      label="Teléfono"
+                      type="tel"
+                      fullWidth
+                      margin="normal"
+                      error={!!errors.number}
+                      helperText={errors.number?.message}
+                      placeholder="Ej: +54 9 11 1234-5678"
+                    />
+                  </motion.div>
 
-                  <TextField
-                    {...register("address")}
-                    label="Dirección"
-                    fullWidth
-                    margin="normal"
-                    error={!!errors.address}
-                    helperText={errors.address?.message}
-                    placeholder="Ej: Av. San Martín 123, Buenos Aires"
-                  />
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.3, delay: 0.32, ease: "easeOut" }}
+                  >
+                    <TextField
+                      {...register("address")}
+                      label="Dirección"
+                      fullWidth
+                      margin="normal"
+                      error={!!errors.address}
+                      helperText={errors.address?.message}
+                      placeholder="Ej: Av. San Martín 123, Buenos Aires"
+                    />
+                  </motion.div>
 
                   {/* Campo adicional para conductores: Ubicación de operaciones */}
                   {userRole === "driver" && (
-                    <Box sx={{ mt: 2, mb: 1 }}>
-                      <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1, fontWeight: 600 }}>
-                        Ubicación de Operaciones
-                      </Typography>
-                      <AddressInput
-                        label="¿Desde dónde operas habitualmente?"
-                        placeholder="Ej: Av. Corrientes 1234, CABA"
-                        value={originAddress}
-                        onAddressSelect={(address, lat, lon) => {
-                          setOriginAddress(address);
-                          setOriginCoords({ lat, lon });
-                        }}
-                        helperText={
-                          originCoords
-                            ? "✓ Ubicación establecida - Aparecerás en búsquedas cercanas"
-                            : "Necesario para aparecer en búsquedas de clientes cercanos"
-                        }
-                        error={!originCoords && registerMutation.isError}
-                      />
-                    </Box>
+                    <motion.div
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.3, delay: 0.4, ease: "easeOut" }}
+                    >
+                      <Box sx={{ mt: 2, mb: 1 }}>
+                        <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1, fontWeight: 600 }}>
+                          Ubicación de Operaciones
+                        </Typography>
+                        <AddressInput
+                          label="¿Desde dónde operas habitualmente?"
+                          placeholder="Ej: Av. Corrientes 1234, CABA"
+                          value={originAddress}
+                          onAddressSelect={(address, lat, lon) => {
+                            setOriginAddress(address);
+                            setOriginCoords({ lat, lon });
+                          }}
+                          helperText={
+                            originCoords
+                              ? "✓ Ubicación establecida - Aparecerás en búsquedas cercanas"
+                              : "Necesario para aparecer en búsquedas de clientes cercanos"
+                          }
+                          error={!originCoords && registerMutation.isError}
+                        />
+                      </Box>
+                    </motion.div>
                   )}
 
-                  <Box display="flex" gap={2} sx={{ mt: 2 }}>
-                    <TextField
-                      {...register("password")}
-                      label="Contraseña"
-                      type="password"
-                      fullWidth
-                      error={!!errors.password}
-                      helperText={errors.password?.message}
-                    />
-                    <TextField
-                      {...register("confirmPassword")}
-                      label="Confirmar Contraseña"
-                      type="password"
-                      fullWidth
-                      error={!!errors.confirmPassword}
-                      helperText={errors.confirmPassword?.message}
-                    />
-                  </Box>
+                  {/* Campo adicional para conductores: DNI */}
+                  {userRole === "driver" && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.3, delay: 0.48, ease: "easeOut" }}
+                    >
+                      <DniUpload
+                        onFilesSelected={(front, back) => {
+                          setDniFront(front);
+                          setDniBack(back);
+                          if (front && back) setDniError("");
+                        }}
+                        error={dniError}
+                      />
+                    </motion.div>
+                  )}
+
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.3, delay: userRole === "driver" ? 0.56 : 0.4, ease: "easeOut" }}
+                  >
+                    <Box
+                      display="flex"
+                      gap={2}
+                      sx={{
+                        mt: 2,
+                        flexDirection: { xs: 'column', md: 'row' }
+                      }}
+                    >
+                      <TextField
+                        {...register("password")}
+                        label="Contraseña"
+                        type="password"
+                        fullWidth
+                        error={!!errors.password}
+                        helperText={errors.password?.message}
+                      />
+                      <TextField
+                        {...register("confirmPassword")}
+                        label="Confirmar Contraseña"
+                        type="password"
+                        fullWidth
+                        error={!!errors.confirmPassword}
+                        helperText={errors.confirmPassword?.message}
+                      />
+                    </Box>
+                  </motion.div>
 
                   {/* Terms and Conditions Checkbox */}
-                  <FormControlLabel
-                    control={
-                      <Checkbox
-                        checked={acceptedTerms}
-                        onChange={(e) => setAcceptedTerms(e.target.checked)}
-                        color="primary"
-                      />
-                    }
-                    label={
-                      <Typography variant="body2">
-                        Acepto los{" "}
-                        <Link
-                          href="/terminos-y-condiciones"
-                          target="_blank"
-                          style={{ color: "#DCA621", textDecoration: "none" }}
-                        >
-                          <span
-                            style={{
-                              textDecoration: "underline",
-                              cursor: "pointer",
-                            }}
-                          >
-                            términos y condiciones
-                          </span>
-                        </Link>
-                      </Typography>
-                    }
-                    sx={{ mt: 2, mb: 2 }}
-                  />
-
-                  <Button
-                    type="submit"
-                    variant="contained"
-                    color="secondary"
-                    fullWidth
-                    size="large"
-                    disabled={registerMutation.isPending || !acceptedTerms}
-                    sx={{
-                      py: 1.5,
-                      fontSize: "1.125rem",
-                      fontWeight: 600,
-                      mt: 2,
-                      mb: 3,
-                    }}
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.3, delay: userRole === "driver" ? 0.64 : 0.48, ease: "easeOut" }}
                   >
-                    {registerMutation.isPending
-                      ? "Creando cuenta..."
-                      : "Registrarse"}
-                  </Button>
+                    <FormControlLabel
+                      control={
+                        <Checkbox
+                          checked={acceptedTerms}
+                          onChange={(e) => setAcceptedTerms(e.target.checked)}
+                          color="primary"
+                        />
+                      }
+                      label={
+                        <Typography variant="body2">
+                          Acepto los{" "}
+                          <Link
+                            href="/terminos-y-condiciones"
+                            target="_blank"
+                            style={{ color: "#DCA621", textDecoration: "none" }}
+                          >
+                            <span
+                              style={{
+                                textDecoration: "underline",
+                                cursor: "pointer",
+                              }}
+                            >
+                              términos y condiciones
+                            </span>
+                          </Link>
+                        </Typography>
+                      }
+                      sx={{ mt: 2, mb: 2 }}
+                    />
+                  </motion.div>
+
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.3, delay: userRole === "driver" ? 0.72 : 0.56, ease: "easeOut" }}
+                  >
+                    <motion.div
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      transition={{ duration: 0.2 }}
+                    >
+                    <Button
+                      type="submit"
+                      variant="contained"
+                      color="secondary"
+                      fullWidth
+                      size="large"
+                      disabled={
+                        registerMutation.isPending ||
+                        updateDniUrlsMutation.isPending ||
+                        !acceptedTerms ||
+                        (userRole === "driver" && (!dniFront || !dniBack))
+                      }
+                      sx={{
+                        py: 1.5,
+                        fontSize: "1.125rem",
+                        fontWeight: 600,
+                        mt: 2,
+                        mb: 3,
+                      }}
+                    >
+                      {registerMutation.isPending || updateDniUrlsMutation.isPending
+                        ? "Creando cuenta..."
+                        : "Registrarse"}
+                    </Button>
+                    </motion.div>
+                  </motion.div>
                 </Box>
 
                 {/* Enhanced Footer */}

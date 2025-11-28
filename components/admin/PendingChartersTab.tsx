@@ -18,6 +18,7 @@ import {
   CircularProgress,
   Alert,
   Link,
+  IconButton,
 } from "@mui/material";
 import {
   CheckCircle as ApproveIcon,
@@ -26,6 +27,10 @@ import {
   Phone as PhoneIcon,
   LocationOn as LocationIcon,
   Description as DocumentIcon,
+  Close as CloseIcon,
+  ZoomIn as ZoomInIcon,
+  OpenInNew as OpenInNewIcon,
+  AttachFile as AttachFileIcon,
 } from "@mui/icons-material";
 import { usePendingCharters } from "@/lib/hooks/queries/useAdminQueries";
 import { useVerifyCharter } from "@/lib/hooks/mutations/useAdminMutations";
@@ -38,6 +43,13 @@ export function PendingChartersTab() {
   const [selectedCharter, setSelectedCharter] = useState<User | null>(null);
   const [rejectDialogOpen, setRejectDialogOpen] = useState(false);
   const [rejectionReason, setRejectionReason] = useState("");
+
+  // Estado para lazy loading de imágenes
+  const [expandedCharterId, setExpandedCharterId] = useState<string | null>(null);
+
+  // Estados para el modal de imágenes DNI (ambas imágenes)
+  const [imageModalOpen, setImageModalOpen] = useState(false);
+  const [selectedCharterForModal, setSelectedCharterForModal] = useState<User | null>(null);
 
   const handleApprove = async (charter: User) => {
     await verifyMutation.mutateAsync({
@@ -64,6 +76,15 @@ export function PendingChartersTab() {
     setRejectDialogOpen(false);
     setSelectedCharter(null);
     setRejectionReason("");
+  };
+
+  const handleToggleImages = (charterId: string) => {
+    setExpandedCharterId(prev => prev === charterId ? null : charterId);
+  };
+
+  const handleImageClick = (charter: User) => {
+    setSelectedCharterForModal(charter);
+    setImageModalOpen(true);
   };
 
   if (isLoading) {
@@ -172,40 +193,209 @@ export function PendingChartersTab() {
                   </Box>
                 </Stack>
 
-                {/* Documentation Links */}
-                <Stack spacing={1} minWidth={200}>
+                {/* DNI Images - Lazy Loading */}
+                <Stack spacing={2} minWidth={300}>
                   <Typography variant="subtitle2" color="text.secondary">
-                    Documentación:
+                    Documentación DNI:
                   </Typography>
-                  {charter.documentationFrontUrl ? (
-                    <Link
-                      href={charter.documentationFrontUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      sx={{ display: "flex", alignItems: "center", gap: 0.5 }}
-                    >
-                      <DocumentIcon fontSize="small" />
-                      Ver documento (frente)
-                    </Link>
+
+                  {expandedCharterId === charter.id ? (
+                    // Mostrar imágenes (solo cuando se expandió)
+                    <>
+                      <Box sx={{ display: "flex", gap: 2 }}>
+                        {/* Front */}
+                        {charter.documentationFrontUrl ? (
+                          <Box sx={{ flex: 1 }}>
+                            <Typography variant="caption" display="block" gutterBottom>
+                              Frente
+                            </Typography>
+                            <Box
+                              onClick={() => handleImageClick(charter)}
+                              sx={{
+                                cursor: "pointer",
+                                position: "relative",
+                                "&:hover": {
+                                  opacity: 0.8,
+                                  "& .overlay": {
+                                    opacity: 1,
+                                  },
+                                },
+                              }}
+                            >
+                              <img
+                                src={charter.documentationFrontUrl}
+                                alt="DNI Frente"
+                                style={{
+                                  width: "100%",
+                                  maxHeight: 120,
+                                  objectFit: "cover",
+                                  borderRadius: 4,
+                                  border: "1px solid #ddd",
+                                }}
+                              />
+                              <Box
+                                className="overlay"
+                                sx={{
+                                  position: "absolute",
+                                  top: 0,
+                                  left: 0,
+                                  right: 0,
+                                  bottom: 0,
+                                  bgcolor: "rgba(0, 0, 0, 0.5)",
+                                  display: "flex",
+                                  alignItems: "center",
+                                  justifyContent: "center",
+                                  borderRadius: 1,
+                                  opacity: 0,
+                                  transition: "opacity 0.2s",
+                                }}
+                              >
+                                <ZoomInIcon sx={{ color: "white", fontSize: 32 }} />
+                              </Box>
+                            </Box>
+                          </Box>
+                        ) : (
+                          <Box sx={{ flex: 1 }}>
+                            <Typography variant="caption" display="block" gutterBottom color="text.secondary">
+                              Frente
+                            </Typography>
+                            <Box
+                              sx={{
+                                border: "2px dashed",
+                                borderColor: "error.light",
+                                borderRadius: 1,
+                                p: 2,
+                                textAlign: "center",
+                                bgcolor: "error.lighter",
+                                minHeight: 120,
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                              }}
+                            >
+                              <Stack spacing={1} alignItems="center">
+                                <DocumentIcon sx={{ fontSize: 32, color: "error.main" }} />
+                                <Typography variant="caption" color="error.main" fontWeight={600}>
+                                  Sin documento frontal
+                                </Typography>
+                              </Stack>
+                            </Box>
+                          </Box>
+                        )}
+
+                        {/* Back */}
+                        {charter.documentationBackUrl ? (
+                          <Box sx={{ flex: 1 }}>
+                            <Typography variant="caption" display="block" gutterBottom>
+                              Dorso
+                            </Typography>
+                            <Box
+                              onClick={() => handleImageClick(charter)}
+                              sx={{
+                                cursor: "pointer",
+                                position: "relative",
+                                "&:hover": {
+                                  opacity: 0.8,
+                                  "& .overlay": {
+                                    opacity: 1,
+                                  },
+                                },
+                              }}
+                            >
+                              <img
+                                src={charter.documentationBackUrl}
+                                alt="DNI Dorso"
+                                style={{
+                                  width: "100%",
+                                  maxHeight: 120,
+                                  objectFit: "cover",
+                                  borderRadius: 4,
+                                  border: "1px solid #ddd",
+                                }}
+                              />
+                              <Box
+                                className="overlay"
+                                sx={{
+                                  position: "absolute",
+                                  top: 0,
+                                  left: 0,
+                                  right: 0,
+                                  bottom: 0,
+                                  bgcolor: "rgba(0, 0, 0, 0.5)",
+                                  display: "flex",
+                                  alignItems: "center",
+                                  justifyContent: "center",
+                                  borderRadius: 1,
+                                  opacity: 0,
+                                  transition: "opacity 0.2s",
+                                }}
+                              >
+                                <ZoomInIcon sx={{ color: "white", fontSize: 32 }} />
+                              </Box>
+                            </Box>
+                          </Box>
+                        ) : (
+                          <Box sx={{ flex: 1 }}>
+                            <Typography variant="caption" display="block" gutterBottom color="text.secondary">
+                              Dorso
+                            </Typography>
+                            <Box
+                              sx={{
+                                border: "2px dashed",
+                                borderColor: "error.light",
+                                borderRadius: 1,
+                                p: 2,
+                                textAlign: "center",
+                                bgcolor: "error.lighter",
+                                minHeight: 120,
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                              }}
+                            >
+                              <Stack spacing={1} alignItems="center">
+                                <DocumentIcon sx={{ fontSize: 32, color: "error.main" }} />
+                                <Typography variant="caption" color="error.main" fontWeight={600}>
+                                  Sin documento dorsal
+                                </Typography>
+                              </Stack>
+                            </Box>
+                          </Box>
+                        )}
+                      </Box>
+
+                      {/* Botón para ocultar imágenes */}
+                      <Button
+                        variant="text"
+                        size="small"
+                        onClick={() => setExpandedCharterId(null)}
+                        sx={{ alignSelf: "flex-start" }}
+                      >
+                        Ocultar Imágenes
+                      </Button>
+                    </>
                   ) : (
-                    <Typography variant="body2" color="text.secondary">
-                      Sin documento frontal
-                    </Typography>
-                  )}
-                  {charter.documentationBackUrl ? (
-                    <Link
-                      href={charter.documentationBackUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      sx={{ display: "flex", alignItems: "center", gap: 0.5 }}
+                    // Mostrar botón para cargar imágenes
+                    <Button
+                      variant="outlined"
+                      startIcon={<AttachFileIcon />}
+                      onClick={() => handleToggleImages(charter.id)}
+                      size="small"
+                      sx={{
+                        alignSelf: "flex-start",
+                        borderColor: charter.documentationFrontUrl || charter.documentationBackUrl ? "success.main" : "divider",
+                        color: charter.documentationFrontUrl || charter.documentationBackUrl ? "success.main" : "text.primary",
+                        "&:hover": {
+                          borderColor: charter.documentationFrontUrl || charter.documentationBackUrl ? "success.dark" : "primary.main",
+                          bgcolor: charter.documentationFrontUrl || charter.documentationBackUrl ? "success.lighter" : "action.hover",
+                        },
+                      }}
                     >
-                      <DocumentIcon fontSize="small" />
-                      Ver documento (dorso)
-                    </Link>
-                  ) : (
-                    <Typography variant="body2" color="text.secondary">
-                      Sin documento dorsal
-                    </Typography>
+                      Ver Adjuntados ({
+                        [charter.documentationFrontUrl, charter.documentationBackUrl]
+                          .filter(Boolean).length
+                      })
+                    </Button>
                   )}
                 </Stack>
 
@@ -279,6 +469,120 @@ export function PendingChartersTab() {
             disabled={!rejectionReason.trim() || verifyMutation.isPending}
           >
             {verifyMutation.isPending ? "Rechazando..." : "Confirmar Rechazo"}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Image Modal - Ambas Imágenes Lado a Lado */}
+      <Dialog
+        open={imageModalOpen}
+        onClose={() => setImageModalOpen(false)}
+        maxWidth="xl"
+        fullWidth
+      >
+        <DialogTitle>
+          <Stack direction="row" justifyContent="space-between" alignItems="center">
+            <Box>
+              <Typography variant="h6">
+                DNI de {selectedCharterForModal?.name}
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                {selectedCharterForModal?.email}
+              </Typography>
+            </Box>
+            <IconButton onClick={() => setImageModalOpen(false)}>
+              <CloseIcon />
+            </IconButton>
+          </Stack>
+        </DialogTitle>
+        <DialogContent>
+          {selectedCharterForModal && (
+            <Box sx={{ display: 'flex', gap: 3, py: 2 }}>
+              {/* Frente */}
+              {selectedCharterForModal.documentationFrontUrl && (
+                <Box sx={{ flex: 1 }}>
+                  <Typography variant="subtitle2" gutterBottom fontWeight={600}>
+                    Frente del DNI
+                  </Typography>
+                  <Box
+                    sx={{
+                      bgcolor: "grey.100",
+                      borderRadius: 2,
+                      p: 2,
+                      display: "flex",
+                      justifyContent: "center",
+                      alignItems: "center",
+                      minHeight: 400,
+                    }}
+                  >
+                    <img
+                      src={selectedCharterForModal.documentationFrontUrl}
+                      alt="DNI Frente"
+                      style={{
+                        width: '100%',
+                        maxHeight: '70vh',
+                        objectFit: 'contain',
+                        borderRadius: 8,
+                      }}
+                    />
+                  </Box>
+                </Box>
+              )}
+
+              {/* Dorso */}
+              {selectedCharterForModal.documentationBackUrl && (
+                <Box sx={{ flex: 1 }}>
+                  <Typography variant="subtitle2" gutterBottom fontWeight={600}>
+                    Dorso del DNI
+                  </Typography>
+                  <Box
+                    sx={{
+                      bgcolor: "grey.100",
+                      borderRadius: 2,
+                      p: 2,
+                      display: "flex",
+                      justifyContent: "center",
+                      alignItems: "center",
+                      minHeight: 400,
+                    }}
+                  >
+                    <img
+                      src={selectedCharterForModal.documentationBackUrl}
+                      alt="DNI Dorso"
+                      style={{
+                        width: '100%',
+                        maxHeight: '70vh',
+                        objectFit: 'contain',
+                        borderRadius: 8,
+                      }}
+                    />
+                  </Box>
+                </Box>
+              )}
+            </Box>
+          )}
+        </DialogContent>
+        <DialogActions>
+          {selectedCharterForModal?.documentationFrontUrl && (
+            <Button
+              variant="outlined"
+              startIcon={<OpenInNewIcon />}
+              onClick={() => window.open(selectedCharterForModal.documentationFrontUrl ?? undefined, "_blank")}
+            >
+              Abrir Frente en Nueva Pestaña
+            </Button>
+          )}
+          {selectedCharterForModal?.documentationBackUrl && (
+            <Button
+              variant="outlined"
+              startIcon={<OpenInNewIcon />}
+              onClick={() => window.open(selectedCharterForModal.documentationBackUrl ?? undefined, "_blank")}
+            >
+              Abrir Dorso en Nueva Pestaña
+            </Button>
+          )}
+          <Button onClick={() => setImageModalOpen(false)} variant="contained">
+            Cerrar
           </Button>
         </DialogActions>
       </Dialog>

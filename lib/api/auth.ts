@@ -61,9 +61,28 @@ export const authApi = {
       );
     }
 
-    // Backend retorna { access_token, user } → Mapear a { token, user }
-    // biome-ignore lint/style/noNonNullAssertion: axios response guarantees data
-    const { access_token, user } = response.data.data!;
+    // 🔧 UNWRAP: Manejar doble wrapper del backend (igual que conversations.ts)
+    let authData: BackendAuthResponse;
+
+    if (response.data.data && typeof response.data.data === "object") {
+      // Caso 1: Doble wrapper { success, data: { success, data: {...} } }
+      if (
+        "data" in response.data.data &&
+        typeof (response.data.data as any).data === "object"
+      ) {
+        console.log("📦 [AUTH] Doble wrapper detectado en login - unwrapping...");
+        authData = (response.data.data as { data: BackendAuthResponse }).data;
+      }
+      // Caso 2: Wrapper simple { success, data: {...} }
+      else {
+        console.log("📦 [AUTH] Wrapper simple detectado en login");
+        authData = response.data.data as BackendAuthResponse;
+      }
+    } else {
+      throw new Error("Invalid response structure from login endpoint");
+    }
+
+    const { access_token, user } = authData;
     const authResponse: AuthResponse = {
       token: access_token,
       user,
@@ -76,6 +95,8 @@ export const authApi = {
       console.log("✅ [authApi.login] Mapped response:");
       console.log("   token present:", !!authResponse.token);
       console.log("   token length:", authResponse.token.length);
+      console.log("   user present:", !!authResponse.user);
+      console.log("   user.id:", authResponse.user.id);
     }
 
     return authResponse;
@@ -106,9 +127,28 @@ export const authApi = {
       );
     }
 
-    // Backend retorna { access_token, user } → Mapear a { token, user }
-    // biome-ignore lint/style/noNonNullAssertion: axios response guarantees data
-    const { access_token, user } = response.data.data!;
+    // 🔧 UNWRAP: Manejar doble wrapper del backend (igual que conversations.ts)
+    let authData: BackendAuthResponse;
+
+    if (response.data.data && typeof response.data.data === "object") {
+      // Caso 1: Doble wrapper { success, data: { success, data: {...} } }
+      if (
+        "data" in response.data.data &&
+        typeof (response.data.data as any).data === "object"
+      ) {
+        console.log("📦 [AUTH] Doble wrapper detectado en register - unwrapping...");
+        authData = (response.data.data as { data: BackendAuthResponse }).data;
+      }
+      // Caso 2: Wrapper simple { success, data: {...} }
+      else {
+        console.log("📦 [AUTH] Wrapper simple detectado en register");
+        authData = response.data.data as BackendAuthResponse;
+      }
+    } else {
+      throw new Error("Invalid response structure from register endpoint");
+    }
+
+    const { access_token, user } = authData;
     const authResponse: AuthResponse = {
       token: access_token,
       user,
@@ -121,6 +161,8 @@ export const authApi = {
       console.log("✅ [authApi.register] Mapped response:");
       console.log("   token present:", !!authResponse.token);
       console.log("   token length:", authResponse.token.length);
+      console.log("   user present:", !!authResponse.user);
+      console.log("   user.id:", authResponse.user.id);
     }
 
     return authResponse;
