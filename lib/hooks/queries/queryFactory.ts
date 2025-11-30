@@ -68,6 +68,18 @@ export const queryKeys = {
       [...queryKeys.conversations.detail(conversationId), "messages"] as const,
   },
 
+  // System Configuration
+  systemConfig: {
+    all: ["systemConfig"] as const,
+    publicPricing: () => [...queryKeys.systemConfig.all, "publicPricing"] as const,
+  },
+
+  // Payments
+  payments: {
+    all: ["payments"] as const,
+    my: () => [...queryKeys.payments.all, "my"] as const,
+  },
+
   // Admin
   admin: {
     all: ["admin"] as const,
@@ -94,6 +106,7 @@ export const queryKeys = {
       all: () => [...queryKeys.admin.all, "payments"] as const,
       list: (filters: PaymentFilters) =>
         [...queryKeys.admin.all, "payments", "list", filters] as const,
+      pendingCount: () => [...queryKeys.admin.all, "payments", "pending-count"] as const,
     },
     systemConfigs: {
       all: () => [...queryKeys.admin.all, "system-configs"] as const,

@@ -9,6 +9,7 @@ import {
   type UpdateUserRequest,
 } from "@/lib/api/auth";
 import { useAuthStore } from "@/lib/stores/authStore";
+import { useNotificationsStore } from "@/lib/stores/notificationsStore";
 
 /**
  * Mutation para login del usuario
@@ -31,6 +32,18 @@ export function useLogin() {
       login(response.user, response.token);
 
       toast.success(`¡Bienvenido ${response.user.name}!`);
+
+      // Mostrar toast si hay notificaciones de créditos acreditados (últimas 48hs)
+      const recentUnread = useNotificationsStore.getState().getRecentUnread();
+      if (recentUnread.length > 0) {
+        const totalCredits = recentUnread.reduce((sum, n) => sum + n.credits, 0);
+        setTimeout(() => {
+          toast.success(
+            `¡Felicidades! Te han acreditado ${totalCredits} créditos 🎉`,
+            { duration: 5000 },
+          );
+        }, 1000); // Delay para que no se solape con el toast de bienvenida
+      }
 
       // Redirect basado en role
       let targetPath = "/client/dashboard"; // Default

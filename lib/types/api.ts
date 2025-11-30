@@ -193,9 +193,13 @@ export interface Payment {
   id: string;
   userId: string;
   credits: number;
+  amount: number;
   status: PaymentStatus;
+  receiptUrl?: string;
+  rejectionReason?: string;
   createdAt: string;
   updatedAt: string;
+  user?: Partial<User>;
 }
 
 export interface SystemConfig {

@@ -8,9 +8,12 @@ import {
   Box,
   Badge,
   CircularProgress,
+  useTheme,
+  useMediaQuery,
 } from "@mui/material";
 import { useAuthStore } from "@/lib/stores/authStore";
 import { useAdminReports, usePendingCharters } from "@/lib/hooks/queries/useAdminQueries";
+import { usePendingPaymentsCount } from "@/lib/hooks/queries/usePaymentQueries";
 import { UsersTable } from "@/components/admin/UsersTable";
 import { ReportsTable } from "@/components/admin/ReportsTable";
 import { TripsTable } from "@/components/admin/TripsTable";
@@ -43,6 +46,8 @@ function TabPanel(props: TabPanelProps) {
 export default function AdminPage() {
   const [activeTab, setActiveTab] = useState(0);
   const { user } = useAuthStore();
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down("md"));
 
   // Fetch pending reports for badge
   const { data: reportsData, isLoading: reportsLoading } = useAdminReports({
@@ -51,6 +56,9 @@ export default function AdminPage() {
 
   // Fetch pending charters for badge
   const { data: pendingChartersData, isLoading: chartersLoading } = usePendingCharters();
+
+  // Fetch pending payments for badge
+  const { data: pendingPaymentsCount = 0, isLoading: paymentsLoading } = usePendingPaymentsCount();
 
   const pendingReportsCount = reportsData?.meta?.total ?? 0;
   const pendingChartersCount = pendingChartersData?.length ?? 0;
@@ -66,10 +74,17 @@ export default function AdminPage() {
         <Tabs
           value={activeTab}
           onChange={handleTabChange}
+          variant={isMobile ? "scrollable" : "standard"}
+          scrollButtons={isMobile ? "auto" : false}
+          allowScrollButtonsMobile
           aria-label="admin-tabs"
           sx={{
             "& .MuiTabs-indicator": {
               backgroundColor: "#dca621",
+            },
+            "& .MuiTabs-scrollButtons": {
+              color: "#dca621",
+              "&.Mui-disabled": { opacity: 0.3 },
             },
           }}
         >
@@ -134,7 +149,24 @@ export default function AdminPage() {
           {/* Pagos tab only for admin */}
           {user?.role === "admin" && (
             <Tab
-              label="Pagos"
+              label={
+                paymentsLoading ? (
+                  "Pagos"
+                ) : (
+                  <Badge
+                    badgeContent={pendingPaymentsCount}
+                    sx={{
+                      "& .MuiBadge-badge": {
+                        backgroundColor: "#e74c3c",
+                        color: "white",
+                      },
+                    }}
+                    overlap="circular"
+                  >
+                    Pagos
+                  </Badge>
+                )
+              }
               id="admin-tab-4"
               aria-controls="admin-tabpanel-4"
             />

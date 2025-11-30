@@ -24,6 +24,7 @@ import Logo from "@/components/ui/Logo";
 import { useLogout } from "@/lib/hooks/mutations/useAuthMutations";
 import { useHydrated } from "@/lib/hooks/useHydrated";
 import { useAuthStore } from "@/lib/stores/authStore";
+import { useCreditPurchaseStore } from "@/lib/stores/creditPurchaseStore";
 
 export function Navbar() {
   const router = useRouter();
@@ -32,6 +33,7 @@ export function Navbar() {
   const { user, isAuthenticated } = useAuthStore();
   const logoutMutation = useLogout();
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const { openModal } = useCreditPurchaseStore();
 
   const handleMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
     setAnchorEl(event.currentTarget);
@@ -100,10 +102,15 @@ export function Navbar() {
                 <Chip
                   icon={<AccountBalanceWalletIcon />}
                   label={`${user.credits || 0} créditos`}
+                  onClick={openModal}
                   sx={{
                     bgcolor: theme.palette.secondary.main,
                     color: theme.palette.secondary.contrastText,
                     fontWeight: 600,
+                    cursor: "pointer",
+                    "&:hover": {
+                      bgcolor: theme.palette.secondary.dark,
+                    },
                     "& .MuiChip-icon": {
                       color: theme.palette.secondary.contrastText,
                     },

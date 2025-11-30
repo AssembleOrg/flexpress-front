@@ -28,6 +28,7 @@ import { useAdminUsers } from "@/lib/hooks/queries/useAdminQueries";
 import { useDeleteUser } from "@/lib/hooks/mutations/useAdminMutations";
 import { useAuthStore } from "@/lib/stores/authStore";
 import type { User } from "@/lib/types/api";
+import { MobileUserCard } from "./mobile/MobileUserCard";
 
 export function UsersTable() {
   const router = useRouter();
@@ -280,24 +281,38 @@ export function UsersTable() {
         </FormControl>
       </Stack>
 
-      {/* DataGrid with client-side pagination */}
-      <Box sx={{ height: 500, width: "100%" }}>
-        <DataGrid
-          rows={paginatedUsers}
-          columns={visibleColumns}
-          pageSizeOptions={[5, 10, 20, 50]}
-          paginationModel={paginationModel}
-          onPaginationModelChange={setPaginationModel}
-          paginationMode="client"
-          loading={isLoading}
-          disableRowSelectionOnClick
-          sx={{
-            "& .MuiDataGrid-cell": {
-              overflow: "visible",
-            },
-          }}
-        />
-      </Box>
+      {/* Conditional Rendering: Mobile Cards vs DataGrid */}
+      {isMobile ? (
+        <Stack spacing={2}>
+          {paginatedUsers.map((user) => (
+            <MobileUserCard
+              key={user.id}
+              user={user}
+              onEdit={handleEditClick}
+              onDelete={handleDeleteClick}
+              currentUserRole={currentUser?.role}
+            />
+          ))}
+        </Stack>
+      ) : (
+        <Box sx={{ height: 500, width: "100%" }}>
+          <DataGrid
+            rows={paginatedUsers}
+            columns={visibleColumns}
+            pageSizeOptions={[5, 10, 20, 50]}
+            paginationModel={paginationModel}
+            onPaginationModelChange={setPaginationModel}
+            paginationMode="client"
+            loading={isLoading}
+            disableRowSelectionOnClick
+            sx={{
+              "& .MuiDataGrid-cell": {
+                overflow: "visible",
+              },
+            }}
+          />
+        </Box>
+      )}
 
       {/* Delete Confirmation Dialog */}
       <Dialog

@@ -35,10 +35,14 @@ import {
 import { usePendingCharters } from "@/lib/hooks/queries/useAdminQueries";
 import { useVerifyCharter } from "@/lib/hooks/mutations/useAdminMutations";
 import type { User } from "@/lib/types/api";
+import { MobileCharterVerificationCard } from "./mobile/MobileCharterVerificationCard";
+import { useTheme, useMediaQuery } from "@mui/material";
 
 export function PendingChartersTab() {
   const { data: pendingCharters = [], isLoading, error } = usePendingCharters();
   const verifyMutation = useVerifyCharter();
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down("md"));
 
   const [selectedCharter, setSelectedCharter] = useState<User | null>(null);
   const [rejectDialogOpen, setRejectDialogOpen] = useState(false);
@@ -124,26 +128,34 @@ export function PendingChartersTab() {
       </Typography>
 
       <Stack spacing={2}>
-        {pendingCharters.map((charter) => (
-          <Card
-            key={charter.id}
-            sx={{
-              border: "1px solid",
-              borderColor: "divider",
-              "&:hover": {
-                borderColor: "#dca621",
-              },
-            }}
-          >
-            <CardContent>
-              <Stack
-                direction={{ xs: "column", md: "row" }}
-                spacing={3}
-                alignItems={{ md: "center" }}
-                justifyContent="space-between"
-              >
-                {/* Charter Info */}
-                <Stack direction="row" spacing={2} alignItems="center" flex={1}>
+        {pendingCharters.map((charter) =>
+          isMobile ? (
+            <MobileCharterVerificationCard
+              key={charter.id}
+              charter={charter}
+              onApprove={handleApprove}
+              onReject={handleRejectClick}
+            />
+          ) : (
+            <Card
+              key={charter.id}
+              sx={{
+                border: "1px solid",
+                borderColor: "divider",
+                "&:hover": {
+                  borderColor: "#dca621",
+                },
+              }}
+            >
+              <CardContent>
+                <Stack
+                  direction={{ xs: "column", md: "row" }}
+                  spacing={3}
+                  alignItems={{ md: "center" }}
+                  justifyContent="space-between"
+                >
+                  {/* Charter Info */}
+                  <Stack direction="row" spacing={2} alignItems="center" flex={1}>
                   <Avatar
                     src={charter.avatar || undefined}
                     sx={{ width: 64, height: 64, bgcolor: "#dca621" }}
@@ -423,11 +435,12 @@ export function PendingChartersTab() {
                   >
                     Rechazar
                   </Button>
+                  </Stack>
                 </Stack>
-              </Stack>
-            </CardContent>
-          </Card>
-        ))}
+              </CardContent>
+            </Card>
+          )
+        )}
       </Stack>
 
       {/* Rejection Dialog */}

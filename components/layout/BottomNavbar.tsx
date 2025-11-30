@@ -17,6 +17,7 @@ import {
   History,
   Chat,
   Logout,
+  Receipt,
 } from "@mui/icons-material";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -74,6 +75,7 @@ export function BottomNavbar() {
   useEffect(() => {
     if (pathname.includes("/dashboard")) setValue("dashboard");
     else if (pathname.includes("/history")) setValue("history");
+    else if (pathname.includes("/payments")) setValue("payments");
     else if (pathname.includes("/matching")) setValue("chat");
     // No set value for logout (it's an action, not a page)
   }, [pathname]);
@@ -94,6 +96,9 @@ export function BottomNavbar() {
         break;
       case "history":
         router.push(`${baseRoute}/trips/history`);
+        break;
+      case "payments":
+        router.push("/client/payments");
         break;
       case "logout":
         // Open confirmation dialog
@@ -153,6 +158,15 @@ export function BottomNavbar() {
                 <Chat />
               </Badge>
             }
+          />
+        )}
+
+        {/* Pagos (solo para clientes) */}
+        {!isCharter && (
+          <BottomNavigationAction
+            label="Pagos"
+            value="payments"
+            icon={<Receipt />}
           />
         )}
 

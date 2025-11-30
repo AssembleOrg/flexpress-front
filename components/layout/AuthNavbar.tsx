@@ -5,12 +5,14 @@ import {
   Dashboard as DashboardIcon,
   Logout as LogoutIcon,
   Menu as MenuIcon,
+  Notifications as NotificationsIcon,
   Person as PersonIcon,
   Settings as SettingsIcon,
 } from "@mui/icons-material";
 import {
   AppBar,
   Avatar,
+  Badge,
   Box,
   Drawer,
   IconButton,
@@ -26,12 +28,16 @@ import { useState } from "react";
 import Logo from "@/components/ui/Logo";
 import { useLogout } from "@/lib/hooks/mutations/useAuthMutations";
 import { useAuthStore } from "@/lib/stores/authStore";
+import { useNotificationsStore } from "@/lib/stores/notificationsStore";
+import { NotificationsDropdown } from "@/components/NotificationsDropdown";
 
 export function AuthNavbar() {
   const router = useRouter();
   const { user } = useAuthStore();
   const logoutMutation = useLogout();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [notificationsAnchor, setNotificationsAnchor] = useState<HTMLElement | null>(null);
+  const unreadCount = useNotificationsStore((state) => state.getUnreadCount());
 
   const handleDrawerToggle = () => {
     setMobileOpen(!mobileOpen);
@@ -61,6 +67,14 @@ export function AuthNavbar() {
         setMobileOpen(false);
       },
     });
+  };
+
+  const handleNotificationsOpen = (event: React.MouseEvent<HTMLButtonElement>) => {
+    setNotificationsAnchor(event.currentTarget);
+  };
+
+  const handleNotificationsClose = () => {
+    setNotificationsAnchor(null);
   };
 
   return (
@@ -166,10 +180,27 @@ export function AuthNavbar() {
             </Box>
           </Box>
 
-          {/* Desktop - Logout */}
+          {/* Desktop - Notifications & Logout */}
           <Box
-            sx={{ display: { xs: "none", md: "flex" }, alignItems: "center" }}
+            sx={{ display: { xs: "none", md: "flex" }, alignItems: "center", gap: 1 }}
           >
+            {/* Notifications Button */}
+            <IconButton
+              onClick={handleNotificationsOpen}
+              sx={{
+                color: "white",
+                "&:hover": {
+                  bgcolor: "rgba(255, 255, 255, 0.1)",
+                },
+              }}
+              title="Notificaciones"
+            >
+              <Badge badgeContent={unreadCount} color="secondary">
+                <NotificationsIcon />
+              </Badge>
+            </IconButton>
+
+            {/* Logout Button */}
             <IconButton
               onClick={handleLogout}
               sx={{
@@ -398,6 +429,13 @@ export function AuthNavbar() {
           </List>
         </Box>
       </Drawer>
+
+      {/* Notifications Dropdown */}
+      <NotificationsDropdown
+        open={Boolean(notificationsAnchor)}
+        onClose={handleNotificationsClose}
+        anchorEl={notificationsAnchor}
+      />
     </>
   );
 }

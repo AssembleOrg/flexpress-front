@@ -17,6 +17,17 @@ export const ourFileRouter = {
       console.log(`[UploadThing] File URL: ${file.url}`);
       return { url: file.url };
     }),
+
+  // Receipt uploader - para comprobantes de pago
+  receiptUploader: f({ image: { maxFileSize: "4MB", maxFileCount: 1 } })
+    .middleware(async () => {
+      // Sin metadata especial, es anónimo
+      return {};
+    })
+    .onUploadComplete(async ({ file }) => {
+      console.log(`[UploadThing] Receipt uploaded: ${file.url}`);
+      return { url: file.url };
+    }),
 } satisfies FileRouter;
 
 export type OurFileRouter = typeof ourFileRouter;

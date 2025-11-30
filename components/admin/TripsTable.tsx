@@ -3,9 +3,10 @@
 import { useState } from "react";
 import Link from "next/link";
 import { DataGrid, GridColDef, GridPaginationModel } from "@mui/x-data-grid";
-import { Box, useMediaQuery, useTheme } from "@mui/material";
+import { Box, useMediaQuery, useTheme, Stack } from "@mui/material";
 import { useAdminTrips } from "@/lib/hooks/queries/useAdminQueries";
 import type { Trip } from "@/lib/types/api";
+import { MobileTripAdminCard } from "./mobile/MobileTripAdminCard";
 
 export function TripsTable() {
   const theme = useTheme();
@@ -119,18 +120,26 @@ export function TripsTable() {
 
   return (
     <Box>
-      {/* DataGrid */}
-      <Box sx={{ height: 500, width: "100%" }}>
-        <DataGrid
-          rows={data?.data ?? []}
-          columns={visibleColumns}
-          pageSizeOptions={[5, 10, 20, 50]}
-          paginationModel={paginationModel}
-          onPaginationModelChange={setPaginationModel}
-          loading={isLoading}
-          disableRowSelectionOnClick
-        />
-      </Box>
+      {/* Conditional Rendering: Mobile Cards vs DataGrid */}
+      {isMobile ? (
+        <Stack spacing={2}>
+          {(data?.data ?? []).map((trip) => (
+            <MobileTripAdminCard key={trip.id} trip={trip} />
+          ))}
+        </Stack>
+      ) : (
+        <Box sx={{ height: 500, width: "100%" }}>
+          <DataGrid
+            rows={data?.data ?? []}
+            columns={visibleColumns}
+            pageSizeOptions={[5, 10, 20, 50]}
+            paginationModel={paginationModel}
+            onPaginationModelChange={setPaginationModel}
+            loading={isLoading}
+            disableRowSelectionOnClick
+          />
+        </Box>
+      )}
     </Box>
   );
 }

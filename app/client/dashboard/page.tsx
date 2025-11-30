@@ -5,6 +5,7 @@ import {
   Add,
   Email,
   Flag,
+  History,
   LocalShipping,
   LocationOn,
   Phone,
@@ -23,6 +24,7 @@ import {
   DialogContent,
   DialogTitle,
   Fab,
+  IconButton,
   Typography,
 } from "@mui/material";
 import { motion } from "framer-motion";
@@ -33,6 +35,8 @@ import { WelcomeHeader } from "@/components/ui/WelcomeHeader";
 import { useUserMatches } from "@/lib/hooks/queries/useTravelMatchQueries";
 import { useAuthStore } from "@/lib/stores/authStore";
 import { isActiveTrip } from "@/lib/utils/matchHelpers";
+import { useCreditPurchaseStore } from "@/lib/stores/creditPurchaseStore";
+import { CreditPurchaseModal } from "@/components/modals/CreditPurchaseModal";
 
 const MotionCard = motion.create(Card);
 const MotionButton = motion.create(Button);
@@ -41,7 +45,7 @@ export default function ClientDashboard() {
   const router = useRouter();
   const { user } = useAuthStore();
   const { data: myMatches = [], isLoading } = useUserMatches();
-  const [rechargeModalOpen, setRechargeModalOpen] = useState(false);
+  const { openModal } = useCreditPurchaseStore();
 
   // Find the ONE active trip (only one trip at a time allowed)
   const activeTrip = myMatches.find(isActiveTrip);
@@ -144,25 +148,42 @@ export default function ClientDashboard() {
             >
               <AccountBalanceWallet sx={{ fontSize: 40, opacity: 0.9 }} />
             </motion.div>
-            <Box>
-              <Typography
-                variant="caption"
-                sx={{ opacity: 0.9, display: "block", mb: 0.5 }}
+            <Box display="flex" alignItems="center" gap={1.5}>
+              <Box>
+                <Typography
+                  variant="caption"
+                  sx={{ opacity: 0.9, display: "block", mb: 0.5 }}
+                >
+                  Créditos Disponibles
+                </Typography>
+                <Typography
+                  variant="h3"
+                  sx={{ fontWeight: 700, color: "inherit" }}
+                >
+                  {user?.credits || 0}
+                </Typography>
+              </Box>
+              <IconButton
+                onClick={() => router.push("/client/payments")}
+                sx={{
+                  bgcolor: "rgba(255, 255, 255, 0.15)",
+                  color: "white",
+                  width: 36,
+                  height: 36,
+                  "&:hover": {
+                    bgcolor: "rgba(255, 255, 255, 0.25)",
+                  },
+                }}
+                title="Ver historial de pagos"
               >
-                Créditos Disponibles
-              </Typography>
-              <Typography
-                variant="h3"
-                sx={{ fontWeight: 700, color: "inherit" }}
-              >
-                {user?.credits || 0}
-              </Typography>
+                <History sx={{ fontSize: 20 }} />
+              </IconButton>
             </Box>
           </Box>
           <Fab
             color="secondary"
             size="medium"
-            onClick={() => setRechargeModalOpen(true)}
+            onClick={openModal}
             sx={{
               boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
             }}
@@ -439,61 +460,8 @@ export default function ClientDashboard() {
         )}
       </motion.div>
 
-      {/* Recharge Credits Modal */}
-      <Dialog
-        open={rechargeModalOpen}
-        onClose={() => setRechargeModalOpen(false)}
-        maxWidth="sm"
-        fullWidth
-      >
-        <DialogTitle>
-          <Box display="flex" alignItems="center" gap={1}>
-            <AccountBalanceWallet color="primary" />
-            <Typography variant="h6" sx={{ fontWeight: 700 }}>
-              Recargar Créditos
-            </Typography>
-          </Box>
-        </DialogTitle>
-        <DialogContent>
-          <Typography variant="body1" sx={{ mb: 2 }}>
-            Para recargar créditos, por favor contacta al administrador:
-          </Typography>
-          <Card sx={{ bgcolor: "background.default", p: 2 }}>
-            <Typography
-              variant="body2"
-              color="text.secondary"
-              sx={{ mb: 1, display: "flex", alignItems: "center", gap: 1 }}
-            >
-              <Email fontSize="small" />
-              Email: admin@flexpress.com
-            </Typography>
-            <Typography
-              variant="body2"
-              color="text.secondary"
-              sx={{ display: "flex", alignItems: "center", gap: 1 }}
-            >
-              <Phone fontSize="small" />
-              Teléfono: +54 11 1234-5678
-            </Typography>
-          </Card>
-          <Typography
-            variant="caption"
-            color="text.secondary"
-            sx={{ mt: 2, display: "block" }}
-          >
-            El administrador procesará tu solicitud y acreditará los créditos a
-            tu cuenta.
-          </Typography>
-        </DialogContent>
-        <DialogActions>
-          <Button
-            onClick={() => setRechargeModalOpen(false)}
-            variant="contained"
-          >
-            Entendido
-          </Button>
-        </DialogActions>
-      </Dialog>
+      {/* Credit Purchase Modal */}
+      <CreditPurchaseModal />
     </MobileContainer>
   );
 }

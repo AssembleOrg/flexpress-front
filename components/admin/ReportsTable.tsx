@@ -18,6 +18,7 @@ import { Visibility as VisibilityIcon } from "@mui/icons-material";
 import { useRouter } from "next/navigation";
 import { useAdminReports } from "@/lib/hooks/queries/useAdminQueries";
 import type { Report } from "@/lib/types/api";
+import { MobileReportCard } from "./mobile/MobileReportCard";
 
 export function ReportsTable() {
   const router = useRouter();
@@ -181,18 +182,26 @@ export function ReportsTable() {
         </FormControl>
       </Stack>
 
-      {/* DataGrid */}
-      <Box sx={{ height: 500, width: "100%" }}>
-        <DataGrid
-          rows={data?.data ?? []}
-          columns={visibleColumns}
-          pageSizeOptions={[5, 10, 20, 50]}
-          paginationModel={paginationModel}
-          onPaginationModelChange={setPaginationModel}
-          loading={isLoading}
-          disableRowSelectionOnClick
-        />
-      </Box>
+      {/* Conditional Rendering: Mobile Cards vs DataGrid */}
+      {isMobile ? (
+        <Stack spacing={2}>
+          {(data?.data ?? []).map((report) => (
+            <MobileReportCard key={report.id} report={report} />
+          ))}
+        </Stack>
+      ) : (
+        <Box sx={{ height: 500, width: "100%" }}>
+          <DataGrid
+            rows={data?.data ?? []}
+            columns={visibleColumns}
+            pageSizeOptions={[5, 10, 20, 50]}
+            paginationModel={paginationModel}
+            onPaginationModelChange={setPaginationModel}
+            loading={isLoading}
+            disableRowSelectionOnClick
+          />
+        </Box>
+      )}
     </Box>
   );
 }

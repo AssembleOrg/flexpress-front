@@ -3,9 +3,29 @@
 import { useState } from "react";
 import Link from "next/link";
 import { DataGrid, GridColDef, GridPaginationModel } from "@mui/x-data-grid";
-import { Box, Chip, useMediaQuery, useTheme } from "@mui/material";
+import {
+  Box,
+  Button,
+  Chip,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  Typography,
+  useMediaQuery,
+  useTheme,
+  Stack,
+} from "@mui/material";
+import toast from "react-hot-toast";
 import { useAdminPayments } from "@/lib/hooks/queries/useAdminQueries";
+import {
+  useApprovePayment,
+  useRejectPayment,
+} from "@/lib/hooks/mutations/usePaymentMutations";
 import type { Payment } from "@/lib/types/api";
+import { ApprovePaymentModal } from "@/components/modals/ApprovePaymentModal";
+import { RejectPaymentModal } from "@/components/modals/RejectPaymentModal";
+import { MobilePaymentCard } from "./mobile/MobilePaymentCard";
 
 export function PaymentsTable() {
   const theme = useTheme();
@@ -16,11 +36,61 @@ export function PaymentsTable() {
     page: 0,
   });
 
+  const [receiptModalOpen, setReceiptModalOpen] = useState(false);
+  const [receiptUrl, setReceiptUrl] = useState<string | null>(null);
+  const [approveModalOpen, setApproveModalOpen] = useState(false);
+  const [rejectModalOpen, setRejectModalOpen] = useState(false);
+  const [selectedPayment, setSelectedPayment] = useState<Payment | null>(null);
+
   // Queries
   const { data, isLoading } = useAdminPayments({
     page: paginationModel.page + 1,
     limit: paginationModel.pageSize,
   });
+
+  // Mutations
+  const approveMutation = useApprovePayment();
+  const rejectMutation = useRejectPayment();
+
+  const handleViewReceipt = (url: string) => {
+    setReceiptUrl(url);
+    setReceiptModalOpen(true);
+  };
+
+  const handleApprove = (payment: Payment) => {
+    setSelectedPayment(payment);
+    setApproveModalOpen(true);
+  };
+
+  const handleReject = (payment: Payment) => {
+    setSelectedPayment(payment);
+    setRejectModalOpen(true);
+  };
+
+  const confirmApprove = () => {
+    if (selectedPayment) {
+      approveMutation.mutate(selectedPayment.id, {
+        onSuccess: () => {
+          setApproveModalOpen(false);
+          setSelectedPayment(null);
+        },
+      });
+    }
+  };
+
+  const confirmReject = (reason: string) => {
+    if (selectedPayment) {
+      rejectMutation.mutate(
+        { paymentId: selectedPayment.id, reason },
+        {
+          onSuccess: () => {
+            setRejectModalOpen(false);
+            setSelectedPayment(null);
+          },
+        },
+      );
+    }
+  };
 
   const getStatusColor = (status: string) => {
     const colors: Record<
@@ -57,26 +127,40 @@ export function PaymentsTable() {
       field: "userId",
       headerName: "Usuario",
       flex: 1,
-      minWidth: 120,
+      minWidth: 180,
       renderCell: (params) => {
-        const shortId = params.row.userId.substring(0, 8);
+        const userName = params.row.user?.name || "Usuario sin nombre";
+        const userEmail = params.row.user?.email || "";
+
         return (
-          <Link
-            href={`/admin/users/${params.row.userId}`}
-            style={{
-              color: "#b7850d",
-              textDecoration: "none",
-              cursor: "pointer",
-            }}
-            onMouseEnter={(e) =>
-              (e.currentTarget.style.textDecoration = "underline")
-            }
-            onMouseLeave={(e) =>
-              (e.currentTarget.style.textDecoration = "none")
-            }
-          >
-            {shortId}
-          </Link>
+          <Box>
+            <Link
+              href={`/admin/users/${params.row.userId}`}
+              style={{
+                color: "#b7850d",
+                textDecoration: "none",
+                cursor: "pointer",
+                fontWeight: 600,
+              }}
+              onMouseEnter={(e) =>
+                (e.currentTarget.style.textDecoration = "underline")
+              }
+              onMouseLeave={(e) =>
+                (e.currentTarget.style.textDecoration = "none")
+              }
+            >
+              {userName}
+            </Link>
+            {userEmail && (
+              <Typography
+                variant="caption"
+                color="text.secondary"
+                display="block"
+              >
+                {userEmail}
+              </Typography>
+            )}
+          </Box>
         );
       },
     },
@@ -85,6 +169,25 @@ export function PaymentsTable() {
       headerName: "Créditos",
       width: 120,
       type: "number",
+    },
+    {
+      field: "receiptUrl",
+      headerName: "Comprobante",
+      width: 130,
+      renderCell: (params) => {
+        if (!params.row.receiptUrl) {
+          return (
+            <Typography variant="caption" color="text.secondary">
+              Sin comprobante
+            </Typography>
+          );
+        }
+        return (
+          <Button size="small" onClick={() => handleViewReceipt(params.row.receiptUrl)}>
+            Ver
+          </Button>
+        );
+      },
     },
     {
       field: "status",
@@ -128,6 +231,43 @@ export function PaymentsTable() {
         return date.toLocaleDateString("es-AR");
       },
     },
+    {
+      field: "actions",
+      headerName: "Acciones",
+      width: 220,
+      renderCell: (params) => {
+        if (params.row.status !== "pending") {
+          return (
+            <Typography variant="caption" color="text.secondary">
+              Procesado
+            </Typography>
+          );
+        }
+
+        return (
+          <Box display="flex" gap={1}>
+            <Button
+              size="small"
+              variant="contained"
+              color="success"
+              onClick={() => handleApprove(params.row)}
+              disabled={approveMutation.isPending || rejectMutation.isPending}
+            >
+              Aprobar
+            </Button>
+            <Button
+              size="small"
+              variant="outlined"
+              color="error"
+              onClick={() => handleReject(params.row)}
+              disabled={approveMutation.isPending || rejectMutation.isPending}
+            >
+              Rechazar
+            </Button>
+          </Box>
+        );
+      },
+    },
   ];
 
   // Hide userId and createdAt columns on mobile
@@ -137,18 +277,83 @@ export function PaymentsTable() {
 
   return (
     <Box>
-      {/* DataGrid */}
-      <Box sx={{ height: 500, width: "100%" }}>
-        <DataGrid
-          rows={data?.data ?? []}
-          columns={visibleColumns}
-          pageSizeOptions={[5, 10, 20, 50]}
-          paginationModel={paginationModel}
-          onPaginationModelChange={setPaginationModel}
-          loading={isLoading}
-          disableRowSelectionOnClick
-        />
-      </Box>
+      {/* Conditional Rendering: Mobile Cards vs DataGrid */}
+      {isMobile ? (
+        <Stack spacing={2}>
+          {(data?.data ?? []).map((payment) => (
+            <MobilePaymentCard
+              key={payment.id}
+              payment={payment}
+              onApprove={handleApprove}
+              onReject={handleReject}
+              onViewReceipt={handleViewReceipt}
+            />
+          ))}
+        </Stack>
+      ) : (
+        <Box sx={{ height: 500, width: "100%" }}>
+          <DataGrid
+            rows={data?.data ?? []}
+            columns={visibleColumns}
+            pageSizeOptions={[5, 10, 20, 50]}
+            paginationModel={paginationModel}
+            onPaginationModelChange={setPaginationModel}
+            loading={isLoading}
+            disableRowSelectionOnClick
+          />
+        </Box>
+      )}
+
+      {/* Receipt Modal */}
+      <Dialog
+        open={receiptModalOpen}
+        onClose={() => setReceiptModalOpen(false)}
+        maxWidth="md"
+        fullWidth
+      >
+        <DialogTitle>Comprobante de Pago</DialogTitle>
+        <DialogContent>
+          {receiptUrl && (
+            <Box textAlign="center">
+              <img
+                src={receiptUrl}
+                alt="Comprobante"
+                style={{ maxWidth: "100%", borderRadius: 8 }}
+              />
+            </Box>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setReceiptModalOpen(false)}>Cerrar</Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Approve Modal */}
+      <ApprovePaymentModal
+        open={approveModalOpen}
+        onClose={() => {
+          setApproveModalOpen(false);
+          setSelectedPayment(null);
+        }}
+        onConfirm={confirmApprove}
+        userName={selectedPayment?.user?.name || "Usuario"}
+        credits={selectedPayment?.credits || 0}
+        amount={selectedPayment?.amount || 0}
+        isLoading={approveMutation.isPending}
+      />
+
+      {/* Reject Modal */}
+      <RejectPaymentModal
+        open={rejectModalOpen}
+        onClose={() => {
+          setRejectModalOpen(false);
+          setSelectedPayment(null);
+        }}
+        onConfirm={confirmReject}
+        userName={selectedPayment?.user?.name || "Usuario"}
+        credits={selectedPayment?.credits || 0}
+        isLoading={rejectMutation.isPending}
+      />
     </Box>
   );
 }
