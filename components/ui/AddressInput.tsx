@@ -1,5 +1,7 @@
 "use client";
 
+/// <reference types="google.maps" />
+
 import {
   Autocomplete,
   Box,
