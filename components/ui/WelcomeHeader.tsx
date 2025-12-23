@@ -1,7 +1,8 @@
 "use client";
 
-import { Avatar, Box, Chip, Typography } from "@mui/material";
+import { Avatar, Box, Chip, Tooltip, Typography } from "@mui/material";
 import { motion } from "framer-motion";
+import { useRouter } from "next/navigation";
 
 const MotionBox = motion.create(Box);
 
@@ -11,6 +12,7 @@ interface WelcomeHeaderProps {
 }
 
 export function WelcomeHeader({ userName, userRole }: WelcomeHeaderProps) {
+  const router = useRouter();
   const firstName = userName?.split(" ")[0] || "Usuario";
   const initial = userName?.[0]?.toUpperCase() || "?";
   const roleLabel = userRole === "charter" ? "Chófer" : "Cliente";
@@ -28,17 +30,26 @@ export function WelcomeHeader({ userName, userRole }: WelcomeHeaderProps) {
           animate={{ scale: 1, opacity: 1 }}
           transition={{ duration: 0.5, delay: 0.1, type: "spring" }}
         >
-          <Avatar
-            sx={{
-              width: 56,
-              height: 56,
-              bgcolor: "primary.main",
-              fontSize: "1.5rem",
-              fontWeight: 700,
-            }}
-          >
-            {initial}
-          </Avatar>
+          <Tooltip title="Ver perfil" arrow placement="right">
+            <Avatar
+              onClick={() => router.push("/profile")}
+              sx={{
+                width: 56,
+                height: 56,
+                bgcolor: "primary.main",
+                fontSize: "1.5rem",
+                fontWeight: 700,
+                cursor: "pointer",
+                transition: "all 0.2s ease",
+                "&:hover": {
+                  transform: "scale(1.05)",
+                  boxShadow: "0 4px 12px rgba(56, 1, 22, 0.2)",
+                },
+              }}
+            >
+              {initial}
+            </Avatar>
+          </Tooltip>
         </motion.div>
         <Box>
           <Typography variant="h5" sx={{ fontWeight: 700, mb: 0.5 }}>

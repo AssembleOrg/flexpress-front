@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { Box, Container, Typography } from "@mui/material";
 import { motion } from "framer-motion";
 import {
@@ -14,28 +15,33 @@ interface TimelineStep {
   title: string;
   description: string;
   bgColor: string;
+  image: string;
 }
 
 const steps: TimelineStep[] = [
   {
     step: "1",
-    title: "Describe tu carga",
+    title: "Busca tu chofer",
     description:
-      "Especifica origen, destino, tipo de objetos, peso y dimensiones aproximadas",
+      "Ingresa el origen y destino de tu carga en el mapa interactivo",
     bgColor: "#E3F2FD",
+    image: "/paso1.webp",
   },
   {
     step: "2",
-    title: "Conecta con transportistas",
-    description: "Conductores con vehículos adecuados te envían presupuestos",
+    title: "Elige tu chofer",
+    description:
+      "Revisa la lista de choferes disponibles cerca de tu zona y selecciona el que prefieras",
     bgColor: "#F3E5F5",
+    image: "/paso2.webp",
   },
   {
     step: "3",
-    title: "Seguimiento de tu flete",
+    title: "Coordina el flete",
     description:
-      "Monitorea la recolección y entrega de tu carga en tiempo real",
+      "Chatea con tu chofer, coordina los detalles y haz seguimiento en tiempo real",
     bgColor: "#E8F5E8",
+    image: "/paso3.webp",
   },
 ];
 
@@ -207,27 +213,29 @@ export function HowItWorks() {
                               {step.description}
                             </Typography>
 
-                            {/* Placeholder for screenshot */}
+                            {/* Screenshot */}
                             <Box
                               sx={{
+                                position: "relative",
+                                width: "100%",
+                                aspectRatio: "3/4",
+                                maxWidth: { xs: "100%", sm: 350, md: 400 },
+                                mx: "auto",
                                 mt: 3,
-                                height: { xs: 120, md: 180 },
-                                bgcolor: "rgba(255,255,255,0.6)",
                                 borderRadius: 2,
-                                display: "flex",
-                                alignItems: "center",
-                                justifyContent: "center",
-                                border: "2px dashed rgba(56, 1, 22, 0.1)",
+                                overflow: "hidden",
+                                boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
                               }}
                             >
-                              <Typography
-                                variant="caption"
-                                color="text.secondary"
-                                textAlign="center"
-                                sx={{ px: 2 }}
-                              >
-                                📱 Screenshot paso {step.step}
-                              </Typography>
+                              <Image
+                                src={step.image}
+                                alt={`Paso ${step.step}: ${step.title}`}
+                                fill
+                                sizes="(max-width: 600px) 100vw, (max-width: 960px) 350px, 400px"
+                                style={{ objectFit: "cover" }}
+                                loading="lazy"
+                                quality={85}
+                              />
                             </Box>
                           </Box>
                         </motion.div>

@@ -21,21 +21,22 @@ import {
 } from "@mui/material";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import { AuthGuard } from "@/components/guards/AuthGuard";
 import { AuthNavbar } from "@/components/layout/AuthNavbar";
+import { BottomNavbar } from "@/components/layout/BottomNavbar";
 import { AddressInput } from "@/components/ui/AddressInput";
 import { PageTransition } from "@/components/ui/PageTransition";
-import { authApi } from "@/lib/api/auth";
+import { useUpdateUserProfile } from "@/lib/hooks/mutations/useAuthMutations";
 import { useAuthStore } from "@/lib/stores/authStore";
 
 export function ProfileContent() {
   const _router = useRouter();
   const theme = useTheme();
-  const { user, updateUser } = useAuthStore();
+  const { user } = useAuthStore();
+  const updateProfileMutation = useUpdateUserProfile();
   const [isEditing, setIsEditing] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
     name: user?.name || "",
     email: user?.email || "",
@@ -47,7 +48,18 @@ export function ProfileContent() {
     lat: number;
     lon: number;
   } | null>(null);
-  const [isSavingOrigin, setIsSavingOrigin] = useState(false);
+
+  // Sincronizar formData con user tras updates del store
+  useEffect(() => {
+    if (user) {
+      setFormData({
+        name: user.name || "",
+        email: user.email || "",
+        number: user.number || "",
+        address: user.address || "",
+      });
+    }
+  }, [user]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -57,18 +69,39 @@ export function ProfileContent() {
     }));
   };
 
-  const handleSaveProfile = async () => {
-    setIsLoading(true);
-    try {
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+  const handleSaveProfile = () => {
+    if (!user?.id) return;
 
-      toast.success("Perfil actualizado exitosamente");
-      setIsEditing(false);
-    } catch (_error) {
-      toast.error("Error al actualizar el perfil");
-    } finally {
-      setIsLoading(false);
+    // Validaciones
+    if (!formData.name.trim()) {
+      toast.error("El nombre es obligatorio");
+      return;
     }
+    if (!formData.address.trim() || formData.address.length < 10) {
+      toast.error("La dirección debe tener al menos 10 caracteres");
+      return;
+    }
+    if (formData.address.length > 200) {
+      toast.error("La dirección no puede exceder 200 caracteres");
+      return;
+    }
+
+    updateProfileMutation.mutate(
+      {
+        userId: user.id,
+        data: {
+          name: formData.name,
+          email: formData.email,
+          number: formData.number,
+          address: formData.address,
+        },
+      },
+      {
+        onSuccess: () => {
+          setIsEditing(false); // Salir del modo edición
+        },
+      }
+    );
   };
 
   const handleCancel = () => {
@@ -81,36 +114,37 @@ export function ProfileContent() {
     setIsEditing(false);
   };
 
-  const handleSaveOrigin = async () => {
-    if (!originData) return;
+  const handleSaveOrigin = () => {
+    if (!originData || !user?.id) return;
 
-    setIsSavingOrigin(true);
-    try {
-      const updatedUser = await authApi.updateUser(user?.id || "", {
-        originAddress: originData.address,
-        originLatitude: originData.lat.toString(),
-        originLongitude: originData.lon.toString(),
-      });
-      updateUser(updatedUser);
-      toast.success("Ubicación de trabajo actualizada");
-      setOriginData(null);
-    } catch (error) {
-      toast.error("Error al actualizar la ubicación");
-      console.error(error);
-    } finally {
-      setIsSavingOrigin(false);
-    }
+    updateProfileMutation.mutate(
+      {
+        userId: user.id,
+        data: {
+          originAddress: originData.address,
+          originLatitude: originData.lat.toString(),
+          originLongitude: originData.lon.toString(),
+        },
+      },
+      {
+        onSuccess: () => {
+          setOriginData(null); // Limpiar estado local
+        },
+      }
+    );
   };
 
   return (
-    <AuthGuard message="Por favor inicia sesión para ver tu perfil">
-      <PageTransition>
-        <AuthNavbar />
-        <Box
-          sx={{
-            bgcolor: "background.default",
-            minHeight: "calc(100vh - 64px)",
-            py: 4,
+    <>
+      <AuthGuard message="Por favor inicia sesión para ver tu perfil">
+        <PageTransition>
+          <AuthNavbar />
+          <Box
+            sx={{
+              bgcolor: "background.default",
+              minHeight: "calc(100vh - 64px)",
+              py: 4,
+              pb: { xs: 12, md: 4 },
           }}
         >
           <Container maxWidth="md">
@@ -274,9 +308,9 @@ export function ProfileContent() {
                       color="secondary"
                       startIcon={<SaveIcon />}
                       onClick={handleSaveProfile}
-                      disabled={isLoading}
+                      disabled={updateProfileMutation.isPending}
                     >
-                      Guardar Cambios
+                      {updateProfileMutation.isPending ? "Guardando..." : "Guardar Cambios"}
                     </Button>
                     <Button
                       variant="outlined"
@@ -368,9 +402,9 @@ export function ProfileContent() {
                         variant="contained"
                         color="secondary"
                         onClick={handleSaveOrigin}
-                        disabled={isSavingOrigin}
+                        disabled={updateProfileMutation.isPending}
                       >
-                        Confirmar Ubicación
+                        {updateProfileMutation.isPending ? "Guardando..." : "Confirmar Ubicación"}
                       </Button>
                       <Button
                         variant="outlined"
@@ -385,6 +419,7 @@ export function ProfileContent() {
                     <AddressInput
                       label="Ubicación de Trabajo"
                       placeholder="Ingresa tu ubicación de trabajo..."
+                      value={user?.originAddress || ""}
                       onAddressSelect={(address, lat, lon) => {
                         setOriginData({ address, lat, lon });
                       }}
@@ -427,8 +462,10 @@ export function ProfileContent() {
               </Box>
             </motion.div>
           </Container>
-        </Box>
-      </PageTransition>
-    </AuthGuard>
+          </Box>
+        </PageTransition>
+      </AuthGuard>
+      <BottomNavbar />
+    </>
   );
 }

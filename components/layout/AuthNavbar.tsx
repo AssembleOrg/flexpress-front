@@ -2,10 +2,14 @@
 
 import {
   Close as CloseIcon,
-  Dashboard as DashboardIcon,
+  Home as HomeIcon,
   Logout as LogoutIcon,
   Menu as MenuIcon,
   Notifications as NotificationsIcon,
+  History as HistoryIcon,
+  Payment as PaymentIcon,
+  Chat as ChatIcon,
+  Dashboard as DashboardIcon,
   Person as PersonIcon,
   Settings as SettingsIcon,
 } from "@mui/icons-material";
@@ -28,16 +32,42 @@ import { useState } from "react";
 import Logo from "@/components/ui/Logo";
 import { useLogout } from "@/lib/hooks/mutations/useAuthMutations";
 import { useAuthStore } from "@/lib/stores/authStore";
-import { useNotificationsStore } from "@/lib/stores/notificationsStore";
-import { NotificationsDropdown } from "@/components/NotificationsDropdown";
+import { isActiveTrip } from "@/lib/utils/matchHelpers";
+import {
+  useUserMatches,
+  useCharterMatches,
+} from "@/lib/hooks/queries/useTravelMatchQueries";
 
 export function AuthNavbar() {
   const router = useRouter();
   const { user } = useAuthStore();
   const logoutMutation = useLogout();
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [notificationsAnchor, setNotificationsAnchor] = useState<HTMLElement | null>(null);
-  const unreadCount = useNotificationsStore((state) => state.getUnreadCount());
+
+  // Sync logic with BottomNavbar
+  const { data: userMatches = [] } = useUserMatches();
+  const { data: charterMatches = [] } = useCharterMatches();
+
+  const isCharter = user?.role === "charter";
+  const matches = isCharter ? charterMatches : userMatches;
+
+  // Determinar match activo con conversación (Lógica idéntica a BottomNavbar)
+  const activeMatch = matches.find((match) => {
+    // Client: Use centralized logic
+    if (!isCharter) {
+      return isActiveTrip(match);
+    }
+
+    // Driver: accepted/completed con tripId
+    if (!match.tripId) return false;
+    if (match.trip?.status === "completed") return false;
+    return (
+      (match.status === "accepted" || match.status === "completed") &&
+      match.conversationId
+    );
+  });
+
+  const hasActiveChat = !!activeMatch;
 
   const handleDrawerToggle = () => {
     setMobileOpen(!mobileOpen);
@@ -47,6 +77,31 @@ export function AuthNavbar() {
     const dashboardPath =
       user?.role === "charter" ? "/driver/dashboard" : "/client/dashboard";
     router.push(dashboardPath);
+    setMobileOpen(false);
+  };
+
+  const handleHistory = () => {
+    const historyPath =
+      user?.role === "charter"
+        ? "/driver/trips/history"
+        : "/client/trips/history";
+    router.push(historyPath);
+    setMobileOpen(false);
+  };
+
+  const handlePayments = () => {
+    router.push("/client/payments");
+    setMobileOpen(false);
+  };
+
+  const handleChat = () => {
+    if (activeMatch) {
+      const chatPath =
+        user?.role === "charter"
+          ? `/driver/trips/matching/${activeMatch.id}`
+          : `/client/trips/matching/${activeMatch.id}`;
+      router.push(chatPath);
+    }
     setMobileOpen(false);
   };
 
@@ -67,14 +122,6 @@ export function AuthNavbar() {
         setMobileOpen(false);
       },
     });
-  };
-
-  const handleNotificationsOpen = (event: React.MouseEvent<HTMLButtonElement>) => {
-    setNotificationsAnchor(event.currentTarget);
-  };
-
-  const handleNotificationsClose = () => {
-    setNotificationsAnchor(null);
   };
 
   return (
@@ -106,6 +153,7 @@ export function AuthNavbar() {
             gap={1}
             sx={{ flexGrow: 1, display: { xs: "none", md: "flex" }, ml: 4 }}
           >
+            {/* Inicio / Dashboard */}
             <Box
               component="button"
               onClick={handleDashboard}
@@ -127,12 +175,70 @@ export function AuthNavbar() {
                 },
               }}
             >
-              <DashboardIcon sx={{ fontSize: 18 }} />
-              Dashboard
+              <HomeIcon sx={{ fontSize: 18 }} />
+              Inicio
             </Box>
+
+            {/* Chat (Condicional) */}
+            {hasActiveChat && (
+              <Box
+                component="button"
+                onClick={handleChat}
+                sx={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 0.5,
+                  bgcolor: "transparent",
+                  border: "none",
+                  color: "white",
+                  cursor: "pointer",
+                  fontWeight: 600,
+                  fontSize: "0.95rem",
+                  p: 1,
+                  borderRadius: 1,
+                  transition: "all 0.2s ease",
+                  "&:hover": {
+                    bgcolor: "rgba(255, 255, 255, 0.1)",
+                  },
+                }}
+              >
+                <ChatIcon sx={{ fontSize: 18 }} />
+                Chat
+              </Box>
+            )}
+
+            {/* Pagos (Solo Clientes) */}
+            {user?.role === "user" && (
+              <Box
+                component="button"
+                onClick={handlePayments}
+                sx={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 0.5,
+                  bgcolor: "transparent",
+                  border: "none",
+                  color: "white",
+                  cursor: "pointer",
+                  fontWeight: 600,
+                  fontSize: "0.95rem",
+                  p: 1,
+                  borderRadius: 1,
+                  transition: "all 0.2s ease",
+                  "&:hover": {
+                    bgcolor: "rgba(255, 255, 255, 0.1)",
+                  },
+                }}
+              >
+                <PaymentIcon sx={{ fontSize: 18 }} />
+                Pagos
+              </Box>
+            )}
+
+            {/* Historial */}
             <Box
               component="button"
-              onClick={handleProfile}
+              onClick={handleHistory}
               sx={{
                 display: "flex",
                 alignItems: "center",
@@ -151,32 +257,8 @@ export function AuthNavbar() {
                 },
               }}
             >
-              <PersonIcon sx={{ fontSize: 18 }} />
-              Perfil
-            </Box>
-            <Box
-              component="button"
-              onClick={handleSettings}
-              sx={{
-                display: "flex",
-                alignItems: "center",
-                gap: 0.5,
-                bgcolor: "transparent",
-                border: "none",
-                color: "white",
-                cursor: "pointer",
-                fontWeight: 600,
-                fontSize: "0.95rem",
-                p: 1,
-                borderRadius: 1,
-                transition: "all 0.2s ease",
-                "&:hover": {
-                  bgcolor: "rgba(255, 255, 255, 0.1)",
-                },
-              }}
-            >
-              <SettingsIcon sx={{ fontSize: 18 }} />
-              Configuración
+              <HistoryIcon sx={{ fontSize: 18 }} />
+              Historial
             </Box>
           </Box>
 
@@ -184,22 +266,6 @@ export function AuthNavbar() {
           <Box
             sx={{ display: { xs: "none", md: "flex" }, alignItems: "center", gap: 1 }}
           >
-            {/* Notifications Button */}
-            <IconButton
-              onClick={handleNotificationsOpen}
-              sx={{
-                color: "white",
-                "&:hover": {
-                  bgcolor: "rgba(255, 255, 255, 0.1)",
-                },
-              }}
-              title="Notificaciones"
-            >
-              <Badge badgeContent={unreadCount} color="secondary">
-                <NotificationsIcon />
-              </Badge>
-            </IconButton>
-
             {/* Logout Button */}
             <IconButton
               onClick={handleLogout}
@@ -429,13 +495,6 @@ export function AuthNavbar() {
           </List>
         </Box>
       </Drawer>
-
-      {/* Notifications Dropdown */}
-      <NotificationsDropdown
-        open={Boolean(notificationsAnchor)}
-        onClose={handleNotificationsClose}
-        anchorEl={notificationsAnchor}
-      />
     </>
   );
 }
