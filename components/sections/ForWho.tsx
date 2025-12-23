@@ -14,11 +14,11 @@ export function ForWho() {
   const router = useRouter();
 
   const handleSoyCliente = () => {
-    router.push("/login?redirect=/client/dashboard");
+    router.push("/register?role=client");
   };
 
   const handleSoyConductor = () => {
-    router.push("/login?redirect=/driver/dashboard");
+    router.push("/register?role=driver");
   };
 
   return (

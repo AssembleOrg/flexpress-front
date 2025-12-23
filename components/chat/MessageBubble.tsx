@@ -82,7 +82,10 @@ export function MessageBubble({
       >
         <Typography
           variant='body2'
-          sx={{ whiteSpace: 'pre-wrap' }}
+          sx={{
+            whiteSpace: 'pre-wrap',
+            color: 'inherit',
+          }}
         >
           {message.content}
         </Typography>

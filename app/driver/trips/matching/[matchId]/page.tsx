@@ -62,7 +62,7 @@ export default function DriverMatchingDetailPage() {
   const hasShownRejectionToast = useRef(false);
   useEffect(() => {
     if (match?.status === 'rejected' && !hasShownRejectionToast.current) {
-      toast.error('❌ El cliente rechazó la solicitud de viaje');
+      toast.error('El cliente rechazó la solicitud de viaje');
       hasShownRejectionToast.current = true;
     }
   }, [match?.status]);
@@ -71,7 +71,7 @@ export default function DriverMatchingDetailPage() {
   const hasShownCancellationToast = useRef(false);
   useEffect(() => {
     if (match?.status === 'cancelled' && !hasShownCancellationToast.current) {
-      toast.error('❌ El cliente canceló la solicitud');
+      toast.error('El cliente canceló la solicitud');
       hasShownCancellationToast.current = true;
       router.push('/driver/dashboard');
     }
@@ -209,11 +209,28 @@ export default function DriverMatchingDetailPage() {
             >
               {/* Estado 1: Esperando que cliente confirme el viaje */}
               {!tripId && match.status === 'accepted' && (
-                <Alert severity='info'>
-                  <Typography variant='caption'>
-                    Esperando que el cliente confirme el viaje...
+                <Box
+                  sx={{
+                    bgcolor: 'primary.main',
+                    color: 'primary.contrastText',
+                    p: 2,
+                    borderRadius: 1,
+                    mb: 2,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 1.5,
+                    boxShadow: 2,
+                  }}
+                >
+                  <CircularProgress size={20} color='inherit' />
+                  <Typography
+                    variant='body2'
+                    fontWeight={600}
+                    color='inherit'
+                  >
+                    Esperando confirmación del cliente...
                   </Typography>
-                </Alert>
+                </Box>
               )}
 
               {/* Estado 2: Trip confirmado, charter puede finalizar */}
@@ -302,7 +319,7 @@ export default function DriverMatchingDetailPage() {
                       variant='body2'
                       sx={{ fontWeight: 600, mb: 0.5 }}
                     >
-                      ✅ Viaje Completado
+                      Viaje Completado
                     </Typography>
                     <Typography variant='caption'>
                       Créditos transferidos exitosamente.

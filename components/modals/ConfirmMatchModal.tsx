@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import {
   Alert,
@@ -13,11 +13,11 @@ import {
   Divider,
   Stack,
   Typography,
-} from "@mui/material";
-import { Route, AttachMoney } from "@mui/icons-material";
-import { RatingDisplay } from "@/components/ui/RatingDisplay";
-import { useCharterRating } from "@/lib/hooks/queries/useFeedbackQueries";
-import type { AvailableCharter, TravelMatch } from "@/lib/types/api";
+} from '@mui/material';
+import { Route, AttachMoney } from '@mui/icons-material';
+import { RatingDisplay } from '@/components/ui/RatingDisplay';
+import { useCharterRating } from '@/lib/hooks/queries/useFeedbackQueries';
+import type { AvailableCharter, TravelMatch } from '@/lib/types/api';
 
 /**
  * ConfirmMatchModal
@@ -69,9 +69,14 @@ export function ConfirmMatchModal({
   const creditsAfter = userCredits - estimatedCredits;
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
-      <DialogTitle sx={{ fontWeight: 700, pb: 1, fontSize: "1.1rem" }}>
-        ✅ Confirmar Selección
+    <Dialog
+      open={open}
+      onClose={onClose}
+      maxWidth='sm'
+      fullWidth
+    >
+      <DialogTitle sx={{ fontWeight: 700, pb: 1, fontSize: '1.1rem' }}>
+        Confirmar Selección
       </DialogTitle>
 
       <DialogContent sx={{ py: 1.5 }}>
@@ -80,11 +85,11 @@ export function ConfirmMatchModal({
           {/* Charter Card - Compact */}
           <Box
             sx={{
-              display: "flex",
-              alignItems: "center",
+              display: 'flex',
+              alignItems: 'center',
               gap: 1.5,
               p: 1.5,
-              bgcolor: "action.hover",
+              bgcolor: 'action.hover',
               borderRadius: 1.5,
             }}
           >
@@ -99,17 +104,17 @@ export function ConfirmMatchModal({
             {/* Charter Details */}
             <Box sx={{ flex: 1 }}>
               <Typography
-                variant="subtitle2"
-                sx={{ fontWeight: 600, fontSize: "0.95rem" }}
+                variant='subtitle2'
+                sx={{ fontWeight: 600, fontSize: '0.95rem' }}
               >
-                {selectedCharter.charterName || "Chófer"}
+                {selectedCharter.charterName || 'Chófer'}
               </Typography>
               {/* Rating */}
               <Box mt={0.5}>
                 <RatingDisplay
                   averageRating={charterRating?.averageRating || 0}
                   totalReviews={charterRating?.totalFeedbacks || 0}
-                  size="small"
+                  size='small'
                   showCount={false}
                 />
               </Box>
@@ -120,42 +125,60 @@ export function ConfirmMatchModal({
           <Box
             sx={{
               p: 1.5,
-              bgcolor: "background.default",
+              bgcolor: 'background.default',
               borderRadius: 1.5,
             }}
           >
-            <Typography variant="caption" color="text.secondary" display="block" sx={{ mb: 1, fontSize: "0.7rem", fontWeight: 600 }}>
+            <Typography
+              variant='caption'
+              color='text.secondary'
+              display='block'
+              sx={{ mb: 1, fontSize: '0.7rem', fontWeight: 600 }}
+            >
               📍 Origen → Destino
             </Typography>
-            <Typography variant="body2" sx={{ fontSize: "0.85rem", lineHeight: 1.4, mb: 0.5 }}>
-              {match.pickupAddress || "No especificado"}
+            <Typography
+              variant='body2'
+              sx={{ fontSize: '0.85rem', lineHeight: 1.4, mb: 0.5 }}
+            >
+              {match.pickupAddress || 'No especificado'}
             </Typography>
-            <Typography variant="body2" sx={{ fontSize: "0.85rem", fontWeight: 600, lineHeight: 1.4 }}>
-              {match.destinationAddress || "No especificado"}
+            <Typography
+              variant='body2'
+              sx={{ fontSize: '0.85rem', fontWeight: 600, lineHeight: 1.4 }}
+            >
+              {match.destinationAddress || 'No especificado'}
             </Typography>
           </Box>
 
           {/* Key Metrics - Compact Grid */}
           <Box
             sx={{
-              display: "grid",
-              gridTemplateColumns: "1fr 1fr",
+              display: 'grid',
+              gridTemplateColumns: '1fr 1fr',
               gap: 1.5,
             }}
           >
             <Box
               sx={{
                 p: 1.5,
-                bgcolor: "background.default",
+                bgcolor: 'background.default',
                 borderRadius: 1.5,
-                textAlign: "center",
+                textAlign: 'center',
               }}
             >
-              <Route sx={{ fontSize: 20, color: "primary.main", mb: 0.5 }} />
-              <Typography variant="h6" sx={{ fontWeight: 700, fontSize: "1rem" }}>
-                {selectedCharter.totalDistance?.toFixed(1) || "0"} km
+              <Route sx={{ fontSize: 20, color: 'primary.main', mb: 0.5 }} />
+              <Typography
+                variant='h6'
+                sx={{ fontWeight: 700, fontSize: '1rem' }}
+              >
+                {selectedCharter.totalDistance?.toFixed(1) || '0'} km
               </Typography>
-              <Typography variant="caption" color="text.secondary" sx={{ fontSize: "0.65rem" }}>
+              <Typography
+                variant='caption'
+                color='text.secondary'
+                sx={{ fontSize: '0.65rem' }}
+              >
                 Distancia
               </Typography>
             </Box>
@@ -163,16 +186,29 @@ export function ConfirmMatchModal({
             <Box
               sx={{
                 p: 1.5,
-                bgcolor: "background.default",
+                bgcolor: 'background.default',
                 borderRadius: 1.5,
-                textAlign: "center",
+                textAlign: 'center',
               }}
             >
-              <AttachMoney sx={{ fontSize: 20, color: "success.main", mb: 0.5 }} />
-              <Typography variant="h6" sx={{ fontWeight: 700, fontSize: "1rem", color: "success.main" }}>
+              <AttachMoney
+                sx={{ fontSize: 20, color: 'success.main', mb: 0.5 }}
+              />
+              <Typography
+                variant='h6'
+                sx={{
+                  fontWeight: 700,
+                  fontSize: '1rem',
+                  color: 'success.main',
+                }}
+              >
                 {selectedCharter.estimatedCredits || 0}
               </Typography>
-              <Typography variant="caption" color="text.secondary" sx={{ fontSize: "0.65rem" }}>
+              <Typography
+                variant='caption'
+                color='text.secondary'
+                sx={{ fontSize: '0.65rem' }}
+              >
                 Créditos
               </Typography>
             </Box>
@@ -180,30 +216,53 @@ export function ConfirmMatchModal({
 
           {/* Credit Status Alert - Simplified */}
           {!hasEnoughCredits ? (
-            <Alert severity="error" sx={{ py: 1 }}>
-              <Typography variant="body2" sx={{ fontWeight: 600, fontSize: "0.85rem" }}>
-                ❌ Créditos Insuficientes
+            <Alert
+              severity='error'
+              sx={{ py: 1 }}
+            >
+              <Typography
+                variant='body2'
+                sx={{ fontWeight: 600, fontSize: '0.85rem' }}
+              >
+                Créditos Insuficientes
               </Typography>
-              <Typography variant="caption" sx={{ fontSize: "0.75rem" }}>
-                Te faltan {creditsDifference} créditos. Disponibles: {userCredits}
+              <Typography
+                variant='caption'
+                sx={{ fontSize: '0.75rem' }}
+              >
+                Te faltan {creditsDifference} créditos. Disponibles:{' '}
+                {userCredits}
               </Typography>
             </Alert>
           ) : (
-            <Alert severity="success" sx={{ py: 1 }}>
-              <Typography variant="caption" sx={{ fontSize: "0.75rem" }}>
-                ✅ Te quedarán {creditsAfter} créditos después
+            <Alert
+              severity='success'
+              sx={{ py: 1 }}
+            >
+              <Typography
+                variant='caption'
+                sx={{ fontSize: '0.75rem' }}
+              >
+                Te quedarán {creditsAfter} créditos después
               </Typography>
             </Alert>
           )}
         </Stack>
       </DialogContent>
 
-      <DialogActions sx={{ p: 2, gap: 1.5, display: 'flex', justifyContent: 'space-between' }}>
+      <DialogActions
+        sx={{
+          p: 2,
+          gap: 1.5,
+          display: 'flex',
+          justifyContent: 'space-between',
+        }}
+      >
         <Button
           onClick={onClose}
           disabled={isLoading}
-          variant="outlined"
-          size="large"
+          variant='outlined'
+          size='large'
           sx={{ flex: 1, minHeight: 48 }}
         >
           Cancelar
@@ -212,18 +271,18 @@ export function ConfirmMatchModal({
         <Button
           onClick={onConfirm}
           disabled={isLoading || !hasEnoughCredits}
-          variant="contained"
-          size="large"
+          variant='contained'
+          size='large'
           sx={{
             flex: 1,
             minHeight: 48,
             fontWeight: 700,
-            bgcolor: "secondary.main",
-            "&:hover": { bgcolor: "secondary.dark" }
+            bgcolor: 'secondary.main',
+            '&:hover': { bgcolor: 'secondary.dark' },
           }}
           startIcon={isLoading ? <CircularProgress size={20} /> : undefined}
         >
-          {isLoading ? "Confirmando..." : "Confirmar"}
+          {isLoading ? 'Confirmando...' : 'Confirmar'}
         </Button>
       </DialogActions>
     </Dialog>

@@ -40,6 +40,7 @@ import { useCharterMatches } from "@/lib/hooks/queries/useTravelMatchQueries";
 import { useAuthStore } from "@/lib/stores/authStore";
 import { VerificationStatus, type TravelMatch } from "@/lib/types/api";
 import { isMatchExpired } from "@/lib/utils/matchHelpers";
+import { AuthNavbar } from "@/components/layout/AuthNavbar";
 
 const MotionCard = motion.create(Card);
 const MotionBox = motion.create(Box);
@@ -120,10 +121,12 @@ export default function DriverDashboard() {
   // If charter is not verified, show blocking screen
   if (isNotVerified) {
     return (
-      <MobileContainer withBottomNav>
-        <WelcomeHeader userName={user?.name} userRole="charter" />
+      <>
+        <AuthNavbar />
+        <MobileContainer withBottomNav>
+          <WelcomeHeader userName={user?.name} userRole="charter" />
 
-        <MotionCard
+          <MotionCard
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
@@ -212,15 +215,18 @@ export default function DriverDashboard() {
           )}
         </MotionCard>
       </MobileContainer>
+      </>
     );
   }
 
   return (
-    <MobileContainer withBottomNav>
-      {/* Welcome Header */}
-      <WelcomeHeader userName={user?.name} userRole="charter" />
+    <>
+      <AuthNavbar />
+      <MobileContainer withBottomNav>
+        {/* Welcome Header */}
+        <WelcomeHeader userName={user?.name} userRole="charter" />
 
-      {/* Status Toggle - Mobile-First */}
+        {/* Status Toggle - Mobile-First */}
       <MotionCard
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -680,5 +686,6 @@ export default function DriverDashboard() {
         isLoading={respondMutation.isPending}
       />
     </MobileContainer>
+    </>
   );
 }

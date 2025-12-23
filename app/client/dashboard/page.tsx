@@ -37,6 +37,7 @@ import { useAuthStore } from "@/lib/stores/authStore";
 import { isActiveTrip } from "@/lib/utils/matchHelpers";
 import { useCreditPurchaseStore } from "@/lib/stores/creditPurchaseStore";
 import { CreditPurchaseModal } from "@/components/modals/CreditPurchaseModal";
+import { AuthNavbar } from "@/components/layout/AuthNavbar";
 
 const MotionCard = motion.create(Card);
 const MotionButton = motion.create(Button);
@@ -112,11 +113,13 @@ export default function ClientDashboard() {
   };
 
   return (
-    <MobileContainer withBottomNav>
-      {/* Welcome Header */}
-      <WelcomeHeader userName={user?.name} userRole="client" />
+    <>
+      <AuthNavbar />
+      <MobileContainer withBottomNav>
+        {/* Welcome Header */}
+        <WelcomeHeader userName={user?.name} userRole="client" />
 
-      {/* Credits Card */}
+        {/* Credits Card */}
       <MotionCard
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -463,5 +466,6 @@ export default function ClientDashboard() {
       {/* Credit Purchase Modal */}
       <CreditPurchaseModal />
     </MobileContainer>
+    </>
   );
 }

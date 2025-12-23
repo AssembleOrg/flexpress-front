@@ -52,19 +52,26 @@ const registerSchema = z
 type RegisterForm = z.infer<typeof registerSchema>;
 
 function RegisterFormContent() {
-  const [userRole, setUserRole] = useState<"client" | "driver">("client");
+  const searchParams = useSearchParams();
+  const [userRole, setUserRole] = useState<"client" | "driver">(() => {
+    const roleParam = searchParams.get("role");
+    return roleParam === "driver" ? "driver" : "client";
+  });
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [originAddress, setOriginAddress] = useState("");
   const [originCoords, setOriginCoords] = useState<{ lat: number; lon: number } | null>(null);
   const [dniFront, setDniFront] = useState<File | null>(null);
   const [dniBack, setDniBack] = useState<File | null>(null);
   const [dniError, setDniError] = useState("");
-  const searchParams = useSearchParams();
   const registerMutation = useRegister();
   const updateDniUrlsMutation = useUpdateDniUrls();
 
   // Determine transition direction based on redirect parameter
   const getTransitionDirection = (): "left" | "right" | "default" => {
+    const roleParam = searchParams.get("role");
+    if (roleParam === "client") return "left";
+    if (roleParam === "driver") return "right";
+
     const redirectPath = searchParams.get("redirect");
     if (!redirectPath) return "default";
     if (redirectPath.includes("/client")) return "left";
