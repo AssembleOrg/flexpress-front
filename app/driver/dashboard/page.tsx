@@ -8,6 +8,7 @@ import {
   LocationOn,
   Person,
   Block,
+  DirectionsCar,
 } from "@mui/icons-material";
 import {
   Box,
@@ -37,10 +38,12 @@ import {
 } from "@/lib/hooks/mutations/useTravelMatchMutations";
 import { queryKeys } from "@/lib/hooks/queries/queryFactory";
 import { useCharterMatches } from "@/lib/hooks/queries/useTravelMatchQueries";
+import { useMyVehicles } from "@/lib/hooks/queries/useVehicleQueries";
 import { useAuthStore } from "@/lib/stores/authStore";
 import { VerificationStatus, type TravelMatch } from "@/lib/types/api";
 import { isMatchExpired } from "@/lib/utils/matchHelpers";
 import { AuthNavbar } from "@/components/layout/AuthNavbar";
+import { usePublicPricing } from "@/lib/hooks/queries/useSystemConfigQueries";
 
 const MotionCard = motion.create(Card);
 const MotionBox = motion.create(Box);
@@ -48,12 +51,13 @@ const MotionBox = motion.create(Box);
 export default function DriverDashboard() {
   const router = useRouter();
   const queryClient = useQueryClient();
-  const { user } = useAuthStore();
+  const { user, gender } = useAuthStore();
   const [isAvailable, setIsAvailable] = useState(false);
   const toggleMutation = useToggleAvailability();
   const { data: charterMatches = [], isLoading: matchesLoading } =
     useCharterMatches();
   const respondMutation = useRespondToMatch();
+  const { data: pricing } = usePublicPricing();
 
   // Modal state
   const [acceptModalOpen, setAcceptModalOpen] = useState(false);
@@ -113,10 +117,18 @@ export default function DriverDashboard() {
     });
   };
 
+  const { data: myVehicles = [] } = useMyVehicles();
+
   // Check verification status
   const isPending = user?.verificationStatus === VerificationStatus.PENDING;
   const isRejected = user?.verificationStatus === VerificationStatus.REJECTED;
   const isNotVerified = isPending || isRejected;
+
+  // Generar saludo personalizado según género
+  const greeting =
+    gender === "male" ? `¡Bienvenido, ${user?.name?.split(" ")[0]}!`
+    : gender === "female" ? `¡Bienvenida, ${user?.name?.split(" ")[0]}!`
+    : `¡Bienvenido/a, ${user?.name?.split(" ")[0]}!`;
 
   // If charter is not verified, show blocking screen
   if (isNotVerified) {
@@ -124,7 +136,7 @@ export default function DriverDashboard() {
       <>
         <AuthNavbar />
         <MobileContainer withBottomNav>
-          <WelcomeHeader userName={user?.name} userRole="charter" />
+          <WelcomeHeader userName={user?.name} userRole="charter" greeting={greeting} />
 
           <MotionCard
           initial={{ opacity: 0, y: 20 }}
@@ -214,6 +226,74 @@ export default function DriverDashboard() {
             </>
           )}
         </MotionCard>
+
+          {/* Estado de vehículos */}
+          <Card sx={{ mt: 2 }}>
+            <CardContent>
+              <Stack direction="row" spacing={1} alignItems="center" mb={2}>
+                <DirectionsCar fontSize="small" color="action" />
+                <Typography variant="subtitle1" fontWeight={600}>
+                  Tus vehículos
+                </Typography>
+              </Stack>
+
+              {myVehicles.length === 0 ? (
+                <Box>
+                  <Typography variant="body2" color="text.secondary" mb={2}>
+                    No has registrado ningún vehículo todavía.
+                  </Typography>
+                  <Button
+                    variant="outlined"
+                    size="small"
+                    onClick={() => router.push("/driver/onboarding/vehicle")}
+                  >
+                    Agregar vehículo
+                  </Button>
+                </Box>
+              ) : (
+                <Stack spacing={1.5}>
+                  {myVehicles.map((vehicle) => (
+                    <Box key={vehicle.id}>
+                      <Stack direction="row" spacing={1} alignItems="center" mb={0.5}>
+                        <Typography variant="body2" fontWeight={600}>
+                          {vehicle.plate}
+                          {vehicle.alias ? ` — ${vehicle.alias}` : ""}
+                        </Typography>
+                        <Chip
+                          label={
+                            vehicle.verificationStatus === VerificationStatus.VERIFIED
+                              ? "Aprobado"
+                              : vehicle.verificationStatus === VerificationStatus.REJECTED
+                              ? "Rechazado"
+                              : "En revisión"
+                          }
+                          color={
+                            vehicle.verificationStatus === VerificationStatus.VERIFIED
+                              ? "success"
+                              : vehicle.verificationStatus === VerificationStatus.REJECTED
+                              ? "error"
+                              : "warning"
+                          }
+                          size="small"
+                          sx={{ fontWeight: 600 }}
+                        />
+                      </Stack>
+                      {vehicle.verificationStatus === VerificationStatus.REJECTED && vehicle.rejectionReason && (
+                        <Box sx={{ bgcolor: "error.light", p: 1.5, borderRadius: 1 }}>
+                          <Typography variant="caption" fontWeight={700} color="error.dark" display="block">
+                            Motivo del rechazo:
+                          </Typography>
+                          <Typography variant="caption" color="error.dark">
+                            {vehicle.rejectionReason}
+                          </Typography>
+                        </Box>
+                      )}
+                    </Box>
+                  ))}
+                </Stack>
+              )}
+            </CardContent>
+          </Card>
       </MobileContainer>
       </>
     );
@@ -224,7 +304,7 @@ export default function DriverDashboard() {
       <AuthNavbar />
       <MobileContainer withBottomNav>
         {/* Welcome Header */}
-        <WelcomeHeader userName={user?.name} userRole="charter" />
+        <WelcomeHeader userName={user?.name} userRole="charter" greeting={greeting} />
 
         {/* Status Toggle - Mobile-First */}
       <MotionCard
@@ -295,6 +375,53 @@ export default function DriverDashboard() {
               ? "Recibiendo solicitudes de viajes"
               : "Actívate para empezar a ganar"}
           </Typography>
+        </CardContent>
+      </MotionCard>
+
+      {/* Tarifa del charter */}
+      <MotionCard
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, delay: 0.15 }}
+        sx={{ mb: 3 }}
+      >
+        <CardContent sx={{ p: 2.5 }}>
+          <Typography variant="subtitle2" fontWeight={700} mb={1.5}>
+            Tu tarifa
+          </Typography>
+          {user?.pricePerKm != null ? (
+            <Stack spacing={0.5}>
+              <Typography variant="body2">
+                Tu precio: <strong>{user.pricePerKm} cr/km</strong>
+              </Typography>
+              {pricing?.creditsPerKm && (
+                <Typography variant="caption" color="text.secondary">
+                  Tarifa base del sistema: {pricing.creditsPerKm} cr/km
+                </Typography>
+              )}
+              <Button
+                size="small"
+                variant="text"
+                onClick={() => router.push("/driver/onboarding/vehicle")}
+                sx={{ alignSelf: "flex-start", p: 0, mt: 0.5 }}
+              >
+                Editar →
+              </Button>
+            </Stack>
+          ) : (
+            <Stack spacing={1}>
+              <Typography variant="body2" color="text.secondary">
+                Aún no configuraste tu precio por km.
+              </Typography>
+              <Button
+                size="small"
+                variant="outlined"
+                onClick={() => router.push("/driver/onboarding/vehicle")}
+              >
+                Configurar precio
+              </Button>
+            </Stack>
+          )}
         </CardContent>
       </MotionCard>
 

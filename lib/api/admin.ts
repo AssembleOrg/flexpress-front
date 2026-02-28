@@ -12,6 +12,8 @@ import type {
   Payment,
   SystemConfig,
   VerificationStatus,
+  UserDocument,
+  Vehicle,
 } from "@/lib/types/api";
 import type {
   UserFilters,
@@ -369,6 +371,19 @@ export const adminApi = {
   },
 
   // ============================================
+  // DOCUMENTOS DE USUARIO
+  // ============================================
+
+  /**
+   * Get documents (DNI) for a specific user
+   * GET /users/:id/documents
+   */
+  getUserDocuments: async (userId: string): Promise<UserDocument[]> => {
+    const response = await api.get<ApiResponse<UserDocument[]>>(`/users/${userId}/documents`);
+    return response.data.data ?? [];
+  },
+
+  // ============================================
   // CHARTER VERIFICATION
   // ============================================
 
@@ -402,6 +417,24 @@ export const adminApi = {
         status,
         rejectionReason,
       },
+    );
+
+    // biome-ignore lint/style/noNonNullAssertion: axios response guarantees data
+    return response.data.data!;
+  },
+
+  /**
+   * Verify or reject a vehicle individually
+   * PATCH /vehicles/admin/:id/review
+   */
+  verifyVehicle: async (
+    vehicleId: string,
+    status: "verified" | "rejected",
+    rejectionReason?: string,
+  ): Promise<Vehicle> => {
+    const response = await api.patch<ApiResponse<Vehicle>>(
+      `/vehicles/admin/${vehicleId}/review`,
+      { status, rejectionReason },
     );
 
     // biome-ignore lint/style/noNonNullAssertion: axios response guarantees data

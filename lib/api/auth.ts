@@ -33,6 +33,7 @@ export interface UpdateUserRequest {
   originAddress?: string | null;
   originLatitude?: string | null;
   originLongitude?: string | null;
+  pricePerKm?: number;
 }
 
 export const authApi = {

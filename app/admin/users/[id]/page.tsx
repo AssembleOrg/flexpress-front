@@ -26,8 +26,10 @@ import {
   useUpdateUser,
   useDeleteUser,
 } from "@/lib/hooks/mutations/useAdminMutations";
+import { useAdminUserDocuments } from "@/lib/hooks/queries/useAdminQueries";
 import { useAuthStore } from "@/lib/stores/authStore";
 import type { User } from "@/lib/types/api";
+import { DocumentReviewStatus } from "@/lib/types/api";
 
 // Form validation schema
 const updateUserSchema = z.object({
@@ -62,6 +64,7 @@ export default function UserEditPage() {
 
   // Queries
   const { data: user, isLoading } = useAdminUserDetail(userId);
+  const { data: userDocuments = [] } = useAdminUserDocuments(userId);
   const updateUserMutation = useUpdateUser();
   const deleteUserMutation = useDeleteUser();
 
@@ -295,6 +298,56 @@ export default function UserEditPage() {
               </Button>
             </Stack>
           </Stack>
+        </CardContent>
+      </Card>
+
+      {/* Documentos de Identidad */}
+      <Card sx={{ mt: 3 }}>
+        <CardContent>
+          <Typography variant="h6" sx={{ fontWeight: 700, mb: 2 }}>
+            Documentos de Identidad
+          </Typography>
+          {userDocuments.length === 0 ? (
+            <Typography variant="body2" color="text.secondary">
+              Sin documentos de identidad subidos.
+            </Typography>
+          ) : (
+            <Stack direction="row" spacing={2} flexWrap="wrap">
+              {userDocuments.map((doc) => (
+                <Box key={doc.id} sx={{ position: "relative" }}>
+                  <Box
+                    component="a"
+                    href={doc.fileUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    <img
+                      src={doc.fileUrl}
+                      alt={`DNI ${doc.side ?? ""}`}
+                      style={{
+                        width: 140,
+                        height: 100,
+                        objectFit: "cover",
+                        borderRadius: 4,
+                        border: `2px solid ${
+                          doc.status === DocumentReviewStatus.APPROVED
+                            ? "#2e7d32"
+                            : doc.status === DocumentReviewStatus.REJECTED
+                            ? "#d32f2f"
+                            : "#dca621"
+                        }`,
+                        cursor: "pointer",
+                        display: "block",
+                      }}
+                    />
+                  </Box>
+                  <Typography variant="caption" display="block" mt={0.5} textAlign="center">
+                    {doc.side === "front" ? "Frente" : "Dorso"}
+                  </Typography>
+                </Box>
+              ))}
+            </Stack>
+          )}
         </CardContent>
       </Card>
 

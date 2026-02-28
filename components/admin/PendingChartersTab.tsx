@@ -17,8 +17,6 @@ import {
   TextField,
   CircularProgress,
   Alert,
-  Link,
-  IconButton,
 } from "@mui/material";
 import {
   CheckCircle as ApproveIcon,
@@ -26,43 +24,40 @@ import {
   Email as EmailIcon,
   Phone as PhoneIcon,
   LocationOn as LocationIcon,
-  Description as DocumentIcon,
-  Close as CloseIcon,
-  ZoomIn as ZoomInIcon,
-  OpenInNew as OpenInNewIcon,
-  AttachFile as AttachFileIcon,
+  DirectionsCar,
 } from "@mui/icons-material";
 import { usePendingCharters } from "@/lib/hooks/queries/useAdminQueries";
-import { useVerifyCharter } from "@/lib/hooks/mutations/useAdminMutations";
-import type { User } from "@/lib/types/api";
+import { useVerifyCharter, useVerifyVehicle } from "@/lib/hooks/mutations/useAdminMutations";
+import type { PendingCharterReviewItem, Vehicle } from "@/lib/types/api";
+import { DocumentReviewStatus } from "@/lib/types/api";
 import { MobileCharterVerificationCard } from "./mobile/MobileCharterVerificationCard";
 import { useTheme, useMediaQuery } from "@mui/material";
 
 export function PendingChartersTab() {
   const { data: pendingCharters = [], isLoading, error } = usePendingCharters();
   const verifyMutation = useVerifyCharter();
+  const verifyVehicleMutation = useVerifyVehicle();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
 
-  const [selectedCharter, setSelectedCharter] = useState<User | null>(null);
+  // Charter reject dialog
+  const [selectedCharter, setSelectedCharter] = useState<PendingCharterReviewItem | null>(null);
   const [rejectDialogOpen, setRejectDialogOpen] = useState(false);
   const [rejectionReason, setRejectionReason] = useState("");
 
-  // Estado para lazy loading de imágenes
-  const [expandedCharterId, setExpandedCharterId] = useState<string | null>(null);
+  // Vehicle reject dialog
+  const [selectedVehicle, setSelectedVehicle] = useState<Vehicle | null>(null);
+  const [vehicleRejectDialogOpen, setVehicleRejectDialogOpen] = useState(false);
+  const [vehicleRejectionReason, setVehicleRejectionReason] = useState("");
 
-  // Estados para el modal de imágenes DNI (ambas imágenes)
-  const [imageModalOpen, setImageModalOpen] = useState(false);
-  const [selectedCharterForModal, setSelectedCharterForModal] = useState<User | null>(null);
-
-  const handleApprove = async (charter: User) => {
+  const handleApprove = async (charter: PendingCharterReviewItem) => {
     await verifyMutation.mutateAsync({
       charterId: charter.id,
       status: "verified",
     });
   };
 
-  const handleRejectClick = (charter: User) => {
+  const handleRejectClick = (charter: PendingCharterReviewItem) => {
     setSelectedCharter(charter);
     setRejectionReason("");
     setRejectDialogOpen(true);
@@ -82,13 +77,31 @@ export function PendingChartersTab() {
     setRejectionReason("");
   };
 
-  const handleToggleImages = (charterId: string) => {
-    setExpandedCharterId(prev => prev === charterId ? null : charterId);
+  const handleApproveVehicle = async (vehicle: Vehicle) => {
+    await verifyVehicleMutation.mutateAsync({
+      vehicleId: vehicle.id,
+      status: "verified",
+    });
   };
 
-  const handleImageClick = (charter: User) => {
-    setSelectedCharterForModal(charter);
-    setImageModalOpen(true);
+  const handleRejectVehicleClick = (vehicle: Vehicle) => {
+    setSelectedVehicle(vehicle);
+    setVehicleRejectionReason("");
+    setVehicleRejectDialogOpen(true);
+  };
+
+  const handleConfirmRejectVehicle = async () => {
+    if (!selectedVehicle || !vehicleRejectionReason.trim()) return;
+
+    await verifyVehicleMutation.mutateAsync({
+      vehicleId: selectedVehicle.id,
+      status: "rejected",
+      rejectionReason: vehicleRejectionReason.trim(),
+    });
+
+    setVehicleRejectDialogOpen(false);
+    setSelectedVehicle(null);
+    setVehicleRejectionReason("");
   };
 
   if (isLoading) {
@@ -135,6 +148,8 @@ export function PendingChartersTab() {
               charter={charter}
               onApprove={handleApprove}
               onReject={handleRejectClick}
+              onApproveVehicle={handleApproveVehicle}
+              onRejectVehicle={handleRejectVehicleClick}
             />
           ) : (
             <Card
@@ -205,213 +220,133 @@ export function PendingChartersTab() {
                   </Box>
                 </Stack>
 
-                {/* DNI Images - Lazy Loading */}
-                <Stack spacing={2} minWidth={300}>
-                  <Typography variant="subtitle2" color="text.secondary">
-                    Documentación DNI:
-                  </Typography>
-
-                  {expandedCharterId === charter.id ? (
-                    // Mostrar imágenes (solo cuando se expandió)
-                    <>
-                      <Box sx={{ display: "flex", gap: 2 }}>
-                        {/* Front */}
-                        {charter.documentationFrontUrl ? (
-                          <Box sx={{ flex: 1 }}>
-                            <Typography variant="caption" display="block" gutterBottom>
-                              Frente
-                            </Typography>
+                {/* Documentación: DNI + Vehículos */}
+                <Stack spacing={2} minWidth={300} maxWidth={480}>
+                  {/* DNI del conductor */}
+                  <Box>
+                    <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                      DNI del conductor ({(charter as any).userDocuments?.length ?? 0} docs)
+                    </Typography>
+                    {((charter as any).userDocuments?.length ?? 0) === 0 ? (
+                      <Alert severity="warning" sx={{ py: 0.5 }}>Sin documentos de identidad</Alert>
+                    ) : (
+                      <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
+                        {(charter as any).userDocuments.map((doc: any) => (
+                          <Box key={doc.id} sx={{ position: "relative" }}>
                             <Box
-                              onClick={() => handleImageClick(charter)}
-                              sx={{
-                                cursor: "pointer",
-                                position: "relative",
-                                "&:hover": {
-                                  opacity: 0.8,
-                                  "& .overlay": {
-                                    opacity: 1,
-                                  },
-                                },
-                              }}
+                              component="a"
+                              href={doc.fileUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
                             >
                               <img
-                                src={charter.documentationFrontUrl}
-                                alt="DNI Frente"
+                                src={doc.fileUrl}
+                                alt={`DNI ${doc.side ?? ""}`}
                                 style={{
-                                  width: "100%",
-                                  maxHeight: 120,
+                                  width: 100,
+                                  height: 70,
                                   objectFit: "cover",
                                   borderRadius: 4,
-                                  border: "1px solid #ddd",
+                                  border: `2px solid ${doc.status === DocumentReviewStatus.APPROVED ? "#2e7d32" : doc.status === DocumentReviewStatus.REJECTED ? "#d32f2f" : "#dca621"}`,
+                                  cursor: "pointer",
                                 }}
                               />
-                              <Box
-                                className="overlay"
-                                sx={{
-                                  position: "absolute",
-                                  top: 0,
-                                  left: 0,
-                                  right: 0,
-                                  bottom: 0,
-                                  bgcolor: "rgba(0, 0, 0, 0.5)",
-                                  display: "flex",
-                                  alignItems: "center",
-                                  justifyContent: "center",
-                                  borderRadius: 1,
-                                  opacity: 0,
-                                  transition: "opacity 0.2s",
-                                }}
-                              >
-                                <ZoomInIcon sx={{ color: "white", fontSize: 32 }} />
-                              </Box>
                             </Box>
+                            <Chip
+                              label={doc.side === "front" ? "Frente" : "Dorso"}
+                              size="small"
+                              sx={{ position: "absolute", bottom: 2, left: 2, fontSize: 9, height: 16 }}
+                            />
                           </Box>
-                        ) : (
-                          <Box sx={{ flex: 1 }}>
-                            <Typography variant="caption" display="block" gutterBottom color="text.secondary">
-                              Frente
-                            </Typography>
-                            <Box
-                              sx={{
-                                border: "2px dashed",
-                                borderColor: "error.light",
-                                borderRadius: 1,
-                                p: 2,
-                                textAlign: "center",
-                                bgcolor: "error.lighter",
-                                minHeight: 120,
-                                display: "flex",
-                                alignItems: "center",
-                                justifyContent: "center",
-                              }}
-                            >
-                              <Stack spacing={1} alignItems="center">
-                                <DocumentIcon sx={{ fontSize: 32, color: "error.main" }} />
-                                <Typography variant="caption" color="error.main" fontWeight={600}>
-                                  Sin documento frontal
-                                </Typography>
-                              </Stack>
-                            </Box>
-                          </Box>
-                        )}
+                        ))}
+                      </Box>
+                    )}
+                  </Box>
 
-                        {/* Back */}
-                        {charter.documentationBackUrl ? (
-                          <Box sx={{ flex: 1 }}>
-                            <Typography variant="caption" display="block" gutterBottom>
-                              Dorso
-                            </Typography>
-                            <Box
-                              onClick={() => handleImageClick(charter)}
-                              sx={{
-                                cursor: "pointer",
-                                position: "relative",
-                                "&:hover": {
-                                  opacity: 0.8,
-                                  "& .overlay": {
-                                    opacity: 1,
-                                  },
-                                },
-                              }}
-                            >
-                              <img
-                                src={charter.documentationBackUrl}
-                                alt="DNI Dorso"
-                                style={{
-                                  width: "100%",
-                                  maxHeight: 120,
-                                  objectFit: "cover",
-                                  borderRadius: 4,
-                                  border: "1px solid #ddd",
-                                }}
-                              />
-                              <Box
-                                className="overlay"
-                                sx={{
-                                  position: "absolute",
-                                  top: 0,
-                                  left: 0,
-                                  right: 0,
-                                  bottom: 0,
-                                  bgcolor: "rgba(0, 0, 0, 0.5)",
-                                  display: "flex",
-                                  alignItems: "center",
-                                  justifyContent: "center",
-                                  borderRadius: 1,
-                                  opacity: 0,
-                                  transition: "opacity 0.2s",
-                                }}
+                  {/* Vehículos */}
+                  {((charter as any).vehicles?.length ?? 0) > 0 ? (
+                    ((charter as any).vehicles ?? []).map((vehicle: any, idx: number) => (
+                      <Box key={vehicle.id}>
+                        <Stack direction="row" spacing={1} alignItems="center" mb={0.5} flexWrap="wrap">
+                          <DirectionsCar fontSize="small" color="action" />
+                          <Typography variant="subtitle2" color="text.secondary">
+                            Vehículo {idx + 1}: {vehicle.plate}
+                            {vehicle.alias ? ` (${vehicle.alias})` : ""}
+                          </Typography>
+                          <Chip
+                            label={
+                              vehicle.verificationStatus === "verified"
+                                ? "Aprobado"
+                                : vehicle.verificationStatus === "rejected"
+                                ? "Rechazado"
+                                : "Pendiente"
+                            }
+                            size="small"
+                            color={vehicle.verificationStatus === "verified" ? "success" : vehicle.verificationStatus === "rejected" ? "error" : "warning"}
+                            sx={{ height: 18, fontSize: 10 }}
+                          />
+                          {vehicle.verificationStatus !== "verified" && (
+                            <Stack direction="row" spacing={0.5}>
+                              <Button
+                                size="small"
+                                variant="outlined"
+                                color="success"
+                                sx={{ fontSize: 11, py: 0, px: 1, minWidth: 0 }}
+                                onClick={() => handleApproveVehicle(vehicle)}
+                                disabled={verifyVehicleMutation.isPending}
                               >
-                                <ZoomInIcon sx={{ color: "white", fontSize: 32 }} />
-                              </Box>
-                            </Box>
-                          </Box>
+                                Aprobar
+                              </Button>
+                              <Button
+                                size="small"
+                                variant="outlined"
+                                color="error"
+                                sx={{ fontSize: 11, py: 0, px: 1, minWidth: 0 }}
+                                onClick={() => handleRejectVehicleClick(vehicle)}
+                                disabled={verifyVehicleMutation.isPending}
+                              >
+                                Rechazar
+                              </Button>
+                            </Stack>
+                          )}
+                        </Stack>
+                        {(vehicle.documents?.length ?? 0) === 0 ? (
+                          <Alert severity="warning" sx={{ py: 0.5 }}>Sin documentos del vehículo</Alert>
                         ) : (
-                          <Box sx={{ flex: 1 }}>
-                            <Typography variant="caption" display="block" gutterBottom color="text.secondary">
-                              Dorso
-                            </Typography>
-                            <Box
-                              sx={{
-                                border: "2px dashed",
-                                borderColor: "error.light",
-                                borderRadius: 1,
-                                p: 2,
-                                textAlign: "center",
-                                bgcolor: "error.lighter",
-                                minHeight: 120,
-                                display: "flex",
-                                alignItems: "center",
-                                justifyContent: "center",
-                              }}
-                            >
-                              <Stack spacing={1} alignItems="center">
-                                <DocumentIcon sx={{ fontSize: 32, color: "error.main" }} />
-                                <Typography variant="caption" color="error.main" fontWeight={600}>
-                                  Sin documento dorsal
-                                </Typography>
-                              </Stack>
-                            </Box>
+                          <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
+                            {(vehicle.documents ?? []).map((doc: any) => (
+                              <Box
+                                key={doc.id}
+                                component="a"
+                                href={doc.fileUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                sx={{ textDecoration: "none" }}
+                              >
+                                <img
+                                  src={doc.fileUrl}
+                                  alt={doc.type}
+                                  style={{
+                                    width: 80,
+                                    height: 60,
+                                    objectFit: "cover",
+                                    borderRadius: 4,
+                                    border: `2px solid ${doc.status === DocumentReviewStatus.APPROVED ? "#2e7d32" : doc.status === DocumentReviewStatus.REJECTED ? "#d32f2f" : "#dca621"}`,
+                                    cursor: "pointer",
+                                  }}
+                                />
+                              </Box>
+                            ))}
                           </Box>
                         )}
                       </Box>
-
-                      {/* Botón para ocultar imágenes */}
-                      <Button
-                        variant="text"
-                        size="small"
-                        onClick={() => setExpandedCharterId(null)}
-                        sx={{ alignSelf: "flex-start" }}
-                      >
-                        Ocultar Imágenes
-                      </Button>
-                    </>
+                    ))
                   ) : (
-                    // Mostrar botón para cargar imágenes
-                    <Button
-                      variant="outlined"
-                      startIcon={<AttachFileIcon />}
-                      onClick={() => handleToggleImages(charter.id)}
-                      size="small"
-                      sx={{
-                        alignSelf: "flex-start",
-                        borderColor: charter.documentationFrontUrl || charter.documentationBackUrl ? "success.main" : "divider",
-                        color: charter.documentationFrontUrl || charter.documentationBackUrl ? "success.main" : "text.primary",
-                        "&:hover": {
-                          borderColor: charter.documentationFrontUrl || charter.documentationBackUrl ? "success.dark" : "primary.main",
-                          bgcolor: charter.documentationFrontUrl || charter.documentationBackUrl ? "success.lighter" : "action.hover",
-                        },
-                      }}
-                    >
-                      Ver Adjuntados ({
-                        [charter.documentationFrontUrl, charter.documentationBackUrl]
-                          .filter(Boolean).length
-                      })
-                    </Button>
+                    <Alert severity="warning" sx={{ py: 0.5 }}>Sin vehículos registrados</Alert>
                   )}
                 </Stack>
 
-                {/* Actions */}
+                {/* Actions — Charter */}
                 <Stack direction="row" spacing={1}>
                   <Button
                     variant="contained"
@@ -443,7 +378,7 @@ export function PendingChartersTab() {
         )}
       </Stack>
 
-      {/* Rejection Dialog */}
+      {/* Charter Rejection Dialog */}
       <Dialog
         open={rejectDialogOpen}
         onClose={() => setRejectDialogOpen(false)}
@@ -486,119 +421,55 @@ export function PendingChartersTab() {
         </DialogActions>
       </Dialog>
 
-      {/* Image Modal - Ambas Imágenes Lado a Lado */}
+      {/* Vehicle Rejection Dialog */}
       <Dialog
-        open={imageModalOpen}
-        onClose={() => setImageModalOpen(false)}
-        maxWidth="xl"
+        open={vehicleRejectDialogOpen}
+        onClose={() => setVehicleRejectDialogOpen(false)}
+        maxWidth="sm"
         fullWidth
       >
         <DialogTitle>
-          <Stack direction="row" justifyContent="space-between" alignItems="center">
-            <Box>
-              <Typography variant="h6">
-                DNI de {selectedCharterForModal?.name}
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                {selectedCharterForModal?.email}
-              </Typography>
-            </Box>
-            <IconButton onClick={() => setImageModalOpen(false)}>
-              <CloseIcon />
-            </IconButton>
-          </Stack>
+          Rechazar Vehículo
+          {selectedVehicle && (
+            <Typography variant="body2" color="text.secondary">
+              {selectedVehicle.plate}{selectedVehicle.alias ? ` — ${selectedVehicle.alias}` : ""}
+            </Typography>
+          )}
         </DialogTitle>
         <DialogContent>
-          {selectedCharterForModal && (
-            <Box sx={{ display: 'flex', gap: 3, py: 2 }}>
-              {/* Frente */}
-              {selectedCharterForModal.documentationFrontUrl && (
-                <Box sx={{ flex: 1 }}>
-                  <Typography variant="subtitle2" gutterBottom fontWeight={600}>
-                    Frente del DNI
-                  </Typography>
-                  <Box
-                    sx={{
-                      bgcolor: "grey.100",
-                      borderRadius: 2,
-                      p: 2,
-                      display: "flex",
-                      justifyContent: "center",
-                      alignItems: "center",
-                      minHeight: 400,
-                    }}
-                  >
-                    <img
-                      src={selectedCharterForModal.documentationFrontUrl}
-                      alt="DNI Frente"
-                      style={{
-                        width: '100%',
-                        maxHeight: '70vh',
-                        objectFit: 'contain',
-                        borderRadius: 8,
-                      }}
-                    />
-                  </Box>
-                </Box>
-              )}
-
-              {/* Dorso */}
-              {selectedCharterForModal.documentationBackUrl && (
-                <Box sx={{ flex: 1 }}>
-                  <Typography variant="subtitle2" gutterBottom fontWeight={600}>
-                    Dorso del DNI
-                  </Typography>
-                  <Box
-                    sx={{
-                      bgcolor: "grey.100",
-                      borderRadius: 2,
-                      p: 2,
-                      display: "flex",
-                      justifyContent: "center",
-                      alignItems: "center",
-                      minHeight: 400,
-                    }}
-                  >
-                    <img
-                      src={selectedCharterForModal.documentationBackUrl}
-                      alt="DNI Dorso"
-                      style={{
-                        width: '100%',
-                        maxHeight: '70vh',
-                        objectFit: 'contain',
-                        borderRadius: 8,
-                      }}
-                    />
-                  </Box>
-                </Box>
-              )}
-            </Box>
-          )}
+          <Typography variant="body2" color="text.secondary" mb={2}>
+            Ingresa el motivo del rechazo. Este mensaje será visible para el conductor.
+          </Typography>
+          <TextField
+            autoFocus
+            fullWidth
+            multiline
+            rows={3}
+            label="Motivo del rechazo"
+            value={vehicleRejectionReason}
+            onChange={(e) => setVehicleRejectionReason(e.target.value)}
+            placeholder="Ej: Seguro vencido, cédula ilegible, etc."
+            error={vehicleRejectionReason.trim() === ""}
+            helperText={
+              vehicleRejectionReason.trim() === ""
+                ? "El motivo es obligatorio"
+                : ""
+            }
+          />
         </DialogContent>
         <DialogActions>
-          {selectedCharterForModal?.documentationFrontUrl && (
-            <Button
-              variant="outlined"
-              startIcon={<OpenInNewIcon />}
-              onClick={() => window.open(selectedCharterForModal.documentationFrontUrl ?? undefined, "_blank")}
-            >
-              Abrir Frente en Nueva Pestaña
-            </Button>
-          )}
-          {selectedCharterForModal?.documentationBackUrl && (
-            <Button
-              variant="outlined"
-              startIcon={<OpenInNewIcon />}
-              onClick={() => window.open(selectedCharterForModal.documentationBackUrl ?? undefined, "_blank")}
-            >
-              Abrir Dorso en Nueva Pestaña
-            </Button>
-          )}
-          <Button onClick={() => setImageModalOpen(false)} variant="contained">
-            Cerrar
+          <Button onClick={() => setVehicleRejectDialogOpen(false)}>Cancelar</Button>
+          <Button
+            onClick={handleConfirmRejectVehicle}
+            color="error"
+            variant="contained"
+            disabled={!vehicleRejectionReason.trim() || verifyVehicleMutation.isPending}
+          >
+            {verifyVehicleMutation.isPending ? "Rechazando..." : "Confirmar Rechazo"}
           </Button>
         </DialogActions>
       </Dialog>
+
     </Box>
   );
 }

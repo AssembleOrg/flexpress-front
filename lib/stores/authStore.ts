@@ -7,9 +7,10 @@ interface AuthActions {
   clearAuth: () => void;
   updateUser: (user: Partial<User>) => void;
   setLoading: (loading: boolean) => void;
+  setGender: (gender: "male" | "female" | "other") => void;
 }
 
-export const useAuthStore = create<AuthState & AuthActions>()(
+export const useAuthStore = create<AuthState & AuthActions & { gender: "male" | "female" | "other" | null }>()(
   persist(
     (set) => ({
       // Estado inicial
@@ -17,6 +18,7 @@ export const useAuthStore = create<AuthState & AuthActions>()(
       token: null,
       isAuthenticated: false,
       isLoading: false,
+      gender: null,
 
       // Acciones
       login: (user: User, token: string) => {
@@ -51,6 +53,7 @@ export const useAuthStore = create<AuthState & AuthActions>()(
           token: null,
           isAuthenticated: false,
           isLoading: false,
+          gender: null,
         });
       },
 
@@ -63,6 +66,9 @@ export const useAuthStore = create<AuthState & AuthActions>()(
         set({
           isLoading: loading,
         }),
+
+      setGender: (gender: "male" | "female" | "other") =>
+        set({ gender }),
     }),
     {
       name: "flexpress-auth",
@@ -71,6 +77,7 @@ export const useAuthStore = create<AuthState & AuthActions>()(
         user: state.user,
         token: state.token,
         isAuthenticated: state.isAuthenticated,
+        gender: state.gender,
       }),
     },
   ),

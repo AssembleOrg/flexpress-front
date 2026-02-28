@@ -61,18 +61,27 @@ export function AdminNavbar() {
         <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
           <Logo />
           <Box>
-            <Typography variant="h6" sx={{ fontWeight: 700, color: "#212121" }}>
-              FlexPress Admin
+            <Typography
+              sx={{
+                fontWeight: 700,
+                color: "#212121",
+                fontSize: { xs: "0.9rem", md: "1.25rem" },
+              }}
+            >
+              FlexPress Gestión
             </Typography>
-            <Typography variant="caption" sx={{ color: "#380116" }}>
+            <Typography
+              variant="caption"
+              sx={{ color: "#380116", display: { xs: "none", md: "block" } }}
+            >
               {getRoleLabel()}
             </Typography>
           </Box>
         </Box>
 
         {/* User Info y Menu */}
-        <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-          <Box sx={{ textAlign: "right" }}>
+        <Box sx={{ display: "flex", alignItems: "center", gap: { xs: 1, md: 2 } }}>
+          <Box sx={{ textAlign: "right", display: { xs: "none", md: "flex" }, flexDirection: "column" }}>
             <Typography
               variant="body2"
               sx={{ fontWeight: 500, color: "#212121" }}

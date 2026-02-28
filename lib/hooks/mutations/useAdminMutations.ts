@@ -4,7 +4,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import toast from "react-hot-toast";
 import { adminApi } from "@/lib/api/admin";
 import { queryKeys } from "@/lib/hooks/queries/queryFactory";
-import type { User, Report, SystemConfig } from "@/lib/types/api";
+import type { User, Report, SystemConfig, Vehicle } from "@/lib/types/api";
 import type {
   UpdateReportRequest,
   UpdateSystemConfigRequest,
@@ -193,6 +193,43 @@ export function useVerifyCharter() {
     onError: (error) => {
       console.error("Error verifying charter:", error);
       toast.error("Error al procesar la verificación del charter");
+    },
+  });
+}
+
+/**
+ * Verify or reject a vehicle individually
+ * TODO: endpoint PATCH /vehicles/:id/verify no implementado en backend aún
+ */
+export function useVerifyVehicle() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      vehicleId,
+      status,
+      rejectionReason,
+    }: {
+      vehicleId: string;
+      status: "verified" | "rejected";
+      rejectionReason?: string;
+    }) => adminApi.verifyVehicle(vehicleId, status, rejectionReason),
+
+    onSuccess: (_, { status }) => {
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.admin.charters.pending(),
+      });
+
+      if (status === "verified") {
+        toast.success("Vehículo aprobado correctamente");
+      } else {
+        toast.success("Vehículo rechazado correctamente");
+      }
+    },
+
+    onError: (error) => {
+      console.error("Error verifying vehicle:", error);
+      toast.error("Error al procesar la verificación del vehículo");
     },
   });
 }

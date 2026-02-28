@@ -20,6 +20,7 @@ import {
   Typography,
 } from "@mui/material";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useSearchParams } from "next/navigation";
 import { Suspense, useState } from "react";
 import { useForm } from "react-hook-form";
@@ -30,8 +31,10 @@ import { DniUpload } from "@/components/ui/DniUpload";
 import Logo from "@/components/ui/Logo";
 import { PageTransition } from "@/components/ui/PageTransition";
 import { useRegister } from "@/lib/hooks/mutations/useAuthMutations";
-import { useUpdateDniUrls } from "@/lib/hooks/mutations/useUpdateDniUrls";
+import { useCreateUserDocument } from "@/lib/hooks/mutations/useCreateUserDocument";
 import { uploadFiles } from "@/lib/uploadthing";
+import { UserDocumentType, DocumentSide } from "@/lib/types/api";
+import { useAuthStore } from "@/lib/stores/authStore";
 
 const registerSchema = z
   .object({
@@ -58,13 +61,16 @@ function RegisterFormContent() {
     return roleParam === "driver" ? "driver" : "client";
   });
   const [acceptedTerms, setAcceptedTerms] = useState(false);
+  const [gender, setLocalGender] = useState<"male" | "female" | "other">("other");
   const [originAddress, setOriginAddress] = useState("");
   const [originCoords, setOriginCoords] = useState<{ lat: number; lon: number } | null>(null);
   const [dniFront, setDniFront] = useState<File | null>(null);
   const [dniBack, setDniBack] = useState<File | null>(null);
   const [dniError, setDniError] = useState("");
+  const router = useRouter();
   const registerMutation = useRegister();
-  const updateDniUrlsMutation = useUpdateDniUrls();
+  const createUserDocumentMutation = useCreateUserDocument();
+  const { setGender } = useAuthStore();
 
   // Determine transition direction based on redirect parameter
   const getTransitionDirection = (): "left" | "right" | "default" => {
@@ -90,13 +96,8 @@ function RegisterFormContent() {
   });
 
   const onSubmit = async (data: RegisterForm) => {
-    console.log("🔍 [DEBUG] onSubmit iniciado");
-    console.log("   userRole:", userRole);
-    console.log("   dniFront:", dniFront?.name);
-    console.log("   dniBack:", dniBack?.name);
-
-    // Validar DNI FILES para charters (NO URLs)
-    if (userRole === "driver" && (!dniFront || !dniBack)) {
+    // Validar DNI para ambos roles
+    if (!dniFront || !dniBack) {
       setDniError("Debes seleccionar ambas caras del DNI");
       return;
     }
@@ -108,7 +109,6 @@ function RegisterFormContent() {
       number: data.number,
       address: data.address,
       role: userRole === "driver" ? ("charter" as const) : ("user" as const),
-      // Campos de charter: ubicación de origen
       ...(userRole === "driver" && originCoords
         ? {
             originAddress,
@@ -118,60 +118,38 @@ function RegisterFormContent() {
         : {}),
     };
 
-    console.log("📝 [RegisterForm] Triggering mutation...");
-    console.log("   registerData:", JSON.stringify(registerData, null, 2));
-
     try {
       // PASO 1: Registrar usuario
       const user = await registerMutation.mutateAsync(registerData);
 
-      console.log("✅ [DEBUG] Usuario registrado:");
-      console.log("   user object:", JSON.stringify(user, null, 2));
-      console.log("   user.user:", user?.user);
-      console.log("   user.user.id:", user?.user?.id);
+      // PASO 1.5: Guardar género en el store
+      setGender(gender);
 
-      // PASO 2: VERIFICAR CONDICIÓN
-      const condition = userRole === "driver" && dniFront && dniBack && user;
-      console.log("🔍 [DEBUG] Verificando condición para upload:");
-      console.log("   userRole === 'driver':", userRole === "driver");
-      console.log("   dniFront exists:", !!dniFront);
-      console.log("   dniBack exists:", !!dniBack);
-      console.log("   user exists:", !!user);
-      console.log("   user.user exists:", !!user?.user);
-      console.log("   Condición completa:", condition);
+      // PASO 2: Subir DNI a UploadThing
+      const uploadedFiles = await uploadFiles("dniUploader", {
+        files: [dniFront, dniBack],
+        input: { userId: user.user.id },
+      });
 
-      // PASO 2: Si es charter, subir DNI a UploadThing (CON userId)
-      if (condition) {
-        console.log("📤 [RegisterForm] Uploading DNI files with userId:", user.user.id);
+      // PASO 3: Guardar documentos en DB via nuevo endpoint /users/me/documents
+      await createUserDocumentMutation.mutateAsync({
+        type: UserDocumentType.DNI,
+        side: DocumentSide.FRONT,
+        fileUrl: uploadedFiles[0].url,
+      });
+      await createUserDocumentMutation.mutateAsync({
+        type: UserDocumentType.DNI,
+        side: DocumentSide.BACK,
+        fileUrl: uploadedFiles[1].url,
+      });
 
-        // Upload files con userId en metadata
-        const uploadedFiles = await uploadFiles("dniUploader", {
-          files: [dniFront, dniBack],
-          input: { userId: user.user.id },
-        });
-
-        console.log("✅ [RegisterForm] Files uploaded:");
-        console.log("   URLs:", uploadedFiles.map(f => f.url));
-        console.log("   Front URL:", uploadedFiles[0].url);
-        console.log("   Back URL:", uploadedFiles[1].url);
-
-        // PASO 3: Guardar URLs en DB
-        console.log("💾 [RegisterForm] Saving URLs to DB...");
-        const updateResult = await updateDniUrlsMutation.mutateAsync({
-          userId: user.user.id,
-          documentationFrontUrl: uploadedFiles[0].url,
-          documentationBackUrl: uploadedFiles[1].url,
-        });
-
-        console.log("✅ [RegisterForm] URLs saved to DB:", updateResult);
-      } else {
-        console.log("❌ [DEBUG] Condición NO cumplida - NO se subirán archivos");
+      // PASO 4: Redirigir según rol
+      if (userRole === "driver") {
+        router.push("/driver/onboarding/vehicle");
       }
+      // Si es cliente, la redirección la maneja useRegister (authStore + redirect)
     } catch (error) {
-      console.error("❌ [RegisterForm] Error completo:", error);
-      console.error("   Error type:", typeof error);
-      console.error("   Error message:", (error as any)?.message);
-      console.error("   Error stack:", (error as any)?.stack);
+      console.error("❌ [RegisterForm] Error:", error);
     }
   };
 
@@ -389,6 +367,31 @@ function RegisterFormContent() {
                     />
                   </motion.div>
 
+                  {/* Selector de género */}
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.3, delay: 0.36, ease: "easeOut" }}
+                  >
+                    <Box sx={{ mt: 2, mb: 2 }}>
+                      <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1, fontWeight: 600 }}>
+                        Género
+                      </Typography>
+                      <ToggleButtonGroup
+                        value={gender}
+                        exclusive
+                        onChange={(_, val) => { if (val) setLocalGender(val); }}
+                        aria-label="género"
+                        size="small"
+                        fullWidth
+                      >
+                        <ToggleButton value="male">Masculino</ToggleButton>
+                        <ToggleButton value="female">Femenino</ToggleButton>
+                        <ToggleButton value="other">Prefiero no decir</ToggleButton>
+                      </ToggleButtonGroup>
+                    </Box>
+                  </motion.div>
+
                   {/* Campo adicional para conductores: Ubicación de operaciones */}
                   {userRole === "driver" && (
                     <motion.div
@@ -419,23 +422,21 @@ function RegisterFormContent() {
                     </motion.div>
                   )}
 
-                  {/* Campo adicional para conductores: DNI */}
-                  {userRole === "driver" && (
-                    <motion.div
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ duration: 0.3, delay: 0.48, ease: "easeOut" }}
-                    >
-                      <DniUpload
-                        onFilesSelected={(front, back) => {
-                          setDniFront(front);
-                          setDniBack(back);
-                          if (front && back) setDniError("");
-                        }}
-                        error={dniError}
-                      />
-                    </motion.div>
-                  )}
+                  {/* DNI: requerido para ambos roles */}
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.3, delay: 0.48, ease: "easeOut" }}
+                  >
+                    <DniUpload
+                      onFilesSelected={(front, back) => {
+                        setDniFront(front);
+                        setDniBack(back);
+                        if (front && back) setDniError("");
+                      }}
+                      error={dniError}
+                    />
+                  </motion.div>
 
                   <motion.div
                     initial={{ opacity: 0, y: 20 }}
@@ -524,9 +525,10 @@ function RegisterFormContent() {
                       size="large"
                       disabled={
                         registerMutation.isPending ||
-                        updateDniUrlsMutation.isPending ||
+                        createUserDocumentMutation.isPending ||
                         !acceptedTerms ||
-                        (userRole === "driver" && (!dniFront || !dniBack))
+                        !dniFront ||
+                        !dniBack
                       }
                       sx={{
                         py: 1.5,
@@ -536,7 +538,7 @@ function RegisterFormContent() {
                         mb: 3,
                       }}
                     >
-                      {registerMutation.isPending || updateDniUrlsMutation.isPending
+                      {registerMutation.isPending || createUserDocumentMutation.isPending
                         ? "Creando cuenta..."
                         : "Registrarse"}
                     </Button>

@@ -19,6 +19,7 @@ import type {
   Trip,
   Payment,
   SystemConfig,
+  UserDocument,
 } from "@/lib/types/api";
 
 // ============================================
@@ -140,5 +141,16 @@ export function usePendingCharters() {
     queryFn: () => adminApi.getPendingCharters(),
     staleTime: 1000 * 60, // 1 minute - new charters can register anytime
     gcTime: 1000 * 60 * 5, // 5 minutes
+  });
+}
+
+/**
+ * Get documents (DNI) for a specific user
+ */
+export function useAdminUserDocuments(userId: string) {
+  return useQuery<UserDocument[]>({
+    queryKey: ["admin", "users", userId, "documents"],
+    queryFn: () => adminApi.getUserDocuments(userId),
+    enabled: !!userId,
   });
 }

@@ -47,6 +47,28 @@ export enum VerificationStatus {
   REJECTED = "rejected",
 }
 
+export enum DocumentReviewStatus {
+  PENDING = "pending",
+  APPROVED = "approved",
+  REJECTED = "rejected",
+}
+
+export enum DocumentSide {
+  FRONT = "front",
+  BACK = "back",
+}
+
+export enum UserDocumentType {
+  DNI = "dni",
+}
+
+export enum VehicleDocumentType {
+  FOTO = "foto",
+  CEDULA = "cedula",
+  SEGURO = "seguro",
+  VTV = "vtv",
+}
+
 // ============================================
 // INTERFACES
 // ============================================
@@ -63,6 +85,7 @@ export interface User {
   originAddress: string | null; // Solo charters
   originLatitude: string | null;
   originLongitude: string | null;
+  pricePerKm: number | null; // Precio por km del charter
   documentationFrontUrl: string | null; // Solo charters
   documentationBackUrl: string | null; // Solo charters
   verificationStatus: VerificationStatus; // Charter verification status
@@ -207,6 +230,75 @@ export interface SystemConfig {
   key: string;
   value: string;
   description: string;
+}
+
+export interface UserDocument {
+  id: string;
+  userId: string;
+  type: UserDocumentType;
+  side: DocumentSide | null;
+  fileUrl: string;
+  status: DocumentReviewStatus;
+  rejectionReason: string | null;
+  reviewedAt: string | null;
+  reviewedBy: string | null;
+  uploadedAt: string;
+  updatedAt: string;
+}
+
+export interface VehicleDocument {
+  id: string;
+  vehicleId: string;
+  type: VehicleDocumentType;
+  fileUrl: string;
+  status: DocumentReviewStatus;
+  rejectionReason: string | null;
+  reviewedAt: string | null;
+  reviewedBy: string | null;
+  expiresAt: string | null;
+  uploadedAt: string;
+  updatedAt: string;
+}
+
+export interface Vehicle {
+  id: string;
+  charterId: string;
+  plate: string;
+  brand: string | null;
+  model: string | null;
+  year: number | null;
+  alias: string | null;
+  isEnabled: boolean;
+  verificationStatus: VerificationStatus;
+  rejectionReason: string | null;
+  verifiedAt: string | null;
+  verifiedBy: string | null;
+  createdAt: string;
+  updatedAt: string;
+  documents?: VehicleDocument[];
+}
+
+export interface PendingCharterReviewItem {
+  id: string;
+  email: string;
+  name: string;
+  role: string;
+  address: string;
+  number: string;
+  avatar: string | null;
+  verificationStatus: VerificationStatus;
+  rejectionReason: string | null;
+  createdAt: string;
+  // Charter fields
+  originAddress?: string | null;
+  originLatitude?: string | null;
+  originLongitude?: string | null;
+  // Legacy (compatibilidad)
+  documentationFrontUrl: string | null;
+  documentationBackUrl: string | null;
+  // Nuevo (opcional para compatibilidad)
+  userDocuments?: UserDocument[];
+  vehicles?: Vehicle[];
 }
 
 export interface ApiResponse<T = unknown> {

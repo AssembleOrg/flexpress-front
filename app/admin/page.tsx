@@ -101,15 +101,18 @@ export default function AdminPage() {
               ) : (
                 <Badge
                   badgeContent={pendingChartersCount}
+                  overlap="rectangular"
+                  anchorOrigin={{ vertical: "top", horizontal: "right" }}
                   sx={{
                     "& .MuiBadge-badge": {
                       backgroundColor: "#dca621",
                       color: "#212121",
+                      top: -6,
+                      right: -8,
                     },
                   }}
-                  overlap="circular"
                 >
-                  Conductores
+                  <Box component="span" sx={{ pr: 1.5 }}>Conductores</Box>
                 </Badge>
               )
             }
@@ -124,15 +127,18 @@ export default function AdminPage() {
               ) : (
                 <Badge
                   badgeContent={pendingReportsCount}
+                  overlap="rectangular"
+                  anchorOrigin={{ vertical: "top", horizontal: "right" }}
                   sx={{
                     "& .MuiBadge-badge": {
                       backgroundColor: "#380116",
                       color: "white",
+                      top: -6,
+                      right: -8,
                     },
                   }}
-                  overlap="circular"
                 >
-                  Reportes
+                  <Box component="span" sx={{ pr: 1.5 }}>Reportes</Box>
                 </Badge>
               )
             }
@@ -155,15 +161,18 @@ export default function AdminPage() {
                 ) : (
                   <Badge
                     badgeContent={pendingPaymentsCount}
+                    overlap="rectangular"
+                    anchorOrigin={{ vertical: "top", horizontal: "right" }}
                     sx={{
                       "& .MuiBadge-badge": {
                         backgroundColor: "#e74c3c",
                         color: "white",
+                        top: -6,
+                        right: -8,
                       },
                     }}
-                    overlap="circular"
                   >
-                    Pagos
+                    <Box component="span" sx={{ pr: 1.5 }}>Pagos</Box>
                   </Badge>
                 )
               }

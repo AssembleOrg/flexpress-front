@@ -9,9 +9,10 @@ const MotionBox = motion.create(Box);
 interface WelcomeHeaderProps {
   userName?: string;
   userRole?: "client" | "charter";
+  greeting?: string;
 }
 
-export function WelcomeHeader({ userName, userRole }: WelcomeHeaderProps) {
+export function WelcomeHeader({ userName, userRole, greeting }: WelcomeHeaderProps) {
   const router = useRouter();
   const firstName = userName?.split(" ")[0] || "Usuario";
   const initial = userName?.[0]?.toUpperCase() || "?";
@@ -53,7 +54,7 @@ export function WelcomeHeader({ userName, userRole }: WelcomeHeaderProps) {
         </motion.div>
         <Box>
           <Typography variant="h5" sx={{ fontWeight: 700, mb: 0.5 }}>
-            Hola, {firstName}
+            {greeting ?? `Hola, ${firstName}`}
           </Typography>
           <Chip
             label={roleLabel}

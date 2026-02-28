@@ -18,6 +18,17 @@ export const ourFileRouter = {
       return { url: file.url };
     }),
 
+  // Vehicle doc uploader - para documentos del vehículo (foto, cédula, seguro, VTV)
+  vehicleDocUploader: f({ image: { maxFileSize: "4MB", maxFileCount: 1 } })
+    .input(z.object({ vehicleId: z.string() }))
+    .middleware(async ({ input }) => {
+      return { vehicleId: input.vehicleId };
+    })
+    .onUploadComplete(async ({ file, metadata }) => {
+      console.log(`[UploadThing] Vehicle doc for ${metadata.vehicleId}: ${file.url}`);
+      return { url: file.url };
+    }),
+
   // Receipt uploader - para comprobantes de pago
   receiptUploader: f({ image: { maxFileSize: "4MB", maxFileCount: 1 } })
     .middleware(async () => {
