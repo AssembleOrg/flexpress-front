@@ -157,6 +157,25 @@ export const adminApi = {
     // biome-ignore lint/style/noNonNullAssertion: axios response guarantees data
     const responseData = response.data.data!;
 
+    // Handle double-wrapped response from backend
+    if (
+      responseData &&
+      typeof responseData === "object" &&
+      "success" in responseData &&
+      "data" in responseData
+    ) {
+      const inner = (responseData as unknown as { data: Report[] | PaginatedResponse<Report> }).data;
+      if (inner && typeof inner === "object" && "data" in inner && "meta" in inner) {
+        return inner as PaginatedResponse<Report>;
+      }
+      if (Array.isArray(inner)) {
+        return {
+          data: inner,
+          meta: { page: filters.page ?? 1, limit: filters.limit ?? 10, total: inner.length, totalPages: 1 },
+        };
+      }
+    }
+
     // Si ya es PaginatedResponse (con meta), retornarla
     if (
       responseData &&
@@ -199,7 +218,19 @@ export const adminApi = {
     const response = await api.get<ApiResponse<Report>>(`/reports/${id}`);
 
     // biome-ignore lint/style/noNonNullAssertion: axios response guarantees data
-    return response.data.data!;
+    const responseData = response.data.data!;
+
+    // Handle double-wrapped response from backend
+    if (
+      responseData &&
+      typeof responseData === "object" &&
+      "success" in responseData &&
+      "data" in responseData
+    ) {
+      return (responseData as unknown as { data: Report }).data!;
+    }
+
+    return responseData;
   },
 
   /**

@@ -8,9 +8,10 @@ interface AuthActions {
   updateUser: (user: Partial<User>) => void;
   setLoading: (loading: boolean) => void;
   setGender: (gender: "male" | "female" | "other") => void;
+  setReturnToOrigin: (val: boolean) => void;
 }
 
-export const useAuthStore = create<AuthState & AuthActions & { gender: "male" | "female" | "other" | null }>()(
+export const useAuthStore = create<AuthState & AuthActions & { gender: "male" | "female" | "other" | null; returnToOrigin: boolean }>()(
   persist(
     (set) => ({
       // Estado inicial
@@ -19,6 +20,7 @@ export const useAuthStore = create<AuthState & AuthActions & { gender: "male" | 
       isAuthenticated: false,
       isLoading: false,
       gender: null,
+      returnToOrigin: false,
 
       // Acciones
       login: (user: User, token: string) => {
@@ -69,6 +71,8 @@ export const useAuthStore = create<AuthState & AuthActions & { gender: "male" | 
 
       setGender: (gender: "male" | "female" | "other") =>
         set({ gender }),
+
+      setReturnToOrigin: (val: boolean) => set({ returnToOrigin: val }),
     }),
     {
       name: "flexpress-auth",

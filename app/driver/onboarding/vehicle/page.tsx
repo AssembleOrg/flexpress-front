@@ -16,6 +16,10 @@ import {
   Divider,
   Chip,
   Alert,
+  Select,
+  MenuItem,
+  FormControl,
+  InputLabel,
 } from "@mui/material";
 import { DirectionsCar, Add, CheckCircle } from "@mui/icons-material";
 import toast from "react-hot-toast";
@@ -26,13 +30,16 @@ import type { Vehicle } from "@/lib/types/api";
 import { useAuthStore } from "@/lib/stores/authStore";
 import { useUpdateUserProfile } from "@/lib/hooks/mutations/useAuthMutations";
 import { usePublicPricing } from "@/lib/hooks/queries/useSystemConfigQueries";
+import { VEHICLE_BRANDS } from "@/lib/constants/vehicleBrands";
+import { AuthNavbar } from "@/components/layout/AuthNavbar";
+import { MobileContainer } from "@/components/layout/MobileContainer";
+import { BottomNavbar } from "@/components/layout/BottomNavbar";
 
 const vehicleSchema = z.object({
   plate: z.string().min(1, "Patente requerida"),
   brand: z.string().optional(),
   model: z.string().optional(),
   year: z.coerce.number().int().min(1990).max(2100).optional(),
-  alias: z.string().optional(),
 });
 
 type VehicleForm = z.infer<typeof vehicleSchema>;
@@ -109,8 +116,9 @@ function VehicleOnboardingForm({ onVehicleCreated, vehicleNumber }: { onVehicleC
   const createVehicle = useCreateVehicle();
   const [createdVehicle, setCreatedVehicle] = useState<Vehicle | null>(null);
 
-  const { register, handleSubmit, formState: { errors } } = useForm<any>({
+  const { register, handleSubmit, control, formState: { errors } } = useForm<any>({
     resolver: zodResolver(vehicleSchema),
+    defaultValues: { plate: "", brand: "", model: "", year: "" },
   });
 
   const onSubmit = (data: VehicleForm) => {
@@ -138,10 +146,27 @@ function VehicleOnboardingForm({ onVehicleCreated, vehicleNumber }: { onVehicleC
                 helperText={errors.plate?.message as string}
                 sx={{ flex: 1, minWidth: 120 }}
               />
-              <TextField {...register("brand")} label="Marca" sx={{ flex: 1, minWidth: 120 }} />
+              <FormControl sx={{ flex: 1, minWidth: 120 }}>
+                <InputLabel>Marca</InputLabel>
+                <Controller
+                  name="brand"
+                  control={control}
+                  render={({ field }) => (
+                    <Select {...field} label="Marca">
+                      <MenuItem value="">
+                        <em>Sin marca</em>
+                      </MenuItem>
+                      {VEHICLE_BRANDS.map((brand) => (
+                        <MenuItem key={brand} value={brand}>
+                          {brand}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  )}
+                />
+              </FormControl>
               <TextField {...register("model")} label="Modelo" sx={{ flex: 1, minWidth: 120 }} />
               <TextField {...register("year")} label="Año" type="number" sx={{ flex: 1, minWidth: 100 }} />
-              <TextField {...register("alias")} label="Alias (ej: Fiorino roja)" sx={{ flex: 2, minWidth: 180 }} />
             </Box>
             <Button
               type="submit"
@@ -192,64 +217,68 @@ export default function VehicleOnboardingPage() {
   };
 
   return (
-    <Container maxWidth="md" sx={{ py: 6 }}>
-      <Box sx={{ mb: 4, textAlign: "center" }}>
-        <Typography variant="h4" fontWeight={700} gutterBottom>
-          Registrá tu vehículo
-        </Typography>
-        <Typography color="text.secondary">
-          Necesitás al menos 1 vehículo con su documentación para operar. Podés agregar hasta 2.
-        </Typography>
-      </Box>
-
-      <VehicleOnboardingForm onVehicleCreated={handleVehicleCreated} vehicleNumber={1} />
-
-      {vehicles.length >= 1 && !showSecond && (
-        <Box sx={{ textAlign: "center", mb: 3 }}>
-          <Button
-            startIcon={<Add />}
-            variant="outlined"
-            onClick={() => setShowSecond(true)}
-          >
-            Agregar segundo vehículo (opcional)
-          </Button>
+    <>
+      <AuthNavbar />
+      <MobileContainer maxWidth="md" withBottomNav>
+        <Box sx={{ mb: 4, textAlign: "center" }}>
+          <Typography variant="h4" fontWeight={700} gutterBottom>
+            Registrá tu vehículo
+          </Typography>
+          <Typography color="text.secondary">
+            Necesitás al menos 1 vehículo con su documentación para operar. Podés agregar hasta 2.
+          </Typography>
         </Box>
-      )}
 
-      {showSecond && (
-        <VehicleOnboardingForm onVehicleCreated={handleVehicleCreated} vehicleNumber={2} />
-      )}
+        <VehicleOnboardingForm onVehicleCreated={handleVehicleCreated} vehicleNumber={1} />
 
-      {vehicles.length >= 1 && (
-        <>
-          <Card variant="outlined" sx={{ mb: 3, backgroundColor: "action.hover" }}>
-            <CardContent>
-              <Typography variant="h6" sx={{ mb: 2 }}>
-                Tu precio por km
-              </Typography>
-              <TextField
-                label="Tu precio por km (en créditos)"
-                type="number"
-                value={pricePerKm}
-                onChange={(e) => setPricePerKm(e.target.value === "" ? "" : Number(e.target.value))}
-                helperText={`Sugerencia del sistema: ${pricing?.creditsPerKm ?? "..."} créditos/km`}
-                inputProps={{ min: 0 }}
-                fullWidth
-              />
-            </CardContent>
-          </Card>
-
-          <Divider sx={{ my: 3 }} />
-          <Box sx={{ textAlign: "center" }}>
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-              Un administrador revisará tu cuenta y vehículo(s) antes de que puedas operar.
-            </Typography>
-            <Button variant="contained" color="secondary" size="large" onClick={handleFinish}>
-              Finalizar registro
+        {vehicles.length >= 1 && !showSecond && (
+          <Box sx={{ textAlign: "center", mb: 3 }}>
+            <Button
+              startIcon={<Add />}
+              variant="outlined"
+              onClick={() => setShowSecond(true)}
+            >
+              Agregar segundo vehículo (opcional)
             </Button>
           </Box>
-        </>
-      )}
-    </Container>
+        )}
+
+        {showSecond && (
+          <VehicleOnboardingForm onVehicleCreated={handleVehicleCreated} vehicleNumber={2} />
+        )}
+
+        {vehicles.length >= 1 && (
+          <>
+            <Card variant="outlined" sx={{ mb: 3, backgroundColor: "action.hover" }}>
+              <CardContent>
+                <Typography variant="h6" sx={{ mb: 2 }}>
+                  Tu precio por km
+                </Typography>
+                <TextField
+                  label="Tu precio por km (en créditos)"
+                  type="number"
+                  value={pricePerKm}
+                  onChange={(e) => setPricePerKm(e.target.value === "" ? "" : Number(e.target.value))}
+                  helperText={`Sugerencia del sistema: ${pricing?.creditsPerKm ?? "..."} créditos/km`}
+                  inputProps={{ min: 0 }}
+                  fullWidth
+                />
+              </CardContent>
+            </Card>
+
+            <Divider sx={{ my: 3 }} />
+            <Box sx={{ textAlign: "center" }}>
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                Un administrador revisará tu cuenta y vehículo(s) antes de que puedas operar.
+              </Typography>
+              <Button variant="contained" color="secondary" size="large" onClick={handleFinish}>
+                Finalizar registro
+              </Button>
+            </Box>
+          </>
+        )}
+      </MobileContainer>
+      <BottomNavbar />
+    </>
   );
 }

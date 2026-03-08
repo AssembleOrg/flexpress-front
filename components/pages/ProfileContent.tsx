@@ -7,6 +7,7 @@ import LocationOnIcon from "@mui/icons-material/LocationOn";
 import PersonIcon from "@mui/icons-material/Person";
 import PhoneIcon from "@mui/icons-material/Phone";
 import SaveIcon from "@mui/icons-material/Save";
+import DirectionsCarIcon from "@mui/icons-material/DirectionsCar";
 import {
   Avatar,
   Box,
@@ -30,12 +31,16 @@ import { AddressInput } from "@/components/ui/AddressInput";
 import { PageTransition } from "@/components/ui/PageTransition";
 import { useUpdateUserProfile } from "@/lib/hooks/mutations/useAuthMutations";
 import { useAuthStore } from "@/lib/stores/authStore";
+import { useMyVehicles } from "@/lib/hooks/queries/useVehicleQueries";
+import { VerificationStatus } from "@/lib/types/api";
 
 export function ProfileContent() {
   const _router = useRouter();
+  const router = useRouter();
   const theme = useTheme();
   const { user } = useAuthStore();
   const updateProfileMutation = useUpdateUserProfile();
+  const { data: vehicles = [] } = useMyVehicles();
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({
     name: user?.name || "",
@@ -322,6 +327,108 @@ export function ProfileContent() {
                   </Box>
                 )}
               </Paper>
+
+              {/* Charter Vehicles Section */}
+              {user?.role === "charter" && (
+                <Paper
+                  elevation={2}
+                  sx={{ p: { xs: 3, md: 4 }, borderRadius: 3, mb: 3 }}
+                >
+                  <Box
+                    display="flex"
+                    justifyContent="space-between"
+                    alignItems="center"
+                    mb={3}
+                  >
+                    <Box>
+                      <Typography
+                        variant="h5"
+                        sx={{
+                          fontWeight: 700,
+                          color: "primary.main",
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 1,
+                        }}
+                      >
+                        <DirectionsCarIcon /> Mis Vehículos
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary" mt={1}>
+                        {vehicles.length > 0
+                          ? `${vehicles.length} vehículo${vehicles.length > 1 ? "s" : ""} registrado${vehicles.length > 1 ? "s" : ""}`
+                          : "Sin vehículos registrados"}
+                      </Typography>
+                    </Box>
+                    <Button
+                      variant="outlined"
+                      size="small"
+                      onClick={() => router.push("/driver/vehicles")}
+                    >
+                      Gestionar
+                    </Button>
+                  </Box>
+
+                  {vehicles.length > 0 && (
+                    <Box
+                      sx={{
+                        display: "flex",
+                        flexDirection: "column",
+                        gap: 1,
+                        mb: 2,
+                      }}
+                    >
+                      {vehicles.slice(0, 3).map((vehicle) => (
+                        <Box
+                          key={vehicle.id}
+                          sx={{
+                            p: 2,
+                            bgcolor: "action.hover",
+                            borderRadius: 1,
+                            display: "flex",
+                            justifyContent: "space-between",
+                            alignItems: "center",
+                          }}
+                        >
+                          <Box>
+                            <Typography
+                              variant="body2"
+                              fontWeight={600}
+                              sx={{ fontFamily: "monospace" }}
+                            >
+                              {vehicle.plate}
+                            </Typography>
+                            <Typography variant="caption" color="text.secondary">
+                              {vehicle.brand || "Sin marca"}
+                              {vehicle.model && ` - ${vehicle.model}`}
+                            </Typography>
+                          </Box>
+                          <Box
+                            sx={{
+                              px: 1,
+                              py: 0.5,
+                              bgcolor:
+                                vehicle.verificationStatus === VerificationStatus.VERIFIED
+                                  ? "success.light"
+                                  : vehicle.verificationStatus === VerificationStatus.PENDING
+                                  ? "warning.light"
+                                  : "error.light",
+                              borderRadius: 1,
+                              fontSize: "0.75rem",
+                              fontWeight: 600,
+                            }}
+                          >
+                            {vehicle.verificationStatus === VerificationStatus.VERIFIED
+                              ? "Verificado"
+                              : vehicle.verificationStatus === VerificationStatus.PENDING
+                              ? "Pendiente"
+                              : "Rechazado"}
+                          </Box>
+                        </Box>
+                      ))}
+                    </Box>
+                  )}
+                </Paper>
+              )}
 
               {/* Charter Work Location Section */}
               {user?.role === "charter" && (

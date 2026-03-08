@@ -28,7 +28,10 @@ import { Controller, useForm } from "react-hook-form";
 import { useAdminReportDetail } from "@/lib/hooks/queries/useAdminQueries";
 import { useUpdateReport } from "@/lib/hooks/mutations/useAdminMutations";
 import { useAuthStore } from "@/lib/stores/authStore";
+import { useMatch } from "@/lib/hooks/queries/useTravelMatchQueries";
 import type { UpdateReportRequest } from "@/lib/types/admin";
+import type { UserRole } from "@/lib/types/api";
+import { TravelMatchStatus } from "@/lib/types/api";
 
 export default function ReportDetailPage() {
   const router = useRouter();
@@ -42,6 +45,8 @@ export default function ReportDetailPage() {
 
   // Queries
   const { data: report, isLoading } = useAdminReportDetail(reportId);
+  const matchId = report?.conversation?.matchId ?? "";
+  const { data: travelMatch } = useMatch(matchId);
   const updateReportMutation = useUpdateReport();
 
   // Form
@@ -88,6 +93,37 @@ export default function ReportDetailPage() {
       dismissed: "Desestimado",
     };
     return labels[status] || status;
+  };
+
+  const getMatchStatusColor = (
+    status: TravelMatchStatus,
+  ): "default" | "primary" | "warning" | "success" | "error" => {
+    const colors: Record<
+      TravelMatchStatus,
+      "default" | "primary" | "warning" | "success" | "error"
+    > = {
+      [TravelMatchStatus.SEARCHING]: "primary",
+      [TravelMatchStatus.PENDING]: "warning",
+      [TravelMatchStatus.ACCEPTED]: "primary",
+      [TravelMatchStatus.COMPLETED]: "success",
+      [TravelMatchStatus.CANCELLED]: "error",
+      [TravelMatchStatus.REJECTED]: "error",
+      [TravelMatchStatus.EXPIRED]: "default",
+    };
+    return colors[status] ?? "default";
+  };
+
+  const getMatchStatusLabel = (status: TravelMatchStatus) => {
+    const labels: Record<TravelMatchStatus, string> = {
+      [TravelMatchStatus.SEARCHING]: "Buscando",
+      [TravelMatchStatus.PENDING]: "Pendiente",
+      [TravelMatchStatus.ACCEPTED]: "Aceptado",
+      [TravelMatchStatus.COMPLETED]: "Completado",
+      [TravelMatchStatus.CANCELLED]: "Cancelado",
+      [TravelMatchStatus.REJECTED]: "Rechazado",
+      [TravelMatchStatus.EXPIRED]: "Expirado",
+    };
+    return labels[status] ?? status;
   };
 
   if (isLoading) {
@@ -217,40 +253,149 @@ export default function ReportDetailPage() {
           </Typography>
         </Paper>
 
-        {/* Conversation Messages */}
-        {report.conversation?.messages && (
+        {/* Viaje Asociado */}
+        {travelMatch && (
           <Paper sx={{ p: 3 }}>
-            <Typography
-              variant="subtitle2"
-              color="textSecondary"
-              sx={{ mb: 2 }}
-            >
-              HISTORIAL DE MENSAJES ({report.conversation.messages.length})
+            <Typography variant="subtitle2" color="textSecondary" sx={{ mb: 2 }}>
+              VIAJE ASOCIADO
+            </Typography>
+            <Stack spacing={1.5}>
+              <Stack direction="row" spacing={1} alignItems="center">
+                <Typography variant="body2" color="textSecondary" sx={{ minWidth: 140 }}>
+                  Estado:
+                </Typography>
+                <Chip
+                  label={getMatchStatusLabel(travelMatch.status)}
+                  color={getMatchStatusColor(travelMatch.status)}
+                  size="small"
+                />
+              </Stack>
+              <Stack direction="row" spacing={1}>
+                <Typography variant="body2" color="textSecondary" sx={{ minWidth: 140 }}>
+                  Origen:
+                </Typography>
+                <Typography variant="body2">{travelMatch.pickupAddress}</Typography>
+              </Stack>
+              <Stack direction="row" spacing={1}>
+                <Typography variant="body2" color="textSecondary" sx={{ minWidth: 140 }}>
+                  Destino:
+                </Typography>
+                <Typography variant="body2">{travelMatch.destinationAddress}</Typography>
+              </Stack>
+              {travelMatch.distanceKm != null && (
+                <Stack direction="row" spacing={1}>
+                  <Typography variant="body2" color="textSecondary" sx={{ minWidth: 140 }}>
+                    Distancia:
+                  </Typography>
+                  <Typography variant="body2">{travelMatch.distanceKm} km</Typography>
+                </Stack>
+              )}
+              {travelMatch.estimatedCredits != null && (
+                <Stack direction="row" spacing={1}>
+                  <Typography variant="body2" color="textSecondary" sx={{ minWidth: 140 }}>
+                    Créditos estimados:
+                  </Typography>
+                  <Typography variant="body2">{travelMatch.estimatedCredits}</Typography>
+                </Stack>
+              )}
+              {travelMatch.scheduledDate && (
+                <Stack direction="row" spacing={1}>
+                  <Typography variant="body2" color="textSecondary" sx={{ minWidth: 140 }}>
+                    Fecha programada:
+                  </Typography>
+                  <Typography variant="body2">
+                    {new Date(travelMatch.scheduledDate).toLocaleString("es-AR")}
+                  </Typography>
+                </Stack>
+              )}
+              <Stack direction="row" spacing={1}>
+                <Typography variant="body2" color="textSecondary" sx={{ minWidth: 140 }}>
+                  Creado:
+                </Typography>
+                <Typography variant="body2">
+                  {new Date(travelMatch.createdAt).toLocaleString("es-AR")}
+                </Typography>
+              </Stack>
+              {(travelMatch.status === TravelMatchStatus.COMPLETED ||
+                travelMatch.status === TravelMatchStatus.CANCELLED) && (
+                <Stack direction="row" spacing={1}>
+                  <Typography variant="body2" color="textSecondary" sx={{ minWidth: 140 }}>
+                    {travelMatch.status === TravelMatchStatus.COMPLETED
+                      ? "Completado:"
+                      : "Cancelado:"}
+                  </Typography>
+                  <Typography variant="body2">
+                    {new Date(travelMatch.updatedAt).toLocaleString("es-AR")}
+                  </Typography>
+                </Stack>
+              )}
+            </Stack>
+          </Paper>
+        )}
+
+        {/* Conversation Messages */}
+        {report.conversation?.messages && report.conversation.messages.length > 0 && (
+          <Paper sx={{ p: 3 }}>
+            <Typography variant="subtitle2" color="textSecondary" sx={{ mb: 2 }}>
+              CHAT ({report.conversation.messages.length} mensajes)
             </Typography>
             <Stack
-              spacing={2}
+              spacing={1.5}
               sx={{
                 maxHeight: 400,
                 overflowY: "auto",
-                pl: 2,
-                borderLeft: "2px solid #eee",
               }}
             >
-              {report.conversation.messages.map((msg) => (
-                <Box key={msg.id}>
-                  <Stack direction="row" spacing={1}>
-                    <Typography variant="caption" sx={{ fontWeight: 600 }}>
-                      {msg.sender?.name}
-                    </Typography>
-                    <Typography variant="caption" color="textSecondary">
-                      {new Date(msg.createdAt).toLocaleString("es-AR")}
-                    </Typography>
-                  </Stack>
-                  <Typography variant="body2" sx={{ mt: 0.5 }}>
-                    {msg.content}
-                  </Typography>
-                </Box>
-              ))}
+              {report.conversation.messages.map((msg) => {
+                const isCharter = msg.sender?.role === ("charter" as UserRole);
+                return (
+                  <Box
+                    key={msg.id}
+                    sx={{
+                      display: "flex",
+                      flexDirection: "column",
+                      alignItems: isCharter ? "flex-end" : "flex-start",
+                    }}
+                  >
+                    <Stack
+                      direction={isCharter ? "row-reverse" : "row"}
+                      spacing={1}
+                      alignItems="center"
+                      sx={{ mb: 0.5 }}
+                    >
+                      <Avatar
+                        sx={{
+                          width: 24,
+                          height: 24,
+                          fontSize: 12,
+                          bgcolor: isCharter ? "primary.main" : "secondary.main",
+                        }}
+                      >
+                        {msg.sender?.name?.charAt(0)?.toUpperCase()}
+                      </Avatar>
+                      <Typography variant="caption" sx={{ fontWeight: 600 }}>
+                        {msg.sender?.name}
+                      </Typography>
+                      <Typography variant="caption" color="textSecondary">
+                        {new Date(msg.createdAt).toLocaleString("es-AR")}
+                      </Typography>
+                    </Stack>
+                    <Box
+                      sx={{
+                        bgcolor: isCharter ? "primary.50" : "grey.100",
+                        borderRadius: 2,
+                        px: 2,
+                        py: 1,
+                        maxWidth: "75%",
+                        border: "1px solid",
+                        borderColor: isCharter ? "primary.200" : "grey.300",
+                      }}
+                    >
+                      <Typography variant="body2">{msg.content}</Typography>
+                    </Box>
+                  </Box>
+                );
+              })}
             </Stack>
           </Paper>
         )}
@@ -264,6 +409,11 @@ export default function ReportDetailPage() {
             <Typography variant="caption">
               Creado: {new Date(report.createdAt).toLocaleString("es-AR")}
             </Typography>
+            {report.updatedAt !== report.createdAt && (
+              <Typography variant="caption">
+                Actualizado: {new Date(report.updatedAt).toLocaleString("es-AR")}
+              </Typography>
+            )}
             {report.resolvedAt && (
               <Typography variant="caption">
                 Resuelto: {new Date(report.resolvedAt).toLocaleString("es-AR")}

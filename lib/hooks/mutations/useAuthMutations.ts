@@ -16,13 +16,13 @@ import { useNotificationsStore } from "@/lib/stores/notificationsStore";
  * Guarda el token en el store y redirige al dashboard
  */
 export function useLogin() {
-  const { login } = useAuthStore();
+  const { login, updateUser } = useAuthStore();
   const router = useRouter();
 
   return useMutation({
     mutationFn: (data: LoginRequest) => authApi.login(data),
 
-    onSuccess: (response) => {
+    onSuccess: async (response) => {
       console.log("✅ [useLogin] onSuccess - Guardando auth");
       console.log("   User:", response.user.name);
       console.log("   Token presente:", !!response.token);
@@ -30,6 +30,18 @@ export function useLogin() {
 
       // Guardar user y token en store (persiste a localStorage)
       login(response.user, response.token);
+
+      // Fetch perfil completo para asegurar campos como pricePerKm
+      try {
+        console.log("📡 [useLogin] Obteniendo perfil completo...");
+        const fullProfile = await authApi.updateUser(response.user.id, {});
+        console.log("✅ [useLogin] Perfil completo obtenido:", fullProfile);
+        console.log("   pricePerKm en perfil:", fullProfile.pricePerKm);
+        updateUser(fullProfile);
+      } catch (error) {
+        console.warn("⚠️ [useLogin] No crítico: Error al obtener perfil completo", error);
+        // No crítico: el login ya funcionó, solo no tenemos pricePerKm
+      }
 
       toast.success(`¡Bienvenido ${response.user.name}!`);
 
@@ -150,14 +162,18 @@ export function useUpdateUserProfile() {
     mutationFn: ({ userId, data }: { userId: string; data: UpdateUserRequest }) =>
       authApi.updateUser(userId, data),
 
-    onSuccess: (updatedUser) => {
+    onSuccess: (updatedUser, variables) => {
       console.log("✅ [useUpdateUserProfile] Perfil actualizado:", updatedUser.name);
+      console.log("✅ [useUpdateUserProfile] updatedUser completo:", updatedUser);
+      console.log("✅ [useUpdateUserProfile] pricePerKm en respuesta:", updatedUser.pricePerKm);
+      console.log("✅ [useUpdateUserProfile] pricePerKm enviado:", variables.data.pricePerKm);
 
       // Actualizar usuario en el store
-      updateUser(updatedUser);
-
-      // Invalidar queries relacionadas con el usuario
-      queryClient.invalidateQueries({ queryKey: ["user"] });
+      // Si backend no devuelve pricePerKm, usar el valor enviado
+      updateUser({
+        ...updatedUser,
+        pricePerKm: updatedUser.pricePerKm ?? variables.data.pricePerKm,
+      });
 
       toast.success("Perfil actualizado exitosamente");
     },

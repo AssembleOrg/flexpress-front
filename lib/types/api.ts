@@ -145,6 +145,8 @@ export interface AvailableCharter {
   distanceToPickup: number; // km
   totalDistance: number; // km
   estimatedCredits: number;
+  vehicleBrand?: string | null;
+  vehicleModel?: string | null;
 }
 
 export interface Conversation {

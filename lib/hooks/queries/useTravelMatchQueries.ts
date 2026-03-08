@@ -1,7 +1,6 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
 import { travelMatchingApi } from "@/lib/api/travelMatching";
 import { useAuthStore } from "@/lib/stores/authStore";
 import { queryKeys } from "./queryFactory";

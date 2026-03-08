@@ -20,11 +20,13 @@ import {
   LocationOn,
   Flag,
   Map,
+  ReportProblem,
 } from '@mui/icons-material';
 import Link from 'next/link';
 import toast from 'react-hot-toast';
 import { ChatWindow } from '@/components/chat/ChatWindow';
 import { FinalizeTripModal } from '@/components/modals/FinalizeTripModal';
+import { ReportModal } from '@/components/modals/ReportModal';
 import { MobileContainer } from '@/components/layout/MobileContainer';
 import { MobileHeader } from '@/components/layout/MobileHeader';
 import { TripDetailsCard } from '@/components/trip/TripDetailsCard';
@@ -38,21 +40,27 @@ import { MOBILE_BOTTOM_NAV_HEIGHT } from '@/lib/constants/mobileDesign';
 import { useMatch } from '@/lib/hooks/queries/useTravelMatchQueries';
 import { useTrip } from '@/lib/hooks/queries/useTripQueries';
 import { useCharterCompleteTrip } from '@/lib/hooks/mutations/useTripMutations';
+import { useToggleAvailability } from '@/lib/hooks/mutations/useTravelMatchMutations';
 import { useAuthStore } from '@/lib/stores/authStore';
+import { useMyVehicles } from '@/lib/hooks/queries/useVehicleQueries';
 import type { User, UserRole } from '@/lib/types/api';
 
 export default function DriverMatchingDetailPage() {
   const params = useParams();
   const router = useRouter();
   const matchId = params.matchId as string;
-  const { user } = useAuthStore();
+  const { user, returnToOrigin, setReturnToOrigin } = useAuthStore();
 
   const { data: match, isLoading: matchLoading, refetch } = useMatch(matchId);
   const tripId = match?.tripId;
   const { data: trip, isLoading: tripLoading } = useTrip(tripId || '');
 
   const charterCompleteTripMutation = useCharterCompleteTrip();
+  const toggleAvailabilityMutation = useToggleAvailability();
+  const { data: myVehicles = [] } = useMyVehicles();
   const [finalizeTripModalOpen, setFinalizeTripModalOpen] = useState(false);
+  const [availabilityConfirmed, setAvailabilityConfirmed] = useState(false);
+  const [reportModalOpen, setReportModalOpen] = useState(false);
   const mapRef = useRef<LeafletMapHandle>(null);
 
   // Polling eliminado - useMatch ya tiene refetchInterval de 15s
@@ -295,18 +303,103 @@ export default function DriverMatchingDetailPage() {
                   >
                     Finalizar Viaje
                   </Button>
+
+                  {/* Report problem button */}
+                  <Button
+                    variant='outlined'
+                    color='error'
+                    fullWidth
+                    size='small'
+                    startIcon={<ReportProblem sx={{ fontSize: 18 }} />}
+                    onClick={() => setReportModalOpen(true)}
+                    sx={{
+                      gridColumn: '1 / -1',
+                      minHeight: 40,
+                      fontSize: '0.8rem',
+                    }}
+                  >
+                    Reportar Problema
+                  </Button>
                 </Box>
               )}
 
               {/* Estado 3: Charter finalizó, esperando cliente */}
-              {tripId && trip?.status === 'charter_completed' && (
-                <Alert severity='warning'>
-                  <Typography variant='caption'>
-                    Has finalizado el viaje. Esperando confirmación del
-                    cliente...
-                  </Typography>
-                </Alert>
-              )}
+              {tripId && trip?.status === 'charter_completed' && (() => {
+                const hasOrigin = !!user?.originLatitude;
+                const vehicleId = myVehicles[0]?.id;
+
+                if (availabilityConfirmed) {
+                  return (
+                    <Alert severity='success'>
+                      <Typography variant='caption'>
+                        Estás disponible. Revisá el dashboard para nuevos viajes.
+                      </Typography>
+                    </Alert>
+                  );
+                }
+
+                return (
+                  <Box
+                    sx={{
+                      border: '1px solid',
+                      borderColor: 'warning.main',
+                      borderRadius: 1.5,
+                      p: 2,
+                      bgcolor: 'warning.50',
+                    }}
+                  >
+                    <Typography variant='body2' fontWeight={700} mb={0.5}>
+                      Viaje finalizado — Esperando confirmación del cliente
+                    </Typography>
+                    <Typography variant='caption' color='text.secondary' display='block' mb={1.5}>
+                      ¿Querés aparecer disponible para un nuevo viaje?
+                    </Typography>
+                    <Stack direction='row' spacing={1}>
+                      {hasOrigin && (
+                        <Button
+                          variant='contained'
+                          size='small'
+                          color='success'
+                          disabled={toggleAvailabilityMutation.isPending}
+                          onClick={() => {
+                            toggleAvailabilityMutation.mutate(
+                              { isAvailable: true, vehicleId },
+                              {
+                                onSuccess: () => {
+                                  setReturnToOrigin(true);
+                                  setAvailabilityConfirmed(true);
+                                  toast.success('Estás disponible');
+                                },
+                              }
+                            );
+                          }}
+                        >
+                          Volver a mi zona
+                        </Button>
+                      )}
+                      <Button
+                        variant='outlined'
+                        size='small'
+                        disabled={toggleAvailabilityMutation.isPending}
+                        onClick={() => {
+                          toggleAvailabilityMutation.mutate(
+                            { isAvailable: true, vehicleId },
+                            {
+                              onSuccess: () => {
+                                setReturnToOrigin(false);
+                                setAvailabilityConfirmed(true);
+                                toast.success('Estás disponible');
+                              },
+                            }
+                          );
+                        }}
+                      >
+                        Cualquier viaje
+                      </Button>
+                    </Stack>
+                  </Box>
+                );
+              })()}
 
               {/* Estado 4: Viaje completado por AMBOS */}
               {tripId && trip?.status === 'completed' && (
@@ -333,6 +426,18 @@ export default function DriverMatchingDetailPage() {
                       type='charter'
                     />
                   )}
+
+                  <Button
+                    variant='outlined'
+                    color='error'
+                    fullWidth
+                    size='small'
+                    startIcon={<ReportProblem sx={{ fontSize: 18 }} />}
+                    onClick={() => setReportModalOpen(true)}
+                    sx={{ minHeight: 40, fontSize: '0.8rem', mt: 0.5 }}
+                  >
+                    Reportar Problema
+                  </Button>
 
                   <Button
                     variant='outlined'
@@ -476,6 +581,17 @@ export default function DriverMatchingDetailPage() {
         estimatedCredits={match.estimatedCredits || 0}
         isLoading={charterCompleteTripMutation.isPending}
       />
+
+      {/* Report Modal */}
+      {match.conversationId && (
+        <ReportModal
+          open={reportModalOpen}
+          onClose={() => setReportModalOpen(false)}
+          conversationId={match.conversationId}
+          reportedUserId={match.userId}
+          reportedUserName={match.user?.name || 'Cliente'}
+        />
+      )}
     </>
   );
 }

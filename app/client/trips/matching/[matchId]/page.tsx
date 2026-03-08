@@ -74,6 +74,7 @@ export default function MatchDetailPage() {
   const matchId = params.matchId as string;
   const [feedbackModalOpen, setFeedbackModalOpen] = useState(false);
   const [reportModalOpen, setReportModalOpen] = useState(false);
+  const [reportSubmitted, setReportSubmitted] = useState(false);
   const [confirmTripModalOpen, setConfirmTripModalOpen] = useState(false);
   const [cancelModalOpen, setCancelModalOpen] = useState(false);
   const [confirmCompletionModalOpen, setConfirmCompletionModalOpen] =
@@ -1121,69 +1122,79 @@ export default function MatchDetailPage() {
                 {/* Estado 3: Charter finalizó, cliente debe confirmar */}
                 {match.tripId && match.trip?.status === 'charter_completed' && (
                   <Stack spacing={1}>
-                    <Box
-                      sx={{
-                        bgcolor: 'primary.main',
-                        borderLeft: '4px solid',
-                        borderLeftColor: 'primary.dark',
-                        borderRadius: 1.5,
-                        p: 1.5,
-                      }}
-                    >
-                      <Typography
-                        variant='body2'
-                        sx={{
-                          fontWeight: 700,
-                          fontSize: '0.85rem',
-                          mb: 0.5,
-                          color: 'white',
-                        }}
-                      >
-                        El Transportista Finalizó el Viaje
-                      </Typography>
-                      <Typography
-                        variant='caption'
-                        sx={{
-                          fontSize: '0.7rem',
-                          color: 'white',
-                          opacity: 0.9,
-                        }}
-                      >
-                        Por favor confirma que has recibido tu carga
-                        correctamente.
-                      </Typography>
-                    </Box>
+                    {reportSubmitted ? (
+                      <Alert severity='warning' sx={{ borderRadius: 1.5 }}>
+                        <Typography variant='body2' sx={{ fontWeight: 700, mb: 0.5 }}>
+                          Reporte enviado
+                        </Typography>
+                        <Typography variant='caption'>
+                          El equipo revisará el caso y te contactará. Podés cerrar esta pantalla.
+                        </Typography>
+                      </Alert>
+                    ) : (
+                      <>
+                        <Box
+                          sx={{
+                            bgcolor: 'primary.main',
+                            borderLeft: '4px solid',
+                            borderLeftColor: 'primary.dark',
+                            borderRadius: 1.5,
+                            p: 1.5,
+                          }}
+                        >
+                          <Typography
+                            variant='body2'
+                            sx={{
+                              fontWeight: 700,
+                              fontSize: '0.85rem',
+                              mb: 0.5,
+                              color: 'white',
+                            }}
+                          >
+                            El Transportista Finalizó el Viaje
+                          </Typography>
+                          <Typography
+                            variant='caption'
+                            sx={{
+                              fontSize: '0.7rem',
+                              color: 'white',
+                              opacity: 0.9,
+                            }}
+                          >
+                            Por favor confirma que has recibido tu carga correctamente.
+                          </Typography>
+                        </Box>
 
-                    {/* Primary action button - fullwidth */}
-                    <Button
-                      variant='contained'
-                      color='success'
-                      fullWidth
-                      onClick={() => setConfirmCompletionModalOpen(true)}
-                      sx={{
-                        minHeight: 48,
-                        fontWeight: 700,
-                        fontSize: '0.9rem',
-                      }}
-                    >
-                      Confirmar Recepción
-                    </Button>
+                        <Button
+                          variant='contained'
+                          color='success'
+                          fullWidth
+                          onClick={() => setConfirmCompletionModalOpen(true)}
+                          sx={{
+                            minHeight: 48,
+                            fontWeight: 700,
+                            fontSize: '0.9rem',
+                          }}
+                        >
+                          Confirmar Recepción
+                        </Button>
 
-                    {/* Secondary action button - fullwidth */}
-                    <Button
-                      variant='outlined'
-                      color='error'
-                      fullWidth
-                      size='small'
-                      startIcon={<Warning sx={{ fontSize: 18 }} />}
-                      onClick={() => setReportModalOpen(true)}
-                      sx={{
-                        minHeight: 40,
-                        fontSize: '0.8rem',
-                      }}
-                    >
-                      Reportar Problema
-                    </Button>
+                        <Button
+                          variant='outlined'
+                          color='error'
+                          fullWidth
+                          size='small'
+                          startIcon={<Warning sx={{ fontSize: 18 }} />}
+                          onClick={() => setReportModalOpen(true)}
+                          sx={{
+                            minHeight: 40,
+                            fontSize: '0.8rem',
+                          }}
+                        >
+                          Reportar Problema
+                        </Button>
+                      </>
+                    )}
                   </Stack>
                 )}
 
@@ -1274,6 +1285,7 @@ export default function MatchDetailPage() {
             conversationId={match.conversation.id}
             reportedUserId={match.charter.id}
             reportedUserName={match.charter.name || 'Chófer'}
+            onSuccess={() => setReportSubmitted(true)}
           />
         )}
 

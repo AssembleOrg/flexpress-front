@@ -107,6 +107,18 @@ export function CharterCard({
               <Typography variant="body2">{charter.originAddress}</Typography>
             </Box>
           </Box>
+
+          {/* Vehicle info */}
+          {(charter.vehicleBrand || charter.vehicleModel) && (
+            <Box
+              sx={{ display: "flex", alignItems: "center", gap: 0.5, mt: 1 }}
+            >
+              <DirectionsCar sx={{ fontSize: 16, color: "action" }} />
+              <Typography variant="body2" color="text.secondary">
+                {[charter.vehicleBrand, charter.vehicleModel].filter(Boolean).join(" ")}
+              </Typography>
+            </Box>
+          )}
         </Box>
 
         {/* Stats en chips */}

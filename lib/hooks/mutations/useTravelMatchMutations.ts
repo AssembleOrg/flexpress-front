@@ -250,15 +250,13 @@ export function useToggleAvailability() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (isAvailable: boolean) =>
-      travelMatchingApi.toggleAvailability(isAvailable),
+    mutationFn: ({ isAvailable, vehicleId }: { isAvailable: boolean; vehicleId?: string }) =>
+      travelMatchingApi.toggleAvailability(isAvailable, vehicleId),
 
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: queryKeys.auth.profile(),
       });
-
-      toast.success("Disponibilidad actualizada");
     },
 
     onError: (error) => {

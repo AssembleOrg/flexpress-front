@@ -17,7 +17,14 @@ import {
   CardContent,
   Chip,
   CircularProgress,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
   FormControlLabel,
+  RadioGroup,
+  FormControlLabel as FormControlLabelRadio,
+  Radio,
   Stack,
   Switch,
   Typography,
@@ -51,7 +58,7 @@ const MotionBox = motion.create(Box);
 export default function DriverDashboard() {
   const router = useRouter();
   const queryClient = useQueryClient();
-  const { user, gender } = useAuthStore();
+  const { user, gender, returnToOrigin } = useAuthStore();
   const [isAvailable, setIsAvailable] = useState(false);
   const toggleMutation = useToggleAvailability();
   const { data: charterMatches = [], isLoading: matchesLoading } =
@@ -63,6 +70,19 @@ export default function DriverDashboard() {
   const [acceptModalOpen, setAcceptModalOpen] = useState(false);
   const [selectedMatchForAccept, setSelectedMatchForAccept] =
     useState<TravelMatch | null>(null);
+
+  // Vehicle selection modal state
+  const [vehicleSelectOpen, setVehicleSelectOpen] = useState(false);
+  const [selectedVehicleId, setSelectedVehicleId] = useState<string>("");
+  const [pendingAvailabilityToggle, setPendingAvailabilityToggle] =
+    useState(false);
+
+  // Approx distance for sorting (no haversine, just coordinate diff)
+  const getApproxDistance = (lat1: string | number, lon1: string | number, lat2: string | number, lon2: string | number) => {
+    return Math.abs(Number(lat1) - Number(lat2)) + Math.abs(Number(lon1) - Number(lon2));
+  };
+
+  const RETURN_TO_ORIGIN_THRESHOLD = 0.5; // ~50km in degree units
 
   // Filter pending matches defensively
   // Only show matches with:
@@ -84,6 +104,17 @@ export default function DriverDashboard() {
     return true;
   });
 
+  // Sort pending matches by proximity to driver's origin if returnToOrigin is active
+  const sortedPendingMatches = returnToOrigin && user?.originLatitude
+    ? [...pendingMatches].sort((a, b) => {
+        const originLat = user.originLatitude!;
+        const originLon = user.originLongitude!;
+        const distA = getApproxDistance(a.destinationLatitude, a.destinationLongitude, originLat, originLon);
+        const distB = getApproxDistance(b.destinationLatitude, b.destinationLongitude, originLat, originLon);
+        return distA - distB;
+      })
+    : pendingMatches;
+
   // Filter active conversations (accepted or completed matches with active conversations)
   // Show conversations where charter accepted and conversation exists
   // (conversationId is created immediately when charter accepts, before tripId)
@@ -102,12 +133,88 @@ export default function DriverDashboard() {
     );
   });
 
+  const { setReturnToOrigin } = useAuthStore();
+
   const handleAvailabilityChange = (
     event: React.ChangeEvent<HTMLInputElement>,
   ) => {
     const newStatus = event.target.checked;
-    setIsAvailable(newStatus);
-    toggleMutation.mutate(newStatus);
+
+    if (!newStatus) {
+      // Desconectar: flujo directo con manejo de error
+      setIsAvailable(false);
+      toggleMutation.mutate(
+        { isAvailable: false },
+        {
+          onSuccess: () => setReturnToOrigin(false),
+          onError: () => setIsAvailable(true), // Revertir si falla
+        }
+      );
+      return;
+    }
+
+    // Conectar: necesitamos vehículo
+    const verifiedVehicles = myVehicles.filter(
+      (v) => v.verificationStatus === VerificationStatus.VERIFIED,
+    );
+
+    if (verifiedVehicles.length === 0) {
+      // Sin vehículos verificados: flujo directo (backend decidirá)
+      setIsAvailable(true);
+      toggleMutation.mutate(
+        { isAvailable: true },
+        {
+          onSuccess: () => toast.success("Estás en línea"),
+          onError: () => setIsAvailable(false),
+        }
+      );
+    } else if (verifiedVehicles.length === 1) {
+      // Un vehículo: asignar automáticamente sin modal
+      setIsAvailable(true);
+      setSelectedVehicleId(verifiedVehicles[0].id);
+      toggleMutation.mutate(
+        { isAvailable: true, vehicleId: verifiedVehicles[0].id },
+        {
+          onSuccess: () => toast.success("Estás en línea"),
+          onError: () => {
+            setIsAvailable(false);
+            setSelectedVehicleId("");
+          },
+        }
+      );
+    } else {
+      // Múltiples vehículos: abrir modal de selección
+      setSelectedVehicleId("");
+      setVehicleSelectOpen(true);
+      setPendingAvailabilityToggle(true);
+    }
+  };
+
+  const handleVehicleSelectConfirm = () => {
+    if (!selectedVehicleId) {
+      toast.error("Selecciona un vehículo");
+      return;
+    }
+    setVehicleSelectOpen(false);
+    setIsAvailable(true);
+    toggleMutation.mutate(
+      { isAvailable: true, vehicleId: selectedVehicleId },
+      {
+        onSuccess: () => toast.success("Estás en línea"),
+        onError: () => {
+          setIsAvailable(false);
+          setSelectedVehicleId("");
+          setVehicleSelectOpen(false);
+        },
+      }
+    );
+    setPendingAvailabilityToggle(false);
+  };
+
+  const handleVehicleSelectCancel = () => {
+    setVehicleSelectOpen(false);
+    setSelectedVehicleId("");
+    setPendingAvailabilityToggle(false);
   };
 
   const handleRejectMatch = (matchId: string) => {
@@ -118,6 +225,9 @@ export default function DriverDashboard() {
   };
 
   const { data: myVehicles = [] } = useMyVehicles();
+
+  // Derive active vehicle based on selected vehicle ID
+  const activeVehicle = myVehicles.find(v => v.id === selectedVehicleId);
 
   // Check verification status
   const isPending = user?.verificationStatus === VerificationStatus.PENDING;
@@ -375,8 +485,55 @@ export default function DriverDashboard() {
               ? "Recibiendo solicitudes de viajes"
               : "Actívate para empezar a ganar"}
           </Typography>
+
+          {isAvailable && activeVehicle && (
+            <Box sx={{ mt: 1.5, pt: 1.5, borderTop: "1px solid", borderColor: "divider" }}>
+              <Typography variant="caption" color="text.secondary" display="block">
+                🚗 {activeVehicle.brand} {activeVehicle.model} ({activeVehicle.plate})
+              </Typography>
+              {user?.pricePerKm != null && (
+                <Typography variant="caption" color="text.secondary" display="block">
+                  💰 {user.pricePerKm} cr/km
+                </Typography>
+              )}
+            </Box>
+          )}
         </CardContent>
       </MotionCard>
+
+      {/* Vehicle Selection Dialog */}
+      <Dialog open={vehicleSelectOpen} onClose={handleVehicleSelectCancel} maxWidth="sm" fullWidth>
+        <DialogTitle>Selecciona tu vehículo</DialogTitle>
+        <DialogContent>
+          <Box sx={{ pt: 2 }}>
+            <RadioGroup
+              value={selectedVehicleId}
+              onChange={(e) => setSelectedVehicleId(e.target.value)}
+            >
+              {myVehicles
+                .filter((v) => v.verificationStatus === VerificationStatus.VERIFIED)
+                .map((vehicle) => (
+                  <FormControlLabelRadio
+                    key={vehicle.id}
+                    value={vehicle.id}
+                    control={<Radio />}
+                    label={`${vehicle.brand || "Sin marca"} ${vehicle.model || ""} (${vehicle.plate})`}
+                  />
+                ))}
+            </RadioGroup>
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleVehicleSelectCancel}>Cancelar</Button>
+          <Button
+            onClick={handleVehicleSelectConfirm}
+            variant="contained"
+            disabled={!selectedVehicleId || toggleMutation.isPending}
+          >
+            Confirmar
+          </Button>
+        </DialogActions>
+      </Dialog>
 
       {/* Tarifa del charter */}
       <MotionCard
@@ -402,7 +559,7 @@ export default function DriverDashboard() {
               <Button
                 size="small"
                 variant="text"
-                onClick={() => router.push("/driver/onboarding/vehicle")}
+                onClick={() => router.push("/driver/settings")}
                 sx={{ alignSelf: "flex-start", p: 0, mt: 0.5 }}
               >
                 Editar →
@@ -416,7 +573,7 @@ export default function DriverDashboard() {
               <Button
                 size="small"
                 variant="outlined"
-                onClick={() => router.push("/driver/onboarding/vehicle")}
+                onClick={() => router.push("/driver/settings")}
               >
                 Configurar precio
               </Button>
@@ -503,48 +660,73 @@ export default function DriverDashboard() {
             </Card>
           )}
 
-          {!matchesLoading && pendingMatches.length > 0 && (
+          {!matchesLoading && sortedPendingMatches.length > 0 && (
             <Stack spacing={2}>
-              {pendingMatches.map((match) => {
+              {sortedPendingMatches.map((match) => {
                 if (!match?.id) {
                   console.warn("⚠️ Match inválido:", match);
                   return null;
                 }
+                const isNearOrigin = returnToOrigin &&
+                  user?.originLatitude &&
+                  getApproxDistance(
+                    match.destinationLatitude,
+                    match.destinationLongitude,
+                    user.originLatitude,
+                    user.originLongitude!,
+                  ) < RETURN_TO_ORIGIN_THRESHOLD;
+
                 return (
-                  <MobileMatchCard
-                    key={match.id}
-                    matchId={match.id}
-                    user={{
-                      name: match.user?.name || "Usuario",
-                      avatar: match.user?.avatar ?? undefined,
-                    }}
-                    origin={match.pickupAddress || "No especificado"}
-                    destination={match.destinationAddress || "No especificado"}
-                    scheduledDate={
-                      match.scheduledDate
-                        ? new Date(match.scheduledDate).toLocaleDateString(
-                            "es-AR",
-                          )
-                        : undefined
-                    }
-                    expiresIn={
-                      match.expiresAt ? (
-                        <MatchExpirationTimer expiresAt={match.expiresAt} />
-                      ) : undefined
-                    }
-                    onAccept={() => {
-                      setSelectedMatchForAccept(match);
-                      setAcceptModalOpen(true);
-                    }}
-                    onReject={() => handleRejectMatch(match.id)}
-                    isLoading={respondMutation.isPending}
-                  />
+                  <Box key={match.id} sx={{ position: "relative" }}>
+                    {isNearOrigin && (
+                      <Chip
+                        label="Vuelve a tu zona"
+                        size="small"
+                        color="success"
+                        sx={{
+                          position: "absolute",
+                          top: 8,
+                          right: 8,
+                          zIndex: 1,
+                          fontWeight: 700,
+                          fontSize: "0.7rem",
+                        }}
+                      />
+                    )}
+                    <MobileMatchCard
+                      matchId={match.id}
+                      user={{
+                        name: match.user?.name || "Usuario",
+                        avatar: match.user?.avatar ?? undefined,
+                      }}
+                      origin={match.pickupAddress || "No especificado"}
+                      destination={match.destinationAddress || "No especificado"}
+                      scheduledDate={
+                        match.scheduledDate
+                          ? new Date(match.scheduledDate).toLocaleDateString(
+                              "es-AR",
+                            )
+                          : undefined
+                      }
+                      expiresIn={
+                        match.expiresAt ? (
+                          <MatchExpirationTimer expiresAt={match.expiresAt} />
+                        ) : undefined
+                      }
+                      onAccept={() => {
+                        setSelectedMatchForAccept(match);
+                        setAcceptModalOpen(true);
+                      }}
+                      onReject={() => handleRejectMatch(match.id)}
+                      isLoading={respondMutation.isPending}
+                    />
+                  </Box>
                 );
               })}
             </Stack>
           )}
 
-          {!matchesLoading && pendingMatches.length === 0 && (
+          {!matchesLoading && sortedPendingMatches.length === 0 && (
             <Card>
               <CardContent sx={{ textAlign: "center", py: 3 }}>
                 <Typography

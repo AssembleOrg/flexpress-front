@@ -364,10 +364,12 @@ export const travelMatchingApi = {
   /**
    * Toggle charter availability
    */
-  toggleAvailability: async (isAvailable: boolean) => {
-    const response = await api.put('/travel-matching/charter/availability', {
+  toggleAvailability: async (isAvailable: boolean, vehicleId?: string) => {
+    const payload: { isAvailable: boolean; vehicleId?: string } = {
       isAvailable,
-    });
+      ...(vehicleId && { vehicleId }),
+    };
+    const response = await api.put('/travel-matching/charter/availability', payload);
     // biome-ignore lint/style/noNonNullAssertion: axios response guarantees data
     return response.data.data!;
   },

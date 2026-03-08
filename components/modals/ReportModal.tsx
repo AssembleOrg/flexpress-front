@@ -20,6 +20,7 @@ export interface ReportModalProps {
   conversationId: string;
   reportedUserId: string;
   reportedUserName?: string;
+  onSuccess?: () => void;
 }
 
 /**
@@ -51,6 +52,7 @@ export function ReportModal({
   conversationId,
   reportedUserId,
   reportedUserName = "usuario",
+  onSuccess,
 }: ReportModalProps) {
   const [reason, setReason] = useState("");
   const [description, setDescription] = useState("");
@@ -71,10 +73,10 @@ export function ReportModal({
 
     createReportMutation.mutate(reportData, {
       onSuccess: () => {
-        // Reset form and close modal
         setReason("");
         setDescription("");
         onClose();
+        onSuccess?.();
       },
     });
   };

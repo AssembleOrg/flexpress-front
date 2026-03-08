@@ -100,6 +100,7 @@ export const authApi = {
       console.log('   token length:', authResponse.token.length);
       console.log('   user present:', !!authResponse.user);
       console.log('   user.id:', authResponse.user.id);
+      console.log('   user.pricePerKm:', authResponse.user.pricePerKm);
     }
 
     return authResponse;
@@ -193,8 +194,12 @@ export const authApi = {
     data: UpdateUserRequest
   ): Promise<User> => {
     const response = await api.patch<ApiResponse<User>>(`/users/${userId}`, data);
-    // biome-ignore lint/style/noNonNullAssertion: axios response guarantees data
-    return response.data.data!;
+    const rawData = response.data.data!;
+    // Handle potential double-wrapper from backend
+    if (rawData && typeof rawData === 'object' && 'data' in rawData) {
+      return (rawData as { data: User }).data;
+    }
+    return rawData;
   },
 
   // Cerrar sesión
