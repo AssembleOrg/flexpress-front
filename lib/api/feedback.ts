@@ -27,7 +27,8 @@ export interface CreateFeedbackRequest {
 export interface UserFeedbackResponse {
   feedbacks: Feedback[];
   averageRating: number;
-  totalFeedbacks: number;
+  totalCount: number;
+  ratingDistribution?: Record<string, number>;
 }
 
 export const feedbackApi = {
@@ -47,7 +48,7 @@ export const feedbackApi = {
       return {
         feedbacks: [],
         averageRating: 0,
-        totalFeedbacks: 0,
+        totalCount: 0,
       };
     }
   },

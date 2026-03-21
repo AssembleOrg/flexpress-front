@@ -6,13 +6,12 @@ import {
   Tabs,
   Tab,
   Box,
-  Badge,
   CircularProgress,
   useTheme,
   useMediaQuery,
 } from "@mui/material";
 import { useAuthStore } from "@/lib/stores/authStore";
-import { useAdminReports, usePendingCharters } from "@/lib/hooks/queries/useAdminQueries";
+import { useAdminReports, usePendingCharters, usePendingVehicles } from "@/lib/hooks/queries/useAdminQueries";
 import { usePendingPaymentsCount } from "@/lib/hooks/queries/usePaymentQueries";
 import { UsersTable } from "@/components/admin/UsersTable";
 import { ReportsTable } from "@/components/admin/ReportsTable";
@@ -38,7 +37,7 @@ function TabPanel(props: TabPanelProps) {
       aria-labelledby={`admin-tab-${index}`}
       {...other}
     >
-      {value === index && <Box sx={{ py: 3 }}>{children}</Box>}
+      {value === index && <Box sx={{ py: { xs: 1.5, md: 3 } }}>{children}</Box>}
     </div>
   );
 }
@@ -56,21 +55,24 @@ export default function AdminPage() {
 
   // Fetch pending charters for badge
   const { data: pendingChartersData, isLoading: chartersLoading } = usePendingCharters();
+  const { data: pendingVehiclesData = [] } = usePendingVehicles();
 
   // Fetch pending payments for badge
   const { data: pendingPaymentsCount = 0, isLoading: paymentsLoading } = usePendingPaymentsCount();
 
   const pendingReportsCount = reportsData?.meta?.total ?? 0;
-  const pendingChartersCount = pendingChartersData?.length ?? 0;
+  const pendingChartersCount = (pendingChartersData?.length ?? 0) + pendingVehiclesData.length;
 
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
     setActiveTab(newValue);
   };
 
+  // Total users from UsersTable data (not available here; use pendingCharters as proxy)
+  // Only counts we have at this level: pendingCharters, pendingReports, pendingPayments
   return (
-    <Container maxWidth="xl" sx={{ py: 4 }}>
+    <Container maxWidth="xl" sx={{ py: { xs: 2, md: 4 } }}>
       {/* Tabs */}
-      <Box sx={{ borderBottom: 1, borderColor: "divider", mb: 3 }}>
+      <Box sx={{ borderBottom: 1, borderColor: "divider", mb: { xs: 1, md: 3 } }}>
         <Tabs
           value={activeTab}
           onChange={handleTabChange}
@@ -81,6 +83,18 @@ export default function AdminPage() {
           sx={{
             "& .MuiTabs-indicator": {
               backgroundColor: "#dca621",
+              height: 4,
+              borderRadius: "4px 4px 0 0",
+            },
+            "& .MuiTab-root": {
+              fontWeight: 600,
+              fontSize: { xs: "0.8rem", md: "0.875rem" },
+              textTransform: "none",
+              minHeight: 48,
+              px: { xs: 1.5, md: 2 },
+            },
+            "& .Mui-selected": {
+              color: "#dca621 !important",
             },
             "& .MuiTabs-scrollButtons": {
               color: "#dca621",
@@ -96,25 +110,29 @@ export default function AdminPage() {
 
           <Tab
             label={
-              chartersLoading ? (
-                "Conductores"
-              ) : (
-                <Badge
-                  badgeContent={pendingChartersCount}
-                  overlap="rectangular"
-                  anchorOrigin={{ vertical: "top", horizontal: "right" }}
-                  sx={{
-                    "& .MuiBadge-badge": {
-                      backgroundColor: "#dca621",
+              <Box sx={{ display: "flex", alignItems: "center", gap: 0.75 }}>
+                Conductores
+                {!chartersLoading && pendingChartersCount > 0 && (
+                  <Box
+                    component="span"
+                    sx={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      width: 18,
+                      height: 18,
+                      borderRadius: "50%",
+                      bgcolor: "#dca621",
                       color: "#212121",
-                      top: -6,
-                      right: -8,
-                    },
-                  }}
-                >
-                  <Box component="span" sx={{ pr: 1.5 }}>Conductores</Box>
-                </Badge>
-              )
+                      fontSize: "0.65rem",
+                      fontWeight: 700,
+                      lineHeight: 1,
+                    }}
+                  >
+                    {pendingChartersCount}
+                  </Box>
+                )}
+              </Box>
             }
             id="admin-tab-1"
             aria-controls="admin-tabpanel-1"
@@ -122,25 +140,29 @@ export default function AdminPage() {
 
           <Tab
             label={
-              reportsLoading ? (
-                "Reportes"
-              ) : (
-                <Badge
-                  badgeContent={pendingReportsCount}
-                  overlap="rectangular"
-                  anchorOrigin={{ vertical: "top", horizontal: "right" }}
-                  sx={{
-                    "& .MuiBadge-badge": {
-                      backgroundColor: "#380116",
+              <Box sx={{ display: "flex", alignItems: "center", gap: 0.75 }}>
+                Reportes
+                {!reportsLoading && pendingReportsCount > 0 && (
+                  <Box
+                    component="span"
+                    sx={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      width: 18,
+                      height: 18,
+                      borderRadius: "50%",
+                      bgcolor: "#380116",
                       color: "white",
-                      top: -6,
-                      right: -8,
-                    },
-                  }}
-                >
-                  <Box component="span" sx={{ pr: 1.5 }}>Reportes</Box>
-                </Badge>
-              )
+                      fontSize: "0.65rem",
+                      fontWeight: 700,
+                      lineHeight: 1,
+                    }}
+                  >
+                    {pendingReportsCount}
+                  </Box>
+                )}
+              </Box>
             }
             id="admin-tab-2"
             aria-controls="admin-tabpanel-2"
@@ -156,25 +178,29 @@ export default function AdminPage() {
           {user?.role === "admin" && (
             <Tab
               label={
-                paymentsLoading ? (
-                  "Pagos"
-                ) : (
-                  <Badge
-                    badgeContent={pendingPaymentsCount}
-                    overlap="rectangular"
-                    anchorOrigin={{ vertical: "top", horizontal: "right" }}
-                    sx={{
-                      "& .MuiBadge-badge": {
-                        backgroundColor: "#e74c3c",
+                <Box sx={{ display: "flex", alignItems: "center", gap: 0.75 }}>
+                  Pagos
+                  {!paymentsLoading && pendingPaymentsCount > 0 && (
+                    <Box
+                      component="span"
+                      sx={{
+                        display: "inline-flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        width: 18,
+                        height: 18,
+                        borderRadius: "50%",
+                        bgcolor: "#e74c3c",
                         color: "white",
-                        top: -6,
-                        right: -8,
-                      },
-                    }}
-                  >
-                    <Box component="span" sx={{ pr: 1.5 }}>Pagos</Box>
-                  </Badge>
-                )
+                        fontSize: "0.65rem",
+                        fontWeight: 700,
+                        lineHeight: 1,
+                      }}
+                    >
+                      {pendingPaymentsCount}
+                    </Box>
+                  )}
+                </Box>
               }
               id="admin-tab-4"
               aria-controls="admin-tabpanel-4"

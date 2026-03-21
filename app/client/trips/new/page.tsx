@@ -188,6 +188,7 @@ export default function NewTripPage() {
       },
       {
         onSuccess: () => {
+          useTravelMatchStore.getState().clearSearchForm?.();
           router.push('/client/trips/matching');
         },
       }

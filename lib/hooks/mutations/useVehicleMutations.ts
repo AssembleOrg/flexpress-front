@@ -60,6 +60,35 @@ export function useCreateVehicleDocument(vehicleId: string) {
   });
 }
 
+export interface UpdateVehicleRequest {
+  brand?: string;
+  model?: string;
+  year?: number;
+  alias?: string;
+}
+
+export function useUpdateVehicle(vehicleId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (dto: UpdateVehicleRequest): Promise<Vehicle> => {
+      const response = await api.patch<{ success: boolean; data: Vehicle }>(
+        `/vehicles/${vehicleId}`,
+        dto,
+      );
+      return response.data.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["vehicles", "me"] });
+      toast.success("Vehículo actualizado. Pendiente de re-verificación.");
+    },
+    onError: (error: any) => {
+      const message = error.response?.data?.message || "Error al actualizar vehículo";
+      toast.error(message);
+    },
+  });
+}
+
 export function useToggleVehicleEnabled(vehicleId: string) {
   const queryClient = useQueryClient();
 

@@ -138,7 +138,7 @@ export default function ClientDashboard() {
             alignItems: "center",
           }}
         >
-          <Box display="flex" alignItems="center" gap={2}>
+          <Box display="flex" alignItems="center" gap={{ xs: 1, md: 2 }}>
             <motion.div
               initial={{ scale: 0.5, rotate: -20 }}
               animate={{ scale: 1, rotate: 0 }}
@@ -149,7 +149,7 @@ export default function ClientDashboard() {
                 stiffness: 150,
               }}
             >
-              <AccountBalanceWallet sx={{ fontSize: 40, opacity: 0.9 }} />
+              <AccountBalanceWallet sx={{ fontSize: { xs: 32, md: 40 }, opacity: 0.9 }} />
             </motion.div>
             <Box display="flex" alignItems="center" gap={1.5}>
               <Box>
@@ -161,7 +161,7 @@ export default function ClientDashboard() {
                 </Typography>
                 <Typography
                   variant="h3"
-                  sx={{ fontWeight: 700, color: "inherit" }}
+                  sx={{ fontWeight: 700, color: "inherit", fontSize: { xs: "1.75rem", md: "3rem" } }}
                 >
                   {user?.credits || 0}
                 </Typography>
@@ -189,6 +189,9 @@ export default function ClientDashboard() {
             onClick={openModal}
             sx={{
               boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+              width: { xs: 36, md: 56 },
+              height: { xs: 36, md: 56 },
+              minHeight: "unset",
             }}
           >
             <Add />

@@ -1,49 +1,49 @@
-'use client';
+"use client";
 
-import { useParams, useRouter } from 'next/navigation';
-import { useState, useEffect, useRef } from 'react';
-import {
-  Box,
-  Button,
-  Container,
-  Grid,
-  Card,
-  CardContent,
-  Typography,
-  Alert,
-  Stack,
-  CircularProgress,
-} from '@mui/material';
 import {
   ArrowBack,
   CheckCircle,
-  LocationOn,
   Flag,
+  LocationOn,
   Map,
   ReportProblem,
-} from '@mui/icons-material';
-import Link from 'next/link';
-import toast from 'react-hot-toast';
-import { ChatWindow } from '@/components/chat/ChatWindow';
-import { FinalizeTripModal } from '@/components/modals/FinalizeTripModal';
-import { ReportModal } from '@/components/modals/ReportModal';
-import { MobileContainer } from '@/components/layout/MobileContainer';
-import { MobileHeader } from '@/components/layout/MobileHeader';
-import { TripDetailsCard } from '@/components/trip/TripDetailsCard';
-import { TripMetricsCard } from '@/components/trip/TripMetricsCard';
-import { ReceiptButton } from '@/components/trip/ReceiptButton';
+} from "@mui/icons-material";
+import {
+  Alert,
+  Box,
+  Button,
+  Card,
+  CardContent,
+  CircularProgress,
+  Container,
+  Grid,
+  Stack,
+  Typography,
+} from "@mui/material";
+import Link from "next/link";
+import { useParams, useRouter } from "next/navigation";
+import { useEffect, useRef, useState } from "react";
+import toast from "react-hot-toast";
+import { ChatWindow } from "@/components/chat/ChatWindow";
+import { MobileContainer } from "@/components/layout/MobileContainer";
+import { MobileHeader } from "@/components/layout/MobileHeader";
+import { FinalizeTripModal } from "@/components/modals/FinalizeTripModal";
+import { ReportModal } from "@/components/modals/ReportModal";
+import { ReceiptButton } from "@/components/trip/ReceiptButton";
+import { TripDetailsCard } from "@/components/trip/TripDetailsCard";
+import { TripMetricsCard } from "@/components/trip/TripMetricsCard";
 import LeafletMap, {
-  type MapMarker,
   type LeafletMapHandle,
-} from '@/components/ui/LeafletMap';
-import { MOBILE_BOTTOM_NAV_HEIGHT } from '@/lib/constants/mobileDesign';
-import { useMatch } from '@/lib/hooks/queries/useTravelMatchQueries';
-import { useTrip } from '@/lib/hooks/queries/useTripQueries';
-import { useCharterCompleteTrip } from '@/lib/hooks/mutations/useTripMutations';
-import { useToggleAvailability } from '@/lib/hooks/mutations/useTravelMatchMutations';
-import { useAuthStore } from '@/lib/stores/authStore';
-import { useMyVehicles } from '@/lib/hooks/queries/useVehicleQueries';
-import type { User, UserRole } from '@/lib/types/api';
+  type MapMarker,
+} from "@/components/ui/LeafletMap";
+import { MOBILE_BOTTOM_NAV_HEIGHT } from "@/lib/constants/mobileDesign";
+import { useToggleAvailability } from "@/lib/hooks/mutations/useTravelMatchMutations";
+import { useCharterCompleteTrip } from "@/lib/hooks/mutations/useTripMutations";
+import { useMatch } from "@/lib/hooks/queries/useTravelMatchQueries";
+import { useTrip } from "@/lib/hooks/queries/useTripQueries";
+import { useMyVehicles } from "@/lib/hooks/queries/useVehicleQueries";
+import { useAuthStore } from "@/lib/stores/authStore";
+import type { User, UserRole } from "@/lib/types/api";
 
 export default function DriverMatchingDetailPage() {
   const params = useParams();
@@ -53,7 +53,7 @@ export default function DriverMatchingDetailPage() {
 
   const { data: match, isLoading: matchLoading, refetch } = useMatch(matchId);
   const tripId = match?.tripId;
-  const { data: trip, isLoading: tripLoading } = useTrip(tripId || '');
+  const { data: trip, isLoading: tripLoading } = useTrip(tripId || "");
 
   const charterCompleteTripMutation = useCharterCompleteTrip();
   const toggleAvailabilityMutation = useToggleAvailability();
@@ -69,8 +69,8 @@ export default function DriverMatchingDetailPage() {
   // Detectar cuando el cliente rechaza
   const hasShownRejectionToast = useRef(false);
   useEffect(() => {
-    if (match?.status === 'rejected' && !hasShownRejectionToast.current) {
-      toast.error('El cliente rechazó la solicitud de viaje');
+    if (match?.status === "rejected" && !hasShownRejectionToast.current) {
+      toast.error("El cliente rechazó la solicitud de viaje");
       hasShownRejectionToast.current = true;
     }
   }, [match?.status]);
@@ -78,10 +78,10 @@ export default function DriverMatchingDetailPage() {
   // Detectar cuando el cliente cancela
   const hasShownCancellationToast = useRef(false);
   useEffect(() => {
-    if (match?.status === 'cancelled' && !hasShownCancellationToast.current) {
-      toast.error('El cliente canceló la solicitud');
+    if (match?.status === "cancelled" && !hasShownCancellationToast.current) {
+      toast.error("El cliente canceló la solicitud");
       hasShownCancellationToast.current = true;
-      router.push('/driver/dashboard');
+      router.push("/driver/dashboard");
     }
   }, [match?.status, router]);
 
@@ -90,16 +90,16 @@ export default function DriverMatchingDetailPage() {
     try {
       await charterCompleteTripMutation.mutateAsync(tripId);
       setFinalizeTripModalOpen(false);
-      toast.success('🏁 Viaje finalizado. Esperando confirmación del cliente.');
+      toast.success("Viaje finalizado. Esperando confirmación del cliente.");
     } catch (error) {
-      console.error('Error completing trip:', error);
-      toast.error('Error al finalizar el viaje');
+      console.error("Error completing trip:", error);
+      toast.error("Error al finalizar el viaje");
     }
   };
 
   if (matchLoading) {
     return (
-      <Container sx={{ display: 'flex', justifyContent: 'center', pt: 4 }}>
+      <Container sx={{ display: "flex", justifyContent: "center", pt: 4 }}>
         <CircularProgress />
       </Container>
     );
@@ -108,29 +108,29 @@ export default function DriverMatchingDetailPage() {
   if (!match) {
     return (
       <Container sx={{ pt: 4 }}>
-        <Alert severity='error'>Solicitud no encontrada</Alert>
+        <Alert severity="error">Solicitud no encontrada</Alert>
       </Container>
     );
   }
 
   const isCompletingTrip = charterCompleteTripMutation.isPending;
-  const tripCompleted = trip?.status === 'completed';
+  const tripCompleted = trip?.status === "completed";
 
   // Determine trip status for UI
   const getStatusInfo = () => {
     if (!tripId) {
-      return { label: 'Esperando Cliente', color: 'warning' as const };
+      return { label: "Esperando Cliente", color: "warning" as const };
     }
-    if (trip?.status === 'completed') {
-      return { label: 'Completado', color: 'success' as const };
+    if (trip?.status === "completed") {
+      return { label: "Completado", color: "success" as const };
     }
-    if (trip?.status === 'charter_completed') {
-      return { label: 'Esperando Cliente', color: 'warning' as const };
+    if (trip?.status === "charter_completed") {
+      return { label: "Esperando Cliente", color: "warning" as const };
     }
-    if (trip?.status === 'pending') {
-      return { label: 'En Progreso', color: 'primary' as const };
+    if (trip?.status === "pending") {
+      return { label: "En Progreso", color: "primary" as const };
     }
-    return { label: 'Confirmado', color: 'success' as const };
+    return { label: "Confirmado", color: "success" as const };
   };
 
   const statusInfo = getStatusInfo();
@@ -139,22 +139,15 @@ export default function DriverMatchingDetailPage() {
     <>
       {/* Mobile Header */}
       <MobileHeader
-        title='Chat con Cliente'
-        onBack={() => router.push('/driver/dashboard')}
+        title="Chat con Cliente"
+        onBack={() => router.push("/driver/dashboard")}
       />
 
-      <MobileContainer
-        withBottomNav
-        maxWidth='lg'
-      >
+      <MobileContainer withBottomNav maxWidth="lg">
         {/* Desktop Header */}
-        <Box sx={{ display: { xs: 'none', md: 'block' }, mb: 3 }}>
-          <Link href='/driver/dashboard'>
-            <Button
-              startIcon={<ArrowBack />}
-              variant='outlined'
-              sx={{ mb: 2 }}
-            >
+        <Box sx={{ display: { xs: "none", md: "block" }, mb: 3 }}>
+          <Link href="/driver/dashboard">
+            <Button startIcon={<ArrowBack />} variant="outlined" sx={{ mb: 2 }}>
               Volver al Dashboard
             </Button>
           </Link>
@@ -163,8 +156,8 @@ export default function DriverMatchingDetailPage() {
         {/* Main content grid */}
         <Box
           sx={{
-            display: 'grid',
-            gridTemplateColumns: { xs: '1fr', md: '2fr 1fr' },
+            display: "grid",
+            gridTemplateColumns: { xs: "1fr", md: "2fr 1fr" },
             gap: 1.5,
             mb: { xs: 0, md: 0 },
           }}
@@ -173,19 +166,12 @@ export default function DriverMatchingDetailPage() {
           <Box>
             {!match.conversationId ? (
               <Card>
-                <CardContent sx={{ textAlign: 'center', py: 6 }}>
+                <CardContent sx={{ textAlign: "center", py: 6 }}>
                   <CircularProgress sx={{ mb: 2 }} />
-                  <Typography
-                    variant='h6'
-                    color='textSecondary'
-                    sx={{ mb: 1 }}
-                  >
+                  <Typography variant="h6" color="textSecondary" sx={{ mb: 1 }}>
                     Preparando el chat...
                   </Typography>
-                  <Typography
-                    variant='caption'
-                    color='textSecondary'
-                  >
+                  <Typography variant="caption" color="textSecondary">
                     La conversación se está configurando. Esto toma solo unos
                     segundos.
                   </Typography>
@@ -194,59 +180,52 @@ export default function DriverMatchingDetailPage() {
             ) : (
               <Box
                 sx={{
-                  position: 'relative',
-                  minHeight: { xs: '450px', md: '600px' },
+                  position: "relative",
+                  minHeight: { xs: "450px", md: "600px" },
                 }}
               >
                 <ChatWindow
                   conversationId={match.conversationId}
                   otherUser={{
-                    id: match.user?.id || '',
-                    name: match.user?.name || 'Usuario',
+                    id: match.user?.id || "",
+                    name: match.user?.name || "Usuario",
                     avatar: match.user?.avatar ?? null,
                   }}
-                  onClose={() => router.push('/driver/dashboard')}
+                  onClose={() => router.push("/driver/dashboard")}
                 />
               </Box>
             )}
 
             {/* Action Buttons - directly below chat */}
-            <Stack
-              spacing={1}
-              sx={{ mt: 1.5 }}
-            >
+            <Stack spacing={1} sx={{ mt: 1.5 }}>
               {/* Estado 1: Esperando que cliente confirme el viaje */}
-              {!tripId && match.status === 'accepted' && (
+              {!tripId && match.status === "accepted" && (
                 <Box
                   sx={{
-                    bgcolor: 'primary.main',
-                    color: 'primary.contrastText',
+                    bgcolor: "primary.main",
+                    color: "primary.contrastText",
                     p: 2,
                     borderRadius: 1,
                     mb: 2,
-                    display: 'flex',
-                    alignItems: 'center',
+                    display: "flex",
+                    alignItems: "center",
                     gap: 1.5,
                     boxShadow: 2,
                   }}
                 >
-                  <CircularProgress size={20} color='inherit' />
-                  <Typography
-                    variant='body2'
-                    fontWeight={600}
-                    color='inherit'
-                  >
+                  <CircularProgress size={20} color="inherit" />
+                  <Typography variant="body2" fontWeight={600} color="inherit">
                     Esperando confirmación del cliente...
                   </Typography>
                 </Box>
               )}
 
               {/* Estado 2: Trip confirmado, charter puede finalizar */}
-              {tripId && trip?.status === 'pending' && (
+              {tripId && trip?.status === "pending" && (
                 <Box
                   sx={{
-                    display: 'grid',
-                    gridTemplateColumns: { xs: '1fr 1fr', md: '2fr 1fr' },
+                    display: "grid",
+                    gridTemplateColumns: { xs: "1fr 1fr", md: "2fr 1fr" },
                     gap: 1,
                     mb: 1.5,
                   }}
@@ -254,33 +233,33 @@ export default function DriverMatchingDetailPage() {
                   {/* Status box */}
                   <Box
                     sx={{
-                      gridColumn: { xs: '1 / -1', md: '1 / 2' },
-                      bgcolor: 'background.paper',
-                      border: '2px solid',
-                      borderColor: 'success.main',
+                      gridColumn: { xs: "1 / -1", md: "1 / 2" },
+                      bgcolor: "background.paper",
+                      border: "2px solid",
+                      borderColor: "success.main",
                       borderRadius: 1.5,
                       p: 1.5,
-                      display: 'flex',
-                      alignItems: 'center',
+                      display: "flex",
+                      alignItems: "center",
                       gap: 1.5,
                     }}
                   >
-                    <CheckCircle sx={{ fontSize: 24, color: 'success.main' }} />
+                    <CheckCircle sx={{ fontSize: 24, color: "success.main" }} />
                     <Box>
                       <Typography
-                        variant='body2'
+                        variant="body2"
                         sx={{
                           fontWeight: 700,
-                          fontSize: '0.85rem',
-                          color: 'text.primary',
+                          fontSize: "0.85rem",
+                          color: "text.primary",
                         }}
                       >
                         Viaje Confirmado
                       </Typography>
                       <Typography
-                        variant='caption'
-                        sx={{ fontSize: '0.7rem' }}
-                        color='text.secondary'
+                        variant="caption"
+                        sx={{ fontSize: "0.7rem" }}
+                        color="text.secondary"
                       >
                         Créditos reservados
                       </Typography>
@@ -289,16 +268,16 @@ export default function DriverMatchingDetailPage() {
 
                   {/* Complete trip button */}
                   <Button
-                    variant='contained'
+                    variant="contained"
                     fullWidth
                     onClick={() => setFinalizeTripModalOpen(true)}
                     sx={{
-                      gridColumn: { xs: '1 / -1', md: '2 / 3' },
-                      minHeight: { xs: 44, md: '100%' },
+                      gridColumn: { xs: "1 / -1", md: "2 / 3" },
+                      minHeight: { xs: 44, md: "100%" },
                       fontWeight: 700,
-                      fontSize: '0.85rem',
-                      bgcolor: 'success.main',
-                      '&:hover': { bgcolor: 'success.dark' },
+                      fontSize: "0.85rem",
+                      bgcolor: "success.main",
+                      "&:hover": { bgcolor: "success.dark" },
                     }}
                   >
                     Finalizar Viaje
@@ -306,16 +285,16 @@ export default function DriverMatchingDetailPage() {
 
                   {/* Report problem button */}
                   <Button
-                    variant='outlined'
-                    color='error'
+                    variant="outlined"
+                    color="error"
                     fullWidth
-                    size='small'
+                    size="small"
                     startIcon={<ReportProblem sx={{ fontSize: 18 }} />}
                     onClick={() => setReportModalOpen(true)}
                     sx={{
-                      gridColumn: '1 / -1',
+                      gridColumn: "1 / -1",
                       minHeight: 40,
-                      fontSize: '0.8rem',
+                      fontSize: "0.8rem",
                     }}
                   >
                     Reportar Problema
@@ -324,124 +303,124 @@ export default function DriverMatchingDetailPage() {
               )}
 
               {/* Estado 3: Charter finalizó, esperando cliente */}
-              {tripId && trip?.status === 'charter_completed' && (() => {
-                const hasOrigin = !!user?.originLatitude;
-                const vehicleId = myVehicles[0]?.id;
+              {tripId &&
+                trip?.status === "charter_completed" &&
+                (() => {
+                  const hasOrigin = !!user?.originLatitude;
+                  const vehicleId = myVehicles[0]?.id;
 
-                if (availabilityConfirmed) {
+                  if (availabilityConfirmed) {
+                    return (
+                      <Alert severity="success">
+                        <Typography variant="caption">
+                          Estás disponible. Revisá el dashboard para nuevos
+                          viajes.
+                        </Typography>
+                      </Alert>
+                    );
+                  }
+
                   return (
-                    <Alert severity='success'>
-                      <Typography variant='caption'>
-                        Estás disponible. Revisá el dashboard para nuevos viajes.
+                    <Box
+                      sx={{
+                        border: "1px solid",
+                        borderColor: "warning.main",
+                        borderRadius: 1.5,
+                        p: 2,
+                        bgcolor: "warning.50",
+                      }}
+                    >
+                      <Typography variant="body2" fontWeight={700} mb={0.5}>
+                        Viaje finalizado — Esperando confirmación del cliente
                       </Typography>
-                    </Alert>
-                  );
-                }
-
-                return (
-                  <Box
-                    sx={{
-                      border: '1px solid',
-                      borderColor: 'warning.main',
-                      borderRadius: 1.5,
-                      p: 2,
-                      bgcolor: 'warning.50',
-                    }}
-                  >
-                    <Typography variant='body2' fontWeight={700} mb={0.5}>
-                      Viaje finalizado — Esperando confirmación del cliente
-                    </Typography>
-                    <Typography variant='caption' color='text.secondary' display='block' mb={1.5}>
-                      ¿Querés aparecer disponible para un nuevo viaje?
-                    </Typography>
-                    <Stack direction='row' spacing={1}>
-                      {hasOrigin && (
+                      <Typography
+                        variant="caption"
+                        color="text.secondary"
+                        display="block"
+                        mb={1.5}
+                      >
+                        ¿Querés aparecer disponible para un nuevo viaje?
+                      </Typography>
+                      <Stack direction="row" spacing={1}>
+                        {hasOrigin && (
+                          <Button
+                            variant="contained"
+                            size="small"
+                            color="success"
+                            disabled={toggleAvailabilityMutation.isPending}
+                            onClick={() => {
+                              toggleAvailabilityMutation.mutate(
+                                { isAvailable: true, vehicleId },
+                                {
+                                  onSuccess: () => {
+                                    setReturnToOrigin(true);
+                                    setAvailabilityConfirmed(true);
+                                    toast.success("Estás disponible");
+                                  },
+                                },
+                              );
+                            }}
+                          >
+                            Volver a mi zona
+                          </Button>
+                        )}
                         <Button
-                          variant='contained'
-                          size='small'
-                          color='success'
+                          variant="outlined"
+                          size="small"
                           disabled={toggleAvailabilityMutation.isPending}
                           onClick={() => {
                             toggleAvailabilityMutation.mutate(
                               { isAvailable: true, vehicleId },
                               {
                                 onSuccess: () => {
-                                  setReturnToOrigin(true);
+                                  setReturnToOrigin(false);
                                   setAvailabilityConfirmed(true);
-                                  toast.success('Estás disponible');
+                                  toast.success("Estás disponible");
                                 },
-                              }
+                              },
                             );
                           }}
                         >
-                          Volver a mi zona
+                          Cualquier viaje
                         </Button>
-                      )}
-                      <Button
-                        variant='outlined'
-                        size='small'
-                        disabled={toggleAvailabilityMutation.isPending}
-                        onClick={() => {
-                          toggleAvailabilityMutation.mutate(
-                            { isAvailable: true, vehicleId },
-                            {
-                              onSuccess: () => {
-                                setReturnToOrigin(false);
-                                setAvailabilityConfirmed(true);
-                                toast.success('Estás disponible');
-                              },
-                            }
-                          );
-                        }}
-                      >
-                        Cualquier viaje
-                      </Button>
-                    </Stack>
-                  </Box>
-                );
-              })()}
+                      </Stack>
+                    </Box>
+                  );
+                })()}
 
               {/* Estado 4: Viaje completado por AMBOS */}
-              {tripId && trip?.status === 'completed' && (
+              {tripId && trip?.status === "completed" && (
                 <>
-                  <Alert
-                    severity='success'
-                    sx={{ mb: 1.5 }}
-                  >
+                  <Alert severity="success" sx={{ mb: 1.5 }}>
                     <Typography
-                      variant='body2'
+                      variant="body2"
                       sx={{ fontWeight: 600, mb: 0.5 }}
                     >
                       Viaje Completado
                     </Typography>
-                    <Typography variant='caption'>
+                    <Typography variant="caption">
                       Créditos transferidos exitosamente.
                     </Typography>
                   </Alert>
 
                   {/* Receipt Download Button - PRIMERO para destacar */}
-                  {trip && (
-                    <ReceiptButton
-                      trip={trip}
-                      type='charter'
-                    />
-                  )}
+                  {trip && <ReceiptButton trip={trip} type="charter" />}
 
                   <Button
-                    variant='outlined'
-                    color='error'
+                    variant="outlined"
+                    color="error"
                     fullWidth
-                    size='small'
+                    size="small"
                     startIcon={<ReportProblem sx={{ fontSize: 18 }} />}
                     onClick={() => setReportModalOpen(true)}
-                    sx={{ minHeight: 40, fontSize: '0.8rem', mt: 0.5 }}
+                    sx={{ minHeight: 40, fontSize: "0.8rem", mt: 0.5 }}
                   >
                     Reportar Problema
                   </Button>
 
                   <Button
-                    variant='outlined'
-                    onClick={() => router.push('/driver/dashboard')}
+                    variant="outlined"
+                    onClick={() => router.push("/driver/dashboard")}
                     fullWidth
                     sx={{ minHeight: 48, mt: 1.5 }}
                   >
@@ -456,23 +435,23 @@ export default function DriverMatchingDetailPage() {
           <Box>
             {/* Trip Details Card */}
             <TripDetailsCard
-              origin={match.pickupAddress || 'No especificado'}
-              destination={match.destinationAddress || 'No especificado'}
+              origin={match.pickupAddress || "No especificado"}
+              destination={match.destinationAddress || "No especificado"}
               scheduledDate={
                 match.scheduledDate
-                  ? new Date(match.scheduledDate).toLocaleDateString('es-ES', {
-                      year: 'numeric',
-                      month: 'long',
-                      day: 'numeric',
-                      hour: '2-digit',
-                      minute: '2-digit',
+                  ? new Date(match.scheduledDate).toLocaleDateString("es-ES", {
+                      year: "numeric",
+                      month: "long",
+                      day: "numeric",
+                      hour: "2-digit",
+                      minute: "2-digit",
                     })
                   : undefined
               }
               otherUser={{
-                name: match.user?.name || 'Cliente',
+                name: match.user?.name || "Cliente",
                 avatar: match.user?.avatar ?? undefined,
-                role: 'Cliente',
+                role: "Cliente",
               }}
               status={statusInfo}
             />
@@ -481,12 +460,12 @@ export default function DriverMatchingDetailPage() {
             <Card sx={{ mb: 1.5 }}>
               <CardContent sx={{ p: 1.5 }}>
                 <Typography
-                  variant='caption'
-                  color='text.secondary'
+                  variant="caption"
+                  color="text.secondary"
                   sx={{
-                    display: 'block',
+                    display: "block",
                     mb: 1,
-                    fontSize: '0.7rem',
+                    fontSize: "0.7rem",
                     fontWeight: 600,
                   }}
                 >
@@ -499,62 +478,62 @@ export default function DriverMatchingDetailPage() {
                     {
                       lat: Number.parseFloat(match.pickupLatitude),
                       lon: Number.parseFloat(match.pickupLongitude),
-                      label: 'Origen',
-                      type: 'pickup',
+                      label: "Origen",
+                      type: "pickup",
                     },
                     {
                       lat: Number.parseFloat(match.destinationLatitude),
                       lon: Number.parseFloat(match.destinationLongitude),
-                      label: 'Destino',
-                      type: 'destination',
+                      label: "Destino",
+                      type: "destination",
                     },
                   ]}
-                  height='250px'
+                  height="250px"
                   disableInteraction={true}
                 />
 
                 {/* Map navigation buttons */}
-                <Box sx={{ mt: 1.5, display: 'flex', gap: 1 }}>
+                <Box sx={{ mt: 1.5, display: "flex", gap: 1 }}>
                   <Button
-                    variant='outlined'
-                    size='small'
+                    variant="outlined"
+                    size="small"
                     fullWidth
                     startIcon={<LocationOn />}
                     onClick={() => {
                       mapRef.current?.centerOnMarker(
                         Number.parseFloat(match.pickupLatitude),
-                        Number.parseFloat(match.pickupLongitude)
+                        Number.parseFloat(match.pickupLongitude),
                       );
                     }}
                   >
                     Ver Origen
                   </Button>
                   <Button
-                    variant='outlined'
-                    size='small'
+                    variant="outlined"
+                    size="small"
                     fullWidth
                     startIcon={<Flag />}
                     onClick={() => {
                       mapRef.current?.centerOnMarker(
                         Number.parseFloat(match.destinationLatitude),
-                        Number.parseFloat(match.destinationLongitude)
+                        Number.parseFloat(match.destinationLongitude),
                       );
                     }}
                   >
                     Ver Destino
                   </Button>
                   <Button
-                    variant='contained'
-                    size='small'
+                    variant="contained"
+                    size="small"
                     fullWidth
                     startIcon={<Map />}
                     onClick={() => {
                       mapRef.current?.fitAllMarkers();
-                      toast.success('Mostrando ruta completa');
+                      toast.success("Mostrando ruta completa");
                     }}
                     sx={{
-                      bgcolor: 'secondary.main',
-                      '&:hover': { bgcolor: 'secondary.dark' },
+                      bgcolor: "secondary.main",
+                      "&:hover": { bgcolor: "secondary.dark" },
                     }}
                   >
                     Ruta Completa
@@ -577,7 +556,7 @@ export default function DriverMatchingDetailPage() {
         open={finalizeTripModalOpen}
         onClose={() => setFinalizeTripModalOpen(false)}
         onConfirm={handleCharterCompleteTrip}
-        clientName={match.user?.name || 'Cliente'}
+        clientName={match.user?.name || "Cliente"}
         estimatedCredits={match.estimatedCredits || 0}
         isLoading={charterCompleteTripMutation.isPending}
       />
@@ -589,7 +568,7 @@ export default function DriverMatchingDetailPage() {
           onClose={() => setReportModalOpen(false)}
           conversationId={match.conversationId}
           reportedUserId={match.userId}
-          reportedUserName={match.user?.name || 'Cliente'}
+          reportedUserName={match.user?.name || "Cliente"}
         />
       )}
     </>

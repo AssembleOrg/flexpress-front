@@ -19,7 +19,7 @@ import { ConfirmMatchModal } from '@/components/modals/ConfirmMatchModal';
 import { CharterCard } from '@/components/ui/CharterCard';
 import { RouteMap } from '@/components/ui/Map';
 import { useSelectCharter } from '@/lib/hooks/mutations/useTravelMatchMutations';
-import { useCharterRating } from '@/lib/hooks/queries/useFeedbackQueries';
+import { useUserFeedback } from '@/lib/hooks/queries/useFeedbackQueries';
 import { useMatch } from '@/lib/hooks/queries/useTravelMatchQueries';
 import { useMatchUpdateListener } from '@/lib/hooks/useWebSocket';
 import { useAuthStore } from '@/lib/stores/authStore';
@@ -39,7 +39,7 @@ function CharterCardWithRating({
   isLoading: boolean;
   onSelect: () => void;
 }) {
-  const { data: feedback } = useCharterRating(charter.charterId);
+  const { data: feedback } = useUserFeedback(charter.charterId);
 
   return (
     <CharterCard
@@ -47,7 +47,7 @@ function CharterCardWithRating({
       isLoading={isLoading}
       onSelect={onSelect}
       averageRating={feedback?.averageRating || 0}
-      totalReviews={feedback?.totalFeedbacks || 0}
+      totalReviews={feedback?.totalCount || 0}
     />
   );
 }
@@ -149,6 +149,11 @@ export default function MatchingPage() {
     handleMatchUpdated,
   ]);
 
+  // Garantiza hidratación del store desde localStorage al montar la página
+  useEffect(() => {
+    useTravelMatchStore.persist.rehydrate();
+  }, []);
+
   // Monitor expiration: if match expires while we have a pending charter, clear it
   useEffect(() => {
     if (!selectedCharterPending || !currentMatch) {
@@ -170,7 +175,7 @@ export default function MatchingPage() {
     return () => clearInterval(expirationCheckInterval);
   }, [selectedCharterPending, currentMatch]);
 
-  // Si no hay match activo, redirect de vuelta
+  // Si no hay match activo, mostrar mensaje
   if (!currentMatch) {
     return (
       <Container
@@ -240,15 +245,18 @@ export default function MatchingPage() {
     >
       {/* Header */}
       <Box mb={4}>
-        <Link href='/client/trips/new'>
-          <Button
-            startIcon={<ArrowBack />}
-            variant='outlined'
-            sx={{ mb: 2 }}
-          >
-            Nueva Búsqueda
-          </Button>
-        </Link>
+        <Box
+          sx={{ display: 'flex', gap: 1, mb: 2 }}
+        >
+          <Link href='/client/trips/new'>
+            <Button
+              startIcon={<ArrowBack />}
+              variant='outlined'
+            >
+              Nueva Búsqueda
+            </Button>
+          </Link>
+        </Box>
 
         <Box mb={2}>
           <Typography

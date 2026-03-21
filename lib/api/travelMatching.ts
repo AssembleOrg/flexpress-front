@@ -362,6 +362,18 @@ export const travelMatchingApi = {
   },
 
   /**
+   * Get current charter availability status
+   */
+  getAvailability: async (): Promise<{ isAvailable: boolean; vehicleId: string | null }> => {
+    const response = await api.get('/travel-matching/charter/availability');
+    const data = response.data?.data;
+    if (data && typeof data === 'object' && 'data' in data) {
+      return (data as { data: { isAvailable: boolean; vehicleId: string | null } }).data;
+    }
+    return data;
+  },
+
+  /**
    * Toggle charter availability
    */
   toggleAvailability: async (isAvailable: boolean, vehicleId?: string) => {

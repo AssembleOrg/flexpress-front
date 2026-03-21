@@ -80,6 +80,12 @@ export const queryKeys = {
     my: () => [...queryKeys.payments.all, "my"] as const,
   },
 
+  // Charter
+  charter: {
+    all: ['charter'] as const,
+    availability: (userId: string) => ['charter', 'availability', userId] as const,
+  },
+
   // Admin
   admin: {
     all: ["admin"] as const,
@@ -113,6 +119,9 @@ export const queryKeys = {
     },
     charters: {
       pending: () => [...queryKeys.admin.all, "charters", "pending"] as const,
+    },
+    vehicles: {
+      pending: () => [...queryKeys.admin.all, "vehicles", "pending"] as const,
     },
   },
 };

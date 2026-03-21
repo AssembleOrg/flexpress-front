@@ -66,6 +66,20 @@ export function useCharterMatches() {
 }
 
 /**
+ * Get charter availability status from the server
+ * Used by: Charter dashboard to sync isAvailable on mount
+ */
+export function useCharterAvailability() {
+  const { user } = useAuthStore();
+  return useQuery({
+    queryKey: queryKeys.charter.availability(user?.id || ''),
+    queryFn: () => travelMatchingApi.getAvailability(),
+    staleTime: 30 * 1000,
+    enabled: user?.role === 'charter',
+  });
+}
+
+/**
  * Get a single match by ID
  * Used by: Match detail page, matching page
  *
@@ -79,7 +93,11 @@ export function useMatch(matchId: string) {
     staleTime: 15 * 1000, // 15 seconds
     gcTime: 5 * 60 * 1000, // 5 minutes
     refetchOnWindowFocus: true,
-    refetchInterval: 15 * 1000, // Poll every 15s as fallback (WebSocket handles real-time)
+    refetchInterval: (query) => {
+      // Detener polling si hay error (backend caído) — se reanuda con refetchOnReconnect
+      if (query.state.status === 'error') return false;
+      return 15 * 1000; // Poll every 15s as fallback (WebSocket handles real-time)
+    },
     enabled: !!matchId, // Only fetch if matchId provided
   });
 }

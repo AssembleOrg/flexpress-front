@@ -18,6 +18,7 @@ import {
   Chat,
   Logout,
   Receipt,
+  DirectionsCar,
 } from "@mui/icons-material";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -77,6 +78,7 @@ export function BottomNavbar() {
     else if (pathname.includes("/history")) setValue("history");
     else if (pathname.includes("/payments")) setValue("payments");
     else if (pathname.includes("/matching")) setValue("chat");
+    else if (pathname.includes("/vehicles")) setValue("vehicles");
     // No set value for logout (it's an action, not a page)
   }, [pathname]);
 
@@ -96,6 +98,9 @@ export function BottomNavbar() {
         break;
       case "history":
         router.push(`${baseRoute}/trips/history`);
+        break;
+      case "vehicles":
+        router.push("/driver/vehicles");
         break;
       case "payments":
         router.push("/client/payments");
@@ -158,6 +163,15 @@ export function BottomNavbar() {
                 <Chat />
               </Badge>
             }
+          />
+        )}
+
+        {/* Vehículos (solo para charters) */}
+        {isCharter && (
+          <BottomNavigationAction
+            label="Vehículos"
+            value="vehicles"
+            icon={<DirectionsCar />}
           />
         )}
 

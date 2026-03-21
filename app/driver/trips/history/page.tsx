@@ -9,14 +9,13 @@ import {
   Chip,
   CircularProgress,
   Container,
-  Divider,
-  Rating,
   Stack,
   Typography,
 } from "@mui/material";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { FeedbackModal } from "@/components/feedback/FeedbackModal";
+import { RatingDisplay } from "@/components/ui/RatingDisplay";
 import { AuthNavbar } from "@/components/layout/AuthNavbar";
 import {
   useCanGiveFeedback,
@@ -151,75 +150,58 @@ function TripHistoryCard({
 
   // Get the average rating given by others to this user (client)
   const clientAverageRating = clientFeedback?.averageRating || 0;
+  const clientTotalReviews = clientFeedback?.totalCount || 0;
 
   return (
     <Card>
-      <CardContent>
+      <CardContent sx={{ p: { xs: 1.5, md: 2 }, "&:last-child": { pb: { xs: 1.5, md: 2 } } }}>
         {/* Trip Info Header */}
         <Stack
           direction="row"
           justifyContent="space-between"
           alignItems="start"
-          mb={2}
+          mb={1}
         >
-          <Box flex={1}>
-            <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
-              Viaje a {trip.travelMatch?.destinationAddress || trip.address || "destino"}
+          <Box flex={1} sx={{ minWidth: 0 }}>
+            <Typography variant="subtitle2" noWrap sx={{ fontWeight: 600, maxWidth: "calc(100% - 80px)" }}>
+              {trip.travelMatch?.destinationAddress || trip.address || "destino"}
             </Typography>
-            <Typography variant="caption" color="text.secondary">
-              Desde: {trip.travelMatch?.pickupAddress || "origen"}
+            <Typography variant="caption" color="text.secondary" noWrap>
+              {trip.travelMatch?.pickupAddress || "origen"}
             </Typography>
           </Box>
           <Chip label="Completado" color="success" size="small" />
         </Stack>
 
-        <Divider sx={{ my: 1.5 }} />
-
-        {/* Trip Details */}
-        <Stack gap={1.5} mb={2}>
-          <Box>
-            <Typography variant="caption" color="text.secondary">
-              Cliente
-            </Typography>
-            <Typography variant="body2" sx={{ fontWeight: 500 }}>
-              {trip.user?.name || "Cliente"}
-            </Typography>
-          </Box>
-
-          {/* Client Rating */}
-          {clientAverageRating > 0 && (
-            <Box>
-              <Typography
-                variant="caption"
-                color="text.secondary"
-                display="block"
-                mb={0.5}
-              >
-                Calificación del cliente
-              </Typography>
-              <Rating value={clientAverageRating} readOnly size="small" />
-              <Typography variant="caption" color="text.secondary">
-                {clientAverageRating.toFixed(1)} estrellas
-              </Typography>
-            </Box>
-          )}
-        </Stack>
-
-        <Divider sx={{ my: 1.5 }} />
+        {/* Cliente + Rating inline */}
+        <Box display="flex" alignItems="center" gap={1} my={1}>
+          <Typography variant="caption" color="text.secondary">
+            Cliente:
+          </Typography>
+          <Typography variant="body2" sx={{ fontWeight: 500 }}>
+            {trip.user?.name || "Cliente"}
+          </Typography>
+          <RatingDisplay
+            averageRating={clientAverageRating}
+            totalReviews={clientTotalReviews}
+            size="small"
+          />
+        </Box>
 
         {/* Feedback Section */}
         {canGive ? (
           <Button
-            variant="contained"
+            variant="outlined"
             color="primary"
+            size="small"
             fullWidth
             onClick={() => onOpenFeedback(trip)}
-            sx={{ py: 1, fontWeight: 600 }}
+            sx={{ py: 0.75, fontWeight: 600, mt: 0.5 }}
           >
-            Calificar este Viaje
+            Calificar
           </Button>
         ) : (
-          <Box sx={{ textAlign: "center", py: 1 }}>
+          <Box sx={{ textAlign: "center", py: 0.5 }}>
             <Typography
               variant="caption"
               color="success.main"

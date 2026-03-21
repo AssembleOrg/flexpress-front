@@ -19,14 +19,19 @@ import { queryKeys } from "./queryFactory";
  * Get feedback/ratings for a specific user (charter or user)
  * Used by: Charter profile, user profile, matching page
  */
-export function useUserFeedback(userId: string) {
+export function useUserFeedback(
+  userId: string,
+  options?: Record<string, unknown>,
+) {
   return useQuery({
     queryKey: queryKeys.feedback.user(userId),
     queryFn: () => feedbackApi.getUserFeedback(userId),
-    staleTime: 5 * 60 * 1000, // 5 minutes - ratings change slowly
+    staleTime: 60 * 1000, // 1 minute (was 5 min — ensures refetch after feedback invalidation)
     gcTime: 30 * 60 * 1000, // 30 minutes
     refetchOnWindowFocus: false,
+    refetchOnMount: true,
     enabled: !!userId,
+    ...options,
   });
 }
 
@@ -66,23 +71,3 @@ export function useCanGiveFeedback(
   });
 }
 
-/**
- * Get ratings for a specific charter
- * Alias for useUserFeedback with more descriptive name
- * Used by: Charter cards showing average rating
- * Supports optional React Query options (e.g., enabled)
- */
-export function useCharterRating(
-  charterId: string,
-  options?: Record<string, unknown>,
-) {
-  return useQuery({
-    queryKey: queryKeys.feedback.user(charterId),
-    queryFn: () => feedbackApi.getUserFeedback(charterId),
-    staleTime: 5 * 60 * 1000, // 5 minutes
-    gcTime: 30 * 60 * 1000, // 30 minutes
-    refetchOnWindowFocus: false,
-    enabled: !!charterId,
-    ...options,
-  });
-}

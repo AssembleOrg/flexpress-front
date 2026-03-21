@@ -20,6 +20,7 @@ import type {
   Payment,
   SystemConfig,
   UserDocument,
+  Vehicle,
 } from "@/lib/types/api";
 
 // ============================================
@@ -131,6 +132,19 @@ export function useSystemConfigs() {
 // ============================================
 // CHARTER VERIFICATION
 // ============================================
+
+/**
+ * Get all vehicles pending admin verification (from verified charters)
+ * GET /vehicles/admin/pending
+ */
+export function usePendingVehicles() {
+  return useQuery<Vehicle[]>({
+    queryKey: queryKeys.admin.vehicles.pending(),
+    queryFn: () => adminApi.getPendingVehicles(),
+    staleTime: 1000 * 60,
+    gcTime: 1000 * 60 * 5,
+  });
+}
 
 /**
  * Get all pending charters awaiting verification

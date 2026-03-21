@@ -219,6 +219,9 @@ export function useVerifyVehicle() {
       queryClient.invalidateQueries({
         queryKey: queryKeys.admin.charters.pending(),
       });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.admin.vehicles.pending(),
+      });
 
       if (status === "verified") {
         toast.success("Vehículo aprobado correctamente");

@@ -71,7 +71,7 @@ export function ForWho() {
         <Box
           sx={{
             display: "grid",
-            gridTemplateColumns: { xs: "1fr 1fr", md: "1fr 1fr" },
+            gridTemplateColumns: { xs: "1fr", md: "1fr 1fr" },
             gap: { xs: 1.5, md: 4 },
           }}
         >
@@ -81,7 +81,7 @@ export function ForWho() {
               onClick={handleSoyCliente}
               sx={{
                 position: "relative",
-                height: { xs: "40vh", md: 500 },
+                height: { xs: 220, md: 500 },
                 borderRadius: 4,
                 overflow: "hidden",
                 cursor: "pointer",
@@ -251,7 +251,7 @@ export function ForWho() {
               onClick={handleSoyConductor}
               sx={{
                 position: "relative",
-                height: { xs: "40vh", md: 500 },
+                height: { xs: 220, md: 500 },
                 borderRadius: 4,
                 overflow: "hidden",
                 cursor: "pointer",

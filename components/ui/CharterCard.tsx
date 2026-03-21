@@ -4,7 +4,6 @@ import {
   AccessTime,
   DirectionsCar,
   LocationOn,
-  Phone,
 } from "@mui/icons-material";
 import {
   Avatar,
@@ -30,7 +29,7 @@ export function CharterCard({
   charter,
   onSelect,
   isLoading = false,
-  averageRating = 4.5,
+  averageRating = 0,
   totalReviews = 0,
 }: CharterCardProps) {
   return (
@@ -44,9 +43,9 @@ export function CharterCard({
         },
       }}
     >
-      <CardContent sx={{ pb: 2 }}>
+      <CardContent sx={{ p: { xs: 1.5, md: 2 }, "&:last-child": { pb: { xs: 1.5, md: 2 } } }}>
         {/* Header con avatar y nombre */}
-        <Box sx={{ display: "flex", alignItems: "flex-start", mb: 2 }}>
+        <Box sx={{ display: "flex", alignItems: "flex-start", mb: 1.5 }}>
           <Avatar
             src={charter.charterAvatar || undefined}
             alt={charter.charterName}
@@ -81,43 +80,38 @@ export function CharterCard({
                 size="small"
               />
             </Box>
-
-            {/* Teléfono */}
-            <Box
-              sx={{ display: "flex", alignItems: "center", gap: 0.5, mb: 1 }}
-            >
-              <Phone sx={{ fontSize: 16, color: "primary.main" }} />
-              <Typography variant="body2">{charter.charterNumber}</Typography>
-            </Box>
           </Box>
         </Box>
 
-        {/* Información de ubicación y distancia */}
-        <Box sx={{ mb: 2, pl: 8 }}>
-          <Box
-            sx={{ display: "flex", alignItems: "flex-start", gap: 1, mb: 1 }}
-          >
-            <LocationOn
-              sx={{ fontSize: 18, color: "secondary.main", mt: 0.5 }}
-            />
-            <Box>
-              <Typography variant="caption" color="text.secondary">
-                Base del chófer
-              </Typography>
-              <Typography variant="body2">{charter.originAddress}</Typography>
-            </Box>
-          </Box>
-
-          {/* Vehicle info */}
-          {(charter.vehicleBrand || charter.vehicleModel) && (
-            <Box
-              sx={{ display: "flex", alignItems: "center", gap: 0.5, mt: 1 }}
-            >
-              <DirectionsCar sx={{ fontSize: 16, color: "action" }} />
-              <Typography variant="body2" color="text.secondary">
+        {/* Zona de trabajo + vehículo en una fila horizontal */}
+        <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1.5, flexWrap: "wrap" }}>
+          <LocationOn sx={{ fontSize: 16, color: "secondary.main", flexShrink: 0 }} />
+          <Typography variant="caption" color="text.secondary" sx={{ flexShrink: 0 }}>
+            Zona de trabajo:
+          </Typography>
+          <Typography variant="body2" noWrap sx={{ flex: 1, minWidth: 0 }}>
+            {charter.originAddress}
+          </Typography>
+          {(charter.vehicleBrand || charter.vehicleModel || charter.vehiclePlate) && (
+            <>
+              <DirectionsCar sx={{ fontSize: 16, color: "action.active", flexShrink: 0 }} />
+              <Typography variant="body2" color="text.secondary" noWrap>
                 {[charter.vehicleBrand, charter.vehicleModel].filter(Boolean).join(" ")}
               </Typography>
-            </Box>
+              {charter.vehiclePlate && (
+                <Chip
+                  label={charter.vehiclePlate}
+                  size="small"
+                  variant="outlined"
+                  sx={{
+                    fontFamily: "monospace",
+                    fontSize: "0.7rem",
+                    height: 20,
+                    flexShrink: 0,
+                  }}
+                />
+              )}
+            </>
           )}
         </Box>
 
@@ -142,18 +136,6 @@ export function CharterCard({
             color="success"
             variant="filled"
           />
-        </Box>
-
-        {/* Detalles */}
-        <Box sx={{ mb: 2, p: 1, bgcolor: "grey.100", borderRadius: 1 }}>
-          <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
-            <strong>Distancia del origen al punto de recogida:</strong>{" "}
-            {charter.distanceToPickup.toFixed(1)} km
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            <strong>Distancia total del trayecto:</strong>{" "}
-            {charter.totalDistance.toFixed(1)} km
-          </Typography>
         </Box>
 
         {/* Button */}

@@ -263,12 +263,13 @@ function RegisterFormContent() {
                       exclusive
                       onChange={handleRoleChange}
                       aria-label="tipo de usuario"
+                      fullWidth
                       sx={{ mb: 3 }}
                     >
                       <ToggleButton
                         value="client"
                         aria-label="cliente"
-                        sx={{ px: 3 }}
+                        sx={{ px: { xs: 1.5, md: 3 }, flex: 1 }}
                       >
                         <Person sx={{ mr: 1 }} />
                         Soy Cliente
@@ -276,7 +277,7 @@ function RegisterFormContent() {
                       <ToggleButton
                         value="driver"
                         aria-label="conductor"
-                        sx={{ px: 3 }}
+                        sx={{ px: { xs: 1.5, md: 3 }, flex: 1 }}
                       >
                         <DriveEta sx={{ mr: 1 }} />
                         Soy Conductor
@@ -387,7 +388,7 @@ function RegisterFormContent() {
                       >
                         <ToggleButton value="male">Masculino</ToggleButton>
                         <ToggleButton value="female">Femenino</ToggleButton>
-                        <ToggleButton value="other">Prefiero no decir</ToggleButton>
+                        <ToggleButton value="other" sx={{ fontSize: { xs: "0.7rem", md: "0.875rem" }, px: { xs: 0.5, md: 1 } }}>No decir</ToggleButton>
                       </ToggleButtonGroup>
                     </Box>
                   </motion.div>

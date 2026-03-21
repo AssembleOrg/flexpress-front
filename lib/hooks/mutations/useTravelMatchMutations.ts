@@ -51,9 +51,6 @@ export function useCreateMatch() {
         .getState()
         .setAvailableCharters(result.availableCharters);
 
-      // Clear search form state
-      useTravelMatchStore.getState().clearSearchForm?.();
-
       toast.success(
         `¡${result.availableCharters.length} chóferes encontrados!`,
       );
@@ -256,6 +253,9 @@ export function useToggleAvailability() {
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: queryKeys.auth.profile(),
+      });
+      queryClient.invalidateQueries({
+        queryKey: ['charter', 'availability'],
       });
     },
 

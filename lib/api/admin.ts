@@ -419,6 +419,15 @@ export const adminApi = {
   // ============================================
 
   /**
+   * Get all vehicles pending admin verification
+   * GET /vehicles/admin/pending
+   */
+  getPendingVehicles: async (): Promise<Vehicle[]> => {
+    const response = await api.get<ApiResponse<Vehicle[]>>("/vehicles/admin/pending");
+    return response.data.data ?? [];
+  },
+
+  /**
    * Get all pending charters awaiting verification
    */
   getPendingCharters: async (): Promise<User[]> => {

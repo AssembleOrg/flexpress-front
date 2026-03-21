@@ -16,7 +16,7 @@ import {
 } from '@mui/material';
 import { Route, AttachMoney } from '@mui/icons-material';
 import { RatingDisplay } from '@/components/ui/RatingDisplay';
-import { useCharterRating } from '@/lib/hooks/queries/useFeedbackQueries';
+import { useUserFeedback } from '@/lib/hooks/queries/useFeedbackQueries';
 import type { AvailableCharter, TravelMatch } from '@/lib/types/api';
 
 /**
@@ -60,7 +60,7 @@ export function ConfirmMatchModal({
   }
 
   // Fetch charter rating
-  const { data: charterRating } = useCharterRating(selectedCharter.charterId);
+  const { data: charterRating } = useUserFeedback(selectedCharter.charterId);
 
   // Validación de créditos
   const estimatedCredits = selectedCharter.estimatedCredits || 0;
@@ -113,7 +113,7 @@ export function ConfirmMatchModal({
               <Box mt={0.5}>
                 <RatingDisplay
                   averageRating={charterRating?.averageRating || 0}
-                  totalReviews={charterRating?.totalFeedbacks || 0}
+                  totalReviews={charterRating?.totalCount || 0}
                   size='small'
                   showCount={false}
                 />

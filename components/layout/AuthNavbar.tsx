@@ -12,6 +12,7 @@ import {
   Dashboard as DashboardIcon,
   Person as PersonIcon,
   Settings as SettingsIcon,
+  DirectionsCar as DirectionsCarIcon,
 } from "@mui/icons-material";
 import {
   AppBar,
@@ -260,6 +261,34 @@ export function AuthNavbar() {
               <HistoryIcon sx={{ fontSize: 18 }} />
               Historial
             </Box>
+
+            {/* Vehículos (Solo Charters) */}
+            {isCharter && (
+              <Box
+                component="button"
+                onClick={() => router.push("/driver/vehicles")}
+                sx={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 0.5,
+                  bgcolor: "transparent",
+                  border: "none",
+                  color: "white",
+                  cursor: "pointer",
+                  fontWeight: 600,
+                  fontSize: "0.95rem",
+                  p: 1,
+                  borderRadius: 1,
+                  transition: "all 0.2s ease",
+                  "&:hover": {
+                    bgcolor: "rgba(255, 255, 255, 0.1)",
+                  },
+                }}
+              >
+                <DirectionsCarIcon sx={{ fontSize: 18 }} />
+                Vehículos
+              </Box>
+            )}
           </Box>
 
           {/* Desktop - Notifications & Logout */}

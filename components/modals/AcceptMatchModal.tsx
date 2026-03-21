@@ -132,7 +132,7 @@ export function AcceptMatchModal({
               <Box mt={0.5}>
                 <RatingDisplay
                   averageRating={clientFeedback?.averageRating || 0}
-                  totalReviews={clientFeedback?.totalFeedbacks || 0}
+                  totalReviews={clientFeedback?.totalCount || 0}
                   size="small"
                 />
               </Box>

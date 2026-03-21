@@ -14,6 +14,7 @@ import {
   DialogActions,
   DialogContent,
   DialogTitle,
+  IconButton,
   Rating,
   Stack,
   Typography,
@@ -43,7 +44,7 @@ import { MOBILE_BOTTOM_NAV_HEIGHT } from '@/lib/constants/mobileDesign';
 import { useMatch } from '@/lib/hooks/queries/useTravelMatchQueries';
 import {
   useCanGiveFeedback,
-  useCharterRating,
+  useUserFeedback,
 } from '@/lib/hooks/queries/useFeedbackQueries';
 import {
   useCreateTripFromMatch,
@@ -93,7 +94,7 @@ export default function MatchDetailPage() {
 
   // Feedback/Rating related hooks
   // Always call hooks (never conditionally) - use enabled option instead
-  const { data: charterRatingData } = useCharterRating(match?.charterId || '', {
+  const { data: charterRatingData } = useUserFeedback(match?.charterId || '', {
     enabled: !!match?.charterId,
   });
   const { data: canGiveFeedback } = useCanGiveFeedback(match?.tripId || '', {
@@ -270,39 +271,38 @@ export default function MatchDetailPage() {
     match.status === TravelMatchStatus.PENDING
   ) {
     return (
-      <Container
-        maxWidth='md'
-        sx={{ py: 4 }}
-      >
+      <MobileContainer>
         {/* Header */}
-        <Box mb={4}>
-          <Link href='/client/dashboard'>
-            <Button
-              startIcon={<ArrowBack />}
-              variant='outlined'
-              sx={{ mb: 2 }}
-            >
-              Volver
-            </Button>
-          </Link>
-
+        <Stack
+          direction='row'
+          alignItems='center'
+          spacing={1}
+          mb={2}
+        >
+          <IconButton
+            size='small'
+            onClick={() => router.back()}
+            sx={{ color: 'text.primary' }}
+          >
+            <ArrowBack fontSize='small' />
+          </IconButton>
           <Typography
-            variant='h4'
-            component='h1'
-            sx={{ fontWeight: 700, mb: 2 }}
+            variant='h6'
+            fontWeight={700}
           >
             Detalles del Viaje
           </Typography>
-        </Box>
+        </Stack>
 
         {/* Waiting for response alert */}
         <Alert
           severity={countdown.isUrgent ? 'error' : 'warning'}
-          sx={{ mb: 3 }}
+          sx={{ mb: 2 }}
         >
           <Typography
-            variant='h6'
-            sx={{ fontWeight: 600, mb: 1 }}
+            variant='subtitle2'
+            fontWeight={700}
+            mb={0.5}
           >
             {isCharter
               ? '⏳ Solicitud Pendiente de Respuesta'
@@ -310,7 +310,7 @@ export default function MatchDetailPage() {
           </Typography>
           <Typography
             variant='body2'
-            sx={{ mb: 2 }}
+            mb={0.5}
           >
             {isCharter ? (
               <>
@@ -345,59 +345,75 @@ export default function MatchDetailPage() {
         </Alert>
 
         {/* Trip details */}
-        <Stack spacing={3}>
+        <Stack spacing={2}>
           {/* Pickup and Destination */}
           <Card>
-            <CardContent>
+            <CardContent sx={{ p: 2 }}>
               <Typography
-                variant='subtitle1'
-                sx={{ fontWeight: 600, mb: 2 }}
+                variant='subtitle2'
+                fontWeight={700}
+                mb={1.5}
               >
-                📍 Ruta del Viaje
+                Ruta del Viaje
               </Typography>
 
-              <Box sx={{ mb: 2 }}>
-                <Typography
-                  variant='caption'
-                  color='text.secondary'
+              <Stack spacing={1}>
+                <Stack
+                  direction='row'
+                  spacing={1}
+                  alignItems='flex-start'
                 >
-                  Punto de Recogida
-                </Typography>
-                <Typography
-                  variant='body2'
-                  sx={{ fontWeight: 600 }}
-                >
-                  {match.pickupAddress || 'No especificado'}
-                </Typography>
-              </Box>
+                  <LocationOn
+                    fontSize='small'
+                    sx={{ color: 'primary.main', mt: 0.1, flexShrink: 0 }}
+                  />
+                  <Box>
+                    <Typography
+                      variant='caption'
+                      color='text.secondary'
+                    >
+                      Origen
+                    </Typography>
+                    <Typography
+                      variant='body2'
+                      fontWeight={600}
+                    >
+                      {match.pickupAddress || 'No especificado'}
+                    </Typography>
+                  </Box>
+                </Stack>
 
-              <Box sx={{ mb: 2 }}>
-                <Typography
-                  variant='caption'
-                  color='text.secondary'
+                <Stack
+                  direction='row'
+                  spacing={1}
+                  alignItems='flex-start'
                 >
-                  Punto de Destino
-                </Typography>
-                <Typography
-                  variant='body2'
-                  sx={{ fontWeight: 600 }}
-                >
-                  {match.destinationAddress || 'No especificado'}
-                </Typography>
-              </Box>
+                  <Flag
+                    fontSize='small'
+                    sx={{ color: 'secondary.main', mt: 0.1, flexShrink: 0 }}
+                  />
+                  <Box>
+                    <Typography
+                      variant='caption'
+                      color='text.secondary'
+                    >
+                      Destino
+                    </Typography>
+                    <Typography
+                      variant='body2'
+                      fontWeight={600}
+                    >
+                      {match.destinationAddress || 'No especificado'}
+                    </Typography>
+                  </Box>
+                </Stack>
 
-              {match.scheduledDate && (
-                <Box>
+                {match.scheduledDate && (
                   <Typography
                     variant='caption'
                     color='text.secondary'
                   >
-                    Fecha Programada
-                  </Typography>
-                  <Typography
-                    variant='body2'
-                    sx={{ fontWeight: 600 }}
-                  >
+                    📅{' '}
                     {new Date(match.scheduledDate).toLocaleDateString('es-ES', {
                       year: 'numeric',
                       month: 'long',
@@ -406,19 +422,20 @@ export default function MatchDetailPage() {
                       minute: '2-digit',
                     })}
                   </Typography>
-                </Box>
-              )}
+                )}
+              </Stack>
             </CardContent>
           </Card>
 
           {/* Match Details */}
           <Card>
-            <CardContent>
+            <CardContent sx={{ p: 2 }}>
               <Typography
-                variant='subtitle1'
-                sx={{ fontWeight: 600, mb: 2 }}
+                variant='subtitle2'
+                fontWeight={700}
+                mb={1.5}
               >
-                💼 Detalles
+                Detalles
               </Typography>
 
               <Box
@@ -433,7 +450,7 @@ export default function MatchDetailPage() {
                   </Typography>
                   <Typography
                     variant='body2'
-                    sx={{ fontWeight: 600 }}
+                    fontWeight={600}
                   >
                     {match.distanceKm
                       ? `${match.distanceKm.toFixed(1)} km`
@@ -450,7 +467,7 @@ export default function MatchDetailPage() {
                   </Typography>
                   <Typography
                     variant='body2'
-                    sx={{ fontWeight: 600 }}
+                    fontWeight={600}
                   >
                     {match.estimatedCredits || 0} pts
                   </Typography>
@@ -466,7 +483,7 @@ export default function MatchDetailPage() {
                     </Typography>
                     <Typography
                       variant='body2'
-                      sx={{ fontWeight: 600 }}
+                      fontWeight={600}
                     >
                       {match.workersCount}
                     </Typography>
@@ -477,18 +494,16 @@ export default function MatchDetailPage() {
           </Card>
 
           {/* Action buttons */}
-          <Box sx={{ display: 'flex', gap: 2 }}>
-            <Button
-              variant='outlined'
-              color='error'
-              onClick={() => router.push('/client/dashboard')}
-              fullWidth
-            >
-              Cancelar Solicitud
-            </Button>
-          </Box>
+          <Button
+            variant='outlined'
+            color='error'
+            onClick={() => router.push('/client/dashboard')}
+            fullWidth
+          >
+            Cancelar Solicitud
+          </Button>
         </Stack>
-      </Container>
+      </MobileContainer>
     );
   }
 
@@ -497,39 +512,38 @@ export default function MatchDetailPage() {
   // ============================================
   if (match.status === TravelMatchStatus.REJECTED) {
     return (
-      <Container
-        maxWidth='md'
-        sx={{ py: 4 }}
-      >
+      <MobileContainer>
         {/* Header */}
-        <Box mb={4}>
-          <Link href='/client/dashboard'>
-            <Button
-              startIcon={<ArrowBack />}
-              variant='outlined'
-              sx={{ mb: 2 }}
-            >
-              Volver
-            </Button>
-          </Link>
-
+        <Stack
+          direction='row'
+          alignItems='center'
+          spacing={1}
+          mb={2}
+        >
+          <IconButton
+            size='small'
+            onClick={() => router.back()}
+            sx={{ color: 'text.primary' }}
+          >
+            <ArrowBack fontSize='small' />
+          </IconButton>
           <Typography
-            variant='h4'
-            component='h1'
-            sx={{ fontWeight: 700 }}
+            variant='h6'
+            fontWeight={700}
           >
             Detalles del Viaje
           </Typography>
-        </Box>
+        </Stack>
 
         {/* Rejected alert */}
         <Alert
           severity='error'
-          sx={{ mb: 3 }}
+          sx={{ mb: 2 }}
         >
           <Typography
-            variant='h6'
-            sx={{ fontWeight: 600, mb: 1 }}
+            variant='subtitle2'
+            fontWeight={700}
+            mb={0.5}
           >
             Solicitud Rechazada
           </Typography>
@@ -550,38 +564,67 @@ export default function MatchDetailPage() {
         </Alert>
 
         {/* Trip details for reference */}
-        <Card sx={{ mb: 3 }}>
-          <CardContent>
+        <Card sx={{ mb: 2 }}>
+          <CardContent sx={{ p: 2 }}>
             <Typography
-              variant='subtitle1'
-              sx={{ fontWeight: 600, mb: 2 }}
+              variant='subtitle2'
+              fontWeight={700}
+              mb={1.5}
             >
-              📍 Detalles de tu Solicitud
+              Detalles de tu Solicitud
             </Typography>
 
-            <Box sx={{ mb: 2 }}>
-              <Typography
-                variant='caption'
-                color='text.secondary'
+            <Stack spacing={1}>
+              <Stack
+                direction='row'
+                spacing={1}
+                alignItems='flex-start'
               >
-                Origen
-              </Typography>
-              <Typography variant='body2'>
-                {match.pickupAddress || 'No especificado'}
-              </Typography>
-            </Box>
+                <LocationOn
+                  fontSize='small'
+                  sx={{ color: 'primary.main', mt: 0.1, flexShrink: 0 }}
+                />
+                <Box>
+                  <Typography
+                    variant='caption'
+                    color='text.secondary'
+                  >
+                    Origen
+                  </Typography>
+                  <Typography
+                    variant='body2'
+                    fontWeight={600}
+                  >
+                    {match.pickupAddress || 'No especificado'}
+                  </Typography>
+                </Box>
+              </Stack>
 
-            <Box>
-              <Typography
-                variant='caption'
-                color='text.secondary'
+              <Stack
+                direction='row'
+                spacing={1}
+                alignItems='flex-start'
               >
-                Destino
-              </Typography>
-              <Typography variant='body2'>
-                {match.destinationAddress || 'No especificado'}
-              </Typography>
-            </Box>
+                <Flag
+                  fontSize='small'
+                  sx={{ color: 'secondary.main', mt: 0.1, flexShrink: 0 }}
+                />
+                <Box>
+                  <Typography
+                    variant='caption'
+                    color='text.secondary'
+                  >
+                    Destino
+                  </Typography>
+                  <Typography
+                    variant='body2'
+                    fontWeight={600}
+                  >
+                    {match.destinationAddress || 'No especificado'}
+                  </Typography>
+                </Box>
+              </Stack>
+            </Stack>
           </CardContent>
         </Card>
 
@@ -595,7 +638,7 @@ export default function MatchDetailPage() {
         >
           Buscar Otro Chófer
         </Button>
-      </Container>
+      </MobileContainer>
     );
   }
 
@@ -604,39 +647,38 @@ export default function MatchDetailPage() {
   // ============================================
   if (match.status === TravelMatchStatus.EXPIRED) {
     return (
-      <Container
-        maxWidth='md'
-        sx={{ py: 4 }}
-      >
+      <MobileContainer>
         {/* Header */}
-        <Box mb={4}>
-          <Link href='/client/dashboard'>
-            <Button
-              startIcon={<ArrowBack />}
-              variant='outlined'
-              sx={{ mb: 2 }}
-            >
-              Volver
-            </Button>
-          </Link>
-
+        <Stack
+          direction='row'
+          alignItems='center'
+          spacing={1}
+          mb={2}
+        >
+          <IconButton
+            size='small'
+            onClick={() => router.back()}
+            sx={{ color: 'text.primary' }}
+          >
+            <ArrowBack fontSize='small' />
+          </IconButton>
           <Typography
-            variant='h4'
-            component='h1'
-            sx={{ fontWeight: 700 }}
+            variant='h6'
+            fontWeight={700}
           >
             Detalles del Viaje
           </Typography>
-        </Box>
+        </Stack>
 
         {/* Expired alert */}
         <Alert
           severity='warning'
-          sx={{ mb: 3 }}
+          sx={{ mb: 2 }}
         >
           <Typography
-            variant='h6'
-            sx={{ fontWeight: 600, mb: 1 }}
+            variant='subtitle2'
+            fontWeight={700}
+            mb={0.5}
           >
             ⏰ Solicitud Expirada
           </Typography>
@@ -647,38 +689,67 @@ export default function MatchDetailPage() {
         </Alert>
 
         {/* Trip details for reference */}
-        <Card sx={{ mb: 3 }}>
-          <CardContent>
+        <Card sx={{ mb: 2 }}>
+          <CardContent sx={{ p: 2 }}>
             <Typography
-              variant='subtitle1'
-              sx={{ fontWeight: 600, mb: 2 }}
+              variant='subtitle2'
+              fontWeight={700}
+              mb={1.5}
             >
-              📍 Detalles de tu Solicitud
+              Detalles de tu Solicitud
             </Typography>
 
-            <Box sx={{ mb: 2 }}>
-              <Typography
-                variant='caption'
-                color='text.secondary'
+            <Stack spacing={1}>
+              <Stack
+                direction='row'
+                spacing={1}
+                alignItems='flex-start'
               >
-                Origen
-              </Typography>
-              <Typography variant='body2'>
-                {match.pickupAddress || 'No especificado'}
-              </Typography>
-            </Box>
+                <LocationOn
+                  fontSize='small'
+                  sx={{ color: 'primary.main', mt: 0.1, flexShrink: 0 }}
+                />
+                <Box>
+                  <Typography
+                    variant='caption'
+                    color='text.secondary'
+                  >
+                    Origen
+                  </Typography>
+                  <Typography
+                    variant='body2'
+                    fontWeight={600}
+                  >
+                    {match.pickupAddress || 'No especificado'}
+                  </Typography>
+                </Box>
+              </Stack>
 
-            <Box>
-              <Typography
-                variant='caption'
-                color='text.secondary'
+              <Stack
+                direction='row'
+                spacing={1}
+                alignItems='flex-start'
               >
-                Destino
-              </Typography>
-              <Typography variant='body2'>
-                {match.destinationAddress || 'No especificado'}
-              </Typography>
-            </Box>
+                <Flag
+                  fontSize='small'
+                  sx={{ color: 'secondary.main', mt: 0.1, flexShrink: 0 }}
+                />
+                <Box>
+                  <Typography
+                    variant='caption'
+                    color='text.secondary'
+                  >
+                    Destino
+                  </Typography>
+                  <Typography
+                    variant='body2'
+                    fontWeight={600}
+                  >
+                    {match.destinationAddress || 'No especificado'}
+                  </Typography>
+                </Box>
+              </Stack>
+            </Stack>
           </CardContent>
         </Card>
 
@@ -692,7 +763,7 @@ export default function MatchDetailPage() {
         >
           Nueva Búsqueda
         </Button>
-      </Container>
+      </MobileContainer>
     );
   }
 
@@ -892,7 +963,7 @@ export default function MatchDetailPage() {
                   rating: charterRatingData
                     ? {
                         average: charterRatingData.averageRating || 0,
-                        count: charterRatingData.totalFeedbacks || 0,
+                        count: charterRatingData.totalCount || 0,
                       }
                     : undefined,
                 }}

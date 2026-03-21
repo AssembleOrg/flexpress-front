@@ -105,67 +105,67 @@ export default function PaymentsPage() {
                 },
               }}
             >
-              <CardContent>
-                <Stack spacing={2}>
-                  {/* Header Row */}
-                  <Box
-                    display="flex"
-                    justifyContent="space-between"
-                    alignItems="center"
-                    flexWrap="wrap"
-                    gap={1}
-                  >
-                    <Box>
-                      <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                        {payment.credits} créditos
-                      </Typography>
-                      <Typography variant="caption" color="text.secondary">
-                        {new Date(payment.createdAt).toLocaleDateString("es-AR", {
-                          year: "numeric",
-                          month: "long",
-                          day: "numeric",
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        })}
-                      </Typography>
-                    </Box>
-                    {getStatusChip(payment.status)}
-                  </Box>
-
-                  {/* Amount */}
+              <CardContent sx={{ p: { xs: 1.5, md: 2 }, "&:last-child": { pb: { xs: 1.5, md: 2 } } }}>
+                {/* Fila 1: créditos + fecha | chip */}
+                <Box
+                  display="flex"
+                  justifyContent="space-between"
+                  alignItems="center"
+                  mb={1}
+                >
                   <Box>
-                    <Typography variant="body2" color="text.secondary">
-                      Monto pagado
+                    <Typography variant="subtitle1" sx={{ fontWeight: 600, lineHeight: 1.2 }}>
+                      {payment.credits} créditos
                     </Typography>
-                    <Typography variant="h5" sx={{ fontWeight: 700 }}>
-                      ${payment.amount.toLocaleString("es-AR")}
+                    <Typography variant="caption" color="text.secondary">
+                      {new Date(payment.createdAt).toLocaleDateString("es-AR", {
+                        year: "numeric",
+                        month: "long",
+                        day: "numeric",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
                     </Typography>
                   </Box>
+                  {getStatusChip(payment.status)}
+                </Box>
 
-                  {/* Rejection Reason Alert */}
-                  {payment.status === PaymentStatus.REJECTED && payment.rejectionReason && (
-                    <Alert severity="error">
-                      <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                        Razón del rechazo:
-                      </Typography>
-                      <Typography variant="body2">{payment.rejectionReason}</Typography>
-                    </Alert>
-                  )}
-
-                  {/* View Receipt Button */}
+                {/* Fila 2: monto | comprobante inline */}
+                <Box display="flex" justifyContent="space-between" alignItems="center">
+                  <Typography variant="h6" sx={{ fontWeight: 700 }}>
+                    ${payment.amount.toLocaleString("es-AR")}
+                  </Typography>
                   {payment.receiptUrl && (
-                    <Box>
-                      <Button
-                        startIcon={<ReceiptIcon />}
-                        variant="outlined"
-                        size="small"
-                        onClick={() => handleViewReceipt(payment.receiptUrl!)}
-                      >
-                        Ver Comprobante
-                      </Button>
-                    </Box>
+                    <IconButton
+                      size="small"
+                      onClick={() => handleViewReceipt(payment.receiptUrl!)}
+                      title="Ver Comprobante"
+                      sx={{
+                        color: "primary.main",
+                        border: "1px solid",
+                        borderColor: "primary.light",
+                        borderRadius: 1,
+                        px: 1,
+                        gap: 0.5,
+                      }}
+                    >
+                      <ReceiptIcon sx={{ fontSize: 16 }} />
+                      <Typography variant="caption" sx={{ fontWeight: 600, color: "primary.main" }}>
+                        Comprobante
+                      </Typography>
+                    </IconButton>
                   )}
-                </Stack>
+                </Box>
+
+                {/* Rejection Reason Alert */}
+                {payment.status === PaymentStatus.REJECTED && payment.rejectionReason && (
+                  <Alert severity="error" sx={{ mt: 1 }}>
+                    <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                      Razón del rechazo:
+                    </Typography>
+                    <Typography variant="body2">{payment.rejectionReason}</Typography>
+                  </Alert>
+                )}
               </CardContent>
             </Card>
           ))}

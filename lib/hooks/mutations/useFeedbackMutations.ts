@@ -24,7 +24,6 @@ import { useAuthStore } from "@/lib/stores/authStore";
  */
 export function useCreateFeedback() {
   const queryClient = useQueryClient();
-  const { user } = useAuthStore();
 
   return useMutation({
     mutationFn: (data: Parameters<typeof feedbackApi.create>[0]) =>
@@ -52,21 +51,11 @@ export function useCreateFeedback() {
       return { previousCanGive };
     },
 
-    onSuccess: (result, variables) => {
-      // Invalidate the recipient's feedback (user/charter being rated)
-      // This updates their profile rating
+    onSuccess: (_result, variables) => {
+      // Invalidate ALL feedback data — covers any ID mismatch edge case
+      // between result.toUserId and the charter.charterId used as query key
       queryClient.invalidateQueries({
-        queryKey: queryKeys.feedback.user(result.toUserId),
-      });
-
-      // Invalidate my feedback history
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.feedback.my(user?.id || ""),
-      });
-
-      // Explicitly invalidate canGiveFeedback to reflect eligibility change
-      queryClient.invalidateQueries({
-        queryKey: [...queryKeys.feedback.all, "can-give", variables.tripId],
+        queryKey: queryKeys.feedback.all,
       });
 
       toast.success("¡Gracias por tu calificación!");

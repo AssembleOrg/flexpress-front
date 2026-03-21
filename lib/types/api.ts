@@ -147,6 +147,8 @@ export interface AvailableCharter {
   estimatedCredits: number;
   vehicleBrand?: string | null;
   vehicleModel?: string | null;
+  vehiclePlate?: string | null;
+  vehicleYear?: number | null;
 }
 
 export interface Conversation {
@@ -278,6 +280,7 @@ export interface Vehicle {
   createdAt: string;
   updatedAt: string;
   documents?: VehicleDocument[];
+  charter?: { id: string; name: string; email: string };
 }
 
 export interface PendingCharterReviewItem {

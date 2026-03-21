@@ -182,9 +182,10 @@ export function TripDetailsCard({
                 fontSize: 20,
                 color: "primary.main",
                 mt: 0.2,
+                flexShrink: 0,
               }}
             />
-            <Typography variant="body2" fontSize="0.9rem" lineHeight={1.5}>
+            <Typography variant="body2" fontSize="0.9rem" lineHeight={1.5} sx={{ minWidth: 0, wordBreak: 'break-word' }}>
               {origin}
             </Typography>
           </Box>
@@ -196,6 +197,7 @@ export function TripDetailsCard({
                 fontSize: 20,
                 color: "secondary.main",
                 mt: 0.2,
+                flexShrink: 0,
               }}
             />
             <Typography
@@ -203,6 +205,7 @@ export function TripDetailsCard({
               fontSize="0.9rem"
               fontWeight={600}
               lineHeight={1.5}
+              sx={{ minWidth: 0, wordBreak: 'break-word' }}
             >
               {destination}
             </Typography>

@@ -40,6 +40,10 @@ export function useConversationMessages(conversationId: string) {
     refetchOnWindowFocus: true, // Refetch when user returns to tab
     refetchOnReconnect: true, // Refetch when connection restored
     refetchInterval: (query) => {
+      // Si hay error activo (backend caído, ECONNREFUSED, etc.) detener polling
+      // Se reanuda automáticamente via refetchOnReconnect / refetchOnWindowFocus
+      if (query.state.status === 'error') return false;
+
       // Adaptive polling based on activity
       const data = query.state.data;
       if (!data || data.length === 0) return 5000; // Empty chat → 5s
