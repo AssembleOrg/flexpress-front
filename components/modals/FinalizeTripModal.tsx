@@ -34,7 +34,6 @@ interface FinalizeTripModalProps {
   onClose: () => void;
   onConfirm: () => void;
   clientName: string;
-  estimatedCredits: number;
   isLoading?: boolean;
 }
 
@@ -43,7 +42,6 @@ export function FinalizeTripModal({
   onClose,
   onConfirm,
   clientName,
-  estimatedCredits,
   isLoading = false,
 }: FinalizeTripModalProps) {
   return (
@@ -55,7 +53,7 @@ export function FinalizeTripModal({
       <DialogContent sx={{ py: 2 }}>
         <Stack spacing={2}>
           {/* Info Alert */}
-          <Alert severity="info" icon={<Info />} sx={{ py: 1 }}>
+          <Alert severity="warning" icon={<Info />} sx={{ py: 1 }}>
             <Typography variant="body2" sx={{ fontWeight: 600, mb: 0.5 }}>
               Esperarás confirmación del cliente
             </Typography>
@@ -64,30 +62,10 @@ export function FinalizeTripModal({
             </Typography>
           </Alert>
 
-          {/* Credits Info */}
-          <Box
-            sx={{
-              p: 1.5,
-              bgcolor: "action.hover",
-              borderRadius: 1,
-            }}
-          >
-            <Typography variant="caption" color="text.secondary">
-              Créditos pendientes
-            </Typography>
-            <Typography variant="h6" sx={{ fontWeight: 600, color: "success.main" }}>
-              +{estimatedCredits} pts
-            </Typography>
-            <Typography variant="caption" color="text.secondary">
-              Se acreditarán cuando {clientName} confirme
-            </Typography>
-          </Box>
-
-          {/* Warning Info */}
+          {/* Info */}
           <Typography variant="caption" color="text.secondary">
-            Al finalizar, el cliente recibirá una notificación para confirmar
-            la entrega. Los créditos se transferirán automáticamente después de
-            su confirmación.
+            Al finalizar, {clientName} recibirá una notificación para confirmar
+            la entrega del servicio.
           </Typography>
         </Stack>
       </DialogContent>

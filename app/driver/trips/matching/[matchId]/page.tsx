@@ -119,7 +119,7 @@ export default function DriverMatchingDetailPage() {
   // Determine trip status for UI
   const getStatusInfo = () => {
     if (!tripId) {
-      return { label: "Esperando Cliente", color: "warning" as const };
+      return { label: "En Conversación", color: "primary" as const };
     }
     if (trip?.status === "completed") {
       return { label: "Completado", color: "success" as const };
@@ -198,28 +198,6 @@ export default function DriverMatchingDetailPage() {
 
             {/* Action Buttons - directly below chat */}
             <Stack spacing={1} sx={{ mt: 1.5 }}>
-              {/* Estado 1: Esperando que cliente confirme el viaje */}
-              {!tripId && match.status === "accepted" && (
-                <Box
-                  sx={{
-                    bgcolor: "primary.main",
-                    color: "primary.contrastText",
-                    p: 2,
-                    borderRadius: 1,
-                    mb: 2,
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 1.5,
-                    boxShadow: 2,
-                  }}
-                >
-                  <CircularProgress size={20} color="inherit" />
-                  <Typography variant="body2" fontWeight={600} color="inherit">
-                    Esperando confirmación del cliente...
-                  </Typography>
-                </Box>
-              )}
-
               {/* Estado 2: Trip confirmado, charter puede finalizar */}
               {tripId && trip?.status === "pending" && (
                 <Box
@@ -341,7 +319,7 @@ export default function DriverMatchingDetailPage() {
                       >
                         ¿Querés aparecer disponible para un nuevo viaje?
                       </Typography>
-                      <Stack direction="row" spacing={1}>
+                      <Stack direction="row" spacing={1} useFlexGap flexWrap="wrap">
                         {hasOrigin && (
                           <Button
                             variant="contained"
@@ -493,7 +471,7 @@ export default function DriverMatchingDetailPage() {
                 />
 
                 {/* Map navigation buttons */}
-                <Box sx={{ mt: 1.5, display: "flex", gap: 1 }}>
+                <Box sx={{ mt: 1.5, display: "flex", gap: 1, flexWrap: "wrap" }}>
                   <Button
                     variant="outlined"
                     size="small"
@@ -545,7 +523,6 @@ export default function DriverMatchingDetailPage() {
             {/* Trip Metrics Card */}
             <TripMetricsCard
               distance={match.distanceKm ?? undefined}
-              credits={match.estimatedCredits ?? undefined}
             />
           </Box>
         </Box>
@@ -557,7 +534,6 @@ export default function DriverMatchingDetailPage() {
         onClose={() => setFinalizeTripModalOpen(false)}
         onConfirm={handleCharterCompleteTrip}
         clientName={match.user?.name || "Cliente"}
-        estimatedCredits={match.estimatedCredits || 0}
         isLoading={charterCompleteTripMutation.isPending}
       />
 

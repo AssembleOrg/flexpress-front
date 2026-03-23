@@ -162,7 +162,7 @@ export default function MapModal({
           <>
             {/* Instructions */}
             <Alert
-              severity="info"
+              severity="warning"
               sx={{ m: 2, mb: 1 }}
               action={
                 <Button

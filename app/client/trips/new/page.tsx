@@ -2,6 +2,7 @@
 
 import { ArrowBack, LocalShipping, Map as MapIcon } from '@mui/icons-material';
 import {
+  Alert,
   Box,
   Button,
   Card,
@@ -37,7 +38,7 @@ const MotionButton = motion.create(Button);
 export default function NewTripPage() {
   const router = useRouter();
   const hydrated = useHydrated();
-  const { isAuthenticated } = useAuthStore();
+  const { isAuthenticated, user } = useAuthStore();
 
   // Check for existing active trip
   const { data: myMatches = [] } = useUserMatches();
@@ -243,6 +244,44 @@ export default function NewTripPage() {
             </Link>
           </CardContent>
         </Card>
+      </Container>
+    );
+  }
+
+  // Bloquear búsqueda si el cliente no tiene créditos suficientes
+  if (hydrated && user && user.credits < 1) {
+    return (
+      <Container
+        maxWidth='md'
+        sx={{ py: 4 }}
+      >
+        <Box mb={4}>
+          <Link href='/client/dashboard'>
+            <Button
+              startIcon={<ArrowBack />}
+              variant='outlined'
+              sx={{ mb: 2 }}
+            >
+              Volver al Dashboard
+            </Button>
+          </Link>
+        </Box>
+
+        <Alert severity='warning' sx={{ mb: 3 }}>
+          <Typography variant='body1' sx={{ fontWeight: 600, mb: 0.5 }}>
+            Sin créditos disponibles
+          </Typography>
+          <Typography variant='body2'>
+            Necesitás al menos 1 crédito para buscar un chófer. Recargá tu
+            cuenta para continuar.
+          </Typography>
+        </Alert>
+
+        <Link href='/client/payments'>
+          <Button variant='contained' color='secondary' size='large'>
+            Recargar Créditos
+          </Button>
+        </Link>
       </Container>
     );
   }

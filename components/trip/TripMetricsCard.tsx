@@ -3,9 +3,7 @@
 import { Box, Card, CardContent, Typography } from "@mui/material";
 import {
   Route,
-  AttachMoney,
   Schedule,
-  TrendingUp,
 } from "@mui/icons-material";
 
 interface MetricItem {
@@ -20,10 +18,6 @@ interface TripMetricsCardProps {
    * Distance in km
    */
   distance?: number;
-  /**
-   * Credits/price
-   */
-  credits?: number;
   /**
    * Estimated duration
    */
@@ -64,7 +58,6 @@ interface TripMetricsCardProps {
  */
 export function TripMetricsCard({
   distance,
-  credits,
   duration,
   customMetrics = [],
 }: TripMetricsCardProps) {
@@ -76,24 +69,6 @@ export function TripMetricsCard({
       icon: <Route sx={{ fontSize: 20, color: "primary.main" }} />,
       label: "Distancia",
       value: `${distance.toFixed(1)} km`,
-    });
-  }
-
-  if (credits !== undefined) {
-    metrics.push({
-      icon: <AttachMoney sx={{ fontSize: 20, color: "secondary.main" }} />,
-      label: "Este viaje costará",
-      value: `${credits} créditos`,
-    });
-  }
-
-  // Add credits per km if both distance and credits are available
-  if (credits !== undefined && distance !== undefined && distance > 0) {
-    const creditsPerKm = (credits / distance).toFixed(1);
-    metrics.push({
-      icon: <TrendingUp sx={{ fontSize: 20, color: "success.main" }} />,
-      label: "Créditos por km",
-      value: creditsPerKm,
     });
   }
 

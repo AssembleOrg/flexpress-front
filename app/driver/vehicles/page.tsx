@@ -262,7 +262,7 @@ function VehicleCard({ vehicle }: { vehicle: Vehicle }) {
         <DialogTitle>Editar vehículo — {vehicle.plate}</DialogTitle>
         <DialogContent>
           <Stack spacing={2} sx={{ pt: 1 }}>
-            <Alert severity="info" sx={{ fontSize: "0.8rem" }}>
+            <Alert severity="warning" sx={{ fontSize: "0.8rem" }}>
               Al guardar, el vehículo volverá a estado <strong>Pendiente</strong> para re-verificación. La patente no puede modificarse.
             </Alert>
             <FormControl fullWidth size="small">
@@ -375,7 +375,10 @@ export default function VehiclesPage() {
     );
   }
 
-  const canAddMore = vehicles.length < 2;
+  const canAddMore =
+    vehicles.length === 0 ||
+    (vehicles.length < 2 &&
+      vehicles.every((v) => v.verificationStatus === VerificationStatus.VERIFIED));
 
   return (
     <AuthGuard message="Por favor inicia sesión">
@@ -439,6 +442,11 @@ export default function VehiclesPage() {
                       Agregar vehículo
                     </Button>
                   </Box>
+                )}
+                {!canAddMore && vehicles.length < 2 && (
+                  <Alert severity="info" sx={{ mt: 2 }}>
+                    Tu vehículo está en revisión. Podrás agregar otro una vez que sea verificado.
+                  </Alert>
                 )}
               </Box>
             )}

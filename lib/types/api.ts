@@ -145,6 +145,7 @@ export interface AvailableCharter {
   distanceToPickup: number; // km
   totalDistance: number; // km
   estimatedCredits: number;
+  pricePerKm: number | null;
   vehicleBrand?: string | null;
   vehicleModel?: string | null;
   vehiclePlate?: string | null;

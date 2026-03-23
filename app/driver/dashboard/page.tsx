@@ -12,6 +12,7 @@ import {
   Person,
 } from "@mui/icons-material";
 import {
+  Alert,
   Box,
   Button,
   Card,
@@ -192,30 +193,10 @@ export default function DriverDashboard() {
       return;
     }
 
-    // Conectar: necesitamos vehículo
-    const verifiedVehicles = myVehicles.filter(
-      (v) => v.verificationStatus === VerificationStatus.VERIFIED,
-    );
-
+    // Conectar: necesitamos vehículo verificado
     if (verifiedVehicles.length === 0) {
-      // Sin vehículos verificados: flujo directo (backend decidirá)
-      queryClient.setQueryData(availabilityKey, (old: typeof availabilityData) => ({
-        ...old,
-        isAvailable: true,
-        vehicleId: old?.vehicleId ?? null,
-      }));
-      toggleMutation.mutate(
-        { isAvailable: true },
-        {
-          onSuccess: () => toast.success("Estás en línea"),
-          onError: () =>
-            queryClient.setQueryData(availabilityKey, (old: typeof availabilityData) => ({
-              ...old,
-              isAvailable: false,
-              vehicleId: old?.vehicleId ?? null,
-            })),
-        },
-      );
+      toast.error("Necesitás al menos 1 vehículo verificado para activarte.");
+      return;
     } else if (verifiedVehicles.length === 1) {
       // Un vehículo: asignar automáticamente sin modal
       queryClient.setQueryData(availabilityKey, {
@@ -288,6 +269,10 @@ export default function DriverDashboard() {
 
   // Derive active vehicle from server availability state
   const activeVehicle = myVehicles.find((v) => v.id === activeVehicleId);
+  const verifiedVehicles = myVehicles.filter(
+    (v) => v.verificationStatus === VerificationStatus.VERIFIED,
+  );
+  const hasNoVerifiedVehicles = verifiedVehicles.length === 0;
 
   // Check verification status
   const isPending = user?.verificationStatus === VerificationStatus.PENDING;
@@ -544,14 +529,19 @@ export default function DriverDashboard() {
                 <Typography variant="caption" color="text.secondary">
                   {isAvailable
                     ? "Recibiendo solicitudes"
-                    : "Actívate para mostrarte disponible"}
+                    : hasNoVerifiedVehicles
+                      ? "Necesitás un vehículo verificado para activarte"
+                      : (user?.credits ?? 0) < 2
+                        ? "Necesitás 2 créditos para activarte"
+                        : "Actívate para mostrarte disponible"}
                 </Typography>
               </Stack>
-              {/* Derecha: Switch */}
+              {/* Derecha: Switch — deshabilitado si no hay créditos suficientes */}
               <Switch
                 checked={isAvailable}
                 onChange={handleAvailabilityChange}
                 color="secondary"
+                disabled={!isAvailable && ((user?.credits ?? 0) < 2 || hasNoVerifiedVehicles)}
               />
             </Stack>
 
@@ -702,40 +692,51 @@ export default function DriverDashboard() {
           </CardContent>
         </MotionCard>
 
-        {/* Credits Summary */}
-        {isAvailable && (
-          <MotionBox
-            display="flex"
-            gap={2}
-            mb={3}
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.4, delay: 0.2, type: "spring" }}
-          >
-            <Card sx={{ flex: 1, p: 2, textAlign: "center" }}>
-              <Typography
-                variant="h6"
-                sx={{ fontWeight: 700, color: "success.main" }}
-              >
-                {user?.credits || 0}
-              </Typography>
-              <Typography variant="caption" color="text.secondary">
-                Créditos Actuales
-              </Typography>
-            </Card>
-            <Card sx={{ flex: 1, p: 2, textAlign: "center" }}>
-              <Button
-                variant="outlined"
-                color="primary"
-                size="small"
-                fullWidth
-                onClick={() => router.push("/driver/trips/history")}
-                sx={{ fontWeight: 600 }}
-              >
-                Ver Historial
-              </Button>
-            </Card>
-          </MotionBox>
+        {/* Credits Summary — siempre visible */}
+        <MotionBox
+          display="flex"
+          gap={2}
+          mb={2}
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.4, delay: 0.2, type: "spring" }}
+        >
+          <Card sx={{ flex: 1, p: 2, textAlign: "center" }}>
+            <Typography
+              variant="h6"
+              sx={{ fontWeight: 700, color: (user?.credits ?? 0) >= 2 ? "success.main" : "error.main" }}
+            >
+              {user?.credits || 0}
+            </Typography>
+            <Typography variant="caption" color="text.secondary">
+              Créditos Disponibles
+            </Typography>
+          </Card>
+          <Card sx={{ flex: 1, p: 2, textAlign: "center" }}>
+            <Button
+              variant="outlined"
+              color="primary"
+              size="small"
+              fullWidth
+              onClick={() => router.push("/driver/trips/history")}
+              sx={{ fontWeight: 600 }}
+            >
+              Ver Historial
+            </Button>
+          </Card>
+        </MotionBox>
+
+        {/* Aviso de costo por aceptar solicitud */}
+        {(user?.credits ?? 0) < 2 && (
+          <Alert severity="warning" sx={{ mb: 2 }}>
+            Necesitás al menos 2 créditos para activarte y aceptar solicitudes.
+            Cada solicitud aceptada tiene un costo de 2 créditos.
+          </Alert>
+        )}
+        {(user?.credits ?? 0) >= 2 && !isAvailable && (
+          <Alert severity="warning" sx={{ mb: 2 }}>
+            Aceptar una solicitud tiene un costo de 2 créditos.
+          </Alert>
         )}
 
         {/* Pending Match Requests */}
@@ -1018,23 +1019,6 @@ export default function DriverDashboard() {
                           </Typography>
                           <Typography variant="body2" sx={{ fontWeight: 700 }}>
                             {match.distanceKm.toFixed(1)} km
-                          </Typography>
-                        </Box>
-                      )}
-                      {match.estimatedCredits && (
-                        <Box flex={1} textAlign="center">
-                          <Typography
-                            variant="caption"
-                            color="text.secondary"
-                            display="block"
-                          >
-                            Créditos
-                          </Typography>
-                          <Typography
-                            variant="body2"
-                            sx={{ fontWeight: 700, color: "success.main" }}
-                          >
-                            {match.estimatedCredits}
                           </Typography>
                         </Box>
                       )}

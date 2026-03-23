@@ -7,9 +7,10 @@ import api from "@/lib/api";
 import type { ApiResponse } from "@/lib/types/api";
 
 export interface PricingConfig {
-  creditsPerKm: number;
-  minimumCharge: number;
   creditPrice: number;
+  // Campos legacy — ya no se usan en la lógica de negocio
+  creditsPerKm?: number;
+  minimumCharge?: number;
 }
 
 export const systemConfigApi = {

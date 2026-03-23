@@ -235,7 +235,7 @@ export default function SettingsPage() {
                 </Box>
                 <Divider sx={{ mb: 3 }} />
 
-                <Alert severity="info" sx={{ mb: 3 }}>
+                <Alert severity="warning" sx={{ mb: 3 }}>
                   Cambia tu contraseña regularmente para mantener tu cuenta
                   segura
                 </Alert>

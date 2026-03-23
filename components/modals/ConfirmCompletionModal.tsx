@@ -2,7 +2,6 @@
 
 import {
   Alert,
-  Box,
   Button,
   CircularProgress,
   Dialog,
@@ -34,7 +33,6 @@ interface ConfirmCompletionModalProps {
   onClose: () => void;
   onConfirm: () => void;
   charterName: string;
-  estimatedCredits: number;
   isLoading?: boolean;
 }
 
@@ -43,7 +41,6 @@ export function ConfirmCompletionModal({
   onClose,
   onConfirm,
   charterName,
-  estimatedCredits,
   isLoading = false,
 }: ConfirmCompletionModalProps) {
   return (
@@ -64,27 +61,10 @@ export function ConfirmCompletionModal({
             </Typography>
           </Alert>
 
-          {/* Credits Info */}
-          <Box
-            sx={{
-              p: 1.5,
-              bgcolor: "action.hover",
-              borderRadius: 1,
-            }}
-          >
-            <Typography variant="caption" color="text.secondary">
-              Créditos a transferir
-            </Typography>
-            <Typography variant="h6" sx={{ fontWeight: 600, color: "primary.main" }}>
-              {estimatedCredits} → {charterName}
-            </Typography>
-          </Box>
-
           {/* Warning Info */}
           <Typography variant="caption" color="text.secondary">
-            Al confirmar, los créditos serán transferidos y el viaje se
-            marcará como completado. Si hay algún problema, usa el botón
-            "Reportar Problema" antes de confirmar.
+            Al confirmar, el viaje se marcará como completado. Si hay algún
+            problema, usa el botón "Reportar Problema" antes de confirmar.
           </Typography>
         </Stack>
       </DialogContent>

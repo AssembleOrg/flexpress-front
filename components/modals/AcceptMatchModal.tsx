@@ -1,5 +1,6 @@
 "use client";
 
+import { AttachMoney, Route } from "@mui/icons-material";
 import {
   Avatar,
   Box,
@@ -12,7 +13,6 @@ import {
   Stack,
   Typography,
 } from "@mui/material";
-import { Route, AttachMoney } from "@mui/icons-material";
 import { RatingDisplay } from "@/components/ui/RatingDisplay";
 import { useUserFeedback } from "@/lib/hooks/queries/useFeedbackQueries";
 import type { TravelMatch } from "@/lib/types/api";
@@ -125,7 +125,10 @@ export function AcceptMatchModal({
             </Avatar>
 
             <Box sx={{ flex: 1 }}>
-              <Typography variant="subtitle2" sx={{ fontWeight: 600, fontSize: "0.95rem" }}>
+              <Typography
+                variant="subtitle2"
+                sx={{ fontWeight: 600, fontSize: "0.95rem" }}
+              >
                 {match.user?.name || "Cliente"}
               </Typography>
               {/* Rating */}
@@ -147,13 +150,24 @@ export function AcceptMatchModal({
               borderRadius: 1.5,
             }}
           >
-            <Typography variant="caption" color="text.secondary" display="block" sx={{ mb: 1, fontSize: "0.7rem", fontWeight: 600 }}>
-              📍 Origen → 🏁 Destino
+            <Typography
+              variant="caption"
+              color="text.secondary"
+              display="block"
+              sx={{ mb: 1, fontSize: "0.7rem", fontWeight: 600 }}
+            >
+              Origen → Destino
             </Typography>
-            <Typography variant="body2" sx={{ fontSize: "0.85rem", lineHeight: 1.4, mb: 0.5 }}>
+            <Typography
+              variant="body2"
+              sx={{ fontSize: "0.85rem", lineHeight: 1.4, mb: 0.5 }}
+            >
               {match.pickupAddress || "No especificado"}
             </Typography>
-            <Typography variant="body2" sx={{ fontSize: "0.85rem", fontWeight: 600, lineHeight: 1.4 }}>
+            <Typography
+              variant="body2"
+              sx={{ fontSize: "0.85rem", fontWeight: 600, lineHeight: 1.4 }}
+            >
               {match.destinationAddress || "No especificado"}
             </Typography>
           </Box>
@@ -175,10 +189,17 @@ export function AcceptMatchModal({
               }}
             >
               <Route sx={{ fontSize: 20, color: "primary.main", mb: 0.5 }} />
-              <Typography variant="h6" sx={{ fontWeight: 700, fontSize: "1rem" }}>
+              <Typography
+                variant="h6"
+                sx={{ fontWeight: 700, fontSize: "1rem" }}
+              >
                 {match.distanceKm?.toFixed(1) || "0"} km
               </Typography>
-              <Typography variant="caption" color="text.secondary" sx={{ fontSize: "0.65rem" }}>
+              <Typography
+                variant="caption"
+                color="text.secondary"
+                sx={{ fontSize: "0.65rem" }}
+              >
                 Distancia
               </Typography>
             </Box>
@@ -191,19 +212,39 @@ export function AcceptMatchModal({
                 textAlign: "center",
               }}
             >
-              <AttachMoney sx={{ fontSize: 20, color: "success.main", mb: 0.5 }} />
-              <Typography variant="h6" sx={{ fontWeight: 700, fontSize: "1rem", color: "success.main" }}>
-                {match.estimatedCredits || 0}
+              <AttachMoney
+                sx={{ fontSize: 20, color: "warning.main", mb: 0.5 }}
+              />
+              <Typography
+                variant="h6"
+                sx={{
+                  fontWeight: 700,
+                  fontSize: "1rem",
+                  color: "warning.main",
+                }}
+              >
+                2
               </Typography>
-              <Typography variant="caption" color="text.secondary" sx={{ fontSize: "0.65rem" }}>
-                Créditos
+              <Typography
+                variant="caption"
+                color="text.secondary"
+                sx={{ fontSize: "0.65rem" }}
+              >
+                Costo al aceptar
               </Typography>
             </Box>
           </Box>
         </Stack>
       </DialogContent>
 
-      <DialogActions sx={{ p: 2, gap: 1.5, display: 'flex', justifyContent: 'space-between' }}>
+      <DialogActions
+        sx={{
+          p: 2,
+          gap: 1.5,
+          display: "flex",
+          justifyContent: "space-between",
+        }}
+      >
         <Button
           onClick={onReject}
           disabled={isLoading || !isValidState}
@@ -224,7 +265,7 @@ export function AcceptMatchModal({
             minHeight: 48,
             fontWeight: 700,
             bgcolor: "secondary.main",
-            "&:hover": { bgcolor: "secondary.dark" }
+            "&:hover": { bgcolor: "secondary.dark" },
           }}
           startIcon={isLoading ? <CircularProgress size={20} /> : undefined}
         >

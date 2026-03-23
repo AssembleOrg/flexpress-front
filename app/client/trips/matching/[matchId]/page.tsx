@@ -10,10 +10,6 @@ import {
   Chip,
   CircularProgress,
   Container,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogTitle,
   IconButton,
   Rating,
   Stack,
@@ -29,7 +25,6 @@ import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { ChatWindow } from '@/components/chat/ChatWindow';
 import { FeedbackModal } from '@/components/feedback/FeedbackModal';
 import { ReportModal } from '@/components/modals/ReportModal';
-import { ConfirmTripModal } from '@/components/modals/ConfirmTripModal';
 import { ConfirmCompletionModal } from '@/components/modals/ConfirmCompletionModal';
 import { MobileContainer } from '@/components/layout/MobileContainer';
 import { MobileHeader } from '@/components/layout/MobileHeader';
@@ -46,10 +41,7 @@ import {
   useCanGiveFeedback,
   useUserFeedback,
 } from '@/lib/hooks/queries/useFeedbackQueries';
-import {
-  useCreateTripFromMatch,
-  useCancelMatch,
-} from '@/lib/hooks/mutations/useTravelMatchMutations';
+import { useCreateTripFromMatch } from '@/lib/hooks/mutations/useTravelMatchMutations';
 import { useClientConfirmCompletion } from '@/lib/hooks/mutations/useTripMutations';
 import {
   useMatchUpdateListener,
@@ -76,16 +68,14 @@ export default function MatchDetailPage() {
   const [feedbackModalOpen, setFeedbackModalOpen] = useState(false);
   const [reportModalOpen, setReportModalOpen] = useState(false);
   const [reportSubmitted, setReportSubmitted] = useState(false);
-  const [confirmTripModalOpen, setConfirmTripModalOpen] = useState(false);
-  const [cancelModalOpen, setCancelModalOpen] = useState(false);
   const [confirmCompletionModalOpen, setConfirmCompletionModalOpen] =
     useState(false);
 
   const { user } = useAuthStore();
   const { data: match, isLoading, refetch: refetchMatch } = useMatch(matchId);
   const createTripMutation = useCreateTripFromMatch();
-  const cancelMatchMutation = useCancelMatch();
   const clientConfirmCompletionMutation = useClientConfirmCompletion();
+  const hasCreatedTrip = useRef(false);
   const [conversationLoadingTimeout, setConversationLoadingTimeout] =
     useState(false);
   const [charterFinalized, setCharterFinalized] = useState(false);
@@ -156,18 +146,6 @@ export default function MatchDetailPage() {
     refetchMatch();
   });
 
-  // Handlers for trip confirmation and finalization
-  const handleConfirmTrip = async () => {
-    try {
-      await createTripMutation.mutateAsync(matchId);
-      toast.success('Viaje confirmado. Los créditos han sido deducidos.');
-      setConfirmTripModalOpen(false);
-    } catch (error) {
-      console.error('Error confirming trip:', error);
-      toast.error('Error al confirmar el viaje');
-    }
-  };
-
   const handleFinalizeTrip = () => {
     if (!canGiveFeedback) {
       toast.error('Ya has dado feedback para este viaje');
@@ -186,16 +164,6 @@ export default function MatchDetailPage() {
     }
   };
 
-  const handleCancelMatch = async () => {
-    if (!match?.id) return;
-    try {
-      await cancelMatchMutation.mutateAsync(match.id);
-      router.push('/client/dashboard');
-    } catch (error) {
-      console.error('Error cancelling match:', error);
-    }
-  };
-
   // Auto-redirect to chat when match is accepted with conversationId
   useEffect(() => {
     if (match?.status === TravelMatchStatus.ACCEPTED && match?.conversationId) {
@@ -209,6 +177,23 @@ export default function MatchDetailPage() {
       // Page will show ChatWindow via conditional rendering below
     }
   }, [match?.status, match?.conversationId]);
+
+  // Auto-create trip when charter accepts (credits already deducted, no user action needed)
+  useEffect(() => {
+    if (
+      match?.status === TravelMatchStatus.ACCEPTED &&
+      match?.conversationId &&
+      !match?.tripId &&
+      !hasCreatedTrip.current &&
+      isClient
+    ) {
+      hasCreatedTrip.current = true;
+      createTripMutation.mutateAsync(matchId).catch((err) => {
+        console.error('Auto trip creation failed:', err);
+        hasCreatedTrip.current = false;
+      });
+    }
+  }, [match?.status, match?.conversationId, match?.tripId, isClient, matchId]);
 
   // Auto-open feedback modal when trip is completed
   useEffect(() => {
@@ -424,72 +409,6 @@ export default function MatchDetailPage() {
                   </Typography>
                 )}
               </Stack>
-            </CardContent>
-          </Card>
-
-          {/* Match Details */}
-          <Card>
-            <CardContent sx={{ p: 2 }}>
-              <Typography
-                variant='subtitle2'
-                fontWeight={700}
-                mb={1.5}
-              >
-                Detalles
-              </Typography>
-
-              <Box
-                sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}
-              >
-                <Box>
-                  <Typography
-                    variant='caption'
-                    color='text.secondary'
-                  >
-                    Distancia
-                  </Typography>
-                  <Typography
-                    variant='body2'
-                    fontWeight={600}
-                  >
-                    {match.distanceKm
-                      ? `${match.distanceKm.toFixed(1)} km`
-                      : 'N/A'}
-                  </Typography>
-                </Box>
-
-                <Box>
-                  <Typography
-                    variant='caption'
-                    color='text.secondary'
-                  >
-                    Créditos Estimados
-                  </Typography>
-                  <Typography
-                    variant='body2'
-                    fontWeight={600}
-                  >
-                    {match.estimatedCredits || 0} pts
-                  </Typography>
-                </Box>
-
-                {match.workersCount && (
-                  <Box>
-                    <Typography
-                      variant='caption'
-                      color='text.secondary'
-                    >
-                      Número de Trabajadores
-                    </Typography>
-                    <Typography
-                      variant='body2'
-                      fontWeight={600}
-                    >
-                      {match.workersCount}
-                    </Typography>
-                  </Box>
-                )}
-              </Box>
             </CardContent>
           </Card>
 
@@ -862,7 +781,7 @@ export default function MatchDetailPage() {
     // Determine trip status for UI
     const getStatusInfo = () => {
       if (!match.tripId) {
-        return { label: 'En Conversación', color: 'primary' as const };
+        return { label: 'Iniciando viaje...', color: 'primary' as const };
       }
       if (match.trip?.status === 'completed') {
         return { label: 'Completado', color: 'success' as const };
@@ -973,7 +892,6 @@ export default function MatchDetailPage() {
               {/* Trip Metrics Card */}
               <TripMetricsCard
                 distance={match.distanceKm ?? undefined}
-                credits={match.estimatedCredits ?? undefined}
               />
 
               {/* Map Card */}
@@ -1012,7 +930,7 @@ export default function MatchDetailPage() {
                   />
 
                   {/* Map navigation buttons */}
-                  <Box sx={{ mt: 1.5, display: 'flex', gap: 1 }}>
+                  <Box sx={{ mt: 1.5, display: 'flex', gap: 1, flexWrap: 'wrap' }}>
                     <Button
                       variant='outlined'
                       size='small'
@@ -1084,48 +1002,6 @@ export default function MatchDetailPage() {
                 spacing={1}
                 sx={{ mt: 1.5 }}
               >
-                {/* Estado 1: Botón Confirmar Viaje + Cancelar */}
-                {!match.tripId && (
-                  <Box
-                    sx={{
-                      display: 'flex',
-                      flexDirection: 'row',
-                      gap: 2,
-                      width: '100%',
-                    }}
-                  >
-                    <Button
-                      variant='contained'
-                      color='success'
-                      onClick={() => setConfirmTripModalOpen(true)}
-                      size='large'
-                      sx={{
-                        minHeight: 48,
-                        flex: 2,
-                        whiteSpace: 'nowrap',
-                      }}
-                    >
-                      Confirmar
-                    </Button>
-                    <Button
-                      variant='outlined'
-                      color='error'
-                      size='large'
-                      onClick={() => setCancelModalOpen(true)}
-                      disabled={
-                        cancelMatchMutation.isPending ||
-                        match.status === 'completed'
-                      }
-                      sx={{
-                        minHeight: 48,
-                        flex: 1,
-                      }}
-                    >
-                      Cancelar
-                    </Button>
-                  </Box>
-                )}
-
                 {/* Estado 2: Trip confirmado, esperando charter */}
                 {match.tripId && match.trip?.status === 'pending' && (
                   <Box
@@ -1318,7 +1194,7 @@ export default function MatchDetailPage() {
                       </Button>
                     ) : (
                       <Alert
-                        severity='info'
+                        severity='success'
                         sx={{ mb: 1 }}
                       >
                         <Typography variant='caption'>
@@ -1360,68 +1236,15 @@ export default function MatchDetailPage() {
           />
         )}
 
-        {/* Confirm Trip Modal */}
-        <ConfirmTripModal
-          open={confirmTripModalOpen}
-          onClose={() => setConfirmTripModalOpen(false)}
-          onConfirm={handleConfirmTrip}
-          estimatedCredits={match.estimatedCredits || 0}
-          userCredits={user?.credits || 0}
-          isLoading={createTripMutation.isPending}
-        />
-
         {/* Confirm Completion Modal */}
         <ConfirmCompletionModal
           open={confirmCompletionModalOpen}
           onClose={() => setConfirmCompletionModalOpen(false)}
           onConfirm={handleClientConfirmCompletion}
           charterName={match.charter?.name || 'Transportista'}
-          estimatedCredits={match.estimatedCredits || 0}
           isLoading={clientConfirmCompletionMutation.isPending}
         />
 
-        {/* Cancel Match Modal */}
-        <Dialog
-          open={cancelModalOpen}
-          onClose={() => setCancelModalOpen(false)}
-          maxWidth='xs'
-          fullWidth
-        >
-          <DialogTitle sx={{ fontWeight: 700 }}>
-            ¿Cancelar Solicitud?
-          </DialogTitle>
-          <DialogContent>
-            <Alert
-              severity='warning'
-              sx={{ mb: 2 }}
-            >
-              Estás a punto de cancelar esta negociación. Si confirmas, tendrás
-              que buscar otro chófer y reiniciar el proceso.
-            </Alert>
-            <Typography variant='body2'>
-              ¿Estás seguro de que deseas continuar?
-            </Typography>
-          </DialogContent>
-          <DialogActions sx={{ p: 2, gap: 1 }}>
-            <Button
-              onClick={() => setCancelModalOpen(false)}
-              variant='outlined'
-              color='inherit'
-            >
-              Volver
-            </Button>
-            <Button
-              onClick={() => {
-                setCancelModalOpen(false);
-                handleCancelMatch();
-              }}
-              variant='contained'
-              color='error'
-            >
-              Sí, Cancelar
-            </Button>
-          </DialogActions>
-        </Dialog>
       </>
     );
   }
@@ -1574,7 +1397,7 @@ export default function MatchDetailPage() {
         </Box>
 
         <Alert
-          severity='info'
+          severity='warning'
           sx={{ mb: 3 }}
         >
           <Typography

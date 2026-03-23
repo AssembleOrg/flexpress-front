@@ -61,18 +61,11 @@ export function CreditPurchaseModal() {
     return Math.floor(ars / pricing.creditPrice);
   };
 
-  // Helper para calcular KMs aproximados
-  const calculateApproximateKms = (credits: number) => {
-    if (!pricing) return 0;
-    return Math.floor(credits / pricing.creditsPerKm);
-  };
-
   // Calcular ejemplos dinámicamente
   const examplesWithConversion = useMemo(() => {
     return EXAMPLE_PACKAGES.map((pkg) => {
       const credits = calculateCreditsFromARS(pkg.amountARS);
-      const kms = calculateApproximateKms(credits);
-      return { ...pkg, credits, kms };
+      return { ...pkg, credits };
     });
   }, [pricing]);
 
@@ -167,8 +160,7 @@ export function CreditPurchaseModal() {
           <Alert severity="success" sx={{ mb: { xs: 2, md: 3 } }}>
             <Typography variant="body2">
               → Recibirás:{" "}
-              <strong>{calculateCreditsFromARS(amountARS)} créditos</strong> (≈{" "}
-              {calculateApproximateKms(calculateCreditsFromARS(amountARS))} KM)
+              <strong>{calculateCreditsFromARS(amountARS)} créditos</strong>
             </Typography>
           </Alert>
         )}
@@ -291,7 +283,7 @@ export function CreditPurchaseModal() {
           Realizá la transferencia a:
         </Typography>
         <Alert
-          severity="info"
+          severity="warning"
           sx={{
             mb: 2,
             py: { xs: 1, md: 2 },

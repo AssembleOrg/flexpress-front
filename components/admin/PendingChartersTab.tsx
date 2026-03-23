@@ -723,7 +723,7 @@ export function PendingChartersTab() {
                   (v) => v.verificationStatus !== VerificationStatus.VERIFIED,
                 ).length;
                 return pendingCount > 0 ? (
-                  <Alert severity="info" sx={{ py: 0.5 }}>
+                  <Alert severity="warning" sx={{ py: 0.5 }}>
                     Se aprobará el conductor y {pendingCount} vehículo{pendingCount > 1 ? "s" : ""} pendiente{pendingCount > 1 ? "s" : ""}.
                   </Alert>
                 ) : (

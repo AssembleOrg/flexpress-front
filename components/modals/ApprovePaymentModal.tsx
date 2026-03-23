@@ -58,7 +58,7 @@ export function ApprovePaymentModal({
       <DialogContent sx={{ py: 2 }}>
         <Stack spacing={2}>
           {/* Info Alert */}
-          <Alert severity="info" icon={<CheckCircle />} sx={{ py: 1 }}>
+          <Alert severity="success" icon={<CheckCircle />} sx={{ py: 1 }}>
             <Typography variant="body2" sx={{ fontWeight: 600, mb: 0.5 }}>
               Aprobar pago de {userName}
             </Typography>

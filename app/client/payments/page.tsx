@@ -89,7 +89,7 @@ export default function PaymentsPage() {
 
       {/* Payments List */}
       {payments && payments.length === 0 ? (
-        <Alert severity="info">
+        <Alert severity="warning">
           No tienes solicitudes de pago registradas todavía.
         </Alert>
       ) : (

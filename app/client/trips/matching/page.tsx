@@ -18,14 +18,15 @@ import { useCallback, useEffect, useState } from 'react';
 import { ConfirmMatchModal } from '@/components/modals/ConfirmMatchModal';
 import { CharterCard } from '@/components/ui/CharterCard';
 import { RouteMap } from '@/components/ui/Map';
-import { useSelectCharter } from '@/lib/hooks/mutations/useTravelMatchMutations';
+import { useSelectCharter, useCancelMatch } from '@/lib/hooks/mutations/useTravelMatchMutations';
 import { useUserFeedback } from '@/lib/hooks/queries/useFeedbackQueries';
+import { usePublicPricing } from '@/lib/hooks/queries/useSystemConfigQueries';
 import { useMatch } from '@/lib/hooks/queries/useTravelMatchQueries';
 import { useMatchUpdateListener } from '@/lib/hooks/useWebSocket';
 import { useAuthStore } from '@/lib/stores/authStore';
 import { useTravelMatchStore } from '@/lib/stores/travelMatchStore';
 import type { AvailableCharter } from '@/lib/types/api';
-import { isMatchExpired } from '@/lib/utils/matchHelpers';
+import { isMatchExpired, getFormattedExpirationTime, getMinutesUntilExpiration } from '@/lib/utils/matchHelpers';
 
 /**
  * Charter card wrapper that fetches and displays rating
@@ -33,11 +34,15 @@ import { isMatchExpired } from '@/lib/utils/matchHelpers';
 function CharterCardWithRating({
   charter,
   isLoading,
+  isPending,
   onSelect,
+  systemPricePerKm,
 }: {
   charter: AvailableCharter;
   isLoading: boolean;
+  isPending?: boolean;
   onSelect: () => void;
+  systemPricePerKm?: number;
 }) {
   const { data: feedback } = useUserFeedback(charter.charterId);
 
@@ -45,9 +50,11 @@ function CharterCardWithRating({
     <CharterCard
       charter={charter}
       isLoading={isLoading}
+      isPending={isPending}
       onSelect={onSelect}
       averageRating={feedback?.averageRating || 0}
       totalReviews={feedback?.totalCount || 0}
+      systemPricePerKm={systemPricePerKm}
     />
   );
 }
@@ -55,6 +62,8 @@ function CharterCardWithRating({
 export default function MatchingPage() {
   const router = useRouter();
   const selectMutation = useSelectCharter();
+  const cancelMutation = useCancelMatch();
+  const { data: pricing } = usePublicPricing();
 
   // Modal state
   const [confirmModalOpen, setConfirmModalOpen] = useState(false);
@@ -64,6 +73,9 @@ export default function MatchingPage() {
   // State to track selected charter waiting for acceptance
   const [selectedCharterPending, setSelectedCharterPending] =
     useState<AvailableCharter | null>(null);
+
+  // Countdown state (minutes remaining until match expires)
+  const [minutesLeft, setMinutesLeft] = useState<number>(-1);
 
   // Notification state
   const [notificationOpen, setNotificationOpen] = useState(false);
@@ -91,6 +103,12 @@ export default function MatchingPage() {
       console.log('🔔 [MATCHING] Match status updated:', status);
 
       if (status === 'ACCEPTED') {
+        // Descontar 1 crédito al cliente cuando el charter acepta
+        const { user: currentUser, updateUser } = useAuthStore.getState();
+        if (currentUser) {
+          updateUser({ credits: Math.max(0, currentUser.credits - 1) });
+        }
+
         setNotificationMessage(
           `¡El chófer ${selectedCharterPending?.charterName} aceptó tu solicitud!`
         );
@@ -154,6 +172,16 @@ export default function MatchingPage() {
     useTravelMatchStore.persist.rehydrate();
   }, []);
 
+  // Countdown: update minutes left every 30s while waiting for charter
+  useEffect(() => {
+    if (!selectedCharterPending || !currentMatch) return;
+    setMinutesLeft(getMinutesUntilExpiration(currentMatch));
+    const interval = setInterval(() => {
+      setMinutesLeft(getMinutesUntilExpiration(currentMatch));
+    }, 30_000);
+    return () => clearInterval(interval);
+  }, [selectedCharterPending, currentMatch]);
+
   // Monitor expiration: if match expires while we have a pending charter, clear it
   useEffect(() => {
     if (!selectedCharterPending || !currentMatch) {
@@ -202,8 +230,21 @@ export default function MatchingPage() {
     );
   }
 
+  // Cancel pending charter selection
+  const handleCancelPending = async () => {
+    if (!currentMatch) return;
+    try {
+      await cancelMutation.mutateAsync(currentMatch.id);
+      useTravelMatchStore.getState().clearPersistedMatch();
+      router.push('/client/trips/new');
+    } catch {
+      // error handled by mutation's onError toast
+    }
+  };
+
   // Abrir modal de confirmación cuando user selecciona un charter
   const handleSelectCharter = (charter: AvailableCharter) => {
+    if (selectedCharterPending) return;
     setSelectedCharterForConfirm(charter);
     setConfirmModalOpen(true);
   };
@@ -244,61 +285,59 @@ export default function MatchingPage() {
       sx={{ py: 4 }}
     >
       {/* Header */}
-      <Box mb={4}>
+      <Box mb={2}>
         <Box
-          sx={{ display: 'flex', gap: 1, mb: 2 }}
+          sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5 }}
         >
           <Link href='/client/trips/new'>
             <Button
               startIcon={<ArrowBack />}
               variant='outlined'
+              size='small'
             >
               Nueva Búsqueda
             </Button>
           </Link>
-        </Box>
 
-        <Box mb={2}>
           <Typography
-            variant='h4'
+            variant='subtitle1'
             component='h1'
-            sx={{ fontWeight: 700, mb: 2 }}
+            sx={{ fontWeight: 700, ml: 0.5 }}
           >
             Chóferes Disponibles
           </Typography>
-
-          {currentMatch && (
-            <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', mb: 2 }}>
-              {pickupAddress && (
-                <Chip
-                  label={`📍 De: ${pickupAddress.slice(0, 25)}...`}
-                  color='primary'
-                  variant='outlined'
-                />
-              )}
-              {destinationAddress && (
-                <Chip
-                  label={`🎯 A: ${destinationAddress.slice(0, 25)}...`}
-                  color='secondary'
-                  variant='outlined'
-                />
-              )}
-            </Box>
-          )}
         </Box>
 
-        <Typography
-          variant='body1'
-          color='text.secondary'
-        >
-          Se encontraron {availableCharters.length} chóferes disponibles dentro
-          de 30 km del origen
-        </Typography>
+        {currentMatch && (
+          <Box sx={{ display: 'flex', gap: 0.75, flexWrap: 'wrap' }}>
+            {pickupAddress && (
+              <Chip
+                label={`📍 ${pickupAddress.slice(0, 22)}...`}
+                color='primary'
+                variant='outlined'
+                size='small'
+              />
+            )}
+            {destinationAddress && (
+              <Chip
+                label={`🎯 ${destinationAddress.slice(0, 22)}...`}
+                color='secondary'
+                variant='outlined'
+                size='small'
+              />
+            )}
+            <Chip
+              label={`${availableCharters.length} disponibles`}
+              variant='outlined'
+              size='small'
+            />
+          </Box>
+        )}
       </Box>
 
       {/* Mapa de ruta */}
       {pickupCoords && destinationCoords && (
-        <Card sx={{ mb: 4 }}>
+        <Card sx={{ mb: 2 }}>
           <CardContent>
             <Typography
               variant='subtitle2'
@@ -383,17 +422,10 @@ export default function MatchingPage() {
         </Box>
       ) : (
         <Box>
-          <Typography
-            variant='subtitle1'
-            sx={{ fontWeight: 600, mb: 3 }}
-          >
-            Selecciona un chófer para continuar:
-          </Typography>
-
           {/* Alert when charter is pending acceptance */}
           {selectedCharterPending && (
             <Alert
-              severity='info'
+              severity='warning'
               sx={{ mb: 3 }}
             >
               <Typography
@@ -406,13 +438,18 @@ export default function MatchingPage() {
                 El chófer <strong>{selectedCharterPending.charterName}</strong>{' '}
                 tiene hasta las{' '}
                 <strong>
-                  {new Date(Date.now() + 30 * 60000).toLocaleTimeString(
-                    'es-CO',
-                    { hour: '2-digit', minute: '2-digit' }
-                  )}
+                  {getFormattedExpirationTime(currentMatch) ?? '...'}
                 </strong>{' '}
                 para responder tu solicitud.
               </Typography>
+              {minutesLeft > 0 && (
+                <Typography
+                  variant='body2'
+                  sx={{ mt: 0.5 }}
+                >
+                  Tiempo restante: <strong>{minutesLeft} min</strong>
+                </Typography>
+              )}
               <Typography
                 variant='body2'
                 sx={{ mt: 1 }}
@@ -420,6 +457,19 @@ export default function MatchingPage() {
                 Aquí en esta página será notificado cuando{' '}
                 <strong>acepte tu solicitud</strong>.
               </Typography>
+              <Box sx={{ mt: 1.5 }}>
+                <Button
+                  size='small'
+                  variant='outlined'
+                  color='warning'
+                  onClick={handleCancelPending}
+                  disabled={cancelMutation.isPending}
+                >
+                  {cancelMutation.isPending
+                    ? 'Cancelando...'
+                    : 'Cancelar solicitud'}
+                </Button>
+              </Box>
             </Alert>
           )}
 
@@ -428,53 +478,14 @@ export default function MatchingPage() {
               selectedCharterPending?.charterId === charter.charterId;
 
             return (
-              <Box
+              <CharterCardWithRating
                 key={charter.charterId}
-                sx={{ position: 'relative' }}
-              >
-                <CharterCardWithRating
-                  charter={charter}
-                  isLoading={selectMutation.isPending || isPending}
-                  onSelect={() => handleSelectCharter(charter)}
-                />
-
-                {/* Show loading badge on pending charter */}
-                {isPending && (
-                  <Box
-                    sx={{
-                      position: 'absolute',
-                      top: 16,
-                      right: 16,
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 1,
-                      backgroundColor: 'primary.main',
-                      color: 'white',
-                      px: 2,
-                      py: 1,
-                      borderRadius: 1,
-                      fontSize: '0.875rem',
-                      fontWeight: 600,
-                      zIndex: 10,
-                    }}
-                  >
-                    <Box
-                      sx={{
-                        width: 8,
-                        height: 8,
-                        borderRadius: '50%',
-                        backgroundColor: 'white',
-                        animation: 'pulse 1.5s ease-in-out infinite',
-                        '@keyframes pulse': {
-                          '0%, 100%': { opacity: 1 },
-                          '50%': { opacity: 0.5 },
-                        },
-                      }}
-                    />
-                    Seleccionado
-                  </Box>
-                )}
-              </Box>
+                charter={charter}
+                isLoading={selectMutation.isPending || !!selectedCharterPending}
+                isPending={isPending}
+                onSelect={() => handleSelectCharter(charter)}
+                systemPricePerKm={pricing?.creditsPerKm}
+              />
             );
           })}
         </Box>

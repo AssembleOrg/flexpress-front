@@ -84,10 +84,7 @@ export function generateClientReceipt(trip: Trip) {
       ["Punto de Origen", match?.pickupAddress || "No especificado"],
       ["Punto de Destino", match?.destinationAddress || "No especificado"],
       ["Distancia Recorrida", `${match?.distanceKm?.toFixed(1) || "0"} km`],
-      [
-        "Créditos Utilizados",
-        `${match?.estimatedCredits || 0} créditos`,
-      ],
+      ["Comisión de matchmaking", "1 crédito"],
     ],
     theme: "grid",
     headStyles: {
@@ -220,10 +217,7 @@ export function generateCharterReceipt(trip: Trip) {
       ["Punto de Origen", match?.pickupAddress || "No especificado"],
       ["Punto de Destino", match?.destinationAddress || "No especificado"],
       ["Distancia Recorrida", `${match?.distanceKm?.toFixed(1) || "0"} km`],
-      [
-        "Créditos Ganados",
-        `${match?.estimatedCredits || 0} créditos`,
-      ],
+      ["Comisión de matchmaking", "2 créditos"],
     ],
     theme: "grid",
     headStyles: {

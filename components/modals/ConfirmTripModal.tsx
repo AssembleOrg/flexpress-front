@@ -2,7 +2,6 @@
 
 import {
   Alert,
-  Box,
   Button,
   CircularProgress,
   Dialog,
@@ -33,8 +32,6 @@ interface ConfirmTripModalProps {
   open: boolean;
   onClose: () => void;
   onConfirm: () => void;
-  estimatedCredits: number;
-  userCredits: number;
   isLoading?: boolean;
 }
 
@@ -42,12 +39,8 @@ export function ConfirmTripModal({
   open,
   onClose,
   onConfirm,
-  estimatedCredits,
-  userCredits,
   isLoading = false,
 }: ConfirmTripModalProps) {
-  const creditsAfter = userCredits - estimatedCredits;
-
   return (
     <Dialog open={open} onClose={onClose} maxWidth="xs" fullWidth>
       <DialogTitle sx={{ fontWeight: 700, pb: 1, fontSize: "1.1rem" }}>
@@ -59,53 +52,16 @@ export function ConfirmTripModal({
           {/* Warning Alert */}
           <Alert severity="warning" icon={<Warning />} sx={{ py: 1 }}>
             <Typography variant="body2" sx={{ fontWeight: 600, mb: 0.5 }}>
-              Se deducirán {estimatedCredits} créditos
+              ¿Estás listo para iniciar el viaje?
             </Typography>
             <Typography variant="caption">
               Esta acción es irreversible
             </Typography>
           </Alert>
 
-          {/* Credits Summary */}
-          <Box
-            sx={{
-              display: "grid",
-              gridTemplateColumns: "1fr 1fr",
-              gap: 1.5,
-              p: 1.5,
-              bgcolor: "action.hover",
-              borderRadius: 1,
-            }}
-          >
-            <Box>
-              <Typography variant="caption" color="text.secondary">
-                Créditos Actuales
-              </Typography>
-              <Typography variant="body1" sx={{ fontWeight: 600 }}>
-                {userCredits}
-              </Typography>
-            </Box>
-
-            <Box>
-              <Typography variant="caption" color="text.secondary">
-                Créditos Después
-              </Typography>
-              <Typography
-                variant="body1"
-                sx={{
-                  fontWeight: 600,
-                  color: creditsAfter >= 0 ? "success.main" : "error.main",
-                }}
-              >
-                {creditsAfter}
-              </Typography>
-            </Box>
-          </Box>
-
           {/* Info */}
           <Typography variant="caption" color="text.secondary">
-            Al confirmar, los créditos serán reservados hasta que el viaje se
-            complete. El transportista será notificado para iniciar el servicio.
+            El transportista será notificado para iniciar el servicio.
           </Typography>
         </Stack>
       </DialogContent>
@@ -120,9 +76,8 @@ export function ConfirmTripModal({
           disabled={isLoading}
           variant="contained"
           color="success"
-          startIcon={isLoading ? <CircularProgress size={18} /> : undefined}
         >
-          {isLoading ? "Confirmando..." : "Confirmar Viaje"}
+          {isLoading ? <CircularProgress size={18} sx={{ color: "inherit" }} /> : "Confirmar Viaje"}
         </Button>
       </DialogActions>
     </Dialog>

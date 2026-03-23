@@ -116,6 +116,14 @@ export function useRespondToMatch() {
       // Update the match in cache (optimistic update)
       queryClient.setQueryData(queryKeys.matches.detail(matchId), result);
 
+      // Actualizar créditos del charter en el store local
+      if (accept) {
+        const { user, updateUser } = useAuthStore.getState();
+        if (user) {
+          updateUser({ credits: Math.max(0, user.credits - 2) });
+        }
+      }
+
       // If accepted, create conversation immediately
       if (accept) {
         try {
