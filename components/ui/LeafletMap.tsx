@@ -123,7 +123,7 @@ const LeafletMap = forwardRef<LeafletMapHandle, LeafletMapProps>(
           });
         }
       },
-    }));
+    }), [isMapReady]);
 
     // Initialize map
     useEffect(() => {

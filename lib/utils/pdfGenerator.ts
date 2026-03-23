@@ -24,7 +24,6 @@ export function generateClientReceipt(trip: Trip) {
   }
 
   const match = trip.travelMatch;
-  const userName = trip.user?.name || "Cliente";
 
   // ===== HEADER SECTION =====
   // Logo placeholder/title
@@ -33,12 +32,11 @@ export function generateClientReceipt(trip: Trip) {
   doc.setFont("helvetica", "bold");
   doc.text("FlexPress", 105, 25, { align: "center" });
 
-  // Personalized greeting
+  // Greeting
   doc.setFontSize(12);
   doc.setTextColor(...COLORS.textBlack);
   doc.setFont("helvetica", "normal");
-  const greeting = `Aquí está el recibo de tu viaje, ${userName}.`;
-  doc.text(greeting, 105, 35, { align: "center" });
+  doc.text("Aquí está el recibo de tu viaje.", 105, 35, { align: "center" });
 
   doc.setFontSize(10);
   doc.setTextColor(...COLORS.textGray);
@@ -79,7 +77,6 @@ export function generateClientReceipt(trip: Trip) {
     startY: 85,
     head: [["Concepto", "Detalle"]],
     body: [
-      ["Cliente", userName],
       ["Chófer Asignado", trip.charter?.name || "No asignado"],
       ["Punto de Origen", match?.pickupAddress || "No especificado"],
       ["Punto de Destino", match?.destinationAddress || "No especificado"],

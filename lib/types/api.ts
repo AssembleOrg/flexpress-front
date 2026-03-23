@@ -94,6 +94,14 @@ export interface User {
   verifiedBy: string | null;
   createdAt: string;
   updatedAt: string;
+  charterAvailability?: {
+    vehicle?: {
+      brand: string | null;
+      model: string | null;
+      plate: string;
+      year: number | null;
+    } | null;
+  } | null;
 }
 
 export interface AuthResponse {

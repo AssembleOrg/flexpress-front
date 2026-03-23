@@ -1,6 +1,6 @@
 'use client';
 
-import { ArrowBack, LocationOn, Flag, Map } from '@mui/icons-material';
+import { ArrowBack, CheckCircle, CreditCard, Download, LocalShipping, LocationOn, Flag, Map, ReportProblem, Star, Warning } from '@mui/icons-material';
 import {
   Alert,
   Box,
@@ -15,7 +15,6 @@ import {
   Stack,
   Typography,
 } from '@mui/material';
-import { CheckCircle, Warning, ReportProblem } from '@mui/icons-material';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useState, useRef } from 'react';
@@ -30,7 +29,6 @@ import { MobileContainer } from '@/components/layout/MobileContainer';
 import { MobileHeader } from '@/components/layout/MobileHeader';
 import { TripDetailsCard } from '@/components/trip/TripDetailsCard';
 import { TripMetricsCard } from '@/components/trip/TripMetricsCard';
-import { ReceiptButton } from '@/components/trip/ReceiptButton';
 import LeafletMap, {
   type MapMarker,
   type LeafletMapHandle,
@@ -51,6 +49,10 @@ import { useCountdown } from '@/lib/hooks/useCountdown';
 import { useAuthStore } from '@/lib/stores/authStore';
 import type { User } from '@/lib/types/api';
 import { TravelMatchStatus, UserRole } from '@/lib/types/api';
+import {
+  generateClientReceipt,
+  downloadPDF,
+} from '@/lib/utils/pdfGenerator';
 
 /**
  * Match detail page with conditional UI based on match status
@@ -72,6 +74,23 @@ export default function MatchDetailPage() {
     useState(false);
 
   const { user } = useAuthStore();
+
+  const handleDownload = () => {
+    if (!match?.trip) return;
+    const tripWithMatch = {
+      ...match.trip,
+      charter: (match.trip.charter ?? match.charter) as { id: string; name: string; email: string; avatar?: string } | undefined,
+      travelMatch: {
+        id: match.id,
+        pickupAddress: match.pickupAddress,
+        destinationAddress: match.destinationAddress,
+        estimatedCredits: match.estimatedCredits ?? 0,
+        distanceKm: match.distanceKm,
+      },
+    };
+    const doc = generateClientReceipt(tripWithMatch);
+    downloadPDF(doc, `comprobante-${match.trip.id}.pdf`);
+  };
   const { data: match, isLoading, refetch: refetchMatch } = useMatch(matchId);
   const createTripMutation = useCreateTripFromMatch();
   const clientConfirmCompletionMutation = useClientConfirmCompletion();
@@ -94,23 +113,12 @@ export default function MatchDetailPage() {
   // Countdown hook para mostrar tiempo restante al esperar respuesta del charter
   const countdown = useCountdown(match?.expiresAt || null);
 
-  console.log('🔍 [FEEDBACK] Debug info:', {
-    canGiveFeedback,
-    tripId: match?.tripId,
-    tripStatus: match?.trip?.status,
-    charterId: match?.charterId,
-    charterName: match?.charter?.name,
-  });
-
   // Determine if current user is the charter or the client
   const isCharter = user?.id === match?.charterId;
   const isClient = user?.id === match?.userId;
 
   // Listen to WebSocket match updates (charter accepts/rejects)
-  useMatchUpdateListener(matchId, (newStatus) => {
-    console.log(
-      `📬 [CLIENT PAGE] Match status updated via WebSocket: ${newStatus}`
-    );
+  useMatchUpdateListener(matchId, (_newStatus) => {
     // React Query will auto-refetch via WebSocket invalidation
   });
 
@@ -167,8 +175,6 @@ export default function MatchDetailPage() {
   // Auto-redirect to chat when match is accepted with conversationId
   useEffect(() => {
     if (match?.status === TravelMatchStatus.ACCEPTED && match?.conversationId) {
-      console.log(`✅ [CLIENT PAGE] Match accepted, redirecting to chat`);
-
       // Fix: Solo mostrar toast una vez para evitar duplicados
       if (!hasShownAcceptToast.current) {
         toast.success('¡Chófer aceptó tu solicitud!');
@@ -800,6 +806,9 @@ export default function MatchDetailPage() {
 
     const statusInfo = getStatusInfo();
 
+    // biome-ignore lint/suspicious/noConsole: diagnóstico temporal — remover cuando se confirme estructura del backend
+    console.log('[DEBUG] match.charter:', JSON.stringify(match.charter, null, 2));
+
     return (
       <>
         {/* Mobile Header */}
@@ -887,6 +896,34 @@ export default function MatchDetailPage() {
                     : undefined,
                 }}
                 status={statusInfo}
+                metadata={
+                  match.charter?.charterAvailability?.vehicle
+                    ? [
+                        {
+                          icon: <LocalShipping sx={{ fontSize: 16 }} />,
+                          label: 'Vehículo',
+                          value:
+                            [
+                              match.charter.charterAvailability.vehicle.brand,
+                              match.charter.charterAvailability.vehicle.model,
+                            ]
+                              .filter(Boolean)
+                              .join(' ') || 'Sin datos',
+                        },
+                        ...(match.charter.charterAvailability.vehicle.plate
+                          ? [
+                              {
+                                icon: <CreditCard sx={{ fontSize: 16 }} />,
+                                label: 'Patente',
+                                value:
+                                  match.charter.charterAvailability.vehicle
+                                    .plate,
+                              },
+                            ]
+                          : []),
+                      ]
+                    : undefined
+                }
               />
 
               {/* Trip Metrics Card */}
@@ -1148,55 +1185,79 @@ export default function MatchDetailPage() {
                 {/* Estado 4: Viaje completado por AMBOS */}
                 {match.tripId && match.trip?.status === 'completed' && (
                   <>
-                    <Alert
-                      severity='success'
-                      sx={{ mb: 1.5 }}
-                    >
-                      <Typography
-                        variant='body2'
-                        sx={{ fontWeight: 600, mb: 0.5 }}
-                      >
+                    <Box sx={{ textAlign: 'center', py: 1.5 }}>
+                      <CheckCircle
+                        sx={{ fontSize: 52, color: 'success.main', mb: 1 }}
+                      />
+                      <Typography variant='h6' fontWeight={700}>
                         Viaje Completado
                       </Typography>
-                      <Typography variant='caption'>
-                        Los créditos han sido transferidos exitosamente.
+                      <Typography variant='caption' color='text.secondary'>
+                        Créditos transferidos exitosamente
                       </Typography>
-                    </Alert>
 
-                    {/* Receipt Download Button - PRIMERO para destacar */}
-                    {match.trip && match.trip.travelMatch && (
-                      <ReceiptButton
-                        trip={match.trip}
-                        type='client'
-                      />
-                    )}
+                      <Stack
+                        direction='row'
+                        justifyContent='center'
+                        spacing={5}
+                        sx={{ mt: 2.5 }}
+                      >
+                        <Box sx={{ textAlign: 'center' }}>
+                          <IconButton
+                            onClick={handleDownload}
+                            sx={{
+                              bgcolor: 'action.hover',
+                              width: 54,
+                              height: 54,
+                            }}
+                          >
+                            <Download />
+                          </IconButton>
+                          <Typography
+                            variant='caption'
+                            display='block'
+                            sx={{ mt: 0.5 }}
+                          >
+                            Comprobante
+                          </Typography>
+                        </Box>
 
-                    {/* Show rating button ONLY if can give feedback */}
+                        <Box sx={{ textAlign: 'center' }}>
+                          <IconButton
+                            onClick={() => setReportModalOpen(true)}
+                            sx={{
+                              bgcolor: 'action.hover',
+                              width: 54,
+                              height: 54,
+                            }}
+                          >
+                            <ReportProblem sx={{ color: 'error.main' }} />
+                          </IconButton>
+                          <Typography
+                            variant='caption'
+                            display='block'
+                            sx={{ mt: 0.5 }}
+                          >
+                            Reportar
+                          </Typography>
+                        </Box>
+                      </Stack>
+                    </Box>
+
+                    {/* Calificación */}
                     {canGiveFeedback ? (
                       <Button
                         variant='contained'
                         color='primary'
                         fullWidth
-                        onClick={() => {
-                          console.log(
-                            '🎯 [FEEDBACK] Button clicked, opening modal'
-                          );
-                          console.log('📊 [FEEDBACK] Before:', {
-                            feedbackModalOpen,
-                          });
-                          setFeedbackModalOpen(true);
-                          console.log('📊 [FEEDBACK] After setState called');
-                        }}
-                        size='large'
+                        startIcon={<Star />}
+                        onClick={() => setFeedbackModalOpen(true)}
                         sx={{ minHeight: 48 }}
                       >
-                        ⭐ Dar Calificación
+                        Dar Calificación
                       </Button>
                     ) : (
-                      <Alert
-                        severity='success'
-                        sx={{ mb: 1 }}
-                      >
+                      <Alert severity='success' sx={{ mb: 1 }}>
                         <Typography variant='caption'>
                           Gracias por tu calificación.
                         </Typography>
@@ -1210,12 +1271,6 @@ export default function MatchDetailPage() {
         </MobileContainer>
 
         {/* Feedback Modal */}
-        {console.log('🎨 [FEEDBACK] Rendering modal with:', {
-          open: feedbackModalOpen,
-          tripId: match.tripId,
-          toUserId: match.charterId,
-          recipientName: match.charter?.name,
-        })}
         <FeedbackModal
           open={feedbackModalOpen}
           onClose={() => setFeedbackModalOpen(false)}

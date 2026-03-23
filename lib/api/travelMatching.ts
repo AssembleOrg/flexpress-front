@@ -41,18 +41,11 @@ export const travelMatchingApi = {
    * Create a new travel match (user searches for charters)
    */
   create: async (data: CreateMatchRequest): Promise<CreateMatchResponse> => {
-    console.log('🔍 [MATCHING] Creating match request');
-    console.log('📍 Base URL:', api.defaults.baseURL);
-    console.log('📍 Endpoint:', '/travel-matching/matches');
-    console.log('📦 Request data:', data);
-
     try {
       const response = await api.post<ApiResponse<CreateMatchResponse>>(
         '/travel-matching/matches',
         data
       );
-      console.log('[MATCHING] Match created successfully');
-      console.log('Response:', response.data.data);
 
       // biome-ignore lint/style/noNonNullAssertion: axios response guarantees data
       const responseData = response.data.data!;
@@ -66,9 +59,6 @@ export const travelMatchingApi = {
         'message' in responseData &&
         'data' in responseData
       ) {
-        console.log(
-          '🔍 [MATCHING] Detected double-wrapped response, extracting inner data'
-        );
         // biome-ignore lint/style/noNonNullAssertion: structure validated above
         return (
           responseData as unknown as {
@@ -77,10 +67,6 @@ export const travelMatchingApi = {
         ).data!;
       }
 
-      // Si no tiene esos campos, asumir que es directamente CreateMatchResponse
-      console.log(
-        '✅ [MATCHING] Response structure is directly CreateMatchResponse'
-      );
       return responseData as CreateMatchResponse;
     } catch (error) {
       console.error('❌ [MATCHING] Create match failed');
@@ -155,14 +141,10 @@ export const travelMatchingApi = {
    * Get all matches for current user
    */
   getUserMatches: async (): Promise<TravelMatch[]> => {
-    console.log('🔍 [MATCHING] Fetching user matches');
     try {
       const response = await api.get<ApiResponse<TravelMatch[]>>(
         '/travel-matching/matches'
       );
-
-      console.log('🔍 [DEBUG] response.data:', response.data);
-      console.log('🔍 [DEBUG] response.data.data:', response.data.data);
 
       // Manejar doble wrapper del backend
       const responseData = response.data.data;
@@ -175,27 +157,15 @@ export const travelMatchingApi = {
       ) {
         const matches = (responseData as { data: TravelMatch[] }).data;
         if (Array.isArray(matches)) {
-          console.log(
-            '✅ [MATCHING] User matches fetched (doble wrapper):',
-            matches.length
-          );
           return matches;
         }
       }
 
       // Si es array directo (fallback)
       if (Array.isArray(responseData)) {
-        console.log(
-          '✅ [MATCHING] User matches fetched (directo):',
-          responseData.length
-        );
         return responseData;
       }
 
-      // Si no hay matches, retornar array vacío
-      console.warn(
-        '⚠️ [MATCHING] Response estructura inesperada, retornando []'
-      );
       return [];
     } catch (error) {
       console.error('❌ [MATCHING] Get user matches failed', error);
@@ -207,14 +177,10 @@ export const travelMatchingApi = {
    * Get all match requests for current charter
    */
   getCharterMatches: async (): Promise<TravelMatch[]> => {
-    console.log('📊 [MATCHING] Fetching charter matches');
     try {
       const response = await api.get<
         ApiResponse<{ success: boolean; data: TravelMatch[] } | TravelMatch[]>
       >('/travel-matching/charter/matches');
-
-      console.log('🔍 [DEBUG] response.data:', response.data);
-      console.log('🔍 [DEBUG] response.data.data:', response.data.data);
 
       // Manejar doble wrapper del backend
       const responseData = response.data.data;
@@ -227,27 +193,15 @@ export const travelMatchingApi = {
       ) {
         const matches = responseData.data;
         if (Array.isArray(matches)) {
-          console.log(
-            '✅ [MATCHING] Charter matches fetched (doble wrapper):',
-            matches.length
-          );
           return matches;
         }
       }
 
       // Si es array directo (fallback)
       if (Array.isArray(responseData)) {
-        console.log(
-          '✅ [MATCHING] Charter matches fetched (directo):',
-          responseData.length
-        );
         return responseData;
       }
 
-      // Si no hay matches, retornar array vacío
-      console.warn(
-        '⚠️ [MATCHING] Response estructura inesperada, retornando []'
-      );
       return [];
     } catch (error) {
       console.error('❌ [MATCHING] Get charter matches failed', error);
@@ -265,10 +219,6 @@ export const travelMatchingApi = {
     matchId: string,
     accept: boolean
   ): Promise<TravelMatch> => {
-    console.log(
-      `📝 [RESPOND] Charter responding to match: ${matchId}, accept=${accept}`
-    );
-
     const response = await api.put<ApiResponse<TravelMatch>>(
       `/travel-matching/charter/matches/${matchId}/respond`,
       { accept } // Send as JSON body, not as query param
@@ -283,7 +233,6 @@ export const travelMatchingApi = {
       throw new Error('Backend devolvió estructura de respuesta inválida');
     }
 
-    console.log(`✅ [RESPOND] Response successful for match: ${matchId}`);
     return response.data.data;
   },
 
@@ -295,14 +244,9 @@ export const travelMatchingApi = {
    * { data: { success: true, data: { ...match... } } }
    */
   getMatch: async (matchId: string): Promise<TravelMatch> => {
-    console.log(`🔍 [MATCHING] Fetching match detail: ${matchId}`);
-
     const response = await api.get<
       ApiResponse<{ success: boolean; data: TravelMatch } | TravelMatch>
     >(`/travel-matching/matches/${matchId}`);
-
-    console.log('🔍 [DEBUG] response.data:', response.data);
-    console.log('🔍 [DEBUG] response.data.data:', response.data.data);
 
     // Manejar doble wrapper del backend
     const responseData = response.data.data;
@@ -313,16 +257,10 @@ export const travelMatchingApi = {
       typeof responseData === 'object' &&
       'data' in responseData
     ) {
-      const match = (responseData as { data: TravelMatch }).data;
-      console.log(
-        `✅ [MATCHING] Match detail fetched (doble wrapper): ${matchId}`
-      );
-      return match;
+      return (responseData as { data: TravelMatch }).data;
     }
 
-    // Si es objeto directo (fallback)
     if (responseData && typeof responseData === 'object') {
-      console.log(`✅ [MATCHING] Match detail fetched (directo): ${matchId}`);
       return responseData as TravelMatch;
     }
 
@@ -339,12 +277,10 @@ export const travelMatchingApi = {
    * PUT /travel-matching/matches/:matchId/cancel
    */
   cancelMatch: async (matchId: string): Promise<TravelMatch> => {
-    console.log(`🚫 [MATCHING] Cancelling match: ${matchId}`);
     const response = await api.put<ApiResponse<TravelMatch>>(
       `/travel-matching/matches/${matchId}/cancel`,
       {}
     );
-    console.log(`✅ [MATCHING] Match cancelled: ${matchId}`);
     // biome-ignore lint/style/noNonNullAssertion: axios response guarantees data
     return response.data.data!;
   },

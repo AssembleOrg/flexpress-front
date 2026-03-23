@@ -114,7 +114,7 @@ export function ForWho() {
                   left: 0,
                   right: 0,
                   bottom: 0,
-                  backgroundImage: "url('/client.png')",
+                  backgroundImage: "url('/ImagenPortada.webp')",
                   backgroundSize: "cover",
                   backgroundPosition: "center",
                   backgroundRepeat: "no-repeat",

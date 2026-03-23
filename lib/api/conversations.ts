@@ -19,8 +19,6 @@ export const conversationApi = {
    * Returns the created conversation or existing one if already created.
    */
   createFromMatch: async (matchId: string): Promise<Conversation> => {
-    console.log("📝 [CONVERSATIONS] Creating conversation for match:", matchId);
-
     try {
       const response = await api.post<ApiResponse<Conversation>>(
         `/conversations/match/${matchId}`,
@@ -38,11 +36,6 @@ export const conversationApi = {
         );
       }
 
-      console.log(
-        "✅ [CONVERSATIONS] Conversation created/retrieved:",
-        response.data.data.id,
-      );
-
       return response.data.data;
     } catch (error) {
       console.error("❌ [CONVERSATIONS] Failed to create conversation:", error);
@@ -55,8 +48,6 @@ export const conversationApi = {
    * GET /conversations/:conversationId/messages
    */
   getMessages: async (conversationId: string): Promise<Message[]> => {
-    console.log("🔍 [CONVERSATIONS] Fetching messages for:", conversationId);
-
     try {
       const response = await api.get<ApiResponse<Message[]>>(
         `/conversations/${conversationId}/messages`,
@@ -71,12 +62,10 @@ export const conversationApi = {
           "data" in response.data.data &&
           Array.isArray((response.data.data as { data: Message[] }).data)
         ) {
-          console.log("📦 [DEBUG] Doble wrapper detectado - unwrapping...");
           messagesArray = (response.data.data as { data: Message[] }).data;
         }
         // Caso 2: Wrapper simple { success, data: [...] }
         else if (Array.isArray(response.data.data)) {
-          console.log("📦 [DEBUG] Wrapper simple detectado");
           messagesArray = response.data.data;
         }
         // Caso 3: Estructura inválida
@@ -95,8 +84,6 @@ export const conversationApi = {
         return [];
       }
 
-      console.log("✅ [CONVERSATIONS] Messages fetched:", messagesArray.length);
-
       return messagesArray;
     } catch (error) {
       console.error("❌ [CONVERSATIONS] Failed to fetch messages:", error);
@@ -112,9 +99,6 @@ export const conversationApi = {
     conversationId: string,
     content: string,
   ): Promise<Message> => {
-    console.log("💬 [CONVERSATIONS] Sending message to:", conversationId);
-    console.log("📝 Content:", content);
-
     try {
       const response = await api.post<ApiResponse<Message>>(
         `/conversations/${conversationId}/messages`,
@@ -146,9 +130,6 @@ export const conversationApi = {
           "Backend no devolvió el mensaje creado con estructura válida",
         );
       }
-
-      console.log("✅ [CONVERSATIONS] Message sent successfully");
-      console.log("📊 Message ID:", message.id);
 
       return message;
     } catch (error) {

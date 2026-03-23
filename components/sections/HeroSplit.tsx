@@ -41,9 +41,9 @@ export function HeroSplit() {
         backgroundColor: "#380116",
         color: "white",
         textAlign: "left",
-        backgroundImage: "url(/logo/flexpress-logo-blanco.svg)",
+        backgroundImage: "url(/banner-flexpress.png)",
         backgroundPosition: "right center",
-        backgroundSize: "contain",
+        backgroundSize: "cover",
         backgroundRepeat: "no-repeat",
         position: "relative",
         "&::before": {
@@ -459,15 +459,30 @@ export function HeroSplit() {
                 height: "70vh",
                 width: "100%",
                 maxHeight: "600px",
+                overflow: "hidden",
               }}
             >
               <Image
-                src="/logo/flexpress-logo-blanco.svg"
-                alt="Flexpress Logo"
+                src="/banner-flexpress.png"
+                alt="Flexpress Banner"
                 fill
                 priority
                 style={{
                   objectFit: "contain",
+                  objectPosition: "right center",
+                }}
+              />
+              {/* Fade overlay: derecha a izquierda */}
+              <Box
+                sx={{
+                  position: "absolute",
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  background:
+                    "linear-gradient(to right, #380116 0%, transparent 40%)",
+                  zIndex: 1,
                 }}
               />
             </Box>

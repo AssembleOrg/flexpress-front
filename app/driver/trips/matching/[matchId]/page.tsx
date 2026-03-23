@@ -3,7 +3,10 @@
 import {
   ArrowBack,
   CheckCircle,
+  CreditCard,
+  Download,
   Flag,
+  LocalShipping,
   LocationOn,
   Map,
   ReportProblem,
@@ -17,6 +20,7 @@ import {
   CircularProgress,
   Container,
   Grid,
+  IconButton,
   Stack,
   Typography,
 } from "@mui/material";
@@ -29,7 +33,6 @@ import { MobileContainer } from "@/components/layout/MobileContainer";
 import { MobileHeader } from "@/components/layout/MobileHeader";
 import { FinalizeTripModal } from "@/components/modals/FinalizeTripModal";
 import { ReportModal } from "@/components/modals/ReportModal";
-import { ReceiptButton } from "@/components/trip/ReceiptButton";
 import { TripDetailsCard } from "@/components/trip/TripDetailsCard";
 import { TripMetricsCard } from "@/components/trip/TripMetricsCard";
 import LeafletMap, {
@@ -44,6 +47,10 @@ import { useTrip } from "@/lib/hooks/queries/useTripQueries";
 import { useMyVehicles } from "@/lib/hooks/queries/useVehicleQueries";
 import { useAuthStore } from "@/lib/stores/authStore";
 import type { User, UserRole } from "@/lib/types/api";
+import {
+  generateCharterReceipt,
+  downloadPDF,
+} from "@/lib/utils/pdfGenerator";
 
 export default function DriverMatchingDetailPage() {
   const params = useParams();
@@ -58,10 +65,17 @@ export default function DriverMatchingDetailPage() {
   const charterCompleteTripMutation = useCharterCompleteTrip();
   const toggleAvailabilityMutation = useToggleAvailability();
   const { data: myVehicles = [] } = useMyVehicles();
+  const activeVehicle = myVehicles.find((v) => v.isEnabled) ?? myVehicles[0];
   const [finalizeTripModalOpen, setFinalizeTripModalOpen] = useState(false);
   const [availabilityConfirmed, setAvailabilityConfirmed] = useState(false);
   const [reportModalOpen, setReportModalOpen] = useState(false);
   const mapRef = useRef<LeafletMapHandle>(null);
+
+  const handleDownload = () => {
+    if (!trip) return;
+    const doc = generateCharterReceipt(trip);
+    downloadPDF(doc, `comprobante-${trip.id}.pdf`);
+  };
 
   // Polling eliminado - useMatch ya tiene refetchInterval de 15s
   // WebSocket maneja updates en tiempo real
@@ -369,38 +383,70 @@ export default function DriverMatchingDetailPage() {
               {/* Estado 4: Viaje completado por AMBOS */}
               {tripId && trip?.status === "completed" && (
                 <>
-                  <Alert severity="success" sx={{ mb: 1.5 }}>
-                    <Typography
-                      variant="body2"
-                      sx={{ fontWeight: 600, mb: 0.5 }}
-                    >
+                  <Box sx={{ textAlign: "center", py: 1.5 }}>
+                    <CheckCircle
+                      sx={{ fontSize: 52, color: "success.main", mb: 1 }}
+                    />
+                    <Typography variant="h6" fontWeight={700}>
                       Viaje Completado
                     </Typography>
-                    <Typography variant="caption">
-                      Créditos transferidos exitosamente.
+                    <Typography variant="caption" color="text.secondary">
+                      Créditos transferidos exitosamente
                     </Typography>
-                  </Alert>
 
-                  {/* Receipt Download Button - PRIMERO para destacar */}
-                  {trip && <ReceiptButton trip={trip} type="charter" />}
+                    <Stack
+                      direction="row"
+                      justifyContent="center"
+                      spacing={5}
+                      sx={{ mt: 2.5 }}
+                    >
+                      <Box sx={{ textAlign: "center" }}>
+                        <IconButton
+                          onClick={handleDownload}
+                          sx={{
+                            bgcolor: "action.hover",
+                            width: 54,
+                            height: 54,
+                          }}
+                        >
+                          <Download />
+                        </IconButton>
+                        <Typography
+                          variant="caption"
+                          display="block"
+                          sx={{ mt: 0.5 }}
+                        >
+                          Comprobante
+                        </Typography>
+                      </Box>
 
-                  <Button
-                    variant="outlined"
-                    color="error"
-                    fullWidth
-                    size="small"
-                    startIcon={<ReportProblem sx={{ fontSize: 18 }} />}
-                    onClick={() => setReportModalOpen(true)}
-                    sx={{ minHeight: 40, fontSize: "0.8rem", mt: 0.5 }}
-                  >
-                    Reportar Problema
-                  </Button>
+                      <Box sx={{ textAlign: "center" }}>
+                        <IconButton
+                          onClick={() => setReportModalOpen(true)}
+                          sx={{
+                            bgcolor: "action.hover",
+                            width: 54,
+                            height: 54,
+                          }}
+                        >
+                          <ReportProblem sx={{ color: "error.main" }} />
+                        </IconButton>
+                        <Typography
+                          variant="caption"
+                          display="block"
+                          sx={{ mt: 0.5 }}
+                        >
+                          Reportar
+                        </Typography>
+                      </Box>
+                    </Stack>
+                  </Box>
 
                   <Button
                     variant="outlined"
                     onClick={() => router.push("/driver/dashboard")}
                     fullWidth
-                    sx={{ minHeight: 48, mt: 1.5 }}
+                    sx={{ minHeight: 48, mt: 1 }}
                   >
                     Volver al Dashboard
                   </Button>
@@ -432,6 +478,29 @@ export default function DriverMatchingDetailPage() {
                 role: "Cliente",
               }}
               status={statusInfo}
+              metadata={
+                activeVehicle
+                  ? [
+                      {
+                        icon: <LocalShipping sx={{ fontSize: 16 }} />,
+                        label: "Vehículo",
+                        value:
+                          [activeVehicle.brand, activeVehicle.model]
+                            .filter(Boolean)
+                            .join(" ") || "Sin datos",
+                      },
+                      ...(activeVehicle.plate
+                        ? [
+                            {
+                              icon: <CreditCard sx={{ fontSize: 16 }} />,
+                              label: "Patente",
+                              value: activeVehicle.plate,
+                            },
+                          ]
+                        : []),
+                    ]
+                  : undefined
+              }
             />
 
             {/* Trip Map Card */}
