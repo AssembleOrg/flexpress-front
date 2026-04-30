@@ -80,6 +80,14 @@ export const queryKeys = {
     my: () => [...queryKeys.payments.all, "my"] as const,
   },
 
+  // Notifications
+  notifications: {
+    all: ["notifications"] as const,
+    unreadCount: () => ["notifications", "unread-count"] as const,
+    list: (params?: { onlyUnread?: boolean }) =>
+      ["notifications", "list", params] as const,
+  },
+
   // Charter
   charter: {
     all: ['charter'] as const,

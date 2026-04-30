@@ -54,6 +54,8 @@ import {
   useCharterMatches,
 } from "@/lib/hooks/queries/useTravelMatchQueries";
 import { useMyVehicles } from "@/lib/hooks/queries/useVehicleQueries";
+import { useUserFeedback } from "@/lib/hooks/queries/useFeedbackQueries";
+import { RatingDisplay } from "@/components/ui/RatingDisplay";
 import { useAuthStore } from "@/lib/stores/authStore";
 import { type TravelMatch, VerificationStatus } from "@/lib/types/api";
 import { isMatchExpired } from "@/lib/utils/matchHelpers";
@@ -266,6 +268,7 @@ export default function DriverDashboard() {
   };
 
   const { data: myVehicles = [] } = useMyVehicles();
+  const { data: myFeedback } = useUserFeedback(user?.id || "");
 
   // Derive active vehicle from server availability state
   const activeVehicle = myVehicles.find((v) => v.id === activeVehicleId);
@@ -689,6 +692,37 @@ export default function DriverDashboard() {
                 </Button>
               </Stack>
             )}
+          </CardContent>
+        </MotionCard>
+
+        {/* Reputación */}
+        <MotionCard
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.175 }}
+          sx={{ mb: 3 }}
+        >
+          <CardContent sx={{ p: 2.5 }}>
+            <Stack direction="row" alignItems="center" justifyContent="space-between">
+              <Box>
+                <Typography variant="subtitle2" fontWeight={700} mb={0.5}>
+                  Tu reputación
+                </Typography>
+                <RatingDisplay
+                  averageRating={myFeedback?.averageRating ?? 0}
+                  totalReviews={myFeedback?.totalCount ?? 0}
+                  size="medium"
+                />
+              </Box>
+              <Button
+                size="small"
+                variant="text"
+                onClick={() => router.push("/driver/trips/history")}
+                sx={{ color: "text.secondary", fontSize: "0.75rem", textTransform: "none" }}
+              >
+                Ver historial →
+              </Button>
+            </Stack>
           </CardContent>
         </MotionCard>
 

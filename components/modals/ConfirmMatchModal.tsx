@@ -54,13 +54,11 @@ export function ConfirmMatchModal({
   isLoading = false,
   userCredits = 0,
 }: ConfirmMatchModalProps) {
-  // Defensiva: si no hay datos necesarios, no renderizar
+  const { data: charterRating } = useUserFeedback(selectedCharter?.charterId ?? "");
+
   if (!match || !selectedCharter) {
     return null;
   }
-
-  // Fetch charter rating
-  const { data: charterRating } = useUserFeedback(selectedCharter.charterId);
 
   // Validación de créditos: solicitar un charter cuesta 1 crédito fijo
   const MATCH_COST = 1;

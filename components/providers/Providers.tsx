@@ -1,12 +1,15 @@
 "use client";
 
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { useEffect } from "react";
+import { QueryClient, QueryClientProvider, useQueryClient } from "@tanstack/react-query";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import { APIProvider } from "@vis.gl/react-google-maps";
-import { useEffect } from "react";
 import { Toaster } from "react-hot-toast";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
-import { socketService } from "@/lib/socket";
+import { useWebSocket } from "@/lib/hooks/useWebSocket";
+import { usePushPermission } from "@/lib/hooks/usePushPermission";
+import { queryKeys } from "@/lib/hooks/queries/queryFactory";
+import { useAuthStore } from "@/lib/stores/authStore";
 import { StoreHydration } from "./StoreHydration";
 import { ThemeProvider } from "./ThemeProvider";
 
@@ -30,14 +33,30 @@ const queryClient = new QueryClient({
 });
 
 /**
- * Initialize socket service with queryClient on mount
- * This ensures WebSocket events can invalidate React Query cache
+ * Mantiene la conexión WebSocket activa globalmente mientras el usuario esté logueado.
+ * Conecta al namespace /conversations (el único gateway del backend).
+ * Al vivir aquí, el socket está disponible en todas las páginas — no solo en el chat.
  */
-function SocketInitializer() {
-  useEffect(() => {
-    socketService.init(queryClient);
-  }, []);
+function WebSocketInitializer() {
+  useWebSocket();
+  const queryClient = useQueryClient();
 
+  useEffect(() => {
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        queryClient.invalidateQueries({ queryKey: queryKeys.notifications.all });
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
+    return () => document.removeEventListener('visibilitychange', handleVisibility);
+  }, [queryClient]);
+
+  return null;
+}
+
+function PushInitializer() {
+  const { isAuthenticated } = useAuthStore();
+  usePushPermission(isAuthenticated);
   return null;
 }
 
@@ -53,7 +72,8 @@ export function Providers({ children }: ProvidersProps) {
   return (
     <APIProvider apiKey={googleApiKey}>
       <QueryClientProvider client={queryClient}>
-        <SocketInitializer />
+        <WebSocketInitializer />
+        <PushInitializer />
         <ThemeProvider>
           <StoreHydration>
             <ErrorBoundary>

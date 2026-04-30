@@ -86,7 +86,7 @@ export default function ClientTripHistory() {
 
   const handleOpenFeedback = (trip: Trip) => {
     // toUserId is the charter (for a client giving feedback)
-    const charterId = trip.charterId || "";
+    const charterId = trip.charter?.id || trip.charterId || "";
     const charterName = trip.charter?.name || "el charter";
 
     setFeedbackModal({
@@ -258,8 +258,9 @@ function TripHistoryCard({
   trip: Trip;
   onOpenFeedback: (trip: Trip) => void;
 }) {
+  const charterId = trip.charter?.id || trip.charterId || "";
   const { data: canGive } = useCanGiveFeedback(trip.id);
-  const { data: recipientFeedback } = useUserFeedback(trip.charterId || "");
+  const { data: recipientFeedback } = useUserFeedback(charterId);
 
   const charterAverageRating = recipientFeedback?.averageRating || 0;
   const charterTotalReviews = recipientFeedback?.totalCount || 0;

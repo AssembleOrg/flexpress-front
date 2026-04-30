@@ -3,6 +3,7 @@
 import { useQueryClient } from '@tanstack/react-query';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { io, type Socket } from 'socket.io-client';
+import toast from 'react-hot-toast';
 import { useAuthStore } from '@/lib/stores/authStore';
 import { queryKeys } from '@/lib/hooks/queries/queryFactory';
 import { conversationKeys } from '@/lib/hooks/queries/useConversationQueries';
@@ -14,32 +15,51 @@ interface UseWebSocketReturn {
   isConnecting: boolean;
 }
 
+// Singleton a nivel de módulo — una sola conexión para toda la app.
+// Esto evita que cada componente que llame useWebSocket() cree su propio socket.
+let globalSocket: Socket | null = null;
+
+// Cuántas instancias del hook están montadas actualmente.
+// Solo cuando llega a 0 se desconecta el socket.
+let mountCount = 0;
+
+// Permite que hooks externos (ej: useConversationMessages) consulten el estado
+// del socket sin suscribirse al ciclo de vida de React.
+export function getSocketConnected(): boolean {
+  return globalSocket?.connected ?? false;
+}
+
 /**
- * Hook para manejar la conexión WebSocket a /conversations
- * Conecta automáticamente cuando el usuario está autenticado
- * Desconecta al desmontar o cuando el usuario se desautentica
+ * Hook para manejar la conexión WebSocket a /conversations.
+ * Usa un singleton de módulo para garantizar una sola conexión activa.
+ * Se inicializa en Providers.tsx para que el socket esté disponible en toda la app.
  */
 export function useWebSocket(): UseWebSocketReturn {
-  const socketRef = useRef<Socket | null>(null);
-  const [isConnected, setIsConnected] = useState(false);
+  const socketRef = useRef<Socket | null>(globalSocket);
+  const [isConnected, setIsConnected] = useState(globalSocket?.connected ?? false);
   const [isConnecting, setIsConnecting] = useState(false);
   const { token } = useAuthStore();
   const queryClient = useQueryClient();
 
   useEffect(() => {
+    mountCount++;
+
     // No conectar si no hay token
     if (!token) {
-      if (socketRef.current) {
-        socketRef.current.disconnect();
+      if (globalSocket) {
+        globalSocket.disconnect();
+        globalSocket = null;
         socketRef.current = null;
       }
       setIsConnected(false);
-      return;
+      return () => { mountCount--; };
     }
 
-    // Evitar múltiples conexiones
-    if (socketRef.current?.connected) {
-      return;
+    // Evitar múltiples conexiones — si el singleton ya está conectado, reutilizarlo
+    if (globalSocket?.connected) {
+      socketRef.current = globalSocket;
+      setIsConnected(true);
+      return () => { mountCount--; };
     }
 
     setIsConnecting(true);
@@ -187,6 +207,23 @@ export function useWebSocket(): UseWebSocketReturn {
     );
 
     /**
+     * Evento: notification:new
+     * Recibido cuando el backend crea una notificación para este usuario.
+     * Invalida el cache de React Query para actualizar el badge inmediatamente.
+     */
+    socket.on('notification:new', (data: { priority?: string; type?: string }) => {
+      console.log('🔔 [WebSocket] Nueva notificación recibida:', data);
+      queryClient.invalidateQueries({ queryKey: queryKeys.notifications.unreadCount() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.notifications.list() });
+      if (data?.priority === 'HIGH') {
+        toast('Tenés una nueva notificación', {
+          duration: 3000,
+          style: { background: '#380116', color: '#FFFFFF', fontFamily: 'var(--font-lato), sans-serif' },
+        });
+      }
+    });
+
+    /**
      * Evento: trip:completed
      * Recibido cuando el charter finaliza el viaje
      */
@@ -218,15 +255,21 @@ export function useWebSocket(): UseWebSocketReturn {
       }
     );
 
+    // Guardar en singleton de módulo Y en la ref local
+    globalSocket = socket;
     socketRef.current = socket;
 
-    // Cleanup: desconectar al desmontar o cuando cambie el token
+    // Cleanup: desconectar solo cuando no queda ninguna instancia montada
     return () => {
-      console.log('🔌 [WebSocket] Limpieza de conexión');
-      if (socketRef.current) {
-        socketRef.current.disconnect();
-        socketRef.current = null;
+      mountCount--;
+      console.log('🔌 [WebSocket] Instancia desmontada, quedan:', mountCount);
+      if (mountCount <= 0) {
+        console.log('🔌 [WebSocket] Última instancia — desconectando');
+        globalSocket?.disconnect();
+        globalSocket = null;
+        mountCount = 0;
       }
+      socketRef.current = null;
       setIsConnected(false);
     };
   }, [token, queryClient]);

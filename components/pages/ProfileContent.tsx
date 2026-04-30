@@ -1,6 +1,7 @@
 "use client";
 
 import CancelIcon from "@mui/icons-material/Cancel";
+import CalendarTodayIcon from "@mui/icons-material/CalendarToday";
 import EditIcon from "@mui/icons-material/Edit";
 import EmailIcon from "@mui/icons-material/Email";
 import LocationOnIcon from "@mui/icons-material/LocationOn";
@@ -8,6 +9,7 @@ import PersonIcon from "@mui/icons-material/Person";
 import PhoneIcon from "@mui/icons-material/Phone";
 import SaveIcon from "@mui/icons-material/Save";
 import DirectionsCarIcon from "@mui/icons-material/DirectionsCar";
+import StarIcon from "@mui/icons-material/Star";
 import {
   Avatar,
   Box,
@@ -15,6 +17,7 @@ import {
   Card,
   CardContent,
   Container,
+  Divider,
   Paper,
   TextField,
   Typography,
@@ -159,39 +162,42 @@ export function ProfileContent() {
               transition={{ duration: 0.5 }}
             >
               {/* Header */}
-              <Box
-                mb={4}
-                display="flex"
-                justifyContent="space-between"
-                alignItems="center"
-              >
-                <Box>
-                  <Typography
-                    variant="h2"
-                    pb={3}
-                    sx={{ fontWeight: 700, color: "primary.main" }}
-                  >
-                    Mi Perfil
-                  </Typography>
-                  <Typography variant="body1" color="text.secondary">
-                    Gestiona tu información personal
-                  </Typography>
-                </Box>
-                {!isEditing && (
-                  <motion.div
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                  >
-                    <Button
-                      variant="contained"
-                      color="secondary"
-                      startIcon={<EditIcon />}
-                      onClick={() => setIsEditing(true)}
+              <Box mb={4}>
+                <Box
+                  display="flex"
+                  justifyContent="space-between"
+                  alignItems={{ xs: "flex-start", sm: "center" }}
+                  flexDirection={{ xs: "column", sm: "row" }}
+                  gap={2}
+                >
+                  <Box>
+                    <Typography
+                      variant="h2"
+                      sx={{ fontWeight: 700, color: "primary.main", lineHeight: 1.1 }}
                     >
-                      Editar
-                    </Button>
-                  </motion.div>
-                )}
+                      Mi Perfil
+                    </Typography>
+                    <Typography variant="body1" color="text.secondary" mt={1}>
+                      Gestiona tu información personal
+                    </Typography>
+                  </Box>
+                  {!isEditing && user?.role === "user" && (
+                    <motion.div
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                    >
+                      <Button
+                        variant="contained"
+                        color="secondary"
+                        startIcon={<EditIcon />}
+                        onClick={() => setIsEditing(true)}
+                        sx={{ whiteSpace: "nowrap" }}
+                      >
+                        Editar
+                      </Button>
+                    </motion.div>
+                  )}
+                </Box>
               </Box>
 
               {/* Profile Card */}
@@ -201,25 +207,30 @@ export function ProfileContent() {
               >
                 <Box
                   display="flex"
-                  justifyContent="space-between"
-                  alignItems="flex-start"
+                  flexDirection={{ xs: "column", sm: "row" }}
+                  alignItems={{ xs: "center", sm: "flex-start" }}
+                  gap={{ xs: 2, sm: 3 }}
                   pb={3}
                   borderBottom={1}
                   borderColor="divider"
                 >
-                  <Avatar
-                    src={user?.avatar || undefined}
-                    alt={user?.name}
-                    sx={{
-                      width: 100,
-                      height: 100,
-                      bgcolor: theme.palette.secondary.main,
-                      fontSize: "2rem",
-                    }}
-                  >
-                    {user?.name?.charAt(0).toUpperCase() || "U"}
-                  </Avatar>
-                  <Box>
+                  <Box sx={{ position: "relative", flexShrink: 0 }}>
+                    <Avatar
+                      src={user?.avatar || undefined}
+                      alt={user?.name}
+                      sx={{
+                        width: { xs: 100, md: 120 },
+                        height: { xs: 100, md: 120 },
+                        bgcolor: theme.palette.primary.main,
+                        fontSize: { xs: "2rem", md: "2.5rem" },
+                        border: `3px solid ${theme.palette.secondary.main}`,
+                        boxShadow: `0 0 0 2px ${theme.palette.primary.main}`,
+                      }}
+                    >
+                      {user?.name?.charAt(0).toUpperCase() || "U"}
+                    </Avatar>
+                  </Box>
+                  <Box textAlign={{ xs: "center", sm: "left" }}>
                     <Typography
                       variant="h5"
                       fontWeight={700}
@@ -227,20 +238,21 @@ export function ProfileContent() {
                     >
                       {user?.name}
                     </Typography>
-                    <Typography variant="body2" color="text.secondary">
+                    <Typography variant="body2" color="text.secondary" mt={0.5}>
                       {user?.email}
                     </Typography>
-                    <Box mt={1} display="flex" gap={1}>
+                    <Box mt={1.5} display="flex" gap={1} justifyContent={{ xs: "center", sm: "flex-start" }}>
                       <Box
                         sx={{
                           px: 1.5,
                           py: 0.5,
-                          bgcolor: "primary.light",
+                          bgcolor: "secondary.main",
                           color: "white",
                           borderRadius: 1,
-                          fontSize: "0.875rem",
-                          fontWeight: 600,
+                          fontSize: "0.8rem",
+                          fontWeight: 700,
                           textTransform: "capitalize",
+                          letterSpacing: "0.03em",
                         }}
                       >
                         {user?.role}
@@ -274,8 +286,7 @@ export function ProfileContent() {
                     label="Email"
                     value={formData.email}
                     name="email"
-                    onChange={handleInputChange}
-                    disabled={!isEditing}
+                    disabled
                     fullWidth
                     InputProps={{
                       startAdornment: <EmailIcon sx={{ mr: 1 }} />,
@@ -369,59 +380,58 @@ export function ProfileContent() {
                   </Box>
 
                   {vehicles.length > 0 && (
-                    <Box
-                      sx={{
-                        display: "flex",
-                        flexDirection: "column",
-                        gap: 1,
-                        mb: 2,
-                      }}
-                    >
-                      {vehicles.slice(0, 3).map((vehicle) => (
-                        <Box
-                          key={vehicle.id}
-                          sx={{
-                            p: 2,
-                            bgcolor: "action.hover",
-                            borderRadius: 1,
-                            display: "flex",
-                            justifyContent: "space-between",
-                            alignItems: "center",
-                          }}
-                        >
-                          <Box>
-                            <Typography
-                              variant="body2"
-                              fontWeight={600}
-                              sx={{ fontFamily: "monospace" }}
-                            >
-                              {vehicle.plate}
-                            </Typography>
-                            <Typography variant="caption" color="text.secondary">
-                              {vehicle.brand || "Sin marca"}
-                              {vehicle.model && ` - ${vehicle.model}`}
-                            </Typography>
-                          </Box>
+                    <Box sx={{ mb: 2, borderRadius: 2, overflow: "hidden", border: "1px solid", borderColor: "divider" }}>
+                      {vehicles.slice(0, 3).map((vehicle, index) => (
+                        <Box key={vehicle.id}>
+                          {index > 0 && <Divider />}
                           <Box
                             sx={{
-                              px: 1,
-                              py: 0.5,
-                              bgcolor:
-                                vehicle.verificationStatus === VerificationStatus.VERIFIED
-                                  ? "success.light"
-                                  : vehicle.verificationStatus === VerificationStatus.PENDING
-                                  ? "warning.light"
-                                  : "error.light",
-                              borderRadius: 1,
-                              fontSize: "0.75rem",
-                              fontWeight: 600,
+                              px: 2,
+                              py: 1.5,
+                              display: "flex",
+                              justifyContent: "space-between",
+                              alignItems: "center",
+                              bgcolor: "background.paper",
                             }}
                           >
-                            {vehicle.verificationStatus === VerificationStatus.VERIFIED
-                              ? "Verificado"
-                              : vehicle.verificationStatus === VerificationStatus.PENDING
-                              ? "Pendiente"
-                              : "Rechazado"}
+                            <Box display="flex" alignItems="center" gap={1.5}>
+                              <DirectionsCarIcon sx={{ color: "primary.light", fontSize: "1.2rem" }} />
+                              <Box>
+                                <Typography
+                                  variant="body2"
+                                  fontWeight={700}
+                                  sx={{ fontFamily: "monospace", letterSpacing: "0.05em" }}
+                                >
+                                  {vehicle.plate}
+                                </Typography>
+                                <Typography variant="caption" color="text.secondary">
+                                  {vehicle.brand || "Sin marca"}
+                                  {vehicle.model && ` · ${vehicle.model}`}
+                                </Typography>
+                              </Box>
+                            </Box>
+                            <Box
+                              sx={{
+                                px: 1.5,
+                                py: 0.5,
+                                bgcolor:
+                                  vehicle.verificationStatus === VerificationStatus.VERIFIED
+                                    ? "success.light"
+                                    : vehicle.verificationStatus === VerificationStatus.PENDING
+                                    ? "warning.light"
+                                    : "error.light",
+                                borderRadius: 1,
+                                fontSize: "0.72rem",
+                                fontWeight: 700,
+                                flexShrink: 0,
+                              }}
+                            >
+                              {vehicle.verificationStatus === VerificationStatus.VERIFIED
+                                ? "Verificado"
+                                : vehicle.verificationStatus === VerificationStatus.PENDING
+                                ? "Pendiente"
+                                : "Rechazado"}
+                            </Box>
                           </Box>
                         </Box>
                       ))}
@@ -479,23 +489,24 @@ export function ProfileContent() {
                     <Box
                       sx={{
                         p: 2,
-                        bgcolor: "success.light",
+                        bgcolor: "primary.main",
                         borderRadius: 2,
                         display: "flex",
                         alignItems: "flex-start",
-                        gap: 2,
+                        gap: 1.5,
                         mb: 2,
                       }}
                     >
+                      <LocationOnIcon sx={{ color: "secondary.main", mt: 0.25, flexShrink: 0 }} />
                       <Box>
                         <Typography
-                          sx={{ fontWeight: 600, color: "success.dark" }}
+                          sx={{ fontWeight: 700, color: "secondary.main", fontSize: "0.85rem", textTransform: "uppercase", letterSpacing: "0.05em" }}
                         >
                           Ubicación Actual
                         </Typography>
                         <Typography
                           variant="body2"
-                          sx={{ color: "success.dark", mt: 0.5 }}
+                          sx={{ color: "white", mt: 0.5, lineHeight: 1.4 }}
                         >
                           {user?.originAddress}
                         </Typography>
@@ -538,31 +549,45 @@ export function ProfileContent() {
               {/* Additional Info Cards */}
               <Box
                 display="grid"
-                gridTemplateColumns="repeat(auto-fit, minmax(250px, 1fr))"
+                gridTemplateColumns="repeat(auto-fit, minmax(220px, 1fr))"
                 gap={3}
               >
-                <Card>
-                  <CardContent>
-                    <Typography color="textSecondary" gutterBottom>
-                      Créditos Disponibles
-                    </Typography>
+                <Card
+                  sx={{
+                    background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
+                    color: "white",
+                  }}
+                >
+                  <CardContent sx={{ pb: "16px !important" }}>
+                    <Box display="flex" alignItems="center" gap={1} mb={1}>
+                      <StarIcon sx={{ color: "secondary.main", fontSize: "1.1rem" }} />
+                      <Typography variant="body2" sx={{ color: "rgba(255,255,255,0.7)", fontWeight: 500 }}>
+                        Créditos Disponibles
+                      </Typography>
+                    </Box>
                     <Typography
-                      variant="h5"
+                      variant="h4"
                       sx={{ color: "secondary.main", fontWeight: 700 }}
                     >
-                      {user?.credits || 0} créditos
+                      {user?.credits || 0}
+                    </Typography>
+                    <Typography variant="caption" sx={{ color: "rgba(255,255,255,0.5)" }}>
+                      créditos
                     </Typography>
                   </CardContent>
                 </Card>
                 <Card>
-                  <CardContent>
-                    <Typography color="textSecondary" gutterBottom>
-                      Miembro desde
-                    </Typography>
-                    <Typography variant="h6">
+                  <CardContent sx={{ pb: "16px !important" }}>
+                    <Box display="flex" alignItems="center" gap={1} mb={1}>
+                      <CalendarTodayIcon sx={{ color: "primary.main", fontSize: "1.1rem" }} />
+                      <Typography variant="body2" color="text.secondary" fontWeight={500}>
+                        Miembro desde
+                      </Typography>
+                    </Box>
+                    <Typography variant="h6" fontWeight={700} color="primary.main">
                       {new Date(
                         user?.createdAt || new Date(),
-                      ).toLocaleDateString("es-AR")}
+                      ).toLocaleDateString("es-AR", { year: "numeric", month: "long" })}
                     </Typography>
                   </CardContent>
                 </Card>

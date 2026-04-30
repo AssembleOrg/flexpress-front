@@ -17,6 +17,7 @@ import {
   History,
   Chat,
   Logout,
+  NotificationsNoneRounded,
   Receipt,
   DirectionsCar,
 } from "@mui/icons-material";
@@ -24,23 +25,10 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useAuthStore } from "@/lib/stores/authStore";
 import { useUserMatches, useCharterMatches } from "@/lib/hooks/queries/useTravelMatchQueries";
+import { useUnreadNotificationCount } from "@/lib/hooks/queries/useNotificationQueries";
 import { isActiveTrip } from "@/lib/utils/matchHelpers";
 import { MOBILE_BOTTOM_NAV_HEIGHT, Z_INDEX } from "@/lib/constants/mobileDesign";
 
-/**
- * BottomNavbar Component
- *
- * Navegación inferior móvil tipo Uber/native app.
- *
- * Tabs:
- * - Dashboard (siempre visible)
- * - Chat (condicional - solo si hay match activo con conversación)
- * - Historial (siempre visible)
- * - Perfil (siempre visible - config + soporte + perfil)
- *
- * Auto-detecta role (client vs driver) para rutas correctas.
- * Solo visible en mobile (xs/sm breakpoints).
- */
 export function BottomNavbar() {
   const router = useRouter();
   const pathname = usePathname();
@@ -49,21 +37,16 @@ export function BottomNavbar() {
   const [value, setValue] = useState<string>("dashboard");
   const [logoutDialogOpen, setLogoutDialogOpen] = useState(false);
 
-  // Obtener matches según el role
   const { data: userMatches = [] } = useUserMatches();
   const { data: charterMatches = [] } = useCharterMatches();
+  const { data: unreadData } = useUnreadNotificationCount();
+  const unreadCount = unreadData?.count ?? 0;
 
   const isCharter = user?.role === "charter";
   const matches = isCharter ? charterMatches : userMatches;
 
-  // Determinar match activo con conversación
   const activeMatch = matches.find((match) => {
-    // Client: Use centralized logic
-    if (!isCharter) {
-      return isActiveTrip(match);
-    }
-
-    // Driver: accepted/completed con tripId
+    if (!isCharter) return isActiveTrip(match);
     if (!match.tripId) return false;
     if (match.trip?.status === "completed") return false;
     return (
@@ -72,24 +55,25 @@ export function BottomNavbar() {
     );
   });
 
-  // Sincronizar value con pathname actual
   useEffect(() => {
     if (pathname.includes("/dashboard")) setValue("dashboard");
+    else if (pathname.includes("/notifications")) setValue("notifications");
     else if (pathname.includes("/history")) setValue("history");
     else if (pathname.includes("/payments")) setValue("payments");
     else if (pathname.includes("/matching")) setValue("chat");
     else if (pathname.includes("/vehicles")) setValue("vehicles");
-    // No set value for logout (it's an action, not a page)
   }, [pathname]);
 
   const handleNavigation = (_event: React.SyntheticEvent, newValue: string) => {
     setValue(newValue);
-
     const baseRoute = isCharter ? "/driver" : "/client";
 
     switch (newValue) {
       case "dashboard":
         router.push(`${baseRoute}/dashboard`);
+        break;
+      case "notifications":
+        router.push(`${baseRoute}/notifications`);
         break;
       case "chat":
         if (activeMatch) {
@@ -106,10 +90,7 @@ export function BottomNavbar() {
         router.push("/client/payments");
         break;
       case "logout":
-        // Open confirmation dialog
         setLogoutDialogOpen(true);
-        break;
-      default:
         break;
     }
   };
@@ -120,7 +101,6 @@ export function BottomNavbar() {
     router.push("/login");
   };
 
-  // Ocultar navbar si no está autenticado
   if (!user) return null;
 
   return (
@@ -131,22 +111,41 @@ export function BottomNavbar() {
         left: 0,
         right: 0,
         zIndex: Z_INDEX.bottomNav,
-        display: { xs: "block", md: "none" }, // Solo visible en mobile
+        display: { xs: "block", md: "none" },
       }}
     >
       <BottomNavigation
         value={value}
         onChange={handleNavigation}
         showLabels
-        sx={{
-          height: MOBILE_BOTTOM_NAV_HEIGHT,
-        }}
+        sx={{ height: MOBILE_BOTTOM_NAV_HEIGHT }}
       >
-        {/* Dashboard */}
+        {/* Inicio */}
+        <BottomNavigationAction label="Inicio" value="dashboard" icon={<Home />} />
+
+        {/* Notificaciones — siempre visible, badge con no leídas */}
         <BottomNavigationAction
-          label="Inicio"
-          value="dashboard"
-          icon={<Home />}
+          label="Avisos"
+          value="notifications"
+          icon={
+            <Badge
+              badgeContent={unreadCount}
+              max={99}
+              sx={{
+                "& .MuiBadge-badge": {
+                  bgcolor: "primary.main",
+                  color: "#fff",
+                  fontSize: "0.6rem",
+                  fontWeight: 700,
+                  minWidth: 16,
+                  height: 16,
+                  padding: "0 3px",
+                },
+              }}
+            >
+              <NotificationsNoneRounded />
+            </Badge>
+          }
         />
 
         {/* Chat (condicional) */}
@@ -155,69 +154,38 @@ export function BottomNavbar() {
             label="Chat"
             value="chat"
             icon={
-              <Badge
-                color="secondary"
-                variant="dot"
-                invisible={!activeMatch.conversationId}
-              >
+              <Badge color="secondary" variant="dot" invisible={!activeMatch.conversationId}>
                 <Chat />
               </Badge>
             }
           />
         )}
 
-        {/* Vehículos (solo para charters) */}
+        {/* Vehículos (solo charters) */}
         {isCharter && (
-          <BottomNavigationAction
-            label="Vehículos"
-            value="vehicles"
-            icon={<DirectionsCar />}
-          />
+          <BottomNavigationAction label="Vehículos" value="vehicles" icon={<DirectionsCar />} />
         )}
 
-        {/* Pagos (solo para clientes) */}
+        {/* Pagos (solo clientes) */}
         {!isCharter && (
-          <BottomNavigationAction
-            label="Pagos"
-            value="payments"
-            icon={<Receipt />}
-          />
+          <BottomNavigationAction label="Pagos" value="payments" icon={<Receipt />} />
         )}
 
         {/* Historial */}
-        <BottomNavigationAction
-          label="Historial"
-          value="history"
-          icon={<History />}
-        />
+        <BottomNavigationAction label="Historial" value="history" icon={<History />} />
 
-        {/* Logout */}
-        <BottomNavigationAction
-          label="Salir"
-          value="logout"
-          icon={<Logout />}
-        />
+        {/* Salir */}
+        <BottomNavigationAction label="Salir" value="logout" icon={<Logout />} />
       </BottomNavigation>
 
-      {/* Logout Confirmation Dialog */}
-      <Dialog
-        open={logoutDialogOpen}
-        onClose={() => setLogoutDialogOpen(false)}
-        aria-labelledby="logout-dialog-title"
-      >
-        <DialogTitle id="logout-dialog-title">¿Cerrar sesión?</DialogTitle>
+      <Dialog open={logoutDialogOpen} onClose={() => setLogoutDialogOpen(false)}>
+        <DialogTitle>¿Cerrar sesión?</DialogTitle>
         <DialogContent>
-          <DialogContentText>
-            ¿Estás seguro que quieres cerrar sesión?
-          </DialogContentText>
+          <DialogContentText>¿Estás seguro que querés cerrar sesión?</DialogContentText>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setLogoutDialogOpen(false)} color="primary">
-            Cancelar
-          </Button>
-          <Button onClick={handleLogout} color="error" variant="contained">
-            Salir
-          </Button>
+          <Button onClick={() => setLogoutDialogOpen(false)} color="primary">Cancelar</Button>
+          <Button onClick={handleLogout} color="error" variant="contained">Salir</Button>
         </DialogActions>
       </Dialog>
     </Box>

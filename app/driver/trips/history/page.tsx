@@ -85,7 +85,7 @@ export default function DriverTripHistory() {
   const hasAnyCompleted = completedTrips.length > 0;
 
   const handleOpenFeedback = (trip: Trip) => {
-    const userId = trip.userId || "";
+    const userId = trip.user?.id || trip.userId || "";
     const userName = trip.user?.name || "el cliente";
 
     setFeedbackModal({
@@ -257,8 +257,9 @@ function TripHistoryCard({
   trip: Trip;
   onOpenFeedback: (trip: Trip) => void;
 }) {
+  const clientId = trip.user?.id || trip.userId || "";
   const { data: canGive } = useCanGiveFeedback(trip.id);
-  const { data: clientFeedback } = useUserFeedback(trip.userId || "");
+  const { data: clientFeedback } = useUserFeedback(clientId);
 
   const clientAverageRating = clientFeedback?.averageRating || 0;
   const clientTotalReviews = clientFeedback?.totalCount || 0;

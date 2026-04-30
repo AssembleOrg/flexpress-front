@@ -3,10 +3,12 @@
 import AccountBalanceWalletIcon from "@mui/icons-material/AccountBalanceWallet";
 import AccountCircleIcon from "@mui/icons-material/AccountCircle";
 import LogoutIcon from "@mui/icons-material/Logout";
+import NotificationsNoneRoundedIcon from "@mui/icons-material/NotificationsNoneRounded";
 import SettingsIcon from "@mui/icons-material/Settings";
 import {
   AppBar,
   Avatar,
+  Badge,
   Box,
   Chip,
   Container,
@@ -21,10 +23,13 @@ import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import Logo from "@/components/ui/Logo";
+import { NotificationsDropdown } from "@/components/NotificationsDropdown";
 import { useLogout } from "@/lib/hooks/mutations/useAuthMutations";
 import { useHydrated } from "@/lib/hooks/useHydrated";
 import { useAuthStore } from "@/lib/stores/authStore";
 import { useCreditPurchaseStore } from "@/lib/stores/creditPurchaseStore";
+import { useUnreadNotificationCount } from "@/lib/hooks/queries/useNotificationQueries";
+import { useMediaQuery } from "@mui/material";
 
 export function Navbar() {
   const router = useRouter();
@@ -33,7 +38,20 @@ export function Navbar() {
   const { user, isAuthenticated } = useAuthStore();
   const logoutMutation = useLogout();
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const [notifAnchorEl, setNotifAnchorEl] = useState<null | HTMLElement>(null);
   const { openModal } = useCreditPurchaseStore();
+  const { data: unreadData } = useUnreadNotificationCount();
+  const unreadCount = unreadData?.count ?? 0;
+  const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
+
+  const handleNotifClick = (e: React.MouseEvent<HTMLElement>) => {
+    if (isMobile) {
+      const base = user?.role === "charter" ? "/driver" : "/client";
+      router.push(`${base}/notifications`);
+    } else {
+      setNotifAnchorEl(e.currentTarget);
+    }
+  };
 
   const handleMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
     setAnchorEl(event.currentTarget);
@@ -117,6 +135,37 @@ export function Navbar() {
                   }}
                 />
               </motion.div>
+
+              {/* Notifications */}
+              <IconButton
+                onClick={handleNotifClick}
+                sx={{
+                  color: "text.secondary",
+                  "&:hover": { bgcolor: "rgba(56,1,22,0.06)" },
+                }}
+              >
+                <Badge
+                  badgeContent={unreadCount}
+                  max={99}
+                  sx={{
+                    "& .MuiBadge-badge": {
+                      bgcolor: "primary.main",
+                      color: "#fff",
+                      fontSize: "0.65rem",
+                      fontWeight: 700,
+                      minWidth: 18,
+                      height: 18,
+                    },
+                  }}
+                >
+                  <NotificationsNoneRoundedIcon sx={{ fontSize: 24 }} />
+                </Badge>
+              </IconButton>
+              <NotificationsDropdown
+                open={Boolean(notifAnchorEl)}
+                onClose={() => setNotifAnchorEl(null)}
+                anchorEl={notifAnchorEl}
+              />
 
               {/* User Menu */}
               <Box>

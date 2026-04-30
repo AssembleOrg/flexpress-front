@@ -3,6 +3,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { travelMatchingApi } from "@/lib/api/travelMatching";
 import { useAuthStore } from "@/lib/stores/authStore";
+import { getSocketConnected } from "@/lib/hooks/useWebSocket";
 import { queryKeys } from "./queryFactory";
 
 /**
@@ -90,14 +91,15 @@ export function useMatch(matchId: string) {
   return useQuery({
     queryKey: queryKeys.matches.detail(matchId),
     queryFn: () => travelMatchingApi.getMatch(matchId),
-    staleTime: 15 * 1000, // 15 seconds
-    gcTime: 5 * 60 * 1000, // 5 minutes
+    staleTime: 15 * 1000,
+    gcTime: 5 * 60 * 1000,
     refetchOnWindowFocus: true,
+    refetchOnReconnect: true,
     refetchInterval: (query) => {
-      // Detener polling si hay error (backend caído) — se reanuda con refetchOnReconnect
+      if (getSocketConnected()) return false; // socket activo → match:updated lo cubre
       if (query.state.status === 'error') return false;
-      return 15 * 1000; // Poll every 15s as fallback (WebSocket handles real-time)
+      return 30 * 1000; // socket caído → fallback 30s
     },
-    enabled: !!matchId, // Only fetch if matchId provided
+    enabled: !!matchId,
   });
 }
