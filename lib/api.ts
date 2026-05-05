@@ -1,7 +1,17 @@
 import axios from "axios";
 import { useAuthStore } from "./stores/authStore";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "/api/v1";
+// Browser: usa `/api/v1` relativo → entra al rewrite de Next (proxy a
+// backend, posiblemente por private domain). Server-side (SSR/RSC):
+// pega directo al backend. `API_URL` (server-only) tiene prioridad para
+// soportar private domain de Railway; cae a `NEXT_PUBLIC_API_URL` si no
+// está, y al rewrite local en último caso.
+const API_URL =
+  typeof globalThis.window === "undefined"
+    ? process.env.API_URL ||
+      process.env.NEXT_PUBLIC_API_URL ||
+      "http://localhost:3000/api/v1"
+    : "/api/v1";
 
 export const api = axios.create({
   baseURL: API_URL,
