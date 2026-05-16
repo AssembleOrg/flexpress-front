@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { QueryClient, QueryClientProvider, useQueryClient } from "@tanstack/react-query";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import { APIProvider } from "@vis.gl/react-google-maps";
@@ -60,6 +61,29 @@ function PushInitializer() {
   return null;
 }
 
+/**
+ * Escucha mensajes del Service Worker (cuando el usuario clickea una notificación push)
+ * y navega usando el router de Next.js, evitando recargar la página.
+ */
+function SWMessageListener() {
+  const router = useRouter();
+
+  useEffect(() => {
+    if (typeof window === "undefined" || !("serviceWorker" in navigator)) return;
+
+    const handler = (event: MessageEvent) => {
+      if (event.data?.type === "NAVIGATE" && typeof event.data.url === "string") {
+        router.push(event.data.url);
+      }
+    };
+
+    navigator.serviceWorker.addEventListener("message", handler);
+    return () => navigator.serviceWorker.removeEventListener("message", handler);
+  }, [router]);
+
+  return null;
+}
+
 export function Providers({ children }: ProvidersProps) {
   const googleApiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "";
 
@@ -74,6 +98,7 @@ export function Providers({ children }: ProvidersProps) {
       <QueryClientProvider client={queryClient}>
         <WebSocketInitializer />
         <PushInitializer />
+        <SWMessageListener />
         <ThemeProvider>
           <StoreHydration>
             <ErrorBoundary>
