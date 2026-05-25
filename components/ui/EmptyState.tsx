@@ -46,7 +46,7 @@ interface EmptyStateProps {
  * <EmptyState
  *   icon={<History sx={{ fontSize: 64, color: "grey.300" }} />}
  *   title="No tienes viajes completados"
- *   subtitle="Cuando completes un viaje aparecerá aquí"
+ *   subtitle="Cuando completes un viaje aparecerÃ¡ aquÃ­"
  *   action={{
  *     label: "Solicitar Flete",
  *     onClick: () => router.push('/client/trips/new')

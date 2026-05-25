@@ -215,6 +215,12 @@ export function useWebSocket(): UseWebSocketReturn {
       console.log('🔔 [WebSocket] Nueva notificación recibida:', data);
       queryClient.invalidateQueries({ queryKey: queryKeys.notifications.unreadCount() });
       queryClient.invalidateQueries({ queryKey: queryKeys.notifications.list() });
+      // Inquiries: refrescar las listas afectadas según el tipo de notif.
+      if (data?.type === 'availability_inquiry_received') {
+        queryClient.invalidateQueries({ queryKey: queryKeys.availabilityInquiries.received() });
+      } else if (data?.type === 'availability_inquiry_answered') {
+        queryClient.invalidateQueries({ queryKey: queryKeys.availabilityInquiries.sent() });
+      }
       if (data?.priority === 'HIGH') {
         toast('Tenés una nueva notificación', {
           duration: 3000,

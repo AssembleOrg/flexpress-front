@@ -1,9 +1,9 @@
 import { type UseQueryOptions, useQuery } from "@tanstack/react-query";
 import type {
-  UserFilters,
+  PaymentFilters,
   ReportFilters,
   TripFilters,
-  PaymentFilters,
+  UserFilters,
 } from "@/lib/types/admin";
 
 /**
@@ -71,7 +71,8 @@ export const queryKeys = {
   // System Configuration
   systemConfig: {
     all: ["systemConfig"] as const,
-    publicPricing: () => [...queryKeys.systemConfig.all, "publicPricing"] as const,
+    publicPricing: () =>
+      [...queryKeys.systemConfig.all, "publicPricing"] as const,
   },
 
   // Payments
@@ -90,8 +91,9 @@ export const queryKeys = {
 
   // Charter
   charter: {
-    all: ['charter'] as const,
-    availability: (userId: string) => ['charter', 'availability', userId] as const,
+    all: ["charter"] as const,
+    availability: (userId: string) =>
+      ["charter", "availability", userId] as const,
   },
 
   // Admin
@@ -120,7 +122,8 @@ export const queryKeys = {
       all: () => [...queryKeys.admin.all, "payments"] as const,
       list: (filters: PaymentFilters) =>
         [...queryKeys.admin.all, "payments", "list", filters] as const,
-      pendingCount: () => [...queryKeys.admin.all, "payments", "pending-count"] as const,
+      pendingCount: () =>
+        [...queryKeys.admin.all, "payments", "pending-count"] as const,
     },
     systemConfigs: {
       all: () => [...queryKeys.admin.all, "system-configs"] as const,
@@ -131,6 +134,36 @@ export const queryKeys = {
     vehicles: {
       pending: () => [...queryKeys.admin.all, "vehicles", "pending"] as const,
     },
+    drivers: {
+      pending: () => [...queryKeys.admin.all, "drivers", "pending"] as const,
+    },
+    helpers: {
+      pending: () => [...queryKeys.admin.all, "helpers", "pending"] as const,
+    },
+  },
+
+  // Availability Inquiries
+  availabilityInquiries: {
+    all: ["availabilityInquiries"] as const,
+    sent: () => [...queryKeys.availabilityInquiries.all, "sent"] as const,
+    received: () =>
+      [...queryKeys.availabilityInquiries.all, "received"] as const,
+  },
+
+  // Charter Personnel
+  charterPersonnel: {
+    all: ["charterPersonnel"] as const,
+    myDrivers: () => ["charterPersonnel", "drivers", "me"] as const,
+    myHelpers: () => ["charterPersonnel", "helpers", "me"] as const,
+    driverDetail: (id: string) => ["charterPersonnel", "drivers", id] as const,
+    helperDetail: (id: string) => ["charterPersonnel", "helpers", id] as const,
+  },
+
+  // Reports (user side: reports made / received). Admin side lives under admin.reports
+  reports: {
+    all: ["reports"] as const,
+    mine: () => [...queryKeys.reports.all, "mine"] as const,
+    againstMe: () => [...queryKeys.reports.all, "againstMe"] as const,
   },
 };
 

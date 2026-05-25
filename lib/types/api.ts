@@ -139,6 +139,7 @@ export interface TravelMatch {
   user?: Partial<User>;
   charter?: Partial<User>;
   canGiveFeedback?: boolean; // Added by useMatch hook (frontend-only)
+  personnel?: TripPersonnel | null;
 }
 
 export interface AvailableCharter {
@@ -158,6 +159,39 @@ export interface AvailableCharter {
   vehicleModel?: string | null;
   vehiclePlate?: string | null;
   vehicleYear?: number | null;
+  driversCount?: number;
+  helpersCount?: number;
+  // true si el charter ya está atendiendo otro viaje (match accepted o trip activo).
+  // El charter sigue apareciendo en la lista — el UI muestra badge "En viaje"
+  // y reemplaza el botón "Seleccionar" por "Consultar disponibilidad".
+  isOnTrip: boolean;
+}
+
+// ============================================
+// AVAILABILITY INQUIRIES
+// ============================================
+
+export type InquiryStatus = "pending" | "answered" | "expired";
+
+export type InquiryResponseCode =
+  | "available_soon"
+  | "available_today_later"
+  | "available_tomorrow"
+  | "not_today"
+  | "not_available";
+
+export interface AvailabilityInquiry {
+  id: string;
+  fromUserId: string;
+  toCharterId: string;
+  status: InquiryStatus;
+  responseCode: InquiryResponseCode | null;
+  respondedAt: string | null;
+  expiresAt: string;
+  createdAt: string;
+  updatedAt: string;
+  fromUser?: { id: string; name: string; avatar: string | null };
+  toCharter?: { id: string; name: string; avatar: string | null };
 }
 
 export interface Conversation {
@@ -204,6 +238,9 @@ export interface Report {
   adminNotes: string | null;
   resolvedAt: string | null;
   resolvedBy: string | null;
+  creditsToReporter?: number | null;
+  creditsFromReported?: number | null;
+  resolvedInFavorOf?: "reporter" | "reported" | "company" | null;
   createdAt: string;
   updatedAt: string;
   reporter?: Partial<User>;
@@ -290,6 +327,93 @@ export interface Vehicle {
   updatedAt: string;
   documents?: VehicleDocument[];
   charter?: { id: string; name: string; email: string };
+}
+
+export enum CharterDriverDocumentType {
+  DNI = "dni",
+  LICENSE = "license",
+}
+
+export enum CharterHelperDocumentType {
+  DNI = "dni",
+}
+
+export interface CharterDriverDocument {
+  id: string;
+  driverId: string;
+  type: CharterDriverDocumentType;
+  side: DocumentSide | null;
+  fileUrl: string;
+  status: DocumentReviewStatus;
+  rejectionReason: string | null;
+  reviewedAt: string | null;
+  reviewedBy: string | null;
+  expiresAt: string | null;
+  uploadedAt: string;
+  updatedAt: string;
+}
+
+export interface CharterDriver {
+  id: string;
+  charterId: string;
+  firstName: string;
+  lastName: string;
+  phone: string | null;
+  photoUrl: string | null;
+  verificationStatus: VerificationStatus;
+  rejectionReason: string | null;
+  verifiedAt: string | null;
+  verifiedBy: string | null;
+  isEnabled: boolean;
+  createdAt: string;
+  updatedAt: string;
+  documents?: CharterDriverDocument[];
+  charter?: { id: string; name: string; email: string };
+}
+
+export interface CharterHelperDocument {
+  id: string;
+  helperId: string;
+  type: CharterHelperDocumentType;
+  side: DocumentSide;
+  fileUrl: string;
+  status: DocumentReviewStatus;
+  rejectionReason: string | null;
+  reviewedAt: string | null;
+  reviewedBy: string | null;
+  uploadedAt: string;
+  updatedAt: string;
+}
+
+export interface CharterHelper {
+  id: string;
+  charterId: string;
+  firstName: string;
+  lastName: string;
+  photoUrl: string | null;
+  verificationStatus: VerificationStatus;
+  rejectionReason: string | null;
+  verifiedAt: string | null;
+  verifiedBy: string | null;
+  isEnabled: boolean;
+  createdAt: string;
+  updatedAt: string;
+  documents?: CharterHelperDocument[];
+  charter?: { id: string; name: string; email: string };
+}
+
+export interface TripPersonnelSnapshot {
+  driver: { id: string | null; name: string; phone?: string };
+  helpers: Array<{ id: string; name: string }>;
+}
+
+export interface TripPersonnel {
+  id: string;
+  matchId: string;
+  driverId: string | null;
+  helperIds: string[];
+  snapshot: TripPersonnelSnapshot;
+  createdAt: string;
 }
 
 export interface PendingCharterReviewItem {

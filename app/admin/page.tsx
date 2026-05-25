@@ -18,7 +18,11 @@ import { ReportsTable } from "@/components/admin/ReportsTable";
 import { TripsTable } from "@/components/admin/TripsTable";
 import { PaymentsTable } from "@/components/admin/PaymentsTable";
 import { SystemConfigTab } from "@/components/admin/SystemConfigTab";
-import { PendingChartersTab } from "@/components/admin/PendingChartersTab";
+import { VerificationsTab } from "@/components/admin/VerificationsTab";
+import {
+  usePendingDriversAdmin,
+  usePendingHelpersAdmin,
+} from "@/lib/hooks/queries/useCharterPersonnelQueries";
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -56,12 +60,18 @@ export default function AdminPage() {
   // Fetch pending charters for badge
   const { data: pendingChartersData, isLoading: chartersLoading } = usePendingCharters();
   const { data: pendingVehiclesData = [] } = usePendingVehicles();
+  const { data: pendingDriversData = [] } = usePendingDriversAdmin();
+  const { data: pendingHelpersData = [] } = usePendingHelpersAdmin();
 
   // Fetch pending payments for badge
   const { data: pendingPaymentsCount = 0, isLoading: paymentsLoading } = usePendingPaymentsCount();
 
   const pendingReportsCount = reportsData?.meta?.total ?? 0;
-  const pendingChartersCount = (pendingChartersData?.length ?? 0) + pendingVehiclesData.length;
+  const pendingChartersCount =
+    (pendingChartersData?.length ?? 0) +
+    pendingVehiclesData.length +
+    pendingDriversData.length +
+    pendingHelpersData.length;
 
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
     setActiveTab(newValue);
@@ -111,7 +121,7 @@ export default function AdminPage() {
           <Tab
             label={
               <Box sx={{ display: "flex", alignItems: "center", gap: 0.75 }}>
-                Conductores
+                Verificaciones
                 {!chartersLoading && pendingChartersCount > 0 && (
                   <Box
                     component="span"
@@ -224,7 +234,12 @@ export default function AdminPage() {
       </TabPanel>
 
       <TabPanel value={activeTab} index={1}>
-        <PendingChartersTab />
+        <VerificationsTab
+          pendingChartersCount={pendingChartersData?.length ?? 0}
+          pendingVehiclesCount={pendingVehiclesData.length}
+          pendingDriversCount={pendingDriversData.length}
+          pendingHelpersCount={pendingHelpersData.length}
+        />
       </TabPanel>
 
       <TabPanel value={activeTab} index={2}>

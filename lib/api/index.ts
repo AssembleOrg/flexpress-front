@@ -17,3 +17,5 @@ export type * from "./travelMatching";
 export { travelMatchingApi } from "./travelMatching";
 export type * from "./systemConfig";
 export { systemConfigApi } from "./systemConfig";
+export type * from "./charterPersonnel";
+export { charterPersonnelApi } from "./charterPersonnel";

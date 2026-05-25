@@ -11,6 +11,47 @@ const COLORS = {
   textBlack: [0, 0, 0] as [number, number, number],
 };
 
+type PersonnelInput = NonNullable<NonNullable<Trip["travelMatch"]>["personnel"]>;
+
+function renderPersonnelSection(
+  doc: jsPDF,
+  personnel: PersonnelInput | null | undefined,
+  headerColor: [number, number, number],
+) {
+  if (!personnel?.snapshot) return;
+  const { driver, helpers } = personnel.snapshot;
+
+  const startY = ((doc as any).lastAutoTable?.finalY ?? 100) + 5;
+  const driverLabel = driver.id === null ? `${driver.name}` : driver.name;
+  const helpersLabel = helpers.length > 0 ? helpers.map((h) => h.name).join(", ") : "—";
+
+  autoTable(doc, {
+    startY,
+    head: [["Equipo del viaje", ""]],
+    body: [
+      ["Conductor", driverLabel],
+      ["Ayudantes", helpersLabel],
+    ],
+    theme: "grid",
+    headStyles: {
+      fillColor: headerColor,
+      textColor: [255, 255, 255],
+      fontStyle: "bold",
+      fontSize: 11,
+      halign: "left",
+    },
+    bodyStyles: {
+      fontSize: 10,
+      textColor: COLORS.textBlack,
+    },
+    columnStyles: {
+      0: { fontStyle: "bold", cellWidth: 60 },
+      1: { cellWidth: 120 },
+    },
+    margin: { left: 20, right: 20 },
+  });
+}
+
 /**
  * Generate client trip receipt PDF
  */
@@ -101,6 +142,8 @@ export function generateClientReceipt(trip: Trip) {
     },
     margin: { left: 20, right: 20 },
   });
+
+  renderPersonnelSection(doc, match?.personnel, COLORS.bordo);
 
   // ===== FOOTER SECTION =====
   const finalY = (doc as any).lastAutoTable.finalY || 150;
@@ -234,6 +277,8 @@ export function generateCharterReceipt(trip: Trip) {
     },
     margin: { left: 20, right: 20 },
   });
+
+  renderPersonnelSection(doc, match?.personnel, COLORS.success);
 
   // ===== FOOTER SECTION =====
   const finalY = (doc as any).lastAutoTable.finalY || 150;

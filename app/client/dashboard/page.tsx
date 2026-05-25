@@ -11,6 +11,9 @@ import {
   Phone,
 } from "@mui/icons-material";
 import {
+  Accordion,
+  AccordionDetails,
+  AccordionSummary,
   Avatar,
   Badge,
   Box,
@@ -23,16 +26,26 @@ import {
   DialogActions,
   DialogContent,
   DialogTitle,
+  Divider,
   Fab,
   IconButton,
+  List,
+  ListItem,
+  ListItemAvatar,
+  ListItemText,
   Typography,
 } from "@mui/material";
+import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { MobileContainer } from "@/components/layout/MobileContainer";
 import { WelcomeHeader } from "@/components/ui/WelcomeHeader";
 import { useUserMatches } from "@/lib/hooks/queries/useTravelMatchQueries";
+import { useSentInquiries } from "@/lib/hooks/queries/useAvailabilityInquiriesQueries";
+import { INQUIRY_RESPONSE_LABELS } from "@/lib/constants/availabilityInquiry";
+import { formatDistanceToNow } from "date-fns";
+import { es } from "date-fns/locale";
 import { useAuthStore } from "@/lib/stores/authStore";
 import { isActiveTrip } from "@/lib/utils/matchHelpers";
 import { useCreditPurchaseStore } from "@/lib/stores/creditPurchaseStore";
@@ -50,6 +63,10 @@ export default function ClientDashboard() {
 
   // Find the ONE active trip (only one trip at a time allowed)
   const activeTrip = myMatches.find(isActiveTrip);
+
+  // Consultas de disponibilidad enviadas (oculto si no hay nada vivo)
+  const { data: sentInquiries = [] } = useSentInquiries();
+  const visibleInquiries = sentInquiries.filter((i) => i.status !== "expired");
 
   const handleRequestFreight = () => {
     // Prevent creating new trip if one is already active
@@ -300,6 +317,62 @@ export default function ClientDashboard() {
           </Typography>
         </CardContent>
       </MotionCard>
+
+      {/* Mis consultas pendientes — solo visible si hay inquiries no expiradas */}
+      {visibleInquiries.length > 0 && (
+        <MotionCard
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.25 }}
+          sx={{ mb: 3 }}
+        >
+          <Accordion defaultExpanded={false} disableGutters elevation={0}>
+            <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+              <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
+                  Mis consultas pendientes
+                </Typography>
+                <Chip
+                  label={visibleInquiries.length}
+                  size="small"
+                  color="warning"
+                  sx={{ height: 20, fontSize: "0.7rem", fontWeight: 700 }}
+                />
+              </Box>
+            </AccordionSummary>
+            <AccordionDetails sx={{ pt: 0 }}>
+              <List dense disablePadding>
+                {visibleInquiries.map((inquiry, idx) => {
+                  const charterName = inquiry.toCharter?.name ?? "Charter";
+                  const subtitle =
+                    inquiry.status === "answered" && inquiry.responseCode
+                      ? INQUIRY_RESPONSE_LABELS[inquiry.responseCode]
+                      : inquiry.status === "pending"
+                        ? `Esperando respuesta · hace ${formatDistanceToNow(new Date(inquiry.createdAt), { locale: es })}`
+                        : "El charter no respondió a tiempo";
+                  return (
+                    <Box key={inquiry.id}>
+                      {idx > 0 && <Divider component="li" />}
+                      <ListItem disableGutters>
+                        <ListItemAvatar>
+                          <Avatar src={inquiry.toCharter?.avatar ?? undefined}>
+                            {charterName.charAt(0)}
+                          </Avatar>
+                        </ListItemAvatar>
+                        <ListItemText
+                          primary={charterName}
+                          secondary={subtitle}
+                          primaryTypographyProps={{ fontWeight: 600 }}
+                        />
+                      </ListItem>
+                    </Box>
+                  );
+                })}
+              </List>
+            </AccordionDetails>
+          </Accordion>
+        </MotionCard>
+      )}
 
       {/* Active Trip - Single Trip Only */}
       <motion.div

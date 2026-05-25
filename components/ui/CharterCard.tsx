@@ -3,8 +3,10 @@
 import {
   AttachMoney,
   DirectionsCar,
+  Group,
   LocalShipping,
   LocationOn,
+  Person,
 } from "@mui/icons-material";
 
 import {
@@ -27,6 +29,10 @@ interface CharterCardProps {
   averageRating?: number;
   totalReviews?: number;
   systemPricePerKm?: number;
+  // Cuando el charter está en viaje, se invoca este handler en vez de onSelect.
+  // Si no se pasa, el card cae al comportamiento de "Seleccionar".
+  onInquiry?: () => void;
+  isInquiryLoading?: boolean;
 }
 
 export function CharterCard({
@@ -37,7 +43,10 @@ export function CharterCard({
   averageRating = 0,
   totalReviews = 0,
   systemPricePerKm,
+  onInquiry,
+  isInquiryLoading = false,
 }: CharterCardProps) {
+  const showInquiryCta = charter.isOnTrip && !!onInquiry;
   return (
     <Card
       sx={{
@@ -87,6 +96,13 @@ export function CharterCard({
                       }}
                     />
                   }
+                  sx={{ height: 20, fontSize: "0.7rem", fontWeight: 600 }}
+                />
+              ) : charter.isOnTrip ? (
+                <Chip
+                  label="En viaje"
+                  size="small"
+                  color="warning"
                   sx={{ height: 20, fontSize: "0.7rem", fontWeight: 600 }}
                 />
               ) : (
@@ -168,6 +184,22 @@ export function CharterCard({
             variant="outlined"
             color="primary"
           />
+          {(charter.driversCount ?? 0) > 0 && (
+            <Chip
+              icon={<Person />}
+              label={`${charter.driversCount} conductor${(charter.driversCount ?? 0) > 1 ? "es" : ""}`}
+              size="small"
+              variant="outlined"
+            />
+          )}
+          {(charter.helpersCount ?? 0) > 0 && (
+            <Chip
+              icon={<Group />}
+              label={`${charter.helpersCount} ayudante${(charter.helpersCount ?? 0) > 1 ? "s" : ""}`}
+              size="small"
+              variant="outlined"
+            />
+          )}
           <Chip
             label="Solicitud: 1 crédito"
             size="small"
@@ -177,20 +209,31 @@ export function CharterCard({
         </Box>
 
         {/* Button */}
-        <Button
-          variant="contained"
-          color="secondary"
-          fullWidth
-          size="large"
-          onClick={onSelect}
-          disabled={isLoading}
-          sx={{
-            fontWeight: 600,
-            py: 1.5,
-          }}
-        >
-          {isLoading ? "Seleccionando..." : "Seleccionar Chófer"}
-        </Button>
+        {showInquiryCta ? (
+          <Button
+            variant="outlined"
+            color="warning"
+            fullWidth
+            size="large"
+            onClick={onInquiry}
+            disabled={isInquiryLoading}
+            sx={{ fontWeight: 600, py: 1.5 }}
+          >
+            {isInquiryLoading ? "Enviando consulta..." : "Consultar disponibilidad"}
+          </Button>
+        ) : (
+          <Button
+            variant="contained"
+            color="secondary"
+            fullWidth
+            size="large"
+            onClick={onSelect}
+            disabled={isLoading}
+            sx={{ fontWeight: 600, py: 1.5 }}
+          >
+            {isLoading ? "Seleccionando..." : "Seleccionar Chófer"}
+          </Button>
+        )}
       </CardContent>
     </Card>
   );

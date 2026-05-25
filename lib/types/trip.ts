@@ -36,6 +36,12 @@ export interface Trip {
     destinationAddress: string;
     estimatedCredits: number;
     distanceKm: number | null;
+    personnel?: {
+      snapshot: {
+        driver: { id: string | null; name: string; phone?: string };
+        helpers: Array<{ id: string; name: string }>;
+      };
+    } | null;
   };
 }
 

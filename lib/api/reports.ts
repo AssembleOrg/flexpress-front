@@ -25,34 +25,26 @@ export const reportsApi = {
   },
 
   /**
-   * Get reports for a specific conversation
-   * (Optional - for future moderation features)
+   * Get reports made by the current user
+   * GET /reports/my-reports
    */
-  getByConversation: async (conversationId: string): Promise<Report[]> => {
-    try {
-      const response = await api.get<ApiResponse<Report[]>>(
-        `/reports/conversation/${conversationId}`,
-      );
-      // biome-ignore lint/style/noNonNullAssertion: axios response guarantees data
-      return response.data.data!;
-    } catch (error) {
-      console.error("Error fetching reports for conversation:", error);
-      return [];
-    }
+  getMyReports: async (): Promise<Report[]> => {
+    const response = await api.get<ApiResponse<Report[]>>(
+      "/reports/my-reports",
+    );
+    // biome-ignore lint/style/noNonNullAssertion: axios response guarantees data
+    return response.data.data!;
   },
 
   /**
-   * Get reports by current user (reports they submitted)
-   * (Optional - for future "My Reports" page)
+   * Get reports filed against the current user
+   * GET /reports/against-me
    */
-  getMyReports: async (): Promise<Report[]> => {
-    try {
-      const response = await api.get<ApiResponse<Report[]>>("/reports/my");
-      // biome-ignore lint/style/noNonNullAssertion: axios response guarantees data
-      return response.data.data!;
-    } catch (error) {
-      console.error("Error fetching my reports:", error);
-      return [];
-    }
+  getAgainstMe: async (): Promise<Report[]> => {
+    const response = await api.get<ApiResponse<Report[]>>(
+      "/reports/against-me",
+    );
+    // biome-ignore lint/style/noNonNullAssertion: axios response guarantees data
+    return response.data.data!;
   },
 };

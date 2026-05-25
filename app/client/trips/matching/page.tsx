@@ -9,6 +9,11 @@ import {
   CardContent,
   Chip,
   Container,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogContentText,
+  DialogTitle,
   Snackbar,
   Typography,
 } from '@mui/material';
@@ -19,6 +24,7 @@ import { ConfirmMatchModal } from '@/components/modals/ConfirmMatchModal';
 import { CharterCard } from '@/components/ui/CharterCard';
 import { RouteMap } from '@/components/ui/Map';
 import { useSelectCharter, useCancelMatch } from '@/lib/hooks/mutations/useTravelMatchMutations';
+import { useCreateInquiry } from '@/lib/hooks/mutations/useAvailabilityInquiriesMutations';
 import { useUserFeedback } from '@/lib/hooks/queries/useFeedbackQueries';
 import { usePublicPricing } from '@/lib/hooks/queries/useSystemConfigQueries';
 import { useMatch } from '@/lib/hooks/queries/useTravelMatchQueries';
@@ -37,12 +43,16 @@ function CharterCardWithRating({
   isPending,
   onSelect,
   systemPricePerKm,
+  onInquiry,
+  isInquiryLoading,
 }: {
   charter: AvailableCharter;
   isLoading: boolean;
   isPending?: boolean;
   onSelect: () => void;
   systemPricePerKm?: number;
+  onInquiry?: () => void;
+  isInquiryLoading?: boolean;
 }) {
   const { data: feedback } = useUserFeedback(charter.charterId);
 
@@ -55,6 +65,8 @@ function CharterCardWithRating({
       averageRating={feedback?.averageRating || 0}
       totalReviews={feedback?.totalCount || 0}
       systemPricePerKm={systemPricePerKm}
+      onInquiry={onInquiry}
+      isInquiryLoading={isInquiryLoading}
     />
   );
 }
@@ -69,6 +81,29 @@ export default function MatchingPage() {
   const [confirmModalOpen, setConfirmModalOpen] = useState(false);
   const [selectedCharterForConfirm, setSelectedCharterForConfirm] =
     useState<AvailableCharter | null>(null);
+
+  // Inquiry modal state (charter ocupado → consultar disponibilidad)
+  const createInquiryMutation = useCreateInquiry();
+  const [inquiryConfirmOpen, setInquiryConfirmOpen] = useState(false);
+  const [selectedCharterForInquiry, setSelectedCharterForInquiry] =
+    useState<AvailableCharter | null>(null);
+
+  const handleOpenInquiryConfirm = useCallback((charter: AvailableCharter) => {
+    setSelectedCharterForInquiry(charter);
+    setInquiryConfirmOpen(true);
+  }, []);
+
+  const handleCloseInquiryConfirm = useCallback(() => {
+    setInquiryConfirmOpen(false);
+    setSelectedCharterForInquiry(null);
+  }, []);
+
+  const handleSubmitInquiry = useCallback(() => {
+    if (!selectedCharterForInquiry) return;
+    createInquiryMutation.mutate(selectedCharterForInquiry.charterId, {
+      onSettled: () => handleCloseInquiryConfirm(),
+    });
+  }, [createInquiryMutation, selectedCharterForInquiry, handleCloseInquiryConfirm]);
 
   // State to track selected charter waiting for acceptance
   const [selectedCharterPending, setSelectedCharterPending] =
@@ -485,6 +520,11 @@ export default function MatchingPage() {
                 isPending={isPending}
                 onSelect={() => handleSelectCharter(charter)}
                 systemPricePerKm={pricing?.creditsPerKm}
+                onInquiry={() => handleOpenInquiryConfirm(charter)}
+                isInquiryLoading={
+                  createInquiryMutation.isPending &&
+                  selectedCharterForInquiry?.charterId === charter.charterId
+                }
               />
             );
           })}
@@ -504,6 +544,39 @@ export default function MatchingPage() {
         isLoading={selectMutation.isPending}
         userCredits={userCredits}
       />
+
+      {/* Inquiry Confirmation Modal */}
+      <Dialog
+        open={inquiryConfirmOpen}
+        onClose={handleCloseInquiryConfirm}
+        maxWidth='xs'
+        fullWidth
+      >
+        <DialogTitle>Consultar disponibilidad</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            ¿Querés consultarle a{' '}
+            <strong>{selectedCharterForInquiry?.charterName}</strong> si tendrá
+            disponibilidad? Te responderá con un mensaje rápido. Es gratis.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button
+            onClick={handleCloseInquiryConfirm}
+            disabled={createInquiryMutation.isPending}
+          >
+            Cancelar
+          </Button>
+          <Button
+            variant='contained'
+            color='warning'
+            onClick={handleSubmitInquiry}
+            disabled={createInquiryMutation.isPending}
+          >
+            {createInquiryMutation.isPending ? 'Enviando...' : 'Enviar consulta'}
+          </Button>
+        </DialogActions>
+      </Dialog>
 
       {/* Notification Snackbar */}
       <Snackbar

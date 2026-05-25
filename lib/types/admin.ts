@@ -1,4 +1,4 @@
-import { User, Report, Trip, Payment, ApiResponse } from "./api";
+import { ApiResponse, Payment, Report, Trip, User } from "./api";
 
 // ============================================
 // FILTER INTERFACES
@@ -34,6 +34,9 @@ export interface PaymentFilters {
 export interface UpdateReportRequest {
   status: "pending" | "investigating" | "resolved" | "dismissed";
   adminNotes?: string;
+  creditsToReporter?: number;
+  creditsFromReported?: number;
+  resolvedInFavorOf?: "reporter" | "reported" | "company";
 }
 
 export interface UpdateSystemConfigRequest {

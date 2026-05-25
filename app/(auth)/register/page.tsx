@@ -1,10 +1,11 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { DriveEta, Home, Login, Person } from "@mui/icons-material";
+import { CameraAlt, DriveEta, Home, Login, Person } from "@mui/icons-material";
 import {
   Alert,
   AlertTitle,
+  Avatar,
   Box,
   Button,
   Card,
@@ -30,7 +31,7 @@ import { AddressInput } from "@/components/ui/AddressInput";
 import { DniUpload } from "@/components/ui/DniUpload";
 import Logo from "@/components/ui/Logo";
 import { PageTransition } from "@/components/ui/PageTransition";
-import { useRegister } from "@/lib/hooks/mutations/useAuthMutations";
+import { useRegister, useUpdateUserProfile } from "@/lib/hooks/mutations/useAuthMutations";
 import { useCreateUserDocument } from "@/lib/hooks/mutations/useCreateUserDocument";
 import { uploadFiles } from "@/lib/uploadthing";
 import { UserDocumentType, DocumentSide } from "@/lib/types/api";
@@ -67,10 +68,32 @@ function RegisterFormContent() {
   const [dniFront, setDniFront] = useState<File | null>(null);
   const [dniBack, setDniBack] = useState<File | null>(null);
   const [dniError, setDniError] = useState("");
+  const [selfie, setSelfie] = useState<File | null>(null);
+  const [selfiePreview, setSelfiePreview] = useState<string | null>(null);
+  const [selfieError, setSelfieError] = useState("");
   const router = useRouter();
   const registerMutation = useRegister();
+  const updateProfileMutation = useUpdateUserProfile();
   const createUserDocumentMutation = useCreateUserDocument();
   const { setGender } = useAuthStore();
+
+  const handleSelfieChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.match(/image\/(jpeg|jpg|png|webp)/)) {
+      setSelfieError("Solo se permiten imágenes JPG, PNG o WEBP");
+      return;
+    }
+    if (file.size > 4 * 1024 * 1024) {
+      setSelfieError("La imagen no debe superar los 4MB");
+      return;
+    }
+    setSelfieError("");
+    setSelfie(file);
+    const reader = new FileReader();
+    reader.onloadend = () => setSelfiePreview(reader.result as string);
+    reader.readAsDataURL(file);
+  };
 
   // Determine transition direction based on redirect parameter
   const getTransitionDirection = (): "left" | "right" | "default" => {
@@ -96,6 +119,11 @@ function RegisterFormContent() {
   });
 
   const onSubmit = async (data: RegisterForm) => {
+    // Validar selfie para ambos roles
+    if (!selfie) {
+      setSelfieError("Debes subir una foto de perfil");
+      return;
+    }
     // Validar DNI para ambos roles
     if (!dniFront || !dniBack) {
       setDniError("Debes seleccionar ambas caras del DNI");
@@ -142,6 +170,19 @@ function RegisterFormContent() {
         side: DocumentSide.BACK,
         fileUrl: uploadedFiles[1].url,
       });
+
+      // PASO 3.5: Subir selfie y persistir como avatar del usuario
+      try {
+        const [uploadedSelfie] = await uploadFiles("avatarUploader", {
+          files: [selfie],
+        });
+        await updateProfileMutation.mutateAsync({
+          userId: user.user.id,
+          data: { avatar: uploadedSelfie.url },
+        });
+      } catch (err) {
+        console.warn("⚠️ [RegisterForm] No crítico: error al subir selfie", err);
+      }
 
       // PASO 4: Redirigir según rol
       if (userRole === "driver") {
@@ -303,6 +344,77 @@ function RegisterFormContent() {
 
                 {/* Formulario */}
                 <Box component="form" onSubmit={handleSubmit(onSubmit)}>
+                  {/* Foto de perfil (selfie) */}
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.3, delay: 0.04, ease: "easeOut" }}
+                  >
+                    <Box
+                      sx={{
+                        display: "flex",
+                        flexDirection: "column",
+                        alignItems: "center",
+                        gap: 1,
+                        mb: 2,
+                        mt: 1,
+                      }}
+                    >
+                      <Box
+                        component="label"
+                        sx={{
+                          position: "relative",
+                          cursor: "pointer",
+                          "&:hover .selfie-overlay": { opacity: 1 },
+                        }}
+                      >
+                        <Avatar
+                          src={selfiePreview || undefined}
+                          sx={{
+                            width: 96,
+                            height: 96,
+                            bgcolor: "primary.main",
+                            border: "2px solid",
+                            borderColor: selfieError ? "error.main" : "secondary.main",
+                          }}
+                        >
+                          <CameraAlt />
+                        </Avatar>
+                        <Box
+                          className="selfie-overlay"
+                          sx={{
+                            position: "absolute",
+                            inset: 0,
+                            borderRadius: "50%",
+                            bgcolor: "rgba(0,0,0,0.45)",
+                            color: "white",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            opacity: selfiePreview ? 0 : 0.6,
+                            transition: "opacity 0.2s",
+                          }}
+                        >
+                          <CameraAlt />
+                        </Box>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          hidden
+                          onChange={handleSelfieChange}
+                        />
+                      </Box>
+                      <Typography variant="caption" color="text.secondary">
+                        Foto de perfil
+                      </Typography>
+                      {selfieError && (
+                        <Typography variant="caption" color="error">
+                          {selfieError}
+                        </Typography>
+                      )}
+                    </Box>
+                  </motion.div>
+
                   <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}

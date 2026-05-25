@@ -1,34 +1,34 @@
 "use client";
 
-import { useParams, useRouter } from "next/navigation";
+import { ArrowBack as ArrowBackIcon } from "@mui/icons-material";
 import {
-  Container,
+  Avatar,
   Box,
-  Typography,
+  Button,
   Card,
   CardContent,
   Chip,
+  CircularProgress,
+  Container,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  Divider,
+  Paper,
   Stack,
   TextField,
-  Button,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  CircularProgress,
-  Paper,
-  Avatar,
-  Divider,
+  Typography,
   useMediaQuery,
   useTheme,
 } from "@mui/material";
-import { ArrowBack as ArrowBackIcon } from "@mui/icons-material";
-import { useState, useEffect } from "react";
+import { useParams, useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
-import { useAdminReportDetail } from "@/lib/hooks/queries/useAdminQueries";
 import { useUpdateReport } from "@/lib/hooks/mutations/useAdminMutations";
-import { useAuthStore } from "@/lib/stores/authStore";
+import { useAdminReportDetail } from "@/lib/hooks/queries/useAdminQueries";
 import { useMatch } from "@/lib/hooks/queries/useTravelMatchQueries";
+import { useAuthStore } from "@/lib/stores/authStore";
 import type { UpdateReportRequest } from "@/lib/types/admin";
 import type { UserRole } from "@/lib/types/api";
 import { TravelMatchStatus } from "@/lib/types/api";
@@ -50,12 +50,16 @@ export default function ReportDetailPage() {
   const updateReportMutation = useUpdateReport();
 
   // Form
-  const { control, handleSubmit, reset } = useForm<UpdateReportRequest>({
-    defaultValues: {
-      status: report?.status,
-      adminNotes: report?.adminNotes || "",
-    },
-  });
+  const { control, handleSubmit, reset, watch, setValue } =
+    useForm<UpdateReportRequest>({
+      defaultValues: {
+        status: report?.status,
+        adminNotes: report?.adminNotes || "",
+        creditsToReporter: 0,
+        creditsFromReported: 0,
+        resolvedInFavorOf: undefined,
+      },
+    });
 
   // Update form when report data changes
   useEffect(() => {
@@ -63,12 +67,45 @@ export default function ReportDetailPage() {
       reset({
         status: report.status as any,
         adminNotes: report.adminNotes || "",
+        creditsToReporter: report.creditsToReporter ?? 0,
+        creditsFromReported: report.creditsFromReported ?? 0,
+        resolvedInFavorOf: report.resolvedInFavorOf ?? undefined,
       });
     }
   }, [report, reset]);
 
+  const watchedStatus = watch("status");
+  const watchedToReporter = Number(watch("creditsToReporter") ?? 0);
+  const watchedFromReported = Number(watch("creditsFromReported") ?? 0);
+
+  const reportedCredits = report?.reported?.credits ?? 0;
+  const creditActionsEnabled = watchedStatus === "resolved";
+  const exceedsReportedBalance =
+    creditActionsEnabled && watchedFromReported > reportedCredits;
+
+  // Reset credit inputs whenever the action is not applicable (anything but resolved)
+  useEffect(() => {
+    if (watchedStatus !== "resolved") {
+      setValue("creditsToReporter", 0);
+      setValue("creditsFromReported", 0);
+      setValue("resolvedInFavorOf", undefined);
+    }
+  }, [watchedStatus, setValue]);
+
   const onSubmit = async (data: UpdateReportRequest) => {
-    await updateReportMutation.mutateAsync({ id: reportId, data });
+    const payload: UpdateReportRequest =
+      data.status === "resolved"
+        ? {
+            ...data,
+            creditsToReporter: Number(data.creditsToReporter ?? 0),
+            creditsFromReported: Number(data.creditsFromReported ?? 0),
+          }
+        : {
+            status: data.status,
+            adminNotes: data.adminNotes,
+          };
+
+    await updateReportMutation.mutateAsync({ id: reportId, data: payload });
     setDialogOpen(false);
   };
 
@@ -211,6 +248,13 @@ export default function ReportDetailPage() {
                   <Typography variant="caption" color="textSecondary">
                     {report.reporter?.email}
                   </Typography>
+                  <Typography
+                    variant="caption"
+                    display="block"
+                    sx={{ fontWeight: 600, mt: 0.5 }}
+                  >
+                    Saldo: {report.reporter?.credits ?? "—"} créditos
+                  </Typography>
                 </Box>
               </Stack>
             </CardContent>
@@ -237,6 +281,13 @@ export default function ReportDetailPage() {
                   <Typography variant="caption" color="textSecondary">
                     {report.reported?.email}
                   </Typography>
+                  <Typography
+                    variant="caption"
+                    display="block"
+                    sx={{ fontWeight: 600, mt: 0.5 }}
+                  >
+                    Saldo: {report.reported?.credits ?? "—"} créditos
+                  </Typography>
                 </Box>
               </Stack>
             </CardContent>
@@ -256,12 +307,20 @@ export default function ReportDetailPage() {
         {/* Viaje Asociado */}
         {travelMatch && (
           <Paper sx={{ p: 3 }}>
-            <Typography variant="subtitle2" color="textSecondary" sx={{ mb: 2 }}>
+            <Typography
+              variant="subtitle2"
+              color="textSecondary"
+              sx={{ mb: 2 }}
+            >
               VIAJE ASOCIADO
             </Typography>
             <Stack spacing={1.5}>
               <Stack direction="row" spacing={1} alignItems="center">
-                <Typography variant="body2" color="textSecondary" sx={{ minWidth: 140 }}>
+                <Typography
+                  variant="body2"
+                  color="textSecondary"
+                  sx={{ minWidth: 140 }}
+                >
                   Estado:
                 </Typography>
                 <Chip
@@ -271,45 +330,79 @@ export default function ReportDetailPage() {
                 />
               </Stack>
               <Stack direction="row" spacing={1}>
-                <Typography variant="body2" color="textSecondary" sx={{ minWidth: 140 }}>
+                <Typography
+                  variant="body2"
+                  color="textSecondary"
+                  sx={{ minWidth: 140 }}
+                >
                   Origen:
                 </Typography>
-                <Typography variant="body2">{travelMatch.pickupAddress}</Typography>
+                <Typography variant="body2">
+                  {travelMatch.pickupAddress}
+                </Typography>
               </Stack>
               <Stack direction="row" spacing={1}>
-                <Typography variant="body2" color="textSecondary" sx={{ minWidth: 140 }}>
+                <Typography
+                  variant="body2"
+                  color="textSecondary"
+                  sx={{ minWidth: 140 }}
+                >
                   Destino:
                 </Typography>
-                <Typography variant="body2">{travelMatch.destinationAddress}</Typography>
+                <Typography variant="body2">
+                  {travelMatch.destinationAddress}
+                </Typography>
               </Stack>
               {travelMatch.distanceKm != null && (
                 <Stack direction="row" spacing={1}>
-                  <Typography variant="body2" color="textSecondary" sx={{ minWidth: 140 }}>
+                  <Typography
+                    variant="body2"
+                    color="textSecondary"
+                    sx={{ minWidth: 140 }}
+                  >
                     Distancia:
                   </Typography>
-                  <Typography variant="body2">{travelMatch.distanceKm} km</Typography>
+                  <Typography variant="body2">
+                    {travelMatch.distanceKm} km
+                  </Typography>
                 </Stack>
               )}
               {travelMatch.estimatedCredits != null && (
                 <Stack direction="row" spacing={1}>
-                  <Typography variant="body2" color="textSecondary" sx={{ minWidth: 140 }}>
+                  <Typography
+                    variant="body2"
+                    color="textSecondary"
+                    sx={{ minWidth: 140 }}
+                  >
                     Créditos estimados:
                   </Typography>
-                  <Typography variant="body2">{travelMatch.estimatedCredits}</Typography>
+                  <Typography variant="body2">
+                    {travelMatch.estimatedCredits}
+                  </Typography>
                 </Stack>
               )}
               {travelMatch.scheduledDate && (
                 <Stack direction="row" spacing={1}>
-                  <Typography variant="body2" color="textSecondary" sx={{ minWidth: 140 }}>
+                  <Typography
+                    variant="body2"
+                    color="textSecondary"
+                    sx={{ minWidth: 140 }}
+                  >
                     Fecha programada:
                   </Typography>
                   <Typography variant="body2">
-                    {new Date(travelMatch.scheduledDate).toLocaleString("es-AR")}
+                    {new Date(travelMatch.scheduledDate).toLocaleString(
+                      "es-AR",
+                    )}
                   </Typography>
                 </Stack>
               )}
               <Stack direction="row" spacing={1}>
-                <Typography variant="body2" color="textSecondary" sx={{ minWidth: 140 }}>
+                <Typography
+                  variant="body2"
+                  color="textSecondary"
+                  sx={{ minWidth: 140 }}
+                >
                   Creado:
                 </Typography>
                 <Typography variant="body2">
@@ -319,7 +412,11 @@ export default function ReportDetailPage() {
               {(travelMatch.status === TravelMatchStatus.COMPLETED ||
                 travelMatch.status === TravelMatchStatus.CANCELLED) && (
                 <Stack direction="row" spacing={1}>
-                  <Typography variant="body2" color="textSecondary" sx={{ minWidth: 140 }}>
+                  <Typography
+                    variant="body2"
+                    color="textSecondary"
+                    sx={{ minWidth: 140 }}
+                  >
                     {travelMatch.status === TravelMatchStatus.COMPLETED
                       ? "Completado:"
                       : "Cancelado:"}
@@ -334,71 +431,79 @@ export default function ReportDetailPage() {
         )}
 
         {/* Conversation Messages */}
-        {report.conversation?.messages && report.conversation.messages.length > 0 && (
-          <Paper sx={{ p: 3 }}>
-            <Typography variant="subtitle2" color="textSecondary" sx={{ mb: 2 }}>
-              CHAT ({report.conversation.messages.length} mensajes)
-            </Typography>
-            <Stack
-              spacing={1.5}
-              sx={{
-                maxHeight: 400,
-                overflowY: "auto",
-              }}
-            >
-              {report.conversation.messages.map((msg) => {
-                const isCharter = msg.sender?.role === ("charter" as UserRole);
-                return (
-                  <Box
-                    key={msg.id}
-                    sx={{
-                      display: "flex",
-                      flexDirection: "column",
-                      alignItems: isCharter ? "flex-end" : "flex-start",
-                    }}
-                  >
-                    <Stack
-                      direction={isCharter ? "row-reverse" : "row"}
-                      spacing={1}
-                      alignItems="center"
-                      sx={{ mb: 0.5 }}
-                    >
-                      <Avatar
-                        sx={{
-                          width: 24,
-                          height: 24,
-                          fontSize: 12,
-                          bgcolor: isCharter ? "primary.main" : "secondary.main",
-                        }}
-                      >
-                        {msg.sender?.name?.charAt(0)?.toUpperCase()}
-                      </Avatar>
-                      <Typography variant="caption" sx={{ fontWeight: 600 }}>
-                        {msg.sender?.name}
-                      </Typography>
-                      <Typography variant="caption" color="textSecondary">
-                        {new Date(msg.createdAt).toLocaleString("es-AR")}
-                      </Typography>
-                    </Stack>
+        {report.conversation?.messages &&
+          report.conversation.messages.length > 0 && (
+            <Paper sx={{ p: 3 }}>
+              <Typography
+                variant="subtitle2"
+                color="textSecondary"
+                sx={{ mb: 2 }}
+              >
+                CHAT ({report.conversation.messages.length} mensajes)
+              </Typography>
+              <Stack
+                spacing={1.5}
+                sx={{
+                  maxHeight: 400,
+                  overflowY: "auto",
+                }}
+              >
+                {report.conversation.messages.map((msg) => {
+                  const isCharter =
+                    msg.sender?.role === ("charter" as UserRole);
+                  return (
                     <Box
+                      key={msg.id}
                       sx={{
-                        bgcolor: isCharter ? "primary.50" : "grey.100",
-                        borderRadius: 2,
-                        px: 2,
-                        py: 1,
-                        maxWidth: "75%",
-                        border: "1px solid",
-                        borderColor: isCharter ? "primary.200" : "grey.300",
+                        display: "flex",
+                        flexDirection: "column",
+                        alignItems: isCharter ? "flex-end" : "flex-start",
                       }}
                     >
-                      <Typography variant="body2">{msg.content}</Typography>
+                      <Stack
+                        direction={isCharter ? "row-reverse" : "row"}
+                        spacing={1}
+                        alignItems="center"
+                        sx={{ mb: 0.5 }}
+                      >
+                        <Avatar
+                          sx={{
+                            width: 24,
+                            height: 24,
+                            fontSize: 12,
+                            bgcolor: isCharter
+                              ? "primary.main"
+                              : "secondary.main",
+                          }}
+                        >
+                          {msg.sender?.name?.charAt(0)?.toUpperCase()}
+                        </Avatar>
+                        <Typography variant="caption" sx={{ fontWeight: 600 }}>
+                          {msg.sender?.name}
+                        </Typography>
+                        <Typography variant="caption" color="textSecondary">
+                          {new Date(msg.createdAt).toLocaleString("es-AR")}
+                        </Typography>
+                      </Stack>
+                      <Box
+                        sx={{
+                          bgcolor: isCharter ? "primary.50" : "grey.100",
+                          borderRadius: 2,
+                          px: 2,
+                          py: 1,
+                          maxWidth: "75%",
+                          border: "1px solid",
+                          borderColor: isCharter ? "primary.200" : "grey.300",
+                        }}
+                      >
+                        <Typography variant="body2">{msg.content}</Typography>
+                      </Box>
                     </Box>
-                  </Box>
-                );
-              })}
-            </Stack>
-          </Paper>
-        )}
+                  );
+                })}
+              </Stack>
+            </Paper>
+          )}
 
         {/* Admin Notes and Status */}
         <Paper sx={{ p: 3 }}>
@@ -411,7 +516,8 @@ export default function ReportDetailPage() {
             </Typography>
             {report.updatedAt !== report.createdAt && (
               <Typography variant="caption">
-                Actualizado: {new Date(report.updatedAt).toLocaleString("es-AR")}
+                Actualizado:{" "}
+                {new Date(report.updatedAt).toLocaleString("es-AR")}
               </Typography>
             )}
             {report.resolvedAt && (
@@ -462,6 +568,108 @@ export default function ReportDetailPage() {
                 </TextField>
               )}
             />
+
+            {/* Acción de créditos: solo al resolver */}
+            {creditActionsEnabled && (
+              <>
+                <Divider textAlign="left">
+                  <Typography variant="caption" color="textSecondary">
+                    ACCIÓN DE CRÉDITOS
+                  </Typography>
+                </Divider>
+
+                <Controller
+                  name="resolvedInFavorOf"
+                  control={control}
+                  render={({ field }) => (
+                    <TextField
+                      select
+                      label="Resolución a favor de"
+                      {...field}
+                      value={field.value ?? ""}
+                      variant="outlined"
+                      fullWidth
+                      SelectProps={{ native: true }}
+                    >
+                      <option value="">— Sin especificar —</option>
+                      <option value="reporter">Reportador</option>
+                      <option value="reported">Reportado</option>
+                      <option value="company">Sin razón clara (empresa)</option>
+                    </TextField>
+                  )}
+                />
+
+                <Box>
+                  <Controller
+                    name="creditsToReporter"
+                    control={control}
+                    render={({ field }) => (
+                      <TextField
+                        label="Devolver créditos al reportador"
+                        type="number"
+                        {...field}
+                        value={field.value ?? 0}
+                        onChange={(e) => field.onChange(Number(e.target.value))}
+                        variant="outlined"
+                        fullWidth
+                        inputProps={{ min: 0 }}
+                      />
+                    )}
+                  />
+                  <Stack direction="row" spacing={1} sx={{ mt: 1 }}>
+                    {[1, 2, 3].map((n) => (
+                      <Button
+                        key={n}
+                        size="small"
+                        variant="outlined"
+                        onClick={() => setValue("creditsToReporter", n)}
+                      >
+                        {n}
+                      </Button>
+                    ))}
+                  </Stack>
+                </Box>
+
+                <Box>
+                  <Controller
+                    name="creditsFromReported"
+                    control={control}
+                    render={({ field }) => (
+                      <TextField
+                        label="Quitar créditos al reportado"
+                        type="number"
+                        {...field}
+                        value={field.value ?? 0}
+                        onChange={(e) => field.onChange(Number(e.target.value))}
+                        variant="outlined"
+                        fullWidth
+                        inputProps={{ min: 0, max: reportedCredits }}
+                        error={exceedsReportedBalance}
+                        helperText={
+                          exceedsReportedBalance
+                            ? `El reportado solo tiene ${reportedCredits} créditos`
+                            : `Saldo del reportado: ${reportedCredits} créditos`
+                        }
+                      />
+                    )}
+                  />
+                  <Stack direction="row" spacing={1} sx={{ mt: 1 }}>
+                    {[1, 2, 3].map((n) => (
+                      <Button
+                        key={n}
+                        size="small"
+                        variant="outlined"
+                        disabled={n > reportedCredits}
+                        onClick={() => setValue("creditsFromReported", n)}
+                      >
+                        {n}
+                      </Button>
+                    ))}
+                  </Stack>
+                </Box>
+              </>
+            )}
+
             <Controller
               name="adminNotes"
               control={control}
@@ -484,7 +692,7 @@ export default function ReportDetailPage() {
           <Button
             onClick={handleSubmit(onSubmit)}
             variant="contained"
-            disabled={updateReportMutation.isPending}
+            disabled={updateReportMutation.isPending || exceedsReportedBalance}
           >
             {updateReportMutation.isPending ? "Guardando..." : "Guardar"}
           </Button>

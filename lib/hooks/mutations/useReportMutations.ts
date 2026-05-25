@@ -47,22 +47,3 @@ export function useCreateReport() {
     },
   });
 }
-
-/**
- * Get reports for a specific conversation
- * (Optional - for future moderation features)
- */
-export function useGetConversationReports(conversationId: string) {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: () => reportsApi.getByConversation(conversationId),
-
-    onSuccess: () => {
-      // Refresh reports cache
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.admin.reports.all(),
-      });
-    },
-  });
-}

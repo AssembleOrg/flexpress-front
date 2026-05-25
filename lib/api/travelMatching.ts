@@ -34,6 +34,8 @@ export interface SelectCharterRequest {
 
 export interface RespondToMatchRequest {
   accept: boolean;
+  driverId?: string;
+  helperIds?: string[];
 }
 
 export const travelMatchingApi = {
@@ -217,11 +219,11 @@ export const travelMatchingApi = {
    */
   respondToMatch: async (
     matchId: string,
-    accept: boolean
+    payload: RespondToMatchRequest
   ): Promise<TravelMatch> => {
     const response = await api.put<ApiResponse<TravelMatch>>(
       `/travel-matching/charter/matches/${matchId}/respond`,
-      { accept } // Send as JSON body, not as query param
+      payload
     );
 
     // Defensive: validate response structure

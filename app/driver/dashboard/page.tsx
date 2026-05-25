@@ -34,14 +34,19 @@ import {
 } from "@mui/material";
 import { useQueryClient } from "@tanstack/react-query";
 import { motion } from "framer-motion";
-import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import { MobileMatchCard } from "@/components/cards/MobileMatchCard";
 import { AuthNavbar } from "@/components/layout/AuthNavbar";
 import { MobileContainer } from "@/components/layout/MobileContainer";
 import { MatchExpirationTimer } from "@/components/MatchExpirationTimer";
 import { AcceptMatchModal } from "@/components/modals/AcceptMatchModal";
+import { RespondInquiryModal } from "@/components/modals/RespondInquiryModal";
+import { useReceivedInquiries } from "@/lib/hooks/queries/useAvailabilityInquiriesQueries";
+import { formatDistanceToNow } from "date-fns";
+import { es } from "date-fns/locale";
+import type { AvailabilityInquiry } from "@/lib/types/api";
 import { WelcomeHeader } from "@/components/ui/WelcomeHeader";
 import {
   useRespondToMatch,
@@ -79,6 +84,25 @@ export default function DriverDashboard() {
   const [acceptModalOpen, setAcceptModalOpen] = useState(false);
   const [selectedMatchForAccept, setSelectedMatchForAccept] =
     useState<TravelMatch | null>(null);
+
+  // Availability inquiries
+  const { data: receivedInquiries = [] } = useReceivedInquiries();
+  const [respondModalOpen, setRespondModalOpen] = useState(false);
+  const [selectedInquiry, setSelectedInquiry] =
+    useState<AvailabilityInquiry | null>(null);
+
+  // Auto-abrir modal cuando la notif viene con ?inquiry={id}
+  const searchParams = useSearchParams();
+  useEffect(() => {
+    const inquiryId = searchParams.get("inquiry");
+    if (!inquiryId) return;
+    const match = receivedInquiries.find((i) => i.id === inquiryId);
+    if (!match) return;
+    setSelectedInquiry(match);
+    setRespondModalOpen(true);
+    // Limpiar el query param para que no se reabra al refrescar.
+    router.replace("/driver/dashboard");
+  }, [searchParams, receivedInquiries, router]);
 
   // Vehicle selection modal state (UI only — temporary while modal is open)
   const [vehicleSelectOpen, setVehicleSelectOpen] = useState(false);
@@ -903,6 +927,72 @@ export default function DriverDashboard() {
           </motion.div>
         )}
 
+        {/* Consultas de disponibilidad */}
+        {receivedInquiries.length > 0 && (
+          <Box mb={3}>
+            <Box
+              display="flex"
+              justifyContent="space-between"
+              alignItems="center"
+              mb={2}
+            >
+              <Typography
+                variant="h6"
+                sx={{
+                  fontWeight: 700,
+                  fontSize: { xs: "1.1rem", md: "1.25rem" },
+                }}
+              >
+                Consultas de disponibilidad
+              </Typography>
+              <Chip
+                label={receivedInquiries.length}
+                size="small"
+                color="warning"
+                sx={{ fontWeight: 700 }}
+              />
+            </Box>
+            <Stack spacing={1.5}>
+              {receivedInquiries.map((inquiry) => (
+                <Card key={inquiry.id}>
+                  <CardContent
+                    sx={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      gap: 2,
+                      p: 2,
+                    }}
+                  >
+                    <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, flex: 1, minWidth: 0 }}>
+                      <Person fontSize="small" sx={{ color: "primary.main" }} />
+                      <Box sx={{ minWidth: 0 }}>
+                        <Typography variant="subtitle2" sx={{ fontWeight: 700 }} noWrap>
+                          {inquiry.fromUser?.name ?? "Cliente"}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          hace {formatDistanceToNow(new Date(inquiry.createdAt), { locale: es })}
+                        </Typography>
+                      </Box>
+                    </Box>
+                    <Button
+                      variant="contained"
+                      color="warning"
+                      size="small"
+                      onClick={() => {
+                        setSelectedInquiry(inquiry);
+                        setRespondModalOpen(true);
+                      }}
+                    >
+                      Responder
+                    </Button>
+                  </CardContent>
+                </Card>
+              ))}
+            </Stack>
+          </Box>
+        )}
+
         {/* Active Conversations Section */}
         {activeConversations.length > 0 && (
           <Box mb={3}>
@@ -1086,13 +1176,15 @@ export default function DriverDashboard() {
             setAcceptModalOpen(false);
             setSelectedMatchForAccept(null);
           }}
-          onAccept={async () => {
+          onAccept={async (selection) => {
             if (selectedMatchForAccept) {
               try {
                 // Use mutateAsync to wait for the response
                 await respondMutation.mutateAsync({
                   matchId: selectedMatchForAccept.id,
                   accept: true,
+                  driverId: selection.driverId,
+                  helperIds: selection.helperIds,
                 });
 
                 setAcceptModalOpen(false);
@@ -1134,6 +1226,16 @@ export default function DriverDashboard() {
           }}
           match={selectedMatchForAccept}
           isLoading={respondMutation.isPending}
+        />
+
+        {/* Respond Inquiry Modal */}
+        <RespondInquiryModal
+          open={respondModalOpen}
+          onClose={() => {
+            setRespondModalOpen(false);
+            setSelectedInquiry(null);
+          }}
+          inquiry={selectedInquiry}
         />
       </MobileContainer>
     </>

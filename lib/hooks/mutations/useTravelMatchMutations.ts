@@ -109,8 +109,17 @@ export function useRespondToMatch() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ matchId, accept }: { matchId: string; accept: boolean }) =>
-      travelMatchingApi.respondToMatch(matchId, accept),
+    mutationFn: ({
+      matchId,
+      accept,
+      driverId,
+      helperIds,
+    }: {
+      matchId: string;
+      accept: boolean;
+      driverId?: string;
+      helperIds?: string[];
+    }) => travelMatchingApi.respondToMatch(matchId, { accept, driverId, helperIds }),
 
     onSuccess: async (result, { matchId, accept }) => {
       // Update the match in cache (optimistic update)

@@ -29,6 +29,26 @@ export const ourFileRouter = {
       return { url: file.url };
     }),
 
+  // Personnel doc/photo uploader - para foto/DNI/licencia de conductores extras y ayudantes
+  personnelDocUploader: f({ image: { maxFileSize: "4MB", maxFileCount: 1 } })
+    .middleware(async () => {
+      return {};
+    })
+    .onUploadComplete(async ({ file }) => {
+      console.log(`[UploadThing] Personnel doc: ${file.url}`);
+      return { url: file.url };
+    }),
+
+  // Avatar uploader - foto de perfil / selfie del usuario (cliente o charter)
+  avatarUploader: f({ image: { maxFileSize: "4MB", maxFileCount: 1 } })
+    .middleware(async () => {
+      return {};
+    })
+    .onUploadComplete(async ({ file }) => {
+      console.log(`[UploadThing] Avatar uploaded: ${file.url}`);
+      return { url: file.url };
+    }),
+
   // Receipt uploader - para comprobantes de pago
   receiptUploader: f({ image: { maxFileSize: "4MB", maxFileCount: 1 } })
     .middleware(async () => {
