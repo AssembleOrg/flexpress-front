@@ -42,6 +42,7 @@ import {
 import { useMyVehicles } from "@/lib/hooks/queries/useVehicleQueries";
 import { useAuthStore } from "@/lib/stores/authStore";
 import { VerificationStatus } from "@/lib/types/api";
+import { formatPhoneInput, normalizeArgentinePhone } from "@/lib/utils/phone";
 
 export function ProfileContent() {
   const _router = useRouter();
@@ -81,7 +82,7 @@ export function ProfileContent() {
     const { name, value } = e.target;
     setFormData((prev) => ({
       ...prev,
-      [name]: value,
+      [name]: name === "number" ? formatPhoneInput(value) : value,
     }));
   };
 
@@ -101,6 +102,11 @@ export function ProfileContent() {
       toast.error("La dirección no puede exceder 200 caracteres");
       return;
     }
+    const normalizedNumber = normalizeArgentinePhone(formData.number);
+    if (!normalizedNumber) {
+      toast.error("Ingresá un teléfono argentino válido");
+      return;
+    }
 
     updateProfileMutation.mutate(
       {
@@ -108,7 +114,7 @@ export function ProfileContent() {
         data: {
           name: formData.name,
           email: formData.email,
-          number: formData.number,
+          number: normalizedNumber,
           address: formData.address,
         },
       },
@@ -217,7 +223,13 @@ export function ProfileContent() {
                             variant="contained"
                             color="secondary"
                             startIcon={<EditIcon />}
-                            onClick={() => setIsEditing(true)}
+                            onClick={() => {
+                              setFormData((prev) => ({
+                                ...prev,
+                                number: formatPhoneInput(prev.number),
+                              }));
+                              setIsEditing(true);
+                            }}
                             sx={{ whiteSpace: "nowrap" }}
                           >
                             Editar
@@ -332,11 +344,18 @@ export function ProfileContent() {
                     />
                     <TextField
                       label="Teléfono"
+                      type="tel"
                       value={formData.number}
                       name="number"
                       onChange={handleInputChange}
                       disabled={!isEditing}
                       fullWidth
+                      placeholder="Ej: +54 9 11 1234-5678"
+                      helperText={
+                        isEditing
+                          ? "Celular argentino, ej: +54 9 11 1234-5678"
+                          : undefined
+                      }
                       InputProps={{
                         startAdornment: <PhoneIcon sx={{ mr: 1 }} />,
                       }}

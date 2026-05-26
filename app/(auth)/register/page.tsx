@@ -20,28 +20,44 @@ import {
   ToggleButtonGroup,
   Typography,
 } from "@mui/material";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useSearchParams } from "next/navigation";
-import { Suspense, useState } from "react";
-import { useForm } from "react-hook-form";
-import { z } from "zod";
 import { motion } from "framer-motion";
+import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Suspense, useState } from "react";
+import { Controller, useForm } from "react-hook-form";
+import { z } from "zod";
 import { AddressInput } from "@/components/ui/AddressInput";
 import { DniUpload } from "@/components/ui/DniUpload";
 import Logo from "@/components/ui/Logo";
 import { PageTransition } from "@/components/ui/PageTransition";
-import { useRegister, useUpdateUserProfile } from "@/lib/hooks/mutations/useAuthMutations";
+import {
+  useRegister,
+  useUpdateUserProfile,
+} from "@/lib/hooks/mutations/useAuthMutations";
 import { useCreateUserDocument } from "@/lib/hooks/mutations/useCreateUserDocument";
-import { uploadFiles } from "@/lib/uploadthing";
-import { UserDocumentType, DocumentSide } from "@/lib/types/api";
 import { useAuthStore } from "@/lib/stores/authStore";
+import { DocumentSide, UserDocumentType } from "@/lib/types/api";
+import { uploadFiles } from "@/lib/uploadthing";
+import { formatPhoneInput, normalizeArgentinePhone } from "@/lib/utils/phone";
 
 const registerSchema = z
   .object({
     name: z.string().min(2, "Nombre debe tener al menos 2 caracteres"),
-    email: z.string().email("Ingresa un email válido"),
-    number: z.string().min(10, "Teléfono debe tener al menos 10 dígitos"),
+    email: z
+      .string()
+      .email("Ingresa un email válido")
+      .transform((v) => v.trim().toLowerCase()),
+    number: z.string().transform((v, ctx) => {
+      const normalized = normalizeArgentinePhone(v);
+      if (!normalized) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Ingresá un teléfono argentino válido",
+        });
+        return z.NEVER;
+      }
+      return normalized;
+    }),
     address: z.string().min(5, "Dirección debe tener al menos 5 caracteres"),
     password: z
       .string()
@@ -62,9 +78,14 @@ function RegisterFormContent() {
     return roleParam === "driver" ? "driver" : "client";
   });
   const [acceptedTerms, setAcceptedTerms] = useState(false);
-  const [gender, setLocalGender] = useState<"male" | "female" | "other">("other");
+  const [gender, setLocalGender] = useState<"male" | "female" | "other">(
+    "other",
+  );
   const [originAddress, setOriginAddress] = useState("");
-  const [originCoords, setOriginCoords] = useState<{ lat: number; lon: number } | null>(null);
+  const [originCoords, setOriginCoords] = useState<{
+    lat: number;
+    lon: number;
+  } | null>(null);
   const [dniFront, setDniFront] = useState<File | null>(null);
   const [dniBack, setDniBack] = useState<File | null>(null);
   const [dniError, setDniError] = useState("");
@@ -112,6 +133,7 @@ function RegisterFormContent() {
 
   const {
     register,
+    control,
     handleSubmit,
     formState: { errors },
   } = useForm<RegisterForm>({
@@ -375,7 +397,9 @@ function RegisterFormContent() {
                             height: 96,
                             bgcolor: "primary.main",
                             border: "2px solid",
-                            borderColor: selfieError ? "error.main" : "secondary.main",
+                            borderColor: selfieError
+                              ? "error.main"
+                              : "secondary.main",
                           }}
                         >
                           <CameraAlt />
@@ -452,15 +476,29 @@ function RegisterFormContent() {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.3, delay: 0.24, ease: "easeOut" }}
                   >
-                    <TextField
-                      {...register("number")}
-                      label="Teléfono"
-                      type="tel"
-                      fullWidth
-                      margin="normal"
-                      error={!!errors.number}
-                      helperText={errors.number?.message}
-                      placeholder="Ej: +54 9 11 1234-5678"
+                    <Controller
+                      name="number"
+                      control={control}
+                      defaultValue=""
+                      render={({ field }) => (
+                        <TextField
+                          {...field}
+                          value={field.value ?? ""}
+                          onChange={(e) =>
+                            field.onChange(formatPhoneInput(e.target.value))
+                          }
+                          label="Teléfono"
+                          type="tel"
+                          fullWidth
+                          margin="normal"
+                          error={!!errors.number}
+                          helperText={
+                            errors.number?.message ??
+                            "Celular argentino, ej: +54 9 11 1234-5678"
+                          }
+                          placeholder="Ej: +54 9 11 1234-5678"
+                        />
+                      )}
                     />
                   </motion.div>
 
@@ -487,20 +525,34 @@ function RegisterFormContent() {
                     transition={{ duration: 0.3, delay: 0.36, ease: "easeOut" }}
                   >
                     <Box sx={{ mt: 2, mb: 2 }}>
-                      <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1, fontWeight: 600 }}>
+                      <Typography
+                        variant="subtitle2"
+                        color="text.secondary"
+                        sx={{ mb: 1, fontWeight: 600 }}
+                      >
                         Género
                       </Typography>
                       <ToggleButtonGroup
                         value={gender}
                         exclusive
-                        onChange={(_, val) => { if (val) setLocalGender(val); }}
+                        onChange={(_, val) => {
+                          if (val) setLocalGender(val);
+                        }}
                         aria-label="género"
                         size="small"
                         fullWidth
                       >
                         <ToggleButton value="male">Masculino</ToggleButton>
                         <ToggleButton value="female">Femenino</ToggleButton>
-                        <ToggleButton value="other" sx={{ fontSize: { xs: "0.7rem", md: "0.875rem" }, px: { xs: 0.5, md: 1 } }}>No decir</ToggleButton>
+                        <ToggleButton
+                          value="other"
+                          sx={{
+                            fontSize: { xs: "0.7rem", md: "0.875rem" },
+                            px: { xs: 0.5, md: 1 },
+                          }}
+                        >
+                          No decir
+                        </ToggleButton>
                       </ToggleButtonGroup>
                     </Box>
                   </motion.div>
@@ -510,10 +562,18 @@ function RegisterFormContent() {
                     <motion.div
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
-                      transition={{ duration: 0.3, delay: 0.4, ease: "easeOut" }}
+                      transition={{
+                        duration: 0.3,
+                        delay: 0.4,
+                        ease: "easeOut",
+                      }}
                     >
                       <Box sx={{ mt: 2, mb: 1 }}>
-                        <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1, fontWeight: 600 }}>
+                        <Typography
+                          variant="subtitle2"
+                          color="text.secondary"
+                          sx={{ mb: 1, fontWeight: 600 }}
+                        >
                           Ubicación de Operaciones
                         </Typography>
                         <AddressInput
@@ -554,14 +614,18 @@ function RegisterFormContent() {
                   <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.3, delay: userRole === "driver" ? 0.56 : 0.4, ease: "easeOut" }}
+                    transition={{
+                      duration: 0.3,
+                      delay: userRole === "driver" ? 0.56 : 0.4,
+                      ease: "easeOut",
+                    }}
                   >
                     <Box
                       display="flex"
                       gap={2}
                       sx={{
                         mt: 2,
-                        flexDirection: { xs: 'column', md: 'row' }
+                        flexDirection: { xs: "column", md: "row" },
                       }}
                     >
                       <TextField
@@ -587,7 +651,11 @@ function RegisterFormContent() {
                   <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.3, delay: userRole === "driver" ? 0.64 : 0.48, ease: "easeOut" }}
+                    transition={{
+                      duration: 0.3,
+                      delay: userRole === "driver" ? 0.64 : 0.48,
+                      ease: "easeOut",
+                    }}
                   >
                     <FormControlLabel
                       control={
@@ -623,38 +691,43 @@ function RegisterFormContent() {
                   <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.3, delay: userRole === "driver" ? 0.72 : 0.56, ease: "easeOut" }}
+                    transition={{
+                      duration: 0.3,
+                      delay: userRole === "driver" ? 0.72 : 0.56,
+                      ease: "easeOut",
+                    }}
                   >
                     <motion.div
                       whileHover={{ scale: 1.02 }}
                       whileTap={{ scale: 0.98 }}
                       transition={{ duration: 0.2 }}
                     >
-                    <Button
-                      type="submit"
-                      variant="contained"
-                      color="secondary"
-                      fullWidth
-                      size="large"
-                      disabled={
-                        registerMutation.isPending ||
-                        createUserDocumentMutation.isPending ||
-                        !acceptedTerms ||
-                        !dniFront ||
-                        !dniBack
-                      }
-                      sx={{
-                        py: 1.5,
-                        fontSize: "1.125rem",
-                        fontWeight: 600,
-                        mt: 2,
-                        mb: 3,
-                      }}
-                    >
-                      {registerMutation.isPending || createUserDocumentMutation.isPending
-                        ? "Creando cuenta..."
-                        : "Registrarse"}
-                    </Button>
+                      <Button
+                        type="submit"
+                        variant="contained"
+                        color="secondary"
+                        fullWidth
+                        size="large"
+                        disabled={
+                          registerMutation.isPending ||
+                          createUserDocumentMutation.isPending ||
+                          !acceptedTerms ||
+                          !dniFront ||
+                          !dniBack
+                        }
+                        sx={{
+                          py: 1.5,
+                          fontSize: "1.125rem",
+                          fontWeight: 600,
+                          mt: 2,
+                          mb: 3,
+                        }}
+                      >
+                        {registerMutation.isPending ||
+                        createUserDocumentMutation.isPending
+                          ? "Creando cuenta..."
+                          : "Registrarse"}
+                      </Button>
                     </motion.div>
                   </motion.div>
                 </Box>
