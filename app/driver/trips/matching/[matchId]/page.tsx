@@ -46,6 +46,8 @@ import { useMatch } from "@/lib/hooks/queries/useTravelMatchQueries";
 import { useTrip } from "@/lib/hooks/queries/useTripQueries";
 import { useMyVehicles } from "@/lib/hooks/queries/useVehicleQueries";
 import { useAuthStore } from "@/lib/stores/authStore";
+import { conversationApi } from "@/lib/api/conversations";
+import axios from "axios";
 import type { User, UserRole } from "@/lib/types/api";
 import {
   generateCharterReceipt,
@@ -69,6 +71,9 @@ export default function DriverMatchingDetailPage() {
   const [finalizeTripModalOpen, setFinalizeTripModalOpen] = useState(false);
   const [availabilityConfirmed, setAvailabilityConfirmed] = useState(false);
   const [reportModalOpen, setReportModalOpen] = useState(false);
+  const [conversationRecoveryAttempt, setConversationRecoveryAttempt] = useState(0);
+  const [conversationRecoveryFailed, setConversationRecoveryFailed] = useState(false);
+  const isRecoveringConversation = useRef(false);
   const mapRef = useRef<LeafletMapHandle>(null);
 
   const handleDownload = () => {
@@ -98,6 +103,63 @@ export default function DriverMatchingDetailPage() {
       router.push("/driver/dashboard");
     }
   }, [match?.status, router]);
+
+  // Recovery: si el match está ACCEPTED pero conversationId es null, reintentar creación
+  useEffect(() => {
+    if (
+      match?.status !== "accepted" ||
+      match.conversationId ||
+      conversationRecoveryFailed ||
+      isRecoveringConversation.current
+    ) {
+      return;
+    }
+
+    const MAX_ATTEMPTS = 2;
+
+    if (conversationRecoveryAttempt >= MAX_ATTEMPTS) {
+      setConversationRecoveryFailed(true);
+      console.warn("⚠️ [CONV RECOVERY] All recovery attempts exhausted");
+      return;
+    }
+
+    const delay = (conversationRecoveryAttempt + 1) * 1500;
+
+    const timerId = setTimeout(async () => {
+      if (isRecoveringConversation.current) return;
+      isRecoveringConversation.current = true;
+
+      const attemptNumber = conversationRecoveryAttempt + 1;
+      console.log(`🔄 [CONV RECOVERY] Attempt ${attemptNumber}/${MAX_ATTEMPTS} for match ${matchId}`);
+      setConversationRecoveryAttempt(attemptNumber);
+
+      try {
+        await conversationApi.createFromMatch(matchId);
+        console.log(`✅ [CONV RECOVERY] Conversation created on attempt ${attemptNumber}`);
+        await new Promise((resolve) => setTimeout(resolve, 500));
+        await refetch();
+      } catch (error) {
+        if (axios.isAxiosError(error) && error.response?.status === 409) {
+          console.log("ℹ️ [CONV RECOVERY] 409 — conversation exists, refetching match...");
+          await new Promise((resolve) => setTimeout(resolve, 500));
+          await refetch();
+        } else {
+          console.error(`❌ [CONV RECOVERY] Attempt ${attemptNumber} failed:`, error);
+        }
+      } finally {
+        isRecoveringConversation.current = false;
+      }
+    }, delay);
+
+    return () => clearTimeout(timerId);
+  }, [
+    match?.status,
+    match?.conversationId,
+    matchId,
+    conversationRecoveryAttempt,
+    conversationRecoveryFailed,
+    refetch,
+  ]);
 
   const handleCharterCompleteTrip = async () => {
     if (!tripId) return;
@@ -181,14 +243,38 @@ export default function DriverMatchingDetailPage() {
             {!match.conversationId ? (
               <Card>
                 <CardContent sx={{ textAlign: "center", py: 6 }}>
-                  <CircularProgress sx={{ mb: 2 }} />
-                  <Typography variant="h6" color="textSecondary" sx={{ mb: 1 }}>
-                    Preparando el chat...
-                  </Typography>
-                  <Typography variant="caption" color="textSecondary">
-                    La conversación se está configurando. Esto toma solo unos
-                    segundos.
-                  </Typography>
+                  {!conversationRecoveryFailed ? (
+                    <>
+                      <CircularProgress sx={{ mb: 2 }} />
+                      <Typography variant="h6" color="textSecondary" sx={{ mb: 1 }}>
+                        {conversationRecoveryAttempt === 0
+                          ? "Preparando el chat..."
+                          : "Configurando la conversación..."}
+                      </Typography>
+                      <Typography variant="caption" color="textSecondary">
+                        {conversationRecoveryAttempt === 0
+                          ? "La conversación se está configurando. Esto toma solo unos segundos."
+                          : `Reintentando... (intento ${conversationRecoveryAttempt}/2)`}
+                      </Typography>
+                    </>
+                  ) : (
+                    <>
+                      <Alert severity="error" sx={{ mb: 2, textAlign: "left" }}>
+                        <Typography variant="subtitle2" fontWeight={700} mb={0.5}>
+                          No se pudo configurar la conversación
+                        </Typography>
+                        <Typography variant="body2">
+                          No pudimos conectar el chat automáticamente. Vuelve al
+                          dashboard e intenta acceder nuevamente en unos momentos.
+                        </Typography>
+                      </Alert>
+                      <Link href="/driver/dashboard">
+                        <Button variant="contained" color="secondary">
+                          Volver al Dashboard
+                        </Button>
+                      </Link>
+                    </>
+                  )}
                 </CardContent>
               </Card>
             ) : (

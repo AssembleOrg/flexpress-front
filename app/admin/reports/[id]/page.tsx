@@ -2,6 +2,7 @@
 
 import { ArrowBack as ArrowBackIcon } from "@mui/icons-material";
 import {
+  Alert,
   Avatar,
   Box,
   Button,
@@ -15,7 +16,11 @@ import {
   DialogContent,
   DialogTitle,
   Divider,
+  FormControl,
+  InputLabel,
+  MenuItem,
   Paper,
+  Select,
   Stack,
   TextField,
   Typography,
@@ -57,6 +62,8 @@ export default function ReportDetailPage() {
         adminNotes: report?.adminNotes || "",
         creditsToReporter: 0,
         creditsFromReported: 0,
+        creditsToReported: 0,
+        creditsFromReporter: 0,
         resolvedInFavorOf: undefined,
       },
     });
@@ -69,25 +76,30 @@ export default function ReportDetailPage() {
         adminNotes: report.adminNotes || "",
         creditsToReporter: report.creditsToReporter ?? 0,
         creditsFromReported: report.creditsFromReported ?? 0,
+        creditsToReported: report.creditsToReported ?? 0,
+        creditsFromReporter: report.creditsFromReporter ?? 0,
         resolvedInFavorOf: report.resolvedInFavorOf ?? undefined,
       });
     }
   }, [report, reset]);
 
   const watchedStatus = watch("status");
-  const watchedToReporter = Number(watch("creditsToReporter") ?? 0);
   const watchedFromReported = Number(watch("creditsFromReported") ?? 0);
+  const watchedFromReporter = Number(watch("creditsFromReporter") ?? 0);
 
   const reportedCredits = report?.reported?.credits ?? 0;
+  const reporterCredits = report?.reporter?.credits ?? 0;
   const creditActionsEnabled = watchedStatus === "resolved";
-  const exceedsReportedBalance =
-    creditActionsEnabled && watchedFromReported > reportedCredits;
+  const exceedsReportedBalance = creditActionsEnabled && watchedFromReported > reportedCredits;
+  const exceedsReporterBalance = creditActionsEnabled && watchedFromReporter > reporterCredits;
 
   // Reset credit inputs whenever the action is not applicable (anything but resolved)
   useEffect(() => {
     if (watchedStatus !== "resolved") {
       setValue("creditsToReporter", 0);
       setValue("creditsFromReported", 0);
+      setValue("creditsToReported", 0);
+      setValue("creditsFromReporter", 0);
       setValue("resolvedInFavorOf", undefined);
     }
   }, [watchedStatus, setValue]);
@@ -99,6 +111,8 @@ export default function ReportDetailPage() {
             ...data,
             creditsToReporter: Number(data.creditsToReporter ?? 0),
             creditsFromReported: Number(data.creditsFromReported ?? 0),
+            creditsToReported: Number(data.creditsToReported ?? 0),
+            creditsFromReporter: Number(data.creditsFromReporter ?? 0),
           }
         : {
             status: data.status,
@@ -543,126 +557,261 @@ export default function ReportDetailPage() {
         onClose={() => setDialogOpen(false)}
         maxWidth="sm"
         fullWidth
+        fullScreen={isMobile}
       >
-        <DialogTitle>Actualizar Reporte</DialogTitle>
-        <DialogContent sx={{ pt: 2 }}>
-          <Stack spacing={2}>
+        <DialogTitle sx={{ pb: 1 }}>Actualizar Reporte</DialogTitle>
+        <DialogContent sx={{ px: { xs: 2, md: 3 }, pt: 2 }}>
+          <Stack spacing={2.5}>
+
+            {/* Estado */}
             <Controller
               name="status"
               control={control}
               render={({ field }) => (
-                <TextField
-                  select
-                  label="Estado"
-                  {...field}
-                  variant="outlined"
-                  fullWidth
-                  SelectProps={{
-                    native: true,
-                  }}
-                >
-                  <option value="pending">Pendiente</option>
-                  <option value="investigating">Investigando</option>
-                  <option value="resolved">Resuelto</option>
-                  <option value="dismissed">Desestimado</option>
-                </TextField>
+                <FormControl fullWidth>
+                  <InputLabel id="status-label">Estado</InputLabel>
+                  <Select
+                    labelId="status-label"
+                    label="Estado"
+                    {...field}
+                  >
+                    <MenuItem value="pending">Pendiente</MenuItem>
+                    <MenuItem value="investigating">
+                      <Box>
+                        <Typography variant="body2">Investigando</Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          Los usuarios verán su reporte como "En revisión"
+                        </Typography>
+                      </Box>
+                    </MenuItem>
+                    <MenuItem value="resolved">
+                      <Box>
+                        <Typography variant="body2">Resuelto</Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          Se aplicarán las acciones de créditos configuradas
+                        </Typography>
+                      </Box>
+                    </MenuItem>
+                    <MenuItem value="dismissed">
+                      <Box>
+                        <Typography variant="body2">Desestimado</Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          Se cierra sin acción y se notifica a ambas partes
+                        </Typography>
+                      </Box>
+                    </MenuItem>
+                  </Select>
+                </FormControl>
               )}
             />
+
+            {/* Alerta contextual según estado */}
+            {watchedStatus === "investigating" && (
+              <Alert severity="info" sx={{ py: 0.5 }}>
+                Ambas partes recibirán una notificación de que el reporte está siendo revisado.
+              </Alert>
+            )}
+            {watchedStatus === "dismissed" && (
+              <Alert severity="warning" sx={{ py: 0.5 }}>
+                El reporte se cerrará sin acción. Se notificará a reportador y reportado.
+              </Alert>
+            )}
 
             {/* Acción de créditos: solo al resolver */}
             {creditActionsEnabled && (
               <>
                 <Divider textAlign="left">
-                  <Typography variant="caption" color="textSecondary">
-                    ACCIÓN DE CRÉDITOS
+                  <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>
+                    ACCIONES DE CRÉDITOS
                   </Typography>
                 </Divider>
 
+                {/* Resolución a favor de */}
                 <Controller
                   name="resolvedInFavorOf"
                   control={control}
                   render={({ field }) => (
-                    <TextField
-                      select
-                      label="Resolución a favor de"
-                      {...field}
-                      value={field.value ?? ""}
-                      variant="outlined"
-                      fullWidth
-                      SelectProps={{ native: true }}
-                    >
-                      <option value="">— Sin especificar —</option>
-                      <option value="reporter">Reportador</option>
-                      <option value="reported">Reportado</option>
-                      <option value="company">Sin razón clara (empresa)</option>
-                    </TextField>
+                    <FormControl fullWidth>
+                      <InputLabel id="favor-label">Resolución a favor de</InputLabel>
+                      <Select
+                        labelId="favor-label"
+                        label="Resolución a favor de"
+                        {...field}
+                        value={field.value ?? ""}
+                      >
+                        <MenuItem value="">— Sin especificar —</MenuItem>
+                        <MenuItem value="reporter">
+                          A favor de {report.reporter?.name ?? "reportador"} (quien reportó)
+                        </MenuItem>
+                        <MenuItem value="reported">
+                          A favor de {report.reported?.name ?? "reportado"} (quien fue reportado)
+                        </MenuItem>
+                        <MenuItem value="company">Sin responsabilidad clara (empresa)</MenuItem>
+                      </Select>
+                    </FormControl>
                   )}
                 />
 
+                {/* Créditos al reportador */}
                 <Box>
                   <Controller
                     name="creditsToReporter"
                     control={control}
                     render={({ field }) => (
                       <TextField
-                        label="Devolver créditos al reportador"
+                        label={`Créditos a devolver a ${report.reporter?.name ?? "reportador"}`}
                         type="number"
                         {...field}
-                        value={field.value ?? 0}
-                        onChange={(e) => field.onChange(Number(e.target.value))}
+                        value={field.value || ""}
+                        onChange={(e) =>
+                          field.onChange(e.target.value === "" ? undefined : Number(e.target.value))
+                        }
+                        placeholder="0"
                         variant="outlined"
                         fullWidth
                         inputProps={{ min: 0 }}
+                        helperText={`Saldo actual: ${report.reporter?.credits ?? 0} créditos`}
                       />
                     )}
                   />
                   <Stack direction="row" spacing={1} sx={{ mt: 1 }}>
-                    {[1, 2, 3].map((n) => (
+                    {[1, 2, 3, 5].map((n) => (
                       <Button
                         key={n}
                         size="small"
                         variant="outlined"
                         onClick={() => setValue("creditsToReporter", n)}
                       >
-                        {n}
+                        +{n}
                       </Button>
                     ))}
                   </Stack>
                 </Box>
 
+                {/* Créditos al reportado */}
                 <Box>
                   <Controller
                     name="creditsFromReported"
                     control={control}
                     render={({ field }) => (
                       <TextField
-                        label="Quitar créditos al reportado"
+                        label={`Créditos a descontar a ${report.reported?.name ?? "reportado"}`}
                         type="number"
                         {...field}
-                        value={field.value ?? 0}
-                        onChange={(e) => field.onChange(Number(e.target.value))}
+                        value={field.value || ""}
+                        onChange={(e) =>
+                          field.onChange(e.target.value === "" ? undefined : Number(e.target.value))
+                        }
+                        placeholder="0"
                         variant="outlined"
                         fullWidth
                         inputProps={{ min: 0, max: reportedCredits }}
                         error={exceedsReportedBalance}
                         helperText={
                           exceedsReportedBalance
-                            ? `El reportado solo tiene ${reportedCredits} créditos`
-                            : `Saldo del reportado: ${reportedCredits} créditos`
+                            ? `Solo tiene ${reportedCredits} créditos disponibles`
+                            : `Saldo actual: ${reportedCredits} créditos`
                         }
                       />
                     )}
                   />
                   <Stack direction="row" spacing={1} sx={{ mt: 1 }}>
-                    {[1, 2, 3].map((n) => (
+                    {[1, 2, 3, 5].map((n) => (
                       <Button
                         key={n}
                         size="small"
                         variant="outlined"
+                        color="error"
                         disabled={n > reportedCredits}
                         onClick={() => setValue("creditsFromReported", n)}
                       >
-                        {n}
+                        -{n}
+                      </Button>
+                    ))}
+                  </Stack>
+                </Box>
+
+                <Divider textAlign="left">
+                  <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>
+                    SI EL REPORTE FUE FALSO
+                  </Typography>
+                </Divider>
+
+                {/* Compensar al reportado */}
+                <Box>
+                  <Controller
+                    name="creditsToReported"
+                    control={control}
+                    render={({ field }) => (
+                      <TextField
+                        label={`Créditos a compensar a ${report.reported?.name ?? "reportado"}`}
+                        type="number"
+                        {...field}
+                        value={field.value || ""}
+                        onChange={(e) =>
+                          field.onChange(e.target.value === "" ? undefined : Number(e.target.value))
+                        }
+                        placeholder="0"
+                        variant="outlined"
+                        fullWidth
+                        inputProps={{ min: 0 }}
+                        helperText={`Saldo actual: ${reportedCredits} créditos`}
+                      />
+                    )}
+                  />
+                  <Stack direction="row" spacing={1} sx={{ mt: 1 }}>
+                    {[1, 2, 3, 5].map((n) => (
+                      <Button
+                        key={n}
+                        size="small"
+                        variant="outlined"
+                        color="success"
+                        onClick={() => setValue("creditsToReported", n)}
+                      >
+                        +{n}
+                      </Button>
+                    ))}
+                  </Stack>
+                </Box>
+
+                {/* Sancionar al reportador */}
+                <Box>
+                  <Controller
+                    name="creditsFromReporter"
+                    control={control}
+                    render={({ field }) => (
+                      <TextField
+                        label={`Créditos a descontar a ${report.reporter?.name ?? "reportador"} por reporte falso`}
+                        type="number"
+                        {...field}
+                        value={field.value || ""}
+                        onChange={(e) =>
+                          field.onChange(e.target.value === "" ? undefined : Number(e.target.value))
+                        }
+                        placeholder="0"
+                        variant="outlined"
+                        fullWidth
+                        inputProps={{ min: 0, max: reporterCredits }}
+                        error={exceedsReporterBalance}
+                        helperText={
+                          exceedsReporterBalance
+                            ? `Solo tiene ${reporterCredits} créditos disponibles`
+                            : `Saldo actual: ${reporterCredits} créditos`
+                        }
+                      />
+                    )}
+                  />
+                  <Stack direction="row" spacing={1} sx={{ mt: 1 }}>
+                    {[1, 2, 3, 5].map((n) => (
+                      <Button
+                        key={n}
+                        size="small"
+                        variant="outlined"
+                        color="error"
+                        disabled={n > reporterCredits}
+                        onClick={() => setValue("creditsFromReporter", n)}
+                      >
+                        -{n}
                       </Button>
                     ))}
                   </Stack>
@@ -670,31 +819,32 @@ export default function ReportDetailPage() {
               </>
             )}
 
+            {/* Notas admin */}
             <Controller
               name="adminNotes"
               control={control}
               render={({ field }) => (
                 <TextField
-                  label="Notas Admin"
+                  label="Notas internas"
                   {...field}
                   variant="outlined"
                   fullWidth
                   multiline
-                  rows={4}
-                  placeholder="Escribir notas de administración..."
+                  rows={3}
+                  placeholder="Notas visibles solo para el equipo de administración..."
                 />
               )}
             />
           </Stack>
         </DialogContent>
-        <DialogActions>
+        <DialogActions sx={{ px: { xs: 2, md: 3 }, pb: 2 }}>
           <Button onClick={() => setDialogOpen(false)}>Cancelar</Button>
           <Button
             onClick={handleSubmit(onSubmit)}
             variant="contained"
-            disabled={updateReportMutation.isPending || exceedsReportedBalance}
+            disabled={updateReportMutation.isPending || exceedsReportedBalance || exceedsReporterBalance}
           >
-            {updateReportMutation.isPending ? "Guardando..." : "Guardar"}
+            {updateReportMutation.isPending ? "Guardando..." : "Guardar cambios"}
           </Button>
         </DialogActions>
       </Dialog>

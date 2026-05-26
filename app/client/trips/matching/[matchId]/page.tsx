@@ -47,6 +47,8 @@ import {
 } from '@/lib/hooks/useWebSocket';
 import { useCountdown } from '@/lib/hooks/useCountdown';
 import { useAuthStore } from '@/lib/stores/authStore';
+import { conversationApi } from '@/lib/api/conversations';
+import axios from 'axios';
 import type { User } from '@/lib/types/api';
 import { TravelMatchStatus, UserRole } from '@/lib/types/api';
 import {
@@ -97,6 +99,9 @@ export default function MatchDetailPage() {
   const hasCreatedTrip = useRef(false);
   const [conversationLoadingTimeout, setConversationLoadingTimeout] =
     useState(false);
+  const [conversationRecoveryAttempt, setConversationRecoveryAttempt] = useState(0);
+  const [conversationRecoveryFailed, setConversationRecoveryFailed] = useState(false);
+  const isRecoveringConversation = useRef(false);
   const [charterFinalized, setCharterFinalized] = useState(false);
   const hasShownAcceptToast = useRef(false);
   const mapRef = useRef<LeafletMapHandle>(null);
@@ -122,28 +127,61 @@ export default function MatchDetailPage() {
     // React Query will auto-refetch via WebSocket invalidation
   });
 
-  // Handle conversation loading timeout and retry logic
+  // Recovery: si el match está ACCEPTED pero conversationId es null, reintentar creación
   useEffect(() => {
     if (
-      match?.status === TravelMatchStatus.ACCEPTED &&
-      !match.conversationId &&
-      !conversationLoadingTimeout
+      match?.status !== TravelMatchStatus.ACCEPTED ||
+      match.conversationId ||
+      conversationRecoveryFailed ||
+      isRecoveringConversation.current
     ) {
-      // Set timeout after 5 seconds
-      const timeoutId = setTimeout(() => {
-        setConversationLoadingTimeout(true);
-        console.warn(
-          '⚠️ Conversation not loaded after 5s, attempting refetch...'
-        );
-        refetchMatch();
-      }, 5000);
-
-      return () => clearTimeout(timeoutId);
+      return;
     }
+
+    const MAX_ATTEMPTS = 2;
+
+    if (conversationRecoveryAttempt >= MAX_ATTEMPTS) {
+      setConversationRecoveryFailed(true);
+      setConversationLoadingTimeout(true);
+      console.warn('⚠️ [CONV RECOVERY] All recovery attempts exhausted');
+      return;
+    }
+
+    const delay = (conversationRecoveryAttempt + 1) * 1500;
+
+    const timerId = setTimeout(async () => {
+      if (isRecoveringConversation.current) return;
+      isRecoveringConversation.current = true;
+
+      const attemptNumber = conversationRecoveryAttempt + 1;
+      console.log(`🔄 [CONV RECOVERY] Attempt ${attemptNumber}/${MAX_ATTEMPTS} for match ${matchId}`);
+      setConversationRecoveryAttempt(attemptNumber);
+
+      try {
+        await conversationApi.createFromMatch(matchId);
+        console.log(`✅ [CONV RECOVERY] Conversation created on attempt ${attemptNumber}`);
+        await new Promise((resolve) => setTimeout(resolve, 500));
+        await refetchMatch();
+      } catch (error) {
+        if (axios.isAxiosError(error) && error.response?.status === 409) {
+          console.log('ℹ️ [CONV RECOVERY] 409 — conversation exists, refetching match...');
+          await new Promise((resolve) => setTimeout(resolve, 500));
+          await refetchMatch();
+        } else {
+          console.error(`❌ [CONV RECOVERY] Attempt ${attemptNumber} failed:`, error);
+        }
+      } finally {
+        isRecoveringConversation.current = false;
+      }
+    }, delay);
+
+    return () => clearTimeout(timerId);
   }, [
     match?.status,
     match?.conversationId,
-    conversationLoadingTimeout,
+    matchId,
+    conversationRecoveryAttempt,
+    conversationRecoveryFailed,
     refetchMatch,
   ]);
 
@@ -742,40 +780,38 @@ export default function MatchDetailPage() {
           sx={{ py: 4, textAlign: 'center' }}
         >
           <Box sx={{ my: 4 }}>
-            <CircularProgress sx={{ mb: 2 }} />
-            <Typography
-              variant='h6'
-              color='textSecondary'
-            >
-              Preparando el chat...
-            </Typography>
-            <Typography
-              variant='body2'
-              color='textSecondary'
-              sx={{ mt: 1 }}
-            >
-              Por favor espera mientras configuramos la conversación.
-            </Typography>
-
-            {/* Show fallback button after timeout */}
-            {conversationLoadingTimeout && (
-              <Box sx={{ mt: 3 }}>
-                <Alert
-                  severity='warning'
-                  sx={{ mb: 2 }}
-                >
-                  La conversación está tardando más de lo esperado. Intenta
-                  volver al dashboard y acceder nuevamente.
+            {!conversationRecoveryFailed ? (
+              <>
+                <CircularProgress sx={{ mb: 2 }} />
+                <Typography variant='h6' color='textSecondary'>
+                  {conversationRecoveryAttempt === 0
+                    ? 'Preparando el chat...'
+                    : 'Configurando la conversación...'}
+                </Typography>
+                <Typography variant='body2' color='textSecondary' sx={{ mt: 1 }}>
+                  {conversationRecoveryAttempt === 0
+                    ? 'Por favor espera mientras configuramos la conversación.'
+                    : `Reintentando... (intento ${conversationRecoveryAttempt}/2)`}
+                </Typography>
+              </>
+            ) : (
+              <>
+                <Alert severity='error' sx={{ mb: 2, textAlign: 'left' }}>
+                  <Typography variant='subtitle2' fontWeight={700} mb={0.5}>
+                    No se pudo configurar la conversación
+                  </Typography>
+                  <Typography variant='body2'>
+                    El chófer aceptó tu solicitud pero no pudimos conectar el
+                    chat automáticamente. Por favor vuelve al dashboard e
+                    intenta acceder nuevamente en unos momentos.
+                  </Typography>
                 </Alert>
                 <Link href='/client/dashboard'>
-                  <Button
-                    variant='contained'
-                    color='secondary'
-                  >
+                  <Button variant='contained' color='secondary'>
                     Volver al Dashboard
                   </Button>
                 </Link>
-              </Box>
+              </>
             )}
           </Box>
         </Container>

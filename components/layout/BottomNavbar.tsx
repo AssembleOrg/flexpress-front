@@ -20,6 +20,8 @@ import {
   NotificationsNoneRounded,
   Receipt,
   DirectionsCar,
+  PersonOutline,
+  FlagOutlined,
 } from "@mui/icons-material";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -62,6 +64,8 @@ export function BottomNavbar() {
     else if (pathname.includes("/payments")) setValue("payments");
     else if (pathname.includes("/matching")) setValue("chat");
     else if (pathname.includes("/vehicles")) setValue("vehicles");
+    else if (pathname.includes("/profile")) setValue("profile");
+    else if (pathname.includes("/reports")) setValue("reports");
   }, [pathname]);
 
   const handleNavigation = (_event: React.SyntheticEvent, newValue: string) => {
@@ -88,6 +92,12 @@ export function BottomNavbar() {
         break;
       case "payments":
         router.push("/client/payments");
+        break;
+      case "profile":
+        router.push("/profile");
+        break;
+      case "reports":
+        router.push(`${baseRoute}/reports`);
         break;
       case "logout":
         setLogoutDialogOpen(true);
@@ -173,6 +183,12 @@ export function BottomNavbar() {
 
         {/* Historial */}
         <BottomNavigationAction label="Historial" value="history" icon={<History />} />
+
+        {/* Reportes */}
+        <BottomNavigationAction label="Reportes" value="reports" icon={<FlagOutlined />} />
+
+        {/* Perfil */}
+        <BottomNavigationAction label="Perfil" value="profile" icon={<PersonOutline />} />
 
         {/* Salir */}
         <BottomNavigationAction label="Salir" value="logout" icon={<Logout />} />

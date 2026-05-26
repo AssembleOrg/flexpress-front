@@ -9,13 +9,13 @@ import {
   Button,
   Card,
   CardContent,
-  Chip,
   CircularProgress,
   Container,
   Dialog,
   DialogActions,
   DialogContent,
   DialogTitle,
+  Divider,
   IconButton,
   Paper,
   Stack,
@@ -24,8 +24,21 @@ import {
   Tabs,
   TextField,
   Typography,
+  alpha,
+  useTheme,
 } from "@mui/material";
-import { Add, CheckCircle, Delete, Edit, Group, Person } from "@mui/icons-material";
+import {
+  Add,
+  CheckCircle,
+  CheckCircleRounded,
+  CancelRounded,
+  Delete,
+  Edit,
+  Group,
+  HourglassTopRounded,
+  Person,
+  UploadFileRounded,
+} from "@mui/icons-material";
 import toast from "react-hot-toast";
 import { AuthGuard } from "@/components/guards/AuthGuard";
 import { AuthNavbar } from "@/components/layout/AuthNavbar";
@@ -62,36 +75,125 @@ import {
 
 const MAX = 2;
 
-function StatusChip({ status }: { status: VerificationStatus }) {
-  const color =
-    status === VerificationStatus.VERIFIED
-      ? "success"
-      : status === VerificationStatus.REJECTED
-        ? "error"
-        : "warning";
-  const label =
-    status === VerificationStatus.VERIFIED
-      ? "Verificado"
-      : status === VerificationStatus.REJECTED
-        ? "Rechazado"
-        : "Pendiente";
-  return <Chip label={label} color={color} size="small" variant="outlined" />;
+// ─── Shared visual atoms (estilo macOS) ──────────────────────────────────────
+
+type SemColor = "success" | "warning" | "error" | "default";
+
+function verifColor(status: VerificationStatus): SemColor {
+  if (status === VerificationStatus.VERIFIED) return "success";
+  if (status === VerificationStatus.REJECTED) return "error";
+  return "warning";
 }
 
-function DocStatusChip({ status }: { status: DocumentReviewStatus }) {
-  const color =
+function verifLabel(status: VerificationStatus): string {
+  if (status === VerificationStatus.VERIFIED) return "Verificado";
+  if (status === VerificationStatus.REJECTED) return "Rechazado";
+  return "Pendiente";
+}
+
+function docColor(status: DocumentReviewStatus): SemColor {
+  if (status === DocumentReviewStatus.APPROVED) return "success";
+  if (status === DocumentReviewStatus.REJECTED) return "error";
+  return "warning";
+}
+
+function docLabelText(status: DocumentReviewStatus): string {
+  if (status === DocumentReviewStatus.APPROVED) return "Aprobado";
+  if (status === DocumentReviewStatus.REJECTED) return "Rechazado";
+  return "Pendiente";
+}
+
+/** Pill suave con dot de color a la izquierda. */
+function StatusPill({
+  color,
+  label,
+}: {
+  color: SemColor;
+  label: string;
+}) {
+  const theme = useTheme();
+  const main =
+    color === "default" ? theme.palette.text.disabled : theme.palette[color].main;
+  return (
+    <Box
+      sx={{
+        display: "inline-flex",
+        alignItems: "center",
+        gap: 0.75,
+        px: 1.1,
+        py: 0.35,
+        borderRadius: 999,
+        bgcolor: alpha(main, 0.12),
+        color: color === "default" ? "text.secondary" : `${color}.dark`,
+        fontSize: "0.72rem",
+        fontWeight: 600,
+        lineHeight: 1,
+      }}
+    >
+      <Box sx={{ width: 7, height: 7, borderRadius: "50%", bgcolor: main, flexShrink: 0 }} />
+      {label}
+    </Box>
+  );
+}
+
+/** Avatar con gradiente del tema en vez de gris plano. */
+function PersonnelAvatar({ src, initial }: { src?: string | null; initial: string }) {
+  const theme = useTheme();
+  return (
+    <Avatar
+      src={src ?? undefined}
+      sx={{
+        width: 52,
+        height: 52,
+        fontWeight: 700,
+        color: "#fff",
+        background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.secondary.main} 100%)`,
+        border: `2px solid ${alpha(theme.palette.common.white, 0.7)}`,
+        boxShadow: `0 2px 6px ${alpha(theme.palette.primary.main, 0.25)}`,
+      }}
+    >
+      {initial}
+    </Avatar>
+  );
+}
+
+/** Fila de documento: label a la izquierda, estado con ícono a la derecha. */
+function PersonnelDocRow({
+  label,
+  status,
+  rejectionReason,
+}: {
+  label: string;
+  status: DocumentReviewStatus;
+  rejectionReason?: string | null;
+}) {
+  const color = docColor(status);
+  const Icon =
     status === DocumentReviewStatus.APPROVED
-      ? "success"
+      ? CheckCircleRounded
       : status === DocumentReviewStatus.REJECTED
-        ? "error"
-        : "warning";
-  const label =
-    status === DocumentReviewStatus.APPROVED
-      ? "Aprobado"
-      : status === DocumentReviewStatus.REJECTED
-        ? "Rechazado"
-        : "Pendiente";
-  return <Chip label={label} color={color} size="small" />;
+        ? CancelRounded
+        : HourglassTopRounded;
+  return (
+    <Box sx={{ py: 1 }}>
+      <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 1 }}>
+        <Typography variant="body2" sx={{ fontWeight: 500 }}>
+          {label}
+        </Typography>
+        <Box sx={{ display: "inline-flex", alignItems: "center", gap: 0.5, color: `${color}.main` }}>
+          <Icon sx={{ fontSize: 16 }} />
+          <Typography variant="caption" sx={{ fontWeight: 600, color: `${color}.dark` }}>
+            {docLabelText(status)}
+          </Typography>
+        </Box>
+      </Box>
+      {status === DocumentReviewStatus.REJECTED && rejectionReason && (
+        <Typography variant="caption" color="error.dark" sx={{ display: "block", mt: 0.25 }}>
+          {rejectionReason}
+        </Typography>
+      )}
+    </Box>
+  );
 }
 
 // ─── Driver Card ─────────────────────────────────────────────────────────────
@@ -141,32 +243,41 @@ function DriverCard({ driver }: { driver: CharterDriver }) {
 
   return (
     <>
-      <Card variant="outlined">
-        <CardContent>
-          <Box sx={{ display: "flex", gap: 2, alignItems: "flex-start", mb: 2 }}>
-            <Avatar src={driver.photoUrl ?? undefined} sx={{ width: 56, height: 56 }}>
-              {driver.firstName[0]}
-            </Avatar>
-            <Box sx={{ flex: 1 }}>
-              <Typography variant="h6" fontWeight={700}>
+      <Card
+        elevation={0}
+        sx={{
+          borderRadius: 3,
+          boxShadow: "0 1px 2px rgba(0,0,0,0.04), 0 4px 16px rgba(0,0,0,0.06)",
+          transition: "box-shadow 0.2s ease, transform 0.2s ease",
+          "&:hover": {
+            boxShadow: "0 2px 4px rgba(0,0,0,0.05), 0 8px 24px rgba(0,0,0,0.09)",
+          },
+        }}
+      >
+        <CardContent sx={{ p: 2.25 }}>
+          <Box sx={{ display: "flex", gap: 1.75, alignItems: "flex-start" }}>
+            <PersonnelAvatar src={driver.photoUrl} initial={driver.firstName[0]} />
+            <Box sx={{ flex: 1, minWidth: 0 }}>
+              <Typography variant="subtitle1" fontWeight={700} noWrap>
                 {driver.firstName} {driver.lastName}
               </Typography>
-              <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap", mt: 0.5 }}>
-                <StatusChip status={driver.verificationStatus} />
-                <Chip
-                  label={driver.isEnabled ? "Disponible" : "No disponible"}
+              <Box sx={{ display: "flex", gap: 0.75, flexWrap: "wrap", mt: 0.75 }}>
+                <StatusPill
+                  color={verifColor(driver.verificationStatus)}
+                  label={verifLabel(driver.verificationStatus)}
+                />
+                <StatusPill
                   color={driver.isEnabled ? "success" : "default"}
-                  size="small"
-                  variant="outlined"
+                  label={driver.isEnabled ? "Disponible" : "No disponible"}
                 />
               </Box>
               {driver.phone && (
-                <Typography variant="body2" color="text.secondary" mt={0.5}>
+                <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
                   {driver.phone}
                 </Typography>
               )}
             </Box>
-            <Stack alignItems="center">
+            <Stack alignItems="center" spacing={0.5}>
               <Switch
                 checked={driver.isEnabled}
                 onChange={() => toggle.mutate()}
@@ -174,12 +285,12 @@ function DriverCard({ driver }: { driver: CharterDriver }) {
                 size="small"
               />
               <IconButton
-                color="error"
                 onClick={() => {
                   if (confirm(`¿Eliminar a ${driver.firstName}?`)) remove.mutate();
                 }}
                 disabled={remove.isPending}
                 size="small"
+                sx={{ color: "text.disabled", "&:hover": { color: "error.main" } }}
               >
                 <Delete fontSize="small" />
               </IconButton>
@@ -187,7 +298,7 @@ function DriverCard({ driver }: { driver: CharterDriver }) {
           </Box>
 
           {isRejected && driver.rejectionReason && (
-            <Alert severity="error" sx={{ mb: 1.5 }}>
+            <Alert severity="error" sx={{ mt: 1.75, borderRadius: 2 }}>
               <Typography variant="caption" fontWeight={600}>
                 Motivo del rechazo:
               </Typography>
@@ -202,50 +313,56 @@ function DriverCard({ driver }: { driver: CharterDriver }) {
               size="small"
               startIcon={<Edit />}
               onClick={() => setEditOpen(true)}
-              sx={{ mb: 1.5 }}
+              sx={{ mt: 1.5, borderRadius: 2 }}
             >
               Editar datos
             </Button>
           )}
 
-          <Typography variant="caption" color="text.secondary" fontWeight={600} display="block" mb={1}>
+          <Divider sx={{ my: 1.75 }} />
+
+          <Typography
+            variant="overline"
+            color="text.secondary"
+            sx={{ fontWeight: 700, letterSpacing: 0.5 }}
+          >
             Documentos
           </Typography>
-          <Stack spacing={1}>
-            {docs.map((doc) => (
-              <Box
-                key={doc.id}
-                sx={{ display: "flex", alignItems: "center", gap: 1, flexWrap: "wrap" }}
-              >
-                <Chip label={docTypeLabel(doc.type, doc.side)} size="small" variant="outlined" />
-                <DocStatusChip status={doc.status} />
-                {doc.status === DocumentReviewStatus.REJECTED && doc.rejectionReason && (
-                  <Typography variant="caption" color="error.dark">
-                    {doc.rejectionReason}
-                  </Typography>
-                )}
+          <Box sx={{ mt: 0.5 }}>
+            {docs.map((doc, i) => (
+              <Box key={doc.id}>
+                {i > 0 && <Divider sx={{ opacity: 0.5 }} />}
+                <PersonnelDocRow
+                  label={docTypeLabel(doc.type, doc.side)}
+                  status={doc.status}
+                  rejectionReason={doc.rejectionReason}
+                />
               </Box>
             ))}
+          </Box>
 
-            {!hasDniFront && (
-              <DocUploadButton
-                label="Subir DNI (frente)"
-                onUpload={(f) => uploadDoc(CharterDriverDocumentType.DNI, DocumentSide.FRONT, f)}
-              />
-            )}
-            {!hasDniBack && (
-              <DocUploadButton
-                label="Subir DNI (dorso)"
-                onUpload={(f) => uploadDoc(CharterDriverDocumentType.DNI, DocumentSide.BACK, f)}
-              />
-            )}
-            {!hasLicense && (
-              <DocUploadButton
-                label="Subir Licencia"
-                onUpload={(f) => uploadDoc(CharterDriverDocumentType.LICENSE, undefined, f)}
-              />
-            )}
-          </Stack>
+          {(!hasDniFront || !hasDniBack || !hasLicense) && (
+            <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap sx={{ mt: 1.5 }}>
+              {!hasDniFront && (
+                <DocUploadButton
+                  label="DNI frente"
+                  onUpload={(f) => uploadDoc(CharterDriverDocumentType.DNI, DocumentSide.FRONT, f)}
+                />
+              )}
+              {!hasDniBack && (
+                <DocUploadButton
+                  label="DNI dorso"
+                  onUpload={(f) => uploadDoc(CharterDriverDocumentType.DNI, DocumentSide.BACK, f)}
+                />
+              )}
+              {!hasLicense && (
+                <DocUploadButton
+                  label="Licencia"
+                  onUpload={(f) => uploadDoc(CharterDriverDocumentType.LICENSE, undefined, f)}
+                />
+              )}
+            </Stack>
+          )}
         </CardContent>
       </Card>
 
@@ -331,27 +448,36 @@ function HelperCard({ helper }: { helper: CharterHelper }) {
 
   return (
     <>
-      <Card variant="outlined">
-        <CardContent>
-          <Box sx={{ display: "flex", gap: 2, alignItems: "flex-start", mb: 2 }}>
-            <Avatar src={helper.photoUrl ?? undefined} sx={{ width: 56, height: 56 }}>
-              {helper.firstName[0]}
-            </Avatar>
-            <Box sx={{ flex: 1 }}>
-              <Typography variant="h6" fontWeight={700}>
+      <Card
+        elevation={0}
+        sx={{
+          borderRadius: 3,
+          boxShadow: "0 1px 2px rgba(0,0,0,0.04), 0 4px 16px rgba(0,0,0,0.06)",
+          transition: "box-shadow 0.2s ease, transform 0.2s ease",
+          "&:hover": {
+            boxShadow: "0 2px 4px rgba(0,0,0,0.05), 0 8px 24px rgba(0,0,0,0.09)",
+          },
+        }}
+      >
+        <CardContent sx={{ p: 2.25 }}>
+          <Box sx={{ display: "flex", gap: 1.75, alignItems: "flex-start" }}>
+            <PersonnelAvatar src={helper.photoUrl} initial={helper.firstName[0]} />
+            <Box sx={{ flex: 1, minWidth: 0 }}>
+              <Typography variant="subtitle1" fontWeight={700} noWrap>
                 {helper.firstName} {helper.lastName}
               </Typography>
-              <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap", mt: 0.5 }}>
-                <StatusChip status={helper.verificationStatus} />
-                <Chip
-                  label={helper.isEnabled ? "Disponible" : "No disponible"}
+              <Box sx={{ display: "flex", gap: 0.75, flexWrap: "wrap", mt: 0.75 }}>
+                <StatusPill
+                  color={verifColor(helper.verificationStatus)}
+                  label={verifLabel(helper.verificationStatus)}
+                />
+                <StatusPill
                   color={helper.isEnabled ? "success" : "default"}
-                  size="small"
-                  variant="outlined"
+                  label={helper.isEnabled ? "Disponible" : "No disponible"}
                 />
               </Box>
             </Box>
-            <Stack alignItems="center">
+            <Stack alignItems="center" spacing={0.5}>
               <Switch
                 checked={helper.isEnabled}
                 onChange={() => toggle.mutate()}
@@ -359,12 +485,12 @@ function HelperCard({ helper }: { helper: CharterHelper }) {
                 size="small"
               />
               <IconButton
-                color="error"
                 onClick={() => {
                   if (confirm(`¿Eliminar a ${helper.firstName}?`)) remove.mutate();
                 }}
                 disabled={remove.isPending}
                 size="small"
+                sx={{ color: "text.disabled", "&:hover": { color: "error.main" } }}
               >
                 <Delete fontSize="small" />
               </IconButton>
@@ -372,7 +498,7 @@ function HelperCard({ helper }: { helper: CharterHelper }) {
           </Box>
 
           {isRejected && helper.rejectionReason && (
-            <Alert severity="error" sx={{ mb: 1.5 }}>
+            <Alert severity="error" sx={{ mt: 1.75, borderRadius: 2 }}>
               <Typography variant="caption" fontWeight={600}>
                 Motivo del rechazo:
               </Typography>
@@ -387,39 +513,44 @@ function HelperCard({ helper }: { helper: CharterHelper }) {
               size="small"
               startIcon={<Edit />}
               onClick={() => setEditOpen(true)}
-              sx={{ mb: 1.5 }}
+              sx={{ mt: 1.5, borderRadius: 2 }}
             >
               Editar datos
             </Button>
           )}
 
-          <Typography variant="caption" color="text.secondary" fontWeight={600} display="block" mb={1}>
+          <Divider sx={{ my: 1.75 }} />
+
+          <Typography
+            variant="overline"
+            color="text.secondary"
+            sx={{ fontWeight: 700, letterSpacing: 0.5 }}
+          >
             Documentos
           </Typography>
-          <Stack spacing={1}>
-            {docs.map((doc) => (
-              <Box key={doc.id} sx={{ display: "flex", alignItems: "center", gap: 1, flexWrap: "wrap" }}>
-                <Chip
+          <Box sx={{ mt: 0.5 }}>
+            {docs.map((doc, i) => (
+              <Box key={doc.id}>
+                {i > 0 && <Divider sx={{ opacity: 0.5 }} />}
+                <PersonnelDocRow
                   label={`DNI ${doc.side === DocumentSide.BACK ? "(dorso)" : "(frente)"}`}
-                  size="small"
-                  variant="outlined"
+                  status={doc.status}
+                  rejectionReason={doc.rejectionReason}
                 />
-                <DocStatusChip status={doc.status} />
-                {doc.status === DocumentReviewStatus.REJECTED && doc.rejectionReason && (
-                  <Typography variant="caption" color="error.dark">
-                    {doc.rejectionReason}
-                  </Typography>
-                )}
               </Box>
             ))}
+          </Box>
 
-            {!hasFront && (
-              <DocUploadButton label="Subir DNI (frente)" onUpload={(f) => uploadDoc(DocumentSide.FRONT, f)} />
-            )}
-            {!hasBack && (
-              <DocUploadButton label="Subir DNI (dorso)" onUpload={(f) => uploadDoc(DocumentSide.BACK, f)} />
-            )}
-          </Stack>
+          {(!hasFront || !hasBack) && (
+            <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap sx={{ mt: 1.5 }}>
+              {!hasFront && (
+                <DocUploadButton label="DNI frente" onUpload={(f) => uploadDoc(DocumentSide.FRONT, f)} />
+              )}
+              {!hasBack && (
+                <DocUploadButton label="DNI dorso" onUpload={(f) => uploadDoc(DocumentSide.BACK, f)} />
+              )}
+            </Stack>
+          )}
         </CardContent>
       </Card>
 
@@ -491,7 +622,16 @@ function DocUploadButton({
     }
   };
   return (
-    <Button variant="outlined" size="small" component="label" disabled={uploading}>
+    <Button
+      variant="outlined"
+      size="small"
+      component="label"
+      disabled={uploading}
+      startIcon={
+        uploading ? <CircularProgress size={14} /> : <UploadFileRounded sx={{ fontSize: 16 }} />
+      }
+      sx={{ borderRadius: 2, textTransform: "none", borderStyle: "dashed" }}
+    >
       {uploading ? "Subiendo..." : label}
       <input type="file" accept="image/*" hidden onChange={handle} />
     </Button>

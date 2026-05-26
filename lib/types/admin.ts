@@ -36,6 +36,8 @@ export interface UpdateReportRequest {
   adminNotes?: string;
   creditsToReporter?: number;
   creditsFromReported?: number;
+  creditsToReported?: number;
+  creditsFromReporter?: number;
   resolvedInFavorOf?: "reporter" | "reported" | "company";
 }
 

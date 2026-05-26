@@ -130,7 +130,7 @@ export function ReportsTable() {
     {
       field: "actions",
       headerName: "Acciones",
-      width: 120,
+      width: 160,
       sortable: false,
       filterable: false,
       renderCell: (params) => (
@@ -199,6 +199,11 @@ export function ReportsTable() {
             onPaginationModelChange={setPaginationModel}
             loading={isLoading}
             disableRowSelectionOnClick
+            sx={{
+              "& .MuiDataGrid-cell": {
+                overflow: "visible",
+              },
+            }}
           />
         </Box>
       )}

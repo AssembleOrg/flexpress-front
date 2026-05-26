@@ -240,6 +240,8 @@ export interface Report {
   resolvedBy: string | null;
   creditsToReporter?: number | null;
   creditsFromReported?: number | null;
+  creditsToReported?: number | null;
+  creditsFromReporter?: number | null;
   resolvedInFavorOf?: "reporter" | "reported" | "company" | null;
   createdAt: string;
   updatedAt: string;

@@ -1,10 +1,21 @@
 "use client";
 
+import type React from "react";
 import {
   SouthWest as ReceivedIcon,
   NorthEast as RemovedIcon,
+  AdminPanelSettingsOutlined as AdminIcon,
 } from "@mui/icons-material";
-import { Box, Card, CardContent, Chip, Stack, Typography } from "@mui/material";
+import {
+  Avatar,
+  Box,
+  Card,
+  CardContent,
+  Chip,
+  Divider,
+  Stack,
+  Typography,
+} from "@mui/material";
 import type { Report } from "@/lib/types/api";
 
 type ReportPerspective = "mine" | "against";
@@ -31,6 +42,13 @@ const STATUS_COLOR: Record<
   dismissed: "default",
 };
 
+const STATUS_BORDER: Record<string, string> = {
+  pending: "error.main",
+  investigating: "warning.main",
+  resolved: "success.main",
+  dismissed: "grey.400",
+};
+
 function formatDate(dateStr: string): string {
   const date = new Date(dateStr);
   if (Number.isNaN(date.getTime())) return "";
@@ -41,48 +59,82 @@ function formatDate(dateStr: string): string {
   }).format(date);
 }
 
-/**
- * Read-only summary card for a report from the user's perspective.
- * - perspective "mine": the current user is the reporter (counterpart = reported)
- * - perspective "against": the current user is the reported (counterpart = reporter)
- */
+function getInitial(name?: string | null): string {
+  return name?.charAt(0).toUpperCase() ?? "?";
+}
+
 export function ReportCard({ report, perspective }: ReportCardProps) {
   const counterpart =
     perspective === "mine" ? report.reported : report.reporter;
   const isResolved = report.status === "resolved";
+  const borderColor = STATUS_BORDER[report.status] ?? "grey.400";
 
-  const creditLine =
-    perspective === "mine"
-      ? report.creditsToReporter && report.creditsToReporter > 0
-        ? {
-            icon: <ReceivedIcon fontSize="small" color="success" />,
-            text: `Recibiste ${report.creditsToReporter} crédito${
-              report.creditsToReporter === 1 ? "" : "s"
-            }`,
-            color: "success.main",
-          }
-        : null
-      : report.creditsFromReported && report.creditsFromReported > 0
-        ? {
-            icon: <RemovedIcon fontSize="small" color="error" />,
-            text: `Se te descontaron ${report.creditsFromReported} crédito${
-              report.creditsFromReported === 1 ? "" : "s"
-            }`,
-            color: "error.main",
-          }
-        : null;
+  // Puede haber múltiples líneas de crédito según la perspectiva
+  const creditLines: { icon: React.ReactNode; text: string; color: string }[] = [];
+
+  if (perspective === "mine") {
+    if (report.creditsToReporter && report.creditsToReporter > 0) {
+      creditLines.push({
+        icon: <ReceivedIcon fontSize="small" color="success" />,
+        text: `Recibiste ${report.creditsToReporter} crédito${report.creditsToReporter === 1 ? "" : "s"}`,
+        color: "success.main",
+      });
+    }
+    if (report.creditsFromReporter && report.creditsFromReporter > 0) {
+      creditLines.push({
+        icon: <RemovedIcon fontSize="small" color="error" />,
+        text: `Se te descontaron ${report.creditsFromReporter} crédito${report.creditsFromReporter === 1 ? "" : "s"} (reporte falso)`,
+        color: "error.main",
+      });
+    }
+  } else {
+    if (report.creditsFromReported && report.creditsFromReported > 0) {
+      creditLines.push({
+        icon: <RemovedIcon fontSize="small" color="error" />,
+        text: `Se te descontaron ${report.creditsFromReported} crédito${report.creditsFromReported === 1 ? "" : "s"}`,
+        color: "error.main",
+      });
+    }
+    if (report.creditsToReported && report.creditsToReported > 0) {
+      creditLines.push({
+        icon: <ReceivedIcon fontSize="small" color="success" />,
+        text: `Recibiste ${report.creditsToReported} crédito${report.creditsToReported === 1 ? "" : "s"} (compensación)`,
+        color: "success.main",
+      });
+    }
+  }
 
   return (
-    <Card>
+    <Card
+      sx={{
+        borderLeft: "4px solid",
+        borderLeftColor: borderColor,
+        transition: "all 0.2s ease-in-out",
+        "&:hover": {
+          transform: "translateY(-2px)",
+          boxShadow: "0px 4px 16px rgba(0, 0, 0, 0.12)",
+        },
+      }}
+    >
       <CardContent sx={{ p: { xs: 1.5, md: 2 } }}>
-        <Stack
-          direction="row"
-          justifyContent="space-between"
-          alignItems="start"
-          mb={1}
-        >
+        {/* Header: avatar + nombre + estado */}
+        <Stack direction="row" alignItems="flex-start" gap={1.5} mb={1.5}>
+          <Avatar
+            sx={{
+              width: 36,
+              height: 36,
+              bgcolor: "secondary.main",
+              color: "primary.main",
+              fontWeight: 700,
+              fontSize: "0.9rem",
+              flexShrink: 0,
+            }}
+          >
+            {getInitial(counterpart?.name)}
+          </Avatar>
+
           <Box flex={1} sx={{ minWidth: 0 }}>
-            <Typography variant="subtitle2" sx={{ fontWeight: 600 }} noWrap>
+            <Typography variant="subtitle2" sx={{ fontWeight: 700 }} noWrap>
               {perspective === "mine" ? "Reportaste a" : "Te reportó"}{" "}
               {counterpart?.name ?? "—"}
             </Typography>
@@ -92,14 +144,19 @@ export function ReportCard({ report, perspective }: ReportCardProps) {
               </Typography>
             )}
           </Box>
+
           <Chip
             label={STATUS_LABEL[report.status] ?? report.status}
             color={STATUS_COLOR[report.status] ?? "default"}
             size="small"
+            sx={{ flexShrink: 0, fontWeight: 600 }}
           />
         </Stack>
 
-        <Typography variant="body2" sx={{ fontWeight: 500, mb: 0.5 }}>
+        <Divider sx={{ mb: 1.5 }} />
+
+        {/* Razón y descripción */}
+        <Typography variant="body2" sx={{ fontWeight: 600, mb: 0.5 }}>
           {report.reason}
         </Typography>
         {report.description && (
@@ -117,35 +174,36 @@ export function ReportCard({ report, perspective }: ReportCardProps) {
           </Typography>
         )}
 
-        {isResolved && creditLine && (
-          <Stack
-            direction="row"
-            spacing={0.5}
-            alignItems="center"
-            sx={{ mt: 1.5 }}
-          >
-            {creditLine.icon}
-            <Typography
-              variant="body2"
-              sx={{ fontWeight: 600, color: creditLine.color }}
-            >
-              {creditLine.text}
-            </Typography>
+        {/* Créditos (solo si resuelto) */}
+        {isResolved && creditLines.length > 0 && (
+          <Stack spacing={0.5} sx={{ mt: 1.5 }}>
+            {creditLines.map((line, i) => (
+              <Stack key={i} direction="row" spacing={0.5} alignItems="center">
+                {line.icon}
+                <Typography variant="body2" sx={{ fontWeight: 600, color: line.color }}>
+                  {line.text}
+                </Typography>
+              </Stack>
+            ))}
           </Stack>
         )}
 
+        {/* Notas del admin */}
         {report.adminNotes && (
           <Box
             sx={{
               mt: 1.5,
               p: 1.5,
               borderRadius: 1,
-              bgcolor: "grey.100",
+              bgcolor: "background.default",
             }}
           >
-            <Typography variant="caption" color="text.secondary">
-              Notas del administrador
-            </Typography>
+            <Stack direction="row" alignItems="center" gap={0.5} mb={0.5}>
+              <AdminIcon sx={{ fontSize: 14, color: "text.secondary" }} />
+              <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>
+                Notas del administrador
+              </Typography>
+            </Stack>
             <Typography variant="body2">{report.adminNotes}</Typography>
           </Box>
         )}

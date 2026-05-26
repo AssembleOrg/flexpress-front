@@ -32,8 +32,13 @@ export const reportsApi = {
     const response = await api.get<ApiResponse<Report[]>>(
       "/reports/my-reports",
     );
-    // biome-ignore lint/style/noNonNullAssertion: axios response guarantees data
-    return response.data.data!;
+    const raw = response.data.data;
+    if (Array.isArray(raw)) return raw;
+    if (raw && typeof raw === "object" && "data" in raw) {
+      const inner = (raw as { data: unknown }).data;
+      if (Array.isArray(inner)) return inner as Report[];
+    }
+    return [];
   },
 
   /**
@@ -44,7 +49,12 @@ export const reportsApi = {
     const response = await api.get<ApiResponse<Report[]>>(
       "/reports/against-me",
     );
-    // biome-ignore lint/style/noNonNullAssertion: axios response guarantees data
-    return response.data.data!;
+    const raw = response.data.data;
+    if (Array.isArray(raw)) return raw;
+    if (raw && typeof raw === "object" && "data" in raw) {
+      const inner = (raw as { data: unknown }).data;
+      if (Array.isArray(inner)) return inner as Report[];
+    }
+    return [];
   },
 };

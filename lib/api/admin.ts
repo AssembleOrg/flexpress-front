@@ -241,9 +241,11 @@ export const adminApi = {
     data: UpdateReportRequest,
   ): Promise<Report> => {
     const response = await api.put<ApiResponse<Report>>(`/reports/${id}`, data);
-
-    // biome-ignore lint/style/noNonNullAssertion: axios response guarantees data
-    return response.data.data!;
+    const raw = response.data.data;
+    if (raw && typeof raw === "object" && "success" in raw && "data" in raw) {
+      return (raw as unknown as { data: Report }).data;
+    }
+    return raw as Report;
   },
 
   // ============================================

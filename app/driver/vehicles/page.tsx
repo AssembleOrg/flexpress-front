@@ -8,13 +8,13 @@ import {
   Button,
   Card,
   CardContent,
-  Chip,
   CircularProgress,
   Container,
   Dialog,
   DialogActions,
   DialogContent,
   DialogTitle,
+  Divider,
   FormControl,
   InputLabel,
   MenuItem,
@@ -24,8 +24,18 @@ import {
   Switch,
   TextField,
   Typography,
+  alpha,
+  useTheme,
 } from "@mui/material";
-import { Add, DirectionsCar, Edit, Upload } from "@mui/icons-material";
+import {
+  Add,
+  CancelRounded,
+  CheckCircleRounded,
+  DirectionsCar,
+  Edit,
+  HourglassTopRounded,
+  Upload,
+} from "@mui/icons-material";
 import { useMyVehicles } from "@/lib/hooks/queries/useVehicleQueries";
 import {
   useCreateVehicleDocument,
@@ -44,6 +54,100 @@ import {
   VehicleDocumentType,
 } from "@/lib/types/api";
 import { VEHICLE_BRANDS } from "@/lib/constants/vehicleBrands";
+
+// ─── Shared visual atoms (estilo macOS, alineado con /driver/personal) ───────
+
+type SemColor = "success" | "warning" | "error" | "default";
+
+function StatusPill({ color, label }: { color: SemColor; label: string }) {
+  const theme = useTheme();
+  const main =
+    color === "default" ? theme.palette.text.disabled : theme.palette[color].main;
+  return (
+    <Box
+      sx={{
+        display: "inline-flex",
+        alignItems: "center",
+        gap: 0.75,
+        px: 1.1,
+        py: 0.35,
+        borderRadius: 999,
+        bgcolor: alpha(main, 0.12),
+        color: color === "default" ? "text.secondary" : `${color}.dark`,
+        fontSize: "0.72rem",
+        fontWeight: 600,
+        lineHeight: 1,
+      }}
+    >
+      <Box sx={{ width: 7, height: 7, borderRadius: "50%", bgcolor: main, flexShrink: 0 }} />
+      {label}
+    </Box>
+  );
+}
+
+function docColor(status: DocumentReviewStatus): SemColor {
+  if (status === DocumentReviewStatus.APPROVED) return "success";
+  if (status === DocumentReviewStatus.REJECTED) return "error";
+  return "warning";
+}
+
+function VehicleDocRow({
+  label,
+  status,
+  onReupload,
+}: {
+  label: string;
+  status: DocumentReviewStatus;
+  onReupload?: () => void;
+}) {
+  const color = docColor(status);
+  const Icon =
+    status === DocumentReviewStatus.APPROVED
+      ? CheckCircleRounded
+      : status === DocumentReviewStatus.REJECTED
+        ? CancelRounded
+        : HourglassTopRounded;
+  const statusText =
+    status === DocumentReviewStatus.APPROVED
+      ? "Aprobado"
+      : status === DocumentReviewStatus.REJECTED
+        ? "Rechazado"
+        : "Pendiente";
+  return (
+    <Box
+      sx={{
+        py: 1,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between",
+        gap: 1,
+      }}
+    >
+      <Typography variant="body2" sx={{ fontWeight: 500 }}>
+        {label}
+      </Typography>
+      <Box sx={{ display: "inline-flex", alignItems: "center", gap: 1 }}>
+        <Box sx={{ display: "inline-flex", alignItems: "center", gap: 0.5, color: `${color}.main` }}>
+          <Icon sx={{ fontSize: 16 }} />
+          <Typography variant="caption" sx={{ fontWeight: 600, color: `${color}.dark` }}>
+            {statusText}
+          </Typography>
+        </Box>
+        {status === DocumentReviewStatus.REJECTED && onReupload && (
+          <Button
+            size="small"
+            variant="text"
+            startIcon={<Upload sx={{ fontSize: 15 }} />}
+            onClick={onReupload}
+            sx={{ textTransform: "none", py: 0, minWidth: 0 }}
+          >
+            Re-subir
+          </Button>
+        )}
+      </Box>
+    </Box>
+  );
+}
 
 // ─── Per-vehicle card (hooks called at stable component level) ───────────────
 
@@ -115,40 +219,45 @@ function VehicleCard({ vehicle }: { vehicle: Vehicle }) {
 
   return (
     <>
-      <Card variant="outlined">
-        <CardContent>
+      <Card
+        elevation={0}
+        sx={{
+          borderRadius: 3,
+          boxShadow: "0 1px 2px rgba(0,0,0,0.04), 0 4px 16px rgba(0,0,0,0.06)",
+          transition: "box-shadow 0.2s ease",
+          "&:hover": {
+            boxShadow: "0 2px 4px rgba(0,0,0,0.05), 0 8px 24px rgba(0,0,0,0.09)",
+          },
+        }}
+      >
+        <CardContent sx={{ p: 2.25 }}>
           <Box
             sx={{
               display: "flex",
               justifyContent: "space-between",
               alignItems: "flex-start",
               gap: 2,
-              mb: 2,
             }}
           >
-            <Box sx={{ flex: 1 }}>
+            <Box sx={{ flex: 1, minWidth: 0 }}>
               <Typography
                 variant="h6"
                 fontWeight={700}
-                sx={{ fontFamily: "monospace", fontSize: "1.25rem", mb: 1 }}
+                sx={{ fontFamily: "monospace", fontSize: "1.2rem", letterSpacing: "0.04em" }}
               >
                 {vehicle.plate}
               </Typography>
-              <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap", mb: 1 }}>
-                <Chip
-                  label={statusLabel(vehicle.verificationStatus)}
+              <Box sx={{ display: "flex", gap: 0.75, flexWrap: "wrap", mt: 0.75 }}>
+                <StatusPill
                   color={statusColor(vehicle.verificationStatus)}
-                  size="small"
-                  variant="outlined"
+                  label={statusLabel(vehicle.verificationStatus)}
                 />
-                <Chip
-                  label={vehicle.isEnabled ? "Disponible" : "No disponible"}
+                <StatusPill
                   color={vehicle.isEnabled ? "success" : "default"}
-                  size="small"
-                  variant="outlined"
+                  label={vehicle.isEnabled ? "Disponible" : "No disponible"}
                 />
               </Box>
-              <Typography variant="body2" color="text.secondary">
+              <Typography variant="body2" color="text.secondary" sx={{ mt: 0.75 }}>
                 {vehicle.brand || "Sin marca"} {vehicle.model && `- ${vehicle.model}`}
                 {vehicle.year && ` (${vehicle.year})`}
               </Typography>
@@ -175,9 +284,9 @@ function VehicleCard({ vehicle }: { vehicle: Vehicle }) {
 
           {/* Rejection info + Edit button */}
           {isRejected && (
-            <Box>
+            <Box sx={{ mt: 1.75 }}>
               {vehicle.rejectionReason && (
-                <Alert severity="error" sx={{ mb: 1.5 }}>
+                <Alert severity="error" sx={{ mb: 1.5, borderRadius: 2 }}>
                   <Typography variant="caption" sx={{ fontWeight: 600 }}>
                     Motivo del rechazo:
                   </Typography>
@@ -189,6 +298,7 @@ function VehicleCard({ vehicle }: { vehicle: Vehicle }) {
                 color="warning"
                 size="small"
                 startIcon={<Edit />}
+                sx={{ borderRadius: 2 }}
                 onClick={() => {
                   setEditBrand(vehicle.brand ?? "");
                   setEditModel(vehicle.model ?? "");
@@ -202,56 +312,33 @@ function VehicleCard({ vehicle }: { vehicle: Vehicle }) {
             </Box>
           )}
 
-          {/* Rejected documents — re-upload buttons */}
+          {/* Rejected documents — re-upload en filas */}
           {isRejected && (vehicle.documents?.length ?? 0) > 0 && (
-            <Box sx={{ mt: 2 }}>
-              <Typography variant="caption" color="text.secondary" fontWeight={600} display="block" mb={1}>
+            <Box sx={{ mt: 1.75 }}>
+              <Divider sx={{ mb: 1 }} />
+              <Typography
+                variant="overline"
+                color="text.secondary"
+                sx={{ fontWeight: 700, letterSpacing: 0.5 }}
+              >
                 Documentos
               </Typography>
-              <Stack spacing={0.75}>
-                {(vehicle.documents ?? []).map((doc) => (
-                  <Stack key={doc.id} direction="row" alignItems="center" gap={1} flexWrap="wrap">
-                    <Chip
+              <Box sx={{ mt: 0.5 }}>
+                {(vehicle.documents ?? []).map((doc, i) => (
+                  <Box key={doc.id}>
+                    {i > 0 && <Divider sx={{ opacity: 0.5 }} />}
+                    <VehicleDocRow
                       label={docTypeLabel[doc.type] ?? doc.type}
-                      size="small"
-                      variant="outlined"
+                      status={doc.status}
+                      onReupload={() => {
+                        setReuploadDoc(doc);
+                        setReuploadUrl("");
+                        setReuploadExpiry("");
+                      }}
                     />
-                    <Chip
-                      label={
-                        doc.status === DocumentReviewStatus.APPROVED
-                          ? "Aprobado"
-                          : doc.status === DocumentReviewStatus.REJECTED
-                          ? "Rechazado"
-                          : "Pendiente"
-                      }
-                      size="small"
-                      color={
-                        doc.status === DocumentReviewStatus.APPROVED
-                          ? "success"
-                          : doc.status === DocumentReviewStatus.REJECTED
-                          ? "error"
-                          : "warning"
-                      }
-                    />
-                    {doc.status === DocumentReviewStatus.REJECTED && (
-                      <Button
-                        size="small"
-                        variant="outlined"
-                        color="info"
-                        startIcon={<Upload />}
-                        sx={{ fontSize: "0.7rem", py: 0.25 }}
-                        onClick={() => {
-                          setReuploadDoc(doc);
-                          setReuploadUrl("");
-                          setReuploadExpiry("");
-                        }}
-                      >
-                        Re-subir
-                      </Button>
-                    )}
-                  </Stack>
+                  </Box>
                 ))}
-              </Stack>
+              </Box>
             </Box>
           )}
         </CardContent>

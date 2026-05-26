@@ -26,6 +26,7 @@ import {
   ListItemIcon,
   ListItemText,
   Toolbar,
+  Tooltip,
   Typography,
 } from "@mui/material";
 import { useRouter } from "next/navigation";
@@ -291,10 +292,35 @@ export function AuthNavbar() {
             )}
           </Box>
 
-          {/* Desktop - Notifications & Logout */}
+          {/* Desktop - Profile & Logout */}
           <Box
             sx={{ display: { xs: "none", md: "flex" }, alignItems: "center", gap: 1 }}
           >
+            {/* Profile Avatar */}
+            <Tooltip title="Mi perfil" arrow>
+              <Avatar
+                onClick={handleProfile}
+                src={user?.avatar ?? undefined}
+                sx={{
+                  width: 36,
+                  height: 36,
+                  cursor: "pointer",
+                  bgcolor: "#DCA621",
+                  color: "#380116",
+                  fontWeight: 700,
+                  fontSize: "0.95rem",
+                  border: "2px solid rgba(255, 255, 255, 0.5)",
+                  transition: "all 0.2s ease",
+                  "&:hover": {
+                    border: "2px solid rgba(255, 255, 255, 0.9)",
+                    transform: "scale(1.05)",
+                  },
+                }}
+              >
+                {user?.avatar ? null : (user?.name?.[0]?.toUpperCase() ?? <PersonIcon />)}
+              </Avatar>
+            </Tooltip>
+
             {/* Logout Button */}
             <IconButton
               onClick={handleLogout}
