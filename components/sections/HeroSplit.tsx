@@ -41,7 +41,7 @@ export function HeroSplit() {
         backgroundColor: "#380116",
         color: "white",
         textAlign: "left",
-        backgroundImage: "url(/banner-flexpress.png)",
+        backgroundImage: "url(/banner-flexpress.webp)",
         backgroundPosition: "right center",
         backgroundSize: "cover",
         backgroundRepeat: "no-repeat",
@@ -463,7 +463,7 @@ export function HeroSplit() {
               }}
             >
               <Image
-                src="/banner-flexpress.png"
+                src="/banner-flexpress.webp"
                 alt="Flexpress Banner"
                 fill
                 priority

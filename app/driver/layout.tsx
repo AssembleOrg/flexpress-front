@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { AuthNavbar } from "@/components/layout/AuthNavbar";
 import { BottomNavbar } from "@/components/layout/BottomNavbar";
 import { AuthGuard } from "@/components/guards/AuthGuard";
 import { RoleGuard } from "@/components/guards/RoleGuard";
@@ -17,6 +18,7 @@ export default function DriverLayout({
     <AuthGuard>
       <RoleGuard requiredRole="charter">
         <div className="driver-layout">
+          <AuthNavbar />
           {children}
           <BottomNavbar />
         </div>

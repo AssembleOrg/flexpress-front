@@ -4,17 +4,21 @@ import {
   Assignment,
   Block,
   Chat,
+  ChevronRight,
   DirectionsCar,
   EditOutlined,
   Flag,
   HourglassEmpty,
   LocationOn,
+  MonetizationOn,
   Person,
+  StarRounded,
 } from "@mui/icons-material";
 import {
   Alert,
   Box,
   Button,
+  ButtonBase,
   Card,
   CardContent,
   Chip,
@@ -23,6 +27,7 @@ import {
   DialogActions,
   DialogContent,
   DialogTitle,
+  Divider,
   FormControlLabel,
   FormControlLabel as FormControlLabelRadio,
   IconButton,
@@ -38,7 +43,6 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import { MobileMatchCard } from "@/components/cards/MobileMatchCard";
-import { AuthNavbar } from "@/components/layout/AuthNavbar";
 import { MobileContainer } from "@/components/layout/MobileContainer";
 import { MatchExpirationTimer } from "@/components/MatchExpirationTimer";
 import { AcceptMatchModal } from "@/components/modals/AcceptMatchModal";
@@ -60,13 +64,11 @@ import {
 } from "@/lib/hooks/queries/useTravelMatchQueries";
 import { useMyVehicles } from "@/lib/hooks/queries/useVehicleQueries";
 import { useUserFeedback } from "@/lib/hooks/queries/useFeedbackQueries";
-import { RatingDisplay } from "@/components/ui/RatingDisplay";
 import { useAuthStore } from "@/lib/stores/authStore";
 import { type TravelMatch, VerificationStatus } from "@/lib/types/api";
 import { isMatchExpired } from "@/lib/utils/matchHelpers";
 
 const MotionCard = motion.create(Card);
-const MotionBox = motion.create(Box);
 
 export default function DriverDashboard() {
   const router = useRouter();
@@ -318,7 +320,6 @@ export default function DriverDashboard() {
   if (isNotVerified) {
     return (
       <>
-        <AuthNavbar />
         <MobileContainer withBottomNav>
           <WelcomeHeader
             userName={user?.name}
@@ -511,7 +512,6 @@ export default function DriverDashboard() {
 
   return (
     <>
-      <AuthNavbar />
       <MobileContainer withBottomNav>
         {/* Welcome Header */}
         <WelcomeHeader
@@ -581,42 +581,36 @@ export default function DriverDashboard() {
                   borderColor: "divider",
                 }}
               >
-                <Stack
-                  direction="row"
-                  alignItems="center"
-                  justifyContent="space-between"
-                  gap={1}
-                >
+                <Stack direction="row" alignItems="center" justifyContent="space-between" gap={1}>
                   <Stack direction="row" alignItems="center" gap={0.75} flex={1} minWidth={0}>
-                    <DirectionsCar sx={{ fontSize: 16, color: "text.secondary", flexShrink: 0 }} />
-                    <Typography variant="caption" color="text.secondary" noWrap>
+                    <DirectionsCar sx={{ fontSize: 18, color: "text.secondary", flexShrink: 0 }} />
+                    <Typography variant="body2" fontWeight={600} noWrap>
                       {[activeVehicle.brand, activeVehicle.model].filter(Boolean).join(" ") || "Vehículo"}
                     </Typography>
                     <Chip
                       label={activeVehicle.plate}
                       size="small"
-                      variant="outlined"
-                      sx={{ fontFamily: "monospace", fontSize: "0.65rem", height: 18, flexShrink: 0 }}
+                      sx={{ fontFamily: "monospace", fontSize: "0.68rem", fontWeight: 700, height: 20, flexShrink: 0 }}
                     />
                   </Stack>
-                  <Typography
-                    variant="caption"
-                    color="primary.main"
-                    sx={{ cursor: "pointer", flexShrink: 0, textDecoration: "underline" }}
+                  <Button
+                    size="small"
+                    variant="text"
+                    color="primary"
+                    endIcon={<ChevronRight sx={{ fontSize: 16 }} />}
                     onClick={() => router.push("/driver/vehicles")}
+                    sx={{ textTransform: "none", fontWeight: 600, p: 0, minWidth: 0, flexShrink: 0 }}
                   >
-                    Gestionar →
-                  </Typography>
+                    Gestionar
+                  </Button>
                 </Stack>
                 {user?.pricePerKm != null && (
-                  <Typography
-                    variant="caption"
-                    color="text.secondary"
-                    display="block"
-                    mt={0.5}
-                  >
-                    💰 {user.pricePerKm} cr/km
-                  </Typography>
+                  <Stack direction="row" alignItems="center" gap={0.5} mt={0.75}>
+                    <MonetizationOn sx={{ fontSize: 15, color: "primary.main" }} />
+                    <Typography variant="body2" color="primary.main" fontWeight={600}>
+                      {user.pricePerKm} cr/km
+                    </Typography>
+                  </Stack>
                 )}
               </Box>
             )}
@@ -664,125 +658,116 @@ export default function DriverDashboard() {
           </DialogActions>
         </Dialog>
 
-        {/* Tarifa del charter */}
+        {/* Stats row: Tarifa + Reputación + Créditos */}
         <MotionCard
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.15 }}
           sx={{ mb: 3 }}
         >
-          <CardContent sx={{ p: 2.5 }}>
-            {/* Header row */}
-            <Stack
-              direction="row"
-              alignItems="center"
-              justifyContent="space-between"
-              mb={1}
+          <Box
+            sx={{
+              display: "grid",
+              gridTemplateColumns: "1fr auto 1fr auto 1fr",
+              alignItems: "stretch",
+            }}
+          >
+            {/* Columna: Tarifa */}
+            <ButtonBase
+              onClick={() => router.push("/driver/settings")}
+              sx={{
+                flexDirection: "column",
+                alignItems: "flex-start",
+                p: 2,
+                borderRadius: "inherit",
+                gap: 0.25,
+                "&:hover": { bgcolor: "action.hover" },
+              }}
             >
-              <Typography variant="subtitle2" fontWeight={700}>
-                Tu tarifa
-              </Typography>
-              <IconButton
-                size="small"
-                onClick={() => router.push("/driver/settings")}
-                sx={{ color: "text.secondary" }}
-                aria-label="Editar tarifa"
-              >
-                <EditOutlined fontSize="small" />
-              </IconButton>
-            </Stack>
-            {user?.pricePerKm != null ? (
-              <Stack spacing={0.5}>
-                <Typography variant="body2">
-                  Tu precio: <strong>{user.pricePerKm} cr/km</strong>
+              <Stack direction="row" alignItems="center" gap={0.25} width="100%">
+                <Typography variant="caption" color="text.secondary" fontWeight={600}>
+                  Tarifa
                 </Typography>
-                {pricing?.creditsPerKm && (
-                  <Typography variant="caption" color="text.secondary">
-                    Tarifa base del sistema: {pricing.creditsPerKm} cr/km
+                <ChevronRight sx={{ fontSize: 13, color: "text.disabled", ml: "auto" }} />
+              </Stack>
+              {user?.pricePerKm != null ? (
+                <Typography variant="subtitle1" fontWeight={700} lineHeight={1.2}>
+                  {user.pricePerKm}
+                  <Typography component="span" variant="caption" color="text.secondary" sx={{ ml: 0.4 }}>
+                    cr/km
                   </Typography>
-                )}
-              </Stack>
-            ) : (
-              <Stack spacing={1}>
-                <Typography variant="body2" color="text.secondary">
-                  Aún no configuraste tu precio por km.
                 </Typography>
-                <Button
-                  size="small"
-                  variant="outlined"
-                  onClick={() => router.push("/driver/settings")}
-                >
-                  Configurar precio
-                </Button>
-              </Stack>
-            )}
-          </CardContent>
-        </MotionCard>
-
-        {/* Reputación */}
-        <MotionCard
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.175 }}
-          sx={{ mb: 3 }}
-        >
-          <CardContent sx={{ p: 2.5 }}>
-            <Stack direction="row" alignItems="center" justifyContent="space-between">
-              <Box>
-                <Typography variant="subtitle2" fontWeight={700} mb={0.5}>
-                  Tu reputación
+              ) : (
+                <Typography variant="caption" color="warning.main" fontWeight={600}>
+                  Sin configurar
                 </Typography>
-                <RatingDisplay
-                  averageRating={myFeedback?.averageRating ?? 0}
-                  totalReviews={myFeedback?.totalCount ?? 0}
-                  size="medium"
-                />
-              </Box>
-              <Button
-                size="small"
-                variant="text"
-                onClick={() => router.push("/driver/trips/history")}
-                sx={{ color: "text.secondary", fontSize: "0.75rem", textTransform: "none" }}
-              >
-                Ver historial →
-              </Button>
-            </Stack>
-          </CardContent>
-        </MotionCard>
+              )}
+              {pricing?.creditsPerKm && (
+                <Typography variant="caption" color="text.disabled" sx={{ fontSize: "0.6rem" }}>
+                  Base: {pricing.creditsPerKm} cr/km
+                </Typography>
+              )}
+            </ButtonBase>
 
-        {/* Credits Summary — siempre visible */}
-        <MotionBox
-          display="flex"
-          gap={2}
-          mb={2}
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.4, delay: 0.2, type: "spring" }}
-        >
-          <Card sx={{ flex: 1, p: 2, textAlign: "center" }}>
-            <Typography
-              variant="h6"
-              sx={{ fontWeight: 700, color: (user?.credits ?? 0) >= 2 ? "success.main" : "error.main" }}
-            >
-              {user?.credits || 0}
-            </Typography>
-            <Typography variant="caption" color="text.secondary">
-              Créditos Disponibles
-            </Typography>
-          </Card>
-          <Card sx={{ flex: 1, p: 2, textAlign: "center" }}>
-            <Button
-              variant="outlined"
-              color="primary"
-              size="small"
-              fullWidth
+            <Divider orientation="vertical" flexItem sx={{ my: 1.5 }} />
+
+            {/* Columna: Reputación */}
+            <ButtonBase
               onClick={() => router.push("/driver/trips/history")}
-              sx={{ fontWeight: 600 }}
+              sx={{
+                flexDirection: "column",
+                alignItems: "flex-start",
+                p: 2,
+                gap: 0.25,
+                "&:hover": { bgcolor: "action.hover" },
+              }}
             >
-              Ver Historial
-            </Button>
-          </Card>
-        </MotionBox>
+              <Stack direction="row" alignItems="center" gap={0.25} width="100%">
+                <Typography variant="caption" color="text.secondary" fontWeight={600}>
+                  Reputación
+                </Typography>
+                <ChevronRight sx={{ fontSize: 13, color: "text.disabled", ml: "auto" }} />
+              </Stack>
+              <Stack direction="row" alignItems="center" gap={0.4}>
+                <StarRounded sx={{ fontSize: 18, color: "warning.main" }} />
+                <Typography variant="subtitle1" fontWeight={700} lineHeight={1.2}>
+                  {(myFeedback?.averageRating ?? 0).toFixed(1)}
+                </Typography>
+              </Stack>
+              <Typography variant="caption" color="text.disabled" sx={{ fontSize: "0.6rem" }}>
+                {myFeedback?.totalCount ?? 0} reseñas
+              </Typography>
+            </ButtonBase>
+
+            <Divider orientation="vertical" flexItem sx={{ my: 1.5 }} />
+
+            {/* Columna: Créditos */}
+            <Box
+              sx={{
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "flex-start",
+                p: 2,
+                gap: 0.25,
+              }}
+            >
+              <Typography variant="caption" color="text.secondary" fontWeight={600}>
+                Créditos
+              </Typography>
+              <Typography
+                variant="subtitle1"
+                fontWeight={700}
+                lineHeight={1.2}
+                color={(user?.credits ?? 0) >= 2 ? "success.main" : "error.main"}
+              >
+                {user?.credits ?? 0}
+              </Typography>
+              <Typography variant="caption" color="text.disabled" sx={{ fontSize: "0.6rem" }}>
+                disponibles
+              </Typography>
+            </Box>
+          </Box>
+        </MotionCard>
 
         {/* Aviso de costo por aceptar solicitud */}
         {(user?.credits ?? 0) < 2 && (

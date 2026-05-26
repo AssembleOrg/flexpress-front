@@ -284,7 +284,7 @@ export function ForWho() {
                   left: 0,
                   right: 0,
                   bottom: 0,
-                  backgroundImage: "url('/conductor.jpg')",
+                  backgroundImage: "url('/conductor.webp')",
                   backgroundSize: "cover",
                   backgroundPosition: "center",
                   backgroundRepeat: "no-repeat",

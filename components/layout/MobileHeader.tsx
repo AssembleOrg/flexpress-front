@@ -1,7 +1,7 @@
 "use client";
 
 import { AppBar, Box, IconButton, Toolbar, Typography } from "@mui/material";
-import { ArrowBack } from "@mui/icons-material";
+import { ChevronLeft } from "@mui/icons-material";
 import { useRouter } from "next/navigation";
 import { MOBILE_HEADER_HEIGHT, Z_INDEX } from "@/lib/constants/mobileDesign";
 
@@ -85,11 +85,12 @@ export function MobileHeader({
             onClick={handleBack}
             sx={{
               color: "white",
-              mr: 1,
+              mr: 0.5,
+              p: 0.5,
             }}
             aria-label="volver"
           >
-            <ArrowBack />
+            <ChevronLeft sx={{ fontSize: 30 }} />
           </IconButton>
         )}
 

@@ -9,7 +9,6 @@ import {
   Typography,
 } from "@mui/material";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { AuthNavbar } from "@/components/layout/AuthNavbar";
 import { ReportCard } from "@/components/reports/ReportCard";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { TabPanel } from "@/components/ui/TabPanel";
@@ -80,8 +79,6 @@ export function MyReportsView() {
 
   return (
     <Box sx={{ backgroundColor: "background.default", minHeight: "100vh" }}>
-      <AuthNavbar />
-
       <Container
         maxWidth="sm"
         sx={{

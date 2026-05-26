@@ -1,35 +1,163 @@
 "use client";
 
-import { useState } from "react";
+import {
+  Cancel,
+  CancelRounded,
+  CheckCircle,
+  CheckCircleRounded,
+  Group,
+  HourglassTopRounded,
+  OpenInNewRounded,
+} from "@mui/icons-material";
 import {
   Alert,
   Avatar,
+  alpha,
   Box,
   Button,
   Card,
   CardContent,
-  Chip,
   CircularProgress,
   Dialog,
   DialogActions,
   DialogContent,
   DialogTitle,
+  Divider,
   Stack,
   TextField,
   Typography,
+  useTheme,
 } from "@mui/material";
-import { CheckCircle, Cancel, Group } from "@mui/icons-material";
-import { usePendingHelpersAdmin } from "@/lib/hooks/queries/useCharterPersonnelQueries";
+import { useState } from "react";
 import {
   useAdminReviewHelper,
   useAdminReviewHelperDocument,
 } from "@/lib/hooks/mutations/useCharterPersonnelMutations";
+import { usePendingHelpersAdmin } from "@/lib/hooks/queries/useCharterPersonnelQueries";
 import {
+  type CharterHelper,
   DocumentReviewStatus,
   DocumentSide,
   VerificationStatus,
-  type CharterHelper,
 } from "@/lib/types/api";
+
+// ─── Atoms presentacionales (estética iOS) ───────────────────────────────────
+
+type SemColor = "success" | "warning" | "error" | "default";
+
+function verifColor(status: VerificationStatus): SemColor {
+  if (status === VerificationStatus.VERIFIED) return "success";
+  if (status === VerificationStatus.REJECTED) return "error";
+  return "warning";
+}
+
+function verifLabel(status: VerificationStatus): string {
+  if (status === VerificationStatus.VERIFIED) return "Verificado";
+  if (status === VerificationStatus.REJECTED) return "Rechazado";
+  return "Pendiente";
+}
+
+function docColor(status: DocumentReviewStatus): SemColor {
+  if (status === DocumentReviewStatus.APPROVED) return "success";
+  if (status === DocumentReviewStatus.REJECTED) return "error";
+  return "warning";
+}
+
+function docStatusText(status: DocumentReviewStatus): string {
+  if (status === DocumentReviewStatus.APPROVED) return "Aprobado";
+  if (status === DocumentReviewStatus.REJECTED) return "Rechazado";
+  return "Pendiente";
+}
+
+function StatusPill({ color, label }: { color: SemColor; label: string }) {
+  const theme = useTheme();
+  const main =
+    color === "default"
+      ? theme.palette.text.disabled
+      : theme.palette[color].main;
+  return (
+    <Box
+      sx={{
+        display: "inline-flex",
+        alignItems: "center",
+        gap: 0.75,
+        px: 1.1,
+        py: 0.35,
+        borderRadius: 999,
+        bgcolor: alpha(main, 0.12),
+        color: color === "default" ? "text.secondary" : `${color}.dark`,
+        fontSize: "0.72rem",
+        fontWeight: 600,
+        lineHeight: 1,
+      }}
+    >
+      <Box
+        sx={{
+          width: 7,
+          height: 7,
+          borderRadius: "50%",
+          bgcolor: main,
+          flexShrink: 0,
+        }}
+      />
+      {label}
+    </Box>
+  );
+}
+
+function PersonnelAvatar({
+  src,
+  initial,
+}: {
+  src?: string | null;
+  initial: string;
+}) {
+  const theme = useTheme();
+  return (
+    <Avatar
+      src={src ?? undefined}
+      sx={{
+        width: 52,
+        height: 52,
+        fontWeight: 700,
+        color: "#fff",
+        background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.secondary.main} 100%)`,
+        border: `2px solid ${alpha(theme.palette.common.white, 0.7)}`,
+        boxShadow: `0 2px 6px ${alpha(theme.palette.primary.main, 0.25)}`,
+      }}
+    >
+      {initial}
+    </Avatar>
+  );
+}
+
+function DocStatusInline({ status }: { status: DocumentReviewStatus }) {
+  const color = docColor(status);
+  const Icon =
+    status === DocumentReviewStatus.APPROVED
+      ? CheckCircleRounded
+      : status === DocumentReviewStatus.REJECTED
+        ? CancelRounded
+        : HourglassTopRounded;
+  return (
+    <Box
+      sx={{
+        display: "inline-flex",
+        alignItems: "center",
+        gap: 0.5,
+        color: `${color}.main`,
+      }}
+    >
+      <Icon sx={{ fontSize: 16 }} />
+      <Typography
+        variant="caption"
+        sx={{ fontWeight: 600, color: `${color}.dark` }}
+      >
+        {docStatusText(status)}
+      </Typography>
+    </Box>
+  );
+}
 
 function HelperCard({ helper }: { helper: CharterHelper }) {
   const reviewEntity = useAdminReviewHelper();
@@ -41,93 +169,157 @@ function HelperCard({ helper }: { helper: CharterHelper }) {
 
   return (
     <>
-      <Card variant="outlined" sx={{ mb: 2 }}>
-        <CardContent>
-          <Stack direction="row" spacing={2} mb={2}>
-            <Avatar src={helper.photoUrl ?? undefined} sx={{ width: 56, height: 56 }}>
-              {helper.firstName[0]}
-            </Avatar>
-            <Box sx={{ flex: 1 }}>
-              <Typography variant="h6" fontWeight={700}>
+      <Card
+        elevation={0}
+        sx={{
+          mb: 2,
+          borderRadius: 3,
+          boxShadow: "0 1px 2px rgba(0,0,0,0.04), 0 6px 20px rgba(0,0,0,0.06)",
+          transition: "box-shadow 0.2s ease",
+          "&:hover": {
+            boxShadow:
+              "0 2px 4px rgba(0,0,0,0.05), 0 10px 28px rgba(0,0,0,0.09)",
+          },
+        }}
+      >
+        <CardContent sx={{ p: 2.25 }}>
+          <Box sx={{ display: "flex", gap: 1.75, alignItems: "flex-start" }}>
+            <PersonnelAvatar
+              src={helper.photoUrl}
+              initial={helper.firstName[0]}
+            />
+            <Box sx={{ flex: 1, minWidth: 0 }}>
+              <Typography variant="subtitle1" fontWeight={700} noWrap>
                 {helper.firstName} {helper.lastName}
               </Typography>
+              <Box sx={{ mt: 0.75 }}>
+                <StatusPill
+                  color={verifColor(helper.verificationStatus)}
+                  label={verifLabel(helper.verificationStatus)}
+                />
+              </Box>
               {helper.charter && (
-                <Typography variant="body2" color="text.secondary">
-                  Charter: {helper.charter.name} ({helper.charter.email})
+                <Typography
+                  variant="body2"
+                  color="text.secondary"
+                  sx={{ mt: 0.75 }}
+                >
+                  {helper.charter.name} · {helper.charter.email}
                 </Typography>
               )}
             </Box>
-          </Stack>
+          </Box>
 
-          <Typography variant="caption" fontWeight={600} color="text.secondary" display="block" mb={1}>
+          <Divider sx={{ my: 1.75 }} />
+
+          <Typography
+            variant="overline"
+            color="text.secondary"
+            sx={{ fontWeight: 700, letterSpacing: 0.5 }}
+          >
             Documentos
           </Typography>
-          <Stack spacing={1} mb={2}>
-            {(helper.documents ?? []).map((doc) => (
-              <Box
-                key={doc.id}
-                sx={{ display: "flex", alignItems: "center", gap: 1, flexWrap: "wrap" }}
-              >
-                <Chip
-                  label={`DNI ${doc.side === DocumentSide.BACK ? "dorso" : "frente"}`}
-                  size="small"
-                  variant="outlined"
-                />
-                <Chip
-                  label={doc.status}
-                  size="small"
-                  color={
-                    doc.status === DocumentReviewStatus.APPROVED
-                      ? "success"
-                      : doc.status === DocumentReviewStatus.REJECTED
-                        ? "error"
-                        : "warning"
-                  }
-                />
-                <Button size="small" href={doc.fileUrl} target="_blank" variant="text">
-                  Ver
-                </Button>
-                {doc.status === DocumentReviewStatus.PENDING && (
-                  <>
-                    <Button
-                      size="small"
-                      color="success"
-                      onClick={() =>
-                        reviewDoc.mutate({
-                          docId: doc.id,
-                          payload: { status: DocumentReviewStatus.APPROVED as any },
-                        })
-                      }
-                    >
-                      Aprobar
-                    </Button>
-                    <Button
-                      size="small"
-                      color="error"
-                      onClick={() => {
-                        setDocRejectId(doc.id);
-                        setDocRejectReason("");
+
+          {(helper.documents?.length ?? 0) === 0 ? (
+            <Alert severity="warning" sx={{ py: 0.5, mt: 1, borderRadius: 2 }}>
+              Sin documentos subidos aún.
+            </Alert>
+          ) : (
+            <Box
+              sx={{
+                mt: 1,
+                borderRadius: 2.5,
+                bgcolor: (t) => alpha(t.palette.text.primary, 0.025),
+                border: (t) =>
+                  `1px solid ${alpha(t.palette.text.primary, 0.06)}`,
+                overflow: "hidden",
+              }}
+            >
+              {(helper.documents ?? []).map((doc, i) => (
+                <Box key={doc.id}>
+                  {i > 0 && <Divider sx={{ opacity: 0.5 }} />}
+                  <Box sx={{ p: 1.5 }}>
+                    <Box
+                      sx={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        gap: 1,
                       }}
                     >
-                      Rechazar
-                    </Button>
-                  </>
-                )}
-                {doc.status === DocumentReviewStatus.REJECTED && doc.rejectionReason && (
-                  <Typography variant="caption" color="error.dark">
-                    {doc.rejectionReason}
-                  </Typography>
-                )}
-              </Box>
-            ))}
-            {(helper.documents?.length ?? 0) === 0 && (
-              <Alert severity="warning" sx={{ py: 0.5 }}>
-                Sin documentos subidos aún.
-              </Alert>
-            )}
-          </Stack>
+                      <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                        {`DNI ${doc.side === DocumentSide.BACK ? "dorso" : "frente"}`}
+                      </Typography>
+                      <DocStatusInline status={doc.status} />
+                    </Box>
 
-          <Stack direction="row" spacing={1}>
+                    <Stack
+                      direction="row"
+                      spacing={0.5}
+                      sx={{ mt: 1, flexWrap: "wrap" }}
+                      useFlexGap
+                    >
+                      <Button
+                        size="small"
+                        href={doc.fileUrl}
+                        target="_blank"
+                        variant="text"
+                        startIcon={<OpenInNewRounded sx={{ fontSize: 15 }} />}
+                        sx={{ textTransform: "none", borderRadius: 2 }}
+                      >
+                        Ver
+                      </Button>
+                      {doc.status === DocumentReviewStatus.PENDING && (
+                        <>
+                          <Button
+                            size="small"
+                            color="success"
+                            variant="outlined"
+                            onClick={() =>
+                              reviewDoc.mutate({
+                                docId: doc.id,
+                                payload: {
+                                  status: DocumentReviewStatus.APPROVED as any,
+                                },
+                              })
+                            }
+                            sx={{ textTransform: "none", borderRadius: 2 }}
+                          >
+                            Aprobar
+                          </Button>
+                          <Button
+                            size="small"
+                            color="error"
+                            variant="outlined"
+                            onClick={() => {
+                              setDocRejectId(doc.id);
+                              setDocRejectReason("");
+                            }}
+                            sx={{ textTransform: "none", borderRadius: 2 }}
+                          >
+                            Rechazar
+                          </Button>
+                        </>
+                      )}
+                    </Stack>
+
+                    {doc.status === DocumentReviewStatus.REJECTED &&
+                      doc.rejectionReason && (
+                        <Typography
+                          variant="caption"
+                          color="error.dark"
+                          sx={{ display: "block", mt: 0.5 }}
+                        >
+                          {doc.rejectionReason}
+                        </Typography>
+                      )}
+                  </Box>
+                </Box>
+              ))}
+            </Box>
+          )}
+
+          <Stack direction="row" spacing={1} sx={{ mt: 2 }}>
             <Button
               variant="contained"
               color="success"
@@ -139,6 +331,12 @@ function HelperCard({ helper }: { helper: CharterHelper }) {
                 })
               }
               disabled={reviewEntity.isPending}
+              sx={{
+                textTransform: "none",
+                borderRadius: 2,
+                fontWeight: 600,
+                flex: { xs: 1, sm: "0 0 auto" },
+              }}
             >
               Aprobar ayudante
             </Button>
@@ -150,6 +348,12 @@ function HelperCard({ helper }: { helper: CharterHelper }) {
                 setRejectOpen(true);
                 setRejectReason("");
               }}
+              sx={{
+                textTransform: "none",
+                borderRadius: 2,
+                fontWeight: 600,
+                flex: { xs: 1, sm: "0 0 auto" },
+              }}
             >
               Rechazar
             </Button>
@@ -157,7 +361,12 @@ function HelperCard({ helper }: { helper: CharterHelper }) {
         </CardContent>
       </Card>
 
-      <Dialog open={rejectOpen} onClose={() => setRejectOpen(false)} fullWidth maxWidth="sm">
+      <Dialog
+        open={rejectOpen}
+        onClose={() => setRejectOpen(false)}
+        fullWidth
+        maxWidth="sm"
+      >
         <DialogTitle>Rechazar ayudante</DialogTitle>
         <DialogContent>
           <TextField
@@ -192,7 +401,12 @@ function HelperCard({ helper }: { helper: CharterHelper }) {
         </DialogActions>
       </Dialog>
 
-      <Dialog open={!!docRejectId} onClose={() => setDocRejectId(null)} fullWidth maxWidth="sm">
+      <Dialog
+        open={!!docRejectId}
+        onClose={() => setDocRejectId(null)}
+        fullWidth
+        maxWidth="sm"
+      >
         <DialogTitle>Rechazar documento</DialogTitle>
         <DialogContent>
           <TextField

@@ -43,7 +43,6 @@ import {
   useUpdateVehicle,
 } from "@/lib/hooks/mutations/useVehicleMutations";
 import { AuthGuard } from "@/components/guards/AuthGuard";
-import { AuthNavbar } from "@/components/layout/AuthNavbar";
 import { BottomNavbar } from "@/components/layout/BottomNavbar";
 import { PageTransition } from "@/components/ui/PageTransition";
 import {
@@ -470,7 +469,6 @@ export default function VehiclesPage() {
   return (
     <AuthGuard message="Por favor inicia sesión">
       <PageTransition>
-        <AuthNavbar />
         <Box
           sx={{
             bgcolor: "background.default",

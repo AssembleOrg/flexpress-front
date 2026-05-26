@@ -503,6 +503,13 @@ function DesktopCharterCard({
 export function PendingChartersTab() {
   const { data: pendingCharters = [], isLoading, error } = usePendingCharters();
   const { data: pendingVehicles = [] } = usePendingVehicles();
+
+  // Exclude vehicles whose charter is still pending — those charters already
+  // appear in Section 1, where their vehicles are approved alongside the account.
+  const pendingCharterIds = new Set(pendingCharters.map((c) => c.id));
+  const vehiclesFromVerifiedCharters = pendingVehicles.filter(
+    (v) => !v.charter || !pendingCharterIds.has(v.charter.id),
+  );
   const verifyMutation = useVerifyCharter();
   const verifyVehicleMutation = useVerifyVehicle();
   const theme = useTheme();
@@ -614,7 +621,7 @@ export function PendingChartersTab() {
     );
   }
 
-  if (pendingCharters.length === 0 && pendingVehicles.length === 0) {
+  if (pendingCharters.length === 0 && vehiclesFromVerifiedCharters.length === 0) {
     return (
       <Box textAlign="center" py={8}>
         <Typography variant="h6" color="text.secondary">
@@ -664,14 +671,14 @@ export function PendingChartersTab() {
       )}
 
       {/* Section 2: Pending vehicles from already-verified charters */}
-      {pendingVehicles.length > 0 && (
+      {vehiclesFromVerifiedCharters.length > 0 && (
         <Box mt={pendingCharters.length > 0 ? 5 : 0}>
           <Divider sx={{ mb: 3 }} />
           <Typography variant="h6" fontWeight={700} mb={3}>
-            Vehículos pendientes de conductores verificados ({pendingVehicles.length})
+            Vehículos pendientes de conductores verificados ({vehiclesFromVerifiedCharters.length})
           </Typography>
           <Stack spacing={2}>
-            {pendingVehicles.map((vehicle) => (
+            {vehiclesFromVerifiedCharters.map((vehicle) => (
               <StandaloneVehicleCard
                 key={vehicle.id}
                 vehicle={vehicle}

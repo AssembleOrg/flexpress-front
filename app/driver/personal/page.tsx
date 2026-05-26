@@ -41,7 +41,6 @@ import {
 } from "@mui/icons-material";
 import toast from "react-hot-toast";
 import { AuthGuard } from "@/components/guards/AuthGuard";
-import { AuthNavbar } from "@/components/layout/AuthNavbar";
 import { BottomNavbar } from "@/components/layout/BottomNavbar";
 import { PageTransition } from "@/components/ui/PageTransition";
 import {
@@ -801,7 +800,6 @@ export default function PersonalPage() {
   return (
     <AuthGuard message="Por favor inicia sesión">
       <PageTransition>
-        <AuthNavbar />
         <Box sx={{ bgcolor: "background.default", minHeight: "calc(100vh - 64px)", py: 4, pb: { xs: 12, md: 4 } }}>
           <Container maxWidth="md">
             <Box mb={3}>

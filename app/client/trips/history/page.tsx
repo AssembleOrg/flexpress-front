@@ -16,7 +16,6 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { FeedbackModal } from "@/components/feedback/FeedbackModal";
 import { RatingDisplay } from "@/components/ui/RatingDisplay";
-import { AuthNavbar } from "@/components/layout/AuthNavbar";
 import {
   useCanGiveFeedback,
   useUserFeedback,
@@ -114,8 +113,6 @@ export default function ClientTripHistory() {
 
   return (
     <Box sx={{ backgroundColor: "background.default", minHeight: "100vh" }}>
-      <AuthNavbar />
-
       <Container
         maxWidth="sm"
         sx={{

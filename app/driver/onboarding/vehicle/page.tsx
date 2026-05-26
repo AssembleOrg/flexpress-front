@@ -31,7 +31,6 @@ import { useAuthStore } from "@/lib/stores/authStore";
 import { useUpdateUserProfile } from "@/lib/hooks/mutations/useAuthMutations";
 import { usePublicPricing } from "@/lib/hooks/queries/useSystemConfigQueries";
 import { VEHICLE_BRANDS } from "@/lib/constants/vehicleBrands";
-import { AuthNavbar } from "@/components/layout/AuthNavbar";
 import { MobileContainer } from "@/components/layout/MobileContainer";
 import { BottomNavbar } from "@/components/layout/BottomNavbar";
 
@@ -218,7 +217,6 @@ export default function VehicleOnboardingPage() {
 
   return (
     <>
-      <AuthNavbar />
       <MobileContainer maxWidth="md" withBottomNav>
         <Box sx={{ mb: 4, textAlign: "center" }}>
           <Typography variant="h4" fontWeight={700} gutterBottom>

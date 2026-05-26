@@ -4,8 +4,8 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Box, Button, Card, CardContent, TextField, Typography } from "@mui/material";
 import toast from "react-hot-toast";
-import { AuthNavbar } from "@/components/layout/AuthNavbar";
 import { MobileContainer } from "@/components/layout/MobileContainer";
+import { MobileHeader } from "@/components/layout/MobileHeader";
 import { BottomNavbar } from "@/components/layout/BottomNavbar";
 import { useAuthStore } from "@/lib/stores/authStore";
 import { useUpdateUserProfile } from "@/lib/hooks/mutations/useAuthMutations";
@@ -49,7 +49,7 @@ export default function SettingsPage() {
 
   return (
     <>
-      <AuthNavbar />
+      <MobileHeader title="Tu tarifa" onBack={() => router.push("/driver/dashboard")} />
       <MobileContainer maxWidth="md" withBottomNav>
         <Box sx={{ mb: 4, textAlign: "center" }}>
           <Typography variant="h4" fontWeight={700} gutterBottom>

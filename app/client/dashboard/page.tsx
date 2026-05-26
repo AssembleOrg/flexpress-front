@@ -50,7 +50,6 @@ import { useAuthStore } from "@/lib/stores/authStore";
 import { isActiveTrip } from "@/lib/utils/matchHelpers";
 import { useCreditPurchaseStore } from "@/lib/stores/creditPurchaseStore";
 import { CreditPurchaseModal } from "@/components/modals/CreditPurchaseModal";
-import { AuthNavbar } from "@/components/layout/AuthNavbar";
 
 const MotionCard = motion.create(Card);
 const MotionButton = motion.create(Button);
@@ -131,7 +130,6 @@ export default function ClientDashboard() {
 
   return (
     <>
-      <AuthNavbar />
       <MobileContainer withBottomNav>
         {/* Welcome Header */}
         <WelcomeHeader userName={user?.name} userRole="client" />

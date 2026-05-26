@@ -1,16 +1,17 @@
 "use client";
 
 import {
-  BottomNavigation,
-  BottomNavigationAction,
   Badge,
   Box,
+  ButtonBase,
   Dialog,
   DialogTitle,
   DialogContent,
   DialogContentText,
   DialogActions,
   Button,
+  Divider,
+  Typography,
 } from "@mui/material";
 import {
   Home,
@@ -30,6 +31,54 @@ import { useUserMatches, useCharterMatches } from "@/lib/hooks/queries/useTravel
 import { useUnreadNotificationCount } from "@/lib/hooks/queries/useNotificationQueries";
 import { isActiveTrip } from "@/lib/utils/matchHelpers";
 import { MOBILE_BOTTOM_NAV_HEIGHT, Z_INDEX } from "@/lib/constants/mobileDesign";
+import type { ReactNode } from "react";
+
+interface NavItemProps {
+  label: string;
+  value: string;
+  icon: ReactNode;
+  active: boolean;
+  onClick: () => void;
+}
+
+function NavItem({ label, value: _value, icon, active, onClick }: NavItemProps) {
+  return (
+    <ButtonBase
+      onClick={onClick}
+      sx={{
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+        flex: "0 0 auto",
+        minWidth: 64,
+        height: "100%",
+        px: 1,
+        gap: "2px",
+        color: active ? "primary.main" : "text.secondary",
+        opacity: active ? 1 : 0.65,
+        transition: "color 0.15s, opacity 0.15s",
+        borderRadius: 1,
+        "&:hover": {
+          opacity: 1,
+          bgcolor: "action.hover",
+        },
+      }}
+    >
+      <Box sx={{ fontSize: 22, display: "flex", alignItems: "center" }}>{icon}</Box>
+      <Typography
+        component="span"
+        sx={{
+          fontSize: "0.62rem",
+          fontWeight: active ? 600 : 400,
+          lineHeight: 1,
+          whiteSpace: "nowrap",
+        }}
+      >
+        {label}
+      </Typography>
+    </ButtonBase>
+  );
+}
 
 export function BottomNavbar() {
   const router = useRouter();
@@ -68,7 +117,7 @@ export function BottomNavbar() {
     else if (pathname.includes("/reports")) setValue("reports");
   }, [pathname]);
 
-  const handleNavigation = (_event: React.SyntheticEvent, newValue: string) => {
+  const navigate = (newValue: string) => {
     setValue(newValue);
     const baseRoute = isCharter ? "/driver" : "/client";
 
@@ -121,20 +170,49 @@ export function BottomNavbar() {
         left: 0,
         right: 0,
         zIndex: Z_INDEX.bottomNav,
-        display: { xs: "block", md: "none" },
+        display: { xs: "flex", md: "none" },
+        height: MOBILE_BOTTOM_NAV_HEIGHT,
+        bgcolor: "background.paper",
+        borderTop: "1px solid",
+        borderColor: "divider",
+        boxShadow: "0 -2px 8px rgba(0,0,0,0.08)",
       }}
     >
-      <BottomNavigation
-        value={value}
-        onChange={handleNavigation}
-        showLabels
-        sx={{ height: MOBILE_BOTTOM_NAV_HEIGHT }}
+      {/* Dashboard fijo a la izquierda */}
+      <Box
+        sx={{
+          flex: "0 0 auto",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          height: "100%",
+        }}
       >
-        {/* Inicio */}
-        <BottomNavigationAction label="Inicio" value="dashboard" icon={<Home />} />
+        <NavItem
+          label="Inicio"
+          value="dashboard"
+          icon={<Home />}
+          active={value === "dashboard"}
+          onClick={() => navigate("dashboard")}
+        />
+      </Box>
 
-        {/* Notificaciones — siempre visible, badge con no leídas */}
-        <BottomNavigationAction
+      <Divider orientation="vertical" flexItem sx={{ my: 1 }} />
+
+      {/* Ítems scrolleables */}
+      <Box
+        sx={{
+          flex: 1,
+          display: "flex",
+          alignItems: "center",
+          overflowX: "auto",
+          "&::-webkit-scrollbar": { display: "none" },
+          scrollbarWidth: "none",
+          msOverflowStyle: "none",
+          px: 0.5,
+        }}
+      >
+        <NavItem
           label="Avisos"
           value="notifications"
           icon={
@@ -156,11 +234,12 @@ export function BottomNavbar() {
               <NotificationsNoneRounded />
             </Badge>
           }
+          active={value === "notifications"}
+          onClick={() => navigate("notifications")}
         />
 
-        {/* Chat (condicional) */}
         {activeMatch && (
-          <BottomNavigationAction
+          <NavItem
             label="Chat"
             value="chat"
             icon={
@@ -168,31 +247,76 @@ export function BottomNavbar() {
                 <Chat />
               </Badge>
             }
+            active={value === "chat"}
+            onClick={() => navigate("chat")}
           />
         )}
 
-        {/* Vehículos (solo charters) */}
         {isCharter && (
-          <BottomNavigationAction label="Vehículos" value="vehicles" icon={<DirectionsCar />} />
+          <NavItem
+            label="Vehículos"
+            value="vehicles"
+            icon={<DirectionsCar />}
+            active={value === "vehicles"}
+            onClick={() => navigate("vehicles")}
+          />
         )}
 
-        {/* Pagos (solo clientes) */}
         {!isCharter && (
-          <BottomNavigationAction label="Pagos" value="payments" icon={<Receipt />} />
+          <NavItem
+            label="Pagos"
+            value="payments"
+            icon={<Receipt />}
+            active={value === "payments"}
+            onClick={() => navigate("payments")}
+          />
         )}
 
-        {/* Historial */}
-        <BottomNavigationAction label="Historial" value="history" icon={<History />} />
+        <NavItem
+          label="Historial"
+          value="history"
+          icon={<History />}
+          active={value === "history"}
+          onClick={() => navigate("history")}
+        />
 
-        {/* Reportes */}
-        <BottomNavigationAction label="Reportes" value="reports" icon={<FlagOutlined />} />
+        <NavItem
+          label="Reportes"
+          value="reports"
+          icon={<FlagOutlined />}
+          active={value === "reports"}
+          onClick={() => navigate("reports")}
+        />
 
-        {/* Perfil */}
-        <BottomNavigationAction label="Perfil" value="profile" icon={<PersonOutline />} />
+        <NavItem
+          label="Perfil"
+          value="profile"
+          icon={<PersonOutline />}
+          active={value === "profile"}
+          onClick={() => navigate("profile")}
+        />
+      </Box>
 
-        {/* Salir */}
-        <BottomNavigationAction label="Salir" value="logout" icon={<Logout />} />
-      </BottomNavigation>
+      <Divider orientation="vertical" flexItem sx={{ my: 1 }} />
+
+      {/* Salir fijo a la derecha */}
+      <Box
+        sx={{
+          flex: "0 0 auto",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          height: "100%",
+        }}
+      >
+        <NavItem
+          label="Salir"
+          value="logout"
+          icon={<Logout />}
+          active={false}
+          onClick={() => navigate("logout")}
+        />
+      </Box>
 
       <Dialog open={logoutDialogOpen} onClose={() => setLogoutDialogOpen(false)}>
         <DialogTitle>¿Cerrar sesión?</DialogTitle>

@@ -1,7 +1,14 @@
 {
   "name": "Flexpress - Tu flete, fácil y seguro",
   "short_name": "Flexpress",
+  "description": "Conectamos personas que necesitan transportar objetos con conductores profesionales verificados en Buenos Aires",
+  "start_url": "/",
   "icons": [
+    {
+      "src": "genfavicon-512.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
     {
       "src": "genfavicon-512.png",
       "sizes": "512x512",
