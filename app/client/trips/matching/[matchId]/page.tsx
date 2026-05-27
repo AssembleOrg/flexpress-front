@@ -772,52 +772,9 @@ export default function MatchDetailPage() {
           updatedAt: match.charter?.updatedAt || new Date().toISOString(),
         };
 
-    // Validar que el match tenga conversación antes de mostrar el chat
-    if (!match.conversationId) {
-      return (
-        <Container
-          maxWidth='md'
-          sx={{ py: 4, textAlign: 'center' }}
-        >
-          <Box sx={{ my: 4 }}>
-            {!conversationRecoveryFailed ? (
-              <>
-                <CircularProgress sx={{ mb: 2 }} />
-                <Typography variant='h6' color='textSecondary'>
-                  {conversationRecoveryAttempt === 0
-                    ? 'Preparando el chat...'
-                    : 'Configurando la conversación...'}
-                </Typography>
-                <Typography variant='body2' color='textSecondary' sx={{ mt: 1 }}>
-                  {conversationRecoveryAttempt === 0
-                    ? 'Por favor espera mientras configuramos la conversación.'
-                    : `Reintentando... (intento ${conversationRecoveryAttempt}/2)`}
-                </Typography>
-              </>
-            ) : (
-              <>
-                <Alert severity='error' sx={{ mb: 2, textAlign: 'left' }}>
-                  <Typography variant='subtitle2' fontWeight={700} mb={0.5}>
-                    No se pudo configurar la conversación
-                  </Typography>
-                  <Typography variant='body2'>
-                    El chófer aceptó tu solicitud pero no pudimos conectar el
-                    chat automáticamente. Por favor vuelve al dashboard e
-                    intenta acceder nuevamente en unos momentos.
-                  </Typography>
-                </Alert>
-                <Link href='/client/dashboard'>
-                  <Button variant='contained' color='secondary'>
-                    Volver al Dashboard
-                  </Button>
-                </Link>
-              </>
-            )}
-          </Box>
-        </Container>
-      );
-    }
-
+    // El chat necesita conversationId. Si falta, NO bloqueamos toda la vista:
+    // mostramos el resto (estado del viaje, "Confirmar Recepción") y solo el
+    // slot del chat queda en loading/recovery.
     const conversationId = match.conversationId;
 
     // Determine trip status for UI
@@ -1061,13 +1018,45 @@ export default function MatchDetailPage() {
                   minHeight: { xs: '450px', md: '600px' },
                 }}
               >
-                <ErrorBoundary>
-                  <ChatWindow
-                    conversationId={conversationId}
-                    otherUser={otherUser}
-                    onClose={() => router.push('/client/dashboard')}
-                  />
-                </ErrorBoundary>
+                {conversationId ? (
+                  <ErrorBoundary>
+                    <ChatWindow
+                      conversationId={conversationId}
+                      otherUser={otherUser}
+                      onClose={() => router.push('/client/dashboard')}
+                    />
+                  </ErrorBoundary>
+                ) : (
+                  <Card sx={{ height: '100%' }}>
+                    <CardContent sx={{ textAlign: 'center', py: 6 }}>
+                      {!conversationRecoveryFailed ? (
+                        <>
+                          <CircularProgress sx={{ mb: 2 }} />
+                          <Typography variant='h6' color='textSecondary' sx={{ mb: 1 }}>
+                            {conversationRecoveryAttempt === 0
+                              ? 'Preparando el chat...'
+                              : 'Configurando la conversación...'}
+                          </Typography>
+                          <Typography variant='caption' color='textSecondary'>
+                            {conversationRecoveryAttempt === 0
+                              ? 'La conversación se está configurando. Podés confirmar la recepción abajo.'
+                              : `Reintentando... (intento ${conversationRecoveryAttempt}/2)`}
+                          </Typography>
+                        </>
+                      ) : (
+                        <Alert severity='warning' sx={{ textAlign: 'left' }}>
+                          <Typography variant='subtitle2' fontWeight={700} mb={0.5}>
+                            No se pudo cargar el chat
+                          </Typography>
+                          <Typography variant='body2'>
+                            No pudimos conectar el chat automáticamente, pero podés
+                            seguir con el viaje desde los botones de abajo.
+                          </Typography>
+                        </Alert>
+                      )}
+                    </CardContent>
+                  </Card>
+                )}
               </Box>
 
               {/* Action Buttons - directly below chat */}

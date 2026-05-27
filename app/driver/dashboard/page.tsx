@@ -177,9 +177,10 @@ export default function DriverDashboard() {
         })
       : pendingMatches;
 
-  // Filter active conversations (accepted or completed matches with active conversations)
-  // Show conversations where charter accepted and conversation exists
-  // (conversationId is created immediately when charter accepts, before tripId)
+  // Filter active conversations (accepted or completed matches still in progress)
+  // No exigimos conversationId: un viaje en charter_completed (esperando
+  // confirmación del cliente) debe seguir visible y navegable aunque el campo
+  // conversationId no haya llegado. El chat se resuelve en la vista de detalle.
   const activeConversations = charterMatches.filter((match) => {
     // Must have valid match ID
     if (!match?.id) return false;
@@ -187,12 +188,7 @@ export default function DriverDashboard() {
     // Exclude trips that are already completed (should appear in history instead)
     if (match.trip?.status === "completed") return false;
 
-    // Include accepted/completed matches WITH active conversations
-    // Check conversationId instead of tripId (tripId only exists after client confirms)
-    return (
-      (match.status === "accepted" || match.status === "completed") &&
-      !!match.conversationId
-    );
+    return match.status === "accepted" || match.status === "completed";
   });
 
   const { setReturnToOrigin } = useAuthStore();
