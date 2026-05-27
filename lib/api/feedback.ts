@@ -31,6 +31,24 @@ export interface UserFeedbackResponse {
   ratingDistribution?: Record<string, number>;
 }
 
+// El backend tiene un ResponseInterceptor global que envuelve toda respuesta
+// en { data, message, success }. Los endpoints de feedback además devuelven
+// su propio { success, data }, así que el payload llega doble-envuelto. Si
+// detectamos ese wrapper interno, extraemos su .data; si no, devolvemos tal
+// cual (compatibilidad si el backend deja de doble-envolver). Mismo patrón que
+// lib/api/travelMatching.ts.
+function unwrap<T>(payload: unknown): T {
+  if (
+    payload &&
+    typeof payload === "object" &&
+    "success" in payload &&
+    "data" in payload
+  ) {
+    return (payload as { data: T }).data;
+  }
+  return payload as T;
+}
+
 export const feedbackApi = {
   /**
    * Get feedback for a specific user
@@ -40,8 +58,7 @@ export const feedbackApi = {
       const response = await api.get<ApiResponse<UserFeedbackResponse>>(
         `/feedback/user/${userId}`,
       );
-      // biome-ignore lint/style/noNonNullAssertion: axios response guarantees data
-      return response.data.data!;
+      return unwrap<UserFeedbackResponse>(response.data.data);
     } catch (error) {
       console.error("Error fetching user feedback:", error);
       // Return default response if user has no feedback
@@ -54,12 +71,26 @@ export const feedbackApi = {
   },
 
   /**
+   * Get feedback left on a specific trip
+   */
+  getTripFeedback: async (tripId: string): Promise<Feedback[]> => {
+    try {
+      const response = await api.get<ApiResponse<Feedback[]>>(
+        `/feedback/trip/${tripId}`,
+      );
+      return unwrap<Feedback[]>(response.data.data) ?? [];
+    } catch (error) {
+      console.error("Error fetching trip feedback:", error);
+      return [];
+    }
+  },
+
+  /**
    * Create feedback for a completed trip
    */
   create: async (data: CreateFeedbackRequest): Promise<Feedback> => {
     const response = await api.post<ApiResponse<Feedback>>("/feedback", data);
-    // biome-ignore lint/style/noNonNullAssertion: axios response guarantees data
-    return response.data.data!;
+    return unwrap<Feedback>(response.data.data);
   },
 
   /**
@@ -84,10 +115,9 @@ export const feedbackApi = {
   getMyFeedback: async (): Promise<Feedback[]> => {
     try {
       const response = await api.get<ApiResponse<Feedback[]>>(
-        "/feedback/my-feedback",
+        "/feedback/my-feedbacks",
       );
-      // biome-ignore lint/style/noNonNullAssertion: axios response guarantees data
-      return response.data.data!;
+      return unwrap<Feedback[]>(response.data.data) ?? [];
     } catch (error) {
       console.error("Error fetching my feedback:", error);
       return [];
@@ -105,8 +135,7 @@ export const feedbackApi = {
       `/feedback/${feedbackId}`,
       data,
     );
-    // biome-ignore lint/style/noNonNullAssertion: axios response guarantees data
-    return response.data.data!;
+    return unwrap<Feedback>(response.data.data);
   },
 
   /**

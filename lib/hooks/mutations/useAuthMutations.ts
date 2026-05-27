@@ -1,4 +1,5 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { isAxiosError } from "axios";
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
 import { api } from "@/lib/api";
@@ -10,6 +11,17 @@ import {
 } from "@/lib/api/auth";
 import { useAuthStore } from "@/lib/stores/authStore";
 import { useNotificationsStore } from "@/lib/stores/notificationsStore";
+
+// Extrae el mensaje de error del backend ({ message }) con fallback en español.
+function getApiErrorMessage(error: unknown, fallback: string): string {
+  if (isAxiosError(error)) {
+    const message = error.response?.data?.message;
+    if (typeof message === "string" && message.length > 0) {
+      return message;
+    }
+  }
+  return fallback;
+}
 
 /**
  * Mutation para login del usuario
@@ -78,7 +90,7 @@ export function useLogin() {
 
     onError: (error) => {
       console.error("❌ [useLogin] onError:", error);
-      toast.error("Email o contraseña incorrectos");
+      toast.error(getApiErrorMessage(error, "Email o contraseña incorrectos"));
     },
   });
 }

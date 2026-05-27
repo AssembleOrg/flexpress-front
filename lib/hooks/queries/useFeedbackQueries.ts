@@ -53,6 +53,25 @@ export function useMyFeedback() {
 }
 
 /**
+ * Get all feedback left on a specific trip
+ * Used by: Trip history cards (to show the review received on that trip)
+ */
+export function useTripFeedback(
+  tripId: string,
+  options?: Record<string, unknown>,
+) {
+  return useQuery({
+    queryKey: [...queryKeys.feedback.all, "trip", tripId],
+    queryFn: () => feedbackApi.getTripFeedback(tripId),
+    staleTime: 60 * 1000,
+    gcTime: 30 * 60 * 1000,
+    refetchOnWindowFocus: false,
+    enabled: !!tripId,
+    ...options,
+  });
+}
+
+/**
  * Check if user can give feedback for a specific trip
  * Used by: Trip completion, feedback eligibility check
  * Supports optional React Query options (e.g., enabled)

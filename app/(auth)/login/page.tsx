@@ -8,6 +8,7 @@ import {
   VisibilityOff,
 } from "@mui/icons-material";
 import {
+  Alert,
   Box,
   Button,
   Card,
@@ -24,17 +25,10 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Suspense, useState } from "react";
 import { useForm } from "react-hook-form";
-import { z } from "zod";
 import Logo from "@/components/ui/Logo";
 import { PageTransition } from "@/components/ui/PageTransition";
 import { useLogin } from "@/lib/hooks/mutations/useAuthMutations";
-
-const loginSchema = z.object({
-  email: z.string().email("Ingresa un email válido"),
-  password: z.string().min(1, "Ingresa cualquier contraseña"),
-});
-
-type LoginForm = z.infer<typeof loginSchema>;
+import { loginSchema, type LoginFormData } from "@/lib/validations/auth";
 
 function LoginForm() {
   const searchParams = useSearchParams();
@@ -56,11 +50,11 @@ function LoginForm() {
     register,
     handleSubmit,
     formState: { errors },
-  } = useForm<LoginForm>({
+  } = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
   });
 
-  const onSubmit = (data: LoginForm) => {
+  const onSubmit = (data: LoginFormData) => {
     console.log("📝 [LoginForm] Triggering mutation...");
     loginMutation.mutate(data);
   };
@@ -203,6 +197,12 @@ function LoginForm() {
                       },
                     }}
                   />
+
+                  {loginMutation.isError && (
+                    <Alert severity="error" sx={{ mb: 2 }}>
+                      Email o contraseña incorrectos
+                    </Alert>
+                  )}
 
                   <Button
                     type="submit"

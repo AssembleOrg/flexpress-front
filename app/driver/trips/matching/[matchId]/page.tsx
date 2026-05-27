@@ -42,7 +42,7 @@ import LeafletMap, {
 import { MOBILE_BOTTOM_NAV_HEIGHT } from "@/lib/constants/mobileDesign";
 import { useToggleAvailability } from "@/lib/hooks/mutations/useTravelMatchMutations";
 import { useCharterCompleteTrip } from "@/lib/hooks/mutations/useTripMutations";
-import { useMatch } from "@/lib/hooks/queries/useTravelMatchQueries";
+import { useMatch, useCharterAvailability } from "@/lib/hooks/queries/useTravelMatchQueries";
 import { useTrip } from "@/lib/hooks/queries/useTripQueries";
 import { useMyVehicles } from "@/lib/hooks/queries/useVehicleQueries";
 import { useAuthStore } from "@/lib/stores/authStore";
@@ -67,7 +67,12 @@ export default function DriverMatchingDetailPage() {
   const charterCompleteTripMutation = useCharterCompleteTrip();
   const toggleAvailabilityMutation = useToggleAvailability();
   const { data: myVehicles = [] } = useMyVehicles();
-  const activeVehicle = myVehicles.find((v) => v.isEnabled) ?? myVehicles[0];
+  const { data: availabilityData } = useCharterAvailability();
+  const activeVehicleId = availabilityData?.vehicleId ?? null;
+  const activeVehicle =
+    myVehicles.find((v) => v.id === activeVehicleId) ??
+    myVehicles.find((v) => v.isEnabled) ??
+    myVehicles[0];
   const [finalizeTripModalOpen, setFinalizeTripModalOpen] = useState(false);
   const [availabilityConfirmed, setAvailabilityConfirmed] = useState(false);
   const [reportModalOpen, setReportModalOpen] = useState(false);
@@ -384,7 +389,7 @@ export default function DriverMatchingDetailPage() {
                 trip?.status === "charter_completed" &&
                 (() => {
                   const hasOrigin = !!user?.originLatitude;
-                  const vehicleId = myVehicles[0]?.id;
+                  const vehicleId = activeVehicle?.id ?? myVehicles[0]?.id;
 
                   if (availabilityConfirmed) {
                     return (

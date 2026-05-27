@@ -61,20 +61,26 @@ api.interceptors.response.use(
     return response;
   },
   (error) => {
-    // Si el token expiró o es inválido, cerrar sesión
-    if (error.response?.status === 401) {
+    const requestUrl = error.config?.url ?? "";
+    // El 401 de login/registro es "credenciales incorrectas", no sesión
+    // expirada: dejar que el onError de la mutación lo maneje (toast/inline).
+    const isAuthEndpoint =
+      requestUrl.includes("/auth/login") ||
+      requestUrl.includes("/auth/register");
+
+    if (error.response?.status === 401 && !isAuthEndpoint) {
+      // Token expirado o inválido en una ruta protegida: limpiar sesión.
+      // Los guards (AuthGuard/RoleGuard/admin layout) reaccionan al cambio
+      // de isAuthenticated y redirigen sin recargar la página.
       if (process.env.NODE_ENV === "development") {
         console.log("❌ [API] 401 Unauthorized - Token inválido o expirado");
-        console.log("   URL:", error.config?.url);
+        console.log("   URL:", requestUrl);
         console.log("   Message:", error.response.data?.message);
-        console.log("   Clearing auth and redirecting to /login...");
+        console.log("   Clearing auth (los guards redirigen)...");
       }
 
       const { clearAuth } = useAuthStore.getState();
       clearAuth();
-      if (typeof window !== "undefined") {
-        window.location.href = "/login";
-      }
     } else if (error.response?.status === 403) {
       if (process.env.NODE_ENV === "development") {
         console.log(

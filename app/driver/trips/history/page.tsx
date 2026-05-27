@@ -18,9 +18,11 @@ import { FeedbackModal } from "@/components/feedback/FeedbackModal";
 import { RatingDisplay } from "@/components/ui/RatingDisplay";
 import {
   useCanGiveFeedback,
+  useTripFeedback,
   useUserFeedback,
 } from "@/lib/hooks/queries/useFeedbackQueries";
 import { useTripHistory } from "@/lib/hooks/queries/useTripQueries";
+import { useAuthStore } from "@/lib/stores/authStore";
 import { MOBILE_BOTTOM_NAV_HEIGHT } from "@/lib/constants/mobileDesign";
 import type { Trip } from "@/lib/types/trip";
 
@@ -254,13 +256,20 @@ function TripHistoryCard({
   trip: Trip;
   onOpenFeedback: (trip: Trip) => void;
 }) {
+  const currentUserId = useAuthStore((state) => state.user?.id) || "";
   const clientId = trip.user?.id || trip.userId || "";
   const { data: canGive } = useCanGiveFeedback(trip.id);
   const { data: clientFeedback } = useUserFeedback(clientId);
+  const { data: tripFeedbacks } = useTripFeedback(trip.id);
 
   const clientAverageRating = clientFeedback?.averageRating || 0;
   const clientTotalReviews = clientFeedback?.totalCount || 0;
   const dateLabel = trip.createdAt ? formatDate(trip.createdAt) : null;
+
+  // Reseña que el cliente dejó al driver en este viaje
+  const reviewReceived = tripFeedbacks?.find(
+    (f) => f.toUserId === currentUserId,
+  );
 
   return (
     <Card>
@@ -319,6 +328,41 @@ function TripHistoryCard({
             size="small"
           />
         </Box>
+
+        {/* Reseña recibida del cliente en este viaje */}
+        {reviewReceived && (
+          <Box
+            sx={{
+              bgcolor: "action.hover",
+              borderRadius: 1.5,
+              p: 1,
+              mb: 1,
+            }}
+          >
+            <Typography
+              variant="caption"
+              color="text.secondary"
+              sx={{ display: "block", fontWeight: 600, mb: 0.25 }}
+            >
+              El cliente te calificó:
+            </Typography>
+            <RatingDisplay
+              averageRating={reviewReceived.rating}
+              totalReviews={1}
+              size="small"
+              showCount={false}
+            />
+            {reviewReceived.comment && (
+              <Typography
+                variant="caption"
+                color="text.secondary"
+                sx={{ display: "block", mt: 0.25, fontStyle: "italic" }}
+              >
+                "{reviewReceived.comment}"
+              </Typography>
+            )}
+          </Box>
+        )}
 
         {/* Feedback Section */}
         {canGive ? (
