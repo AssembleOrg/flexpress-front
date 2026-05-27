@@ -1,12 +1,13 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { AttachMoney, Route } from "@mui/icons-material";
+import { AttachMoney, LocalShipping, Person, Route } from "@mui/icons-material";
 import {
   Avatar,
   Box,
   Button,
   Checkbox,
+  Chip,
   CircularProgress,
   Dialog,
   DialogActions,
@@ -136,6 +137,30 @@ export function AcceptMatchModal({
             </Box>
           </Box>
 
+          {(match.cargoDescription || (match.workersCount ?? 0) > 0) && (
+            <Box sx={{ p: 1.5, bgcolor: "background.default", borderRadius: 1.5 }}>
+              <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 0.75 }}>
+                <LocalShipping sx={{ fontSize: 18, color: "secondary.main" }} />
+                <Typography variant="caption" color="text.secondary" sx={{ fontSize: "0.7rem", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.3px" }}>
+                  Qué mueve
+                </Typography>
+              </Box>
+              {match.cargoDescription && (
+                <Typography variant="body2" sx={{ fontSize: "0.9rem", lineHeight: 1.4, mb: (match.workersCount ?? 0) > 0 ? 1 : 0 }}>
+                  {match.cargoDescription}
+                </Typography>
+              )}
+              {(match.workersCount ?? 0) > 0 && (
+                <Chip
+                  label={`Pide ${match.workersCount} ayudante${match.workersCount > 1 ? "s" : ""}`}
+                  size="small"
+                  color="secondary"
+                  sx={{ fontWeight: 700, height: 24 }}
+                />
+              )}
+            </Box>
+          )}
+
           <Box sx={{ p: 1.5, bgcolor: "background.default", borderRadius: 1.5 }}>
             <Typography variant="caption" color="text.secondary" display="block" sx={{ mb: 1, fontSize: "0.7rem", fontWeight: 600 }}>
               Origen → Destino
@@ -169,6 +194,20 @@ export function AcceptMatchModal({
               </Typography>
             </Box>
           </Box>
+
+          {!showDriverPicker && (
+            <Box sx={{ p: 1.5, bgcolor: "background.default", borderRadius: 1.5, display: "flex", alignItems: "center", gap: 1 }}>
+              <Person sx={{ fontSize: 18, color: "secondary.main" }} />
+              <Box>
+                <Typography variant="caption" color="text.secondary" sx={{ display: "block", fontSize: "0.7rem", fontWeight: 600 }}>
+                  Conductor
+                </Typography>
+                <Typography variant="body2" sx={{ fontWeight: 600, fontSize: "0.85rem" }}>
+                  Conduce: vos (titular)
+                </Typography>
+              </Box>
+            </Box>
+          )}
 
           {showDriverPicker && (
             <Box sx={{ p: 1.5, bgcolor: "background.default", borderRadius: 1.5 }}>

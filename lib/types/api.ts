@@ -124,6 +124,7 @@ export interface TravelMatch {
   maxRadiusKm: number;
   status: TravelMatchStatus;
   workersCount: number;
+  cargoDescription?: string | null;
   scheduledDate: string | null;
   expiresAt: string | null;
   conversationId?: string; // Created when charter accepts match

@@ -567,6 +567,7 @@ export default function DriverMatchingDetailPage() {
                 avatar: match.user?.avatar ?? undefined,
                 role: "Cliente",
               }}
+              personnel={match.personnel?.snapshot}
               status={statusInfo}
               metadata={
                 activeVehicle

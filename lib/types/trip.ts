@@ -6,6 +6,7 @@ export interface Trip {
   latitude: string;
   longitude: string;
   workersCount: number;
+  cargoDescription?: string | null;
   scheduledDate: string | null;
   status:
     | "pending"
@@ -36,6 +37,7 @@ export interface Trip {
     destinationAddress: string;
     estimatedCredits: number;
     distanceKm: number | null;
+    cargoDescription?: string | null;
     personnel?: {
       snapshot: {
         driver: { id: string | null; name: string; phone?: string };

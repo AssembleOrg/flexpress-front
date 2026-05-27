@@ -1,6 +1,6 @@
 'use client';
 
-import { ArrowBack, LocalShipping, Map as MapIcon } from '@mui/icons-material';
+import { ArrowBack, Group, LocalShipping, Map as MapIcon } from '@mui/icons-material';
 import {
   Alert,
   Box,
@@ -11,6 +11,8 @@ import {
   CircularProgress,
   Container,
   IconButton,
+  Stack,
+  TextField,
   Typography,
 } from '@mui/material';
 import { AnimatePresence, motion } from 'framer-motion';
@@ -73,6 +75,11 @@ export default function NewTripPage() {
     lat: number;
     lon: number;
   } | null>(null);
+
+  // Captura opcional de carga y ayudantes
+  const CARGO_MAX = 140;
+  const [cargoText, setCargoText] = useState('');
+  const [helpersNeeded, setHelpersNeeded] = useState(0);
 
   // Ref para controlar el mapa desde los chips
   const mapRef = useRef<MapHandle>(null);
@@ -186,6 +193,8 @@ export default function NewTripPage() {
         destinationAddress,
         destinationLatitude: destinationCoords.lat.toString(),
         destinationLongitude: destinationCoords.lon.toString(),
+        workersCount: helpersNeeded,
+        cargoDescription: cargoText.trim() || undefined,
       },
       {
         onSuccess: () => {
@@ -446,6 +455,101 @@ export default function NewTripPage() {
               onMarkerDrag={handleMarkerDrag}
             />
           </Box>
+
+          {/* Carga + ayudantes (opcional) */}
+          <motion.div
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, delay: 0.5, type: 'spring', stiffness: 100 }}
+          >
+            <Box
+              sx={{
+                mb: 3,
+                p: 2.5,
+                bgcolor: 'background.default',
+                borderRadius: 2,
+              }}
+            >
+              <Box
+                sx={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 1,
+                  mb: 2,
+                }}
+              >
+                <LocalShipping sx={{ fontSize: 20, color: 'secondary.main' }} />
+                <Typography
+                  variant='caption'
+                  sx={{
+                    fontWeight: 700,
+                    color: 'text.secondary',
+                    letterSpacing: '0.3px',
+                    textTransform: 'uppercase',
+                  }}
+                >
+                  ¿Qué necesitás mover?
+                </Typography>
+              </Box>
+
+              <TextField
+                value={cargoText}
+                onChange={(e) => setCargoText(e.target.value.slice(0, CARGO_MAX))}
+                placeholder='Ej: 2 heladeras, 1 lavarropas'
+                multiline
+                minRows={2}
+                maxRows={3}
+                fullWidth
+                inputProps={{ maxLength: CARGO_MAX }}
+                helperText={`Ayuda al chófer a decidir · ${cargoText.length}/${CARGO_MAX}`}
+                sx={{
+                  '& .MuiFormHelperText-root': {
+                    textAlign: 'right',
+                    mr: 0.5,
+                  },
+                }}
+              />
+
+              <Box sx={{ mt: 2 }}>
+                <Box
+                  sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 1,
+                    mb: 1,
+                  }}
+                >
+                  <Group sx={{ fontSize: 18, color: 'text.secondary' }} />
+                  <Typography
+                    variant='body2'
+                    sx={{ fontWeight: 600, color: 'text.secondary' }}
+                  >
+                    Ayudantes que necesitás
+                  </Typography>
+                </Box>
+                <Stack direction='row' spacing={1}>
+                  {[0, 1, 2, 3, 4].map((n) => {
+                    const active = helpersNeeded === n;
+                    return (
+                      <Chip
+                        key={n}
+                        label={n === 0 ? 'Ninguno' : n}
+                        onClick={() => setHelpersNeeded(n)}
+                        color={active ? 'secondary' : 'default'}
+                        variant={active ? 'filled' : 'outlined'}
+                        sx={{
+                          minWidth: n === 0 ? 80 : 44,
+                          height: 40,
+                          fontWeight: active ? 700 : 500,
+                          cursor: 'pointer',
+                        }}
+                      />
+                    );
+                  })}
+                </Stack>
+              </Box>
+            </Box>
+          </motion.div>
 
           {/* Botón de búsqueda */}
           <Box textAlign='center'>

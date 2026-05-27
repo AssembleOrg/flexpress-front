@@ -91,6 +91,33 @@ export function TripsTable() {
       renderCell: (params) => params.row.address.substring(0, 50),
     },
     {
+      field: "cargo",
+      headerName: "Carga",
+      width: 180,
+      sortable: false,
+      renderCell: (params) => {
+        const cargo =
+          params.row.cargoDescription ??
+          params.row.travelMatch?.cargoDescription;
+        if (!cargo) return "-";
+        return cargo.length > 40 ? `${cargo.substring(0, 40)}…` : cargo;
+      },
+    },
+    {
+      field: "team",
+      headerName: "Equipo",
+      width: 200,
+      sortable: false,
+      renderCell: (params) => {
+        const snapshot = params.row.travelMatch?.personnel?.snapshot;
+        if (!snapshot?.driver) return "-";
+        const helpers = snapshot.helpers?.length ?? 0;
+        return helpers > 0
+          ? `${snapshot.driver.name} +${helpers}`
+          : snapshot.driver.name;
+      },
+    },
+    {
       field: "scheduledDate",
       headerName: "Fecha Programada",
       width: 150,
@@ -114,7 +141,10 @@ export function TripsTable() {
   // Hide address, scheduledDate, createdAt columns on mobile
   const visibleColumns = isMobile
     ? columns.filter(
-        (col) => !["address", "scheduledDate", "createdAt"].includes(col.field),
+        (col) =>
+          !["address", "cargo", "team", "scheduledDate", "createdAt"].includes(
+            col.field,
+          ),
       )
     : columns;
 

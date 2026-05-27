@@ -888,6 +888,7 @@ export default function MatchDetailPage() {
                       }
                     : undefined,
                 }}
+                personnel={match.personnel?.snapshot}
                 status={statusInfo}
                 metadata={
                   match.charter?.charterAvailability?.vehicle

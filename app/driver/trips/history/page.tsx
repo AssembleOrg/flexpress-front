@@ -329,6 +329,21 @@ function TripHistoryCard({
           />
         </Box>
 
+        {/* Equipo del viaje */}
+        {trip.travelMatch?.personnel?.snapshot && (
+          <Typography
+            variant="caption"
+            color="text.secondary"
+            sx={{ display: "block", mb: 1 }}
+          >
+            Equipo: {trip.travelMatch.personnel.snapshot.driver.name}
+            {trip.travelMatch.personnel.snapshot.helpers.length > 0 &&
+              ` + ${trip.travelMatch.personnel.snapshot.helpers.length} ayudante${
+                trip.travelMatch.personnel.snapshot.helpers.length > 1 ? "s" : ""
+              }`}
+          </Typography>
+        )}
+
         {/* Reseña recibida del cliente en este viaje */}
         {reviewReceived && (
           <Box

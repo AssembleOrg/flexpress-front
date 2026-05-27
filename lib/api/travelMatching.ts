@@ -20,6 +20,7 @@ export interface CreateMatchRequest {
   maxRadiusKm?: number;
   workersCount?: number;
   scheduledDate?: string;
+  cargoDescription?: string;
 }
 
 export interface CreateMatchResponse {

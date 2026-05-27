@@ -13,6 +13,8 @@ import {
   Flag,
   CalendarToday,
   AccessTime,
+  Person,
+  Group,
 } from "@mui/icons-material";
 import { RatingDisplay } from "@/components/ui/RatingDisplay";
 
@@ -56,6 +58,13 @@ interface TripDetailsCardProps {
     label: string;
     value: string;
   }>;
+  /**
+   * Assigned team snapshot (driver + helpers)
+   */
+  personnel?: {
+    driver: { id: string | null; name: string };
+    helpers: Array<{ name: string }>;
+  } | null;
 }
 
 /**
@@ -93,6 +102,7 @@ export function TripDetailsCard({
   otherUser,
   status,
   metadata = [],
+  personnel,
 }: TripDetailsCardProps) {
   return (
     <Card
@@ -269,6 +279,47 @@ export function TripDetailsCard({
                 </Typography>
               </Box>
             ))}
+          </Box>
+        )}
+
+        {/* Equipo del viaje */}
+        {personnel?.driver && (
+          <Box
+            pt={2}
+            mt={metadata.length > 0 ? 1.5 : 0}
+            sx={{ borderTop: "1px solid", borderTopColor: "divider" }}
+          >
+            <Typography
+              variant="caption"
+              color="text.secondary"
+              sx={{ fontWeight: 600, mb: 1, display: "block", fontSize: "0.7rem" }}
+            >
+              Equipo del viaje
+            </Typography>
+
+            <Box display="flex" alignItems="center" gap={1} mb={personnel.helpers.length > 0 ? 1 : 0}>
+              <Person sx={{ fontSize: 18, color: "secondary.main", flexShrink: 0 }} />
+              <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                {personnel.driver.name}
+              </Typography>
+            </Box>
+
+            {personnel.helpers.length > 0 && (
+              <Box display="flex" alignItems="flex-start" gap={1}>
+                <Group sx={{ fontSize: 18, color: "text.secondary", flexShrink: 0, mt: 0.4 }} />
+                <Box display="flex" gap={0.5} flexWrap="wrap">
+                  {personnel.helpers.map((h, i) => (
+                    <Chip
+                      key={i}
+                      label={h.name}
+                      size="small"
+                      variant="outlined"
+                      sx={{ height: 24, fontSize: "0.75rem" }}
+                    />
+                  ))}
+                </Box>
+              </Box>
+            )}
           </Box>
         )}
       </CardContent>

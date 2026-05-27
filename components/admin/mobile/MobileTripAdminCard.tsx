@@ -10,6 +10,9 @@ interface MobileTripAdminCardProps {
 export function MobileTripAdminCard({ trip }: MobileTripAdminCardProps) {
   const truncatedId = trip.id.substring(0, 8);
   const truncatedAddress = trip.address.length > 30 ? trip.address.substring(0, 30) + "..." : trip.address;
+  const cargo = trip.cargoDescription ?? trip.travelMatch?.cargoDescription;
+  const snapshot = trip.travelMatch?.personnel?.snapshot;
+  const helpersCount = snapshot?.helpers?.length ?? 0;
 
   return (
     <Card
@@ -71,6 +74,22 @@ export function MobileTripAdminCard({ trip }: MobileTripAdminCardProps) {
           <Typography variant="body2" fontSize="0.85rem" color="text.secondary">
             Dirección: {truncatedAddress}
           </Typography>
+
+          {/* Carga */}
+          {cargo && (
+            <Typography variant="body2" fontSize="0.85rem" color="text.secondary">
+              Carga: {cargo.length > 40 ? cargo.substring(0, 40) + "..." : cargo}
+            </Typography>
+          )}
+
+          {/* Equipo */}
+          {snapshot?.driver && (
+            <Typography variant="body2" fontSize="0.85rem" color="text.secondary">
+              Equipo: {snapshot.driver.name}
+              {helpersCount > 0 &&
+                ` +${helpersCount} ayudante${helpersCount > 1 ? "s" : ""}`}
+            </Typography>
+          )}
         </Stack>
       </CardContent>
     </Card>

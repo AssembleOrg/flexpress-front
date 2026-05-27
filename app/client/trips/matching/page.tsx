@@ -19,7 +19,7 @@ import {
 } from '@mui/material';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ConfirmMatchModal } from '@/components/modals/ConfirmMatchModal';
 import { CharterCard } from '@/components/ui/CharterCard';
 import { RouteMap } from '@/components/ui/Map';
@@ -128,6 +128,21 @@ export default function MatchingPage() {
     destinationAddress,
     destinationCoords,
   } = useTravelMatchStore();
+
+  // Orden de la lista de chóferes (reordena, no filtra)
+  const [sortBy, setSortBy] = useState<'distance' | 'helpers'>('distance');
+
+  const sortedCharters = useMemo(() => {
+    const copy = [...availableCharters];
+    if (sortBy === 'helpers') {
+      return copy.sort((a, b) => {
+        const diff = (b.helpersCount ?? 0) - (a.helpersCount ?? 0);
+        if (diff !== 0) return diff;
+        return a.distanceToPickup - b.distanceToPickup;
+      });
+    }
+    return copy.sort((a, b) => a.distanceToPickup - b.distanceToPickup);
+  }, [availableCharters, sortBy]);
 
   // Polling fallback: Detect when charter accepts via polling (WebSocket may be unreliable)
   const { data: polledMatch } = useMatch(currentMatch?.id || '');
@@ -368,6 +383,50 @@ export default function MatchingPage() {
             />
           </Box>
         )}
+
+        {/* Orden de la lista (reordena, no filtra) */}
+        {availableCharters.length > 1 && (
+          <Box
+            sx={{
+              mt: 1.5,
+              display: 'inline-flex',
+              p: 0.5,
+              gap: 0.5,
+              bgcolor: 'background.default',
+              borderRadius: 999,
+            }}
+          >
+            {([
+              { key: 'distance', label: 'Cercanía' },
+              { key: 'helpers', label: 'Más equipo' },
+            ] as const).map(({ key, label }) => {
+              const active = sortBy === key;
+              return (
+                <Box
+                  key={key}
+                  component='button'
+                  type='button'
+                  onClick={() => setSortBy(key)}
+                  sx={{
+                    border: 'none',
+                    cursor: 'pointer',
+                    px: 2,
+                    py: 0.75,
+                    borderRadius: 999,
+                    fontSize: '0.8rem',
+                    fontWeight: active ? 700 : 500,
+                    fontFamily: 'inherit',
+                    color: active ? 'secondary.contrastText' : 'text.secondary',
+                    bgcolor: active ? 'secondary.main' : 'transparent',
+                    transition: 'all 0.2s ease-in-out',
+                  }}
+                >
+                  {label}
+                </Box>
+              );
+            })}
+          </Box>
+        )}
       </Box>
 
       {/* Mapa de ruta */}
@@ -508,7 +567,7 @@ export default function MatchingPage() {
             </Alert>
           )}
 
-          {availableCharters.map((charter) => {
+          {sortedCharters.map((charter) => {
             const isPending =
               selectedCharterPending?.charterId === charter.charterId;
 
