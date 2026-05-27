@@ -1,37 +1,43 @@
 "use client";
 
 import {
+  Chat,
+  DirectionsCar,
+  FlagOutlined,
+  History,
+  Home,
+  Logout,
+  NotificationsNoneRounded,
+  PersonOutline,
+  Receipt,
+} from "@mui/icons-material";
+import {
   Badge,
   Box,
+  Button,
   ButtonBase,
   Dialog,
-  DialogTitle,
+  DialogActions,
   DialogContent,
   DialogContentText,
-  DialogActions,
-  Button,
+  DialogTitle,
   Divider,
   Typography,
 } from "@mui/material";
-import {
-  Home,
-  History,
-  Chat,
-  Logout,
-  NotificationsNoneRounded,
-  Receipt,
-  DirectionsCar,
-  PersonOutline,
-  FlagOutlined,
-} from "@mui/icons-material";
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
-import { useAuthStore } from "@/lib/stores/authStore";
-import { useUserMatches, useCharterMatches } from "@/lib/hooks/queries/useTravelMatchQueries";
-import { useUnreadNotificationCount } from "@/lib/hooks/queries/useNotificationQueries";
-import { isActiveTrip } from "@/lib/utils/matchHelpers";
-import { MOBILE_BOTTOM_NAV_HEIGHT, Z_INDEX } from "@/lib/constants/mobileDesign";
 import type { ReactNode } from "react";
+import { useEffect, useState } from "react";
+import {
+  MOBILE_BOTTOM_NAV_HEIGHT,
+  Z_INDEX,
+} from "@/lib/constants/mobileDesign";
+import { useUnreadNotificationCount } from "@/lib/hooks/queries/useNotificationQueries";
+import {
+  useCharterMatches,
+  useUserMatches,
+} from "@/lib/hooks/queries/useTravelMatchQueries";
+import { useAuthStore } from "@/lib/stores/authStore";
+import { isActiveTrip } from "@/lib/utils/matchHelpers";
 
 interface NavItemProps {
   label: string;
@@ -41,7 +47,13 @@ interface NavItemProps {
   onClick: () => void;
 }
 
-function NavItem({ label, value: _value, icon, active, onClick }: NavItemProps) {
+function NavItem({
+  label,
+  value: _value,
+  icon,
+  active,
+  onClick,
+}: NavItemProps) {
   return (
     <ButtonBase
       onClick={onClick}
@@ -64,7 +76,9 @@ function NavItem({ label, value: _value, icon, active, onClick }: NavItemProps) 
         },
       }}
     >
-      <Box sx={{ fontSize: 22, display: "flex", alignItems: "center" }}>{icon}</Box>
+      <Box sx={{ fontSize: 22, display: "flex", alignItems: "center" }}>
+        {icon}
+      </Box>
       <Typography
         component="span"
         sx={{
@@ -140,7 +154,7 @@ export function BottomNavbar() {
         router.push("/driver/vehicles");
         break;
       case "payments":
-        router.push("/client/payments");
+        router.push(`${baseRoute}/payments`);
         break;
       case "profile":
         router.push("/profile");
@@ -243,7 +257,11 @@ export function BottomNavbar() {
             label="Chat"
             value="chat"
             icon={
-              <Badge color="secondary" variant="dot" invisible={!activeMatch.conversationId}>
+              <Badge
+                color="secondary"
+                variant="dot"
+                invisible={!activeMatch.conversationId}
+              >
                 <Chat />
               </Badge>
             }
@@ -262,15 +280,13 @@ export function BottomNavbar() {
           />
         )}
 
-        {!isCharter && (
-          <NavItem
-            label="Pagos"
-            value="payments"
-            icon={<Receipt />}
-            active={value === "payments"}
-            onClick={() => navigate("payments")}
-          />
-        )}
+        <NavItem
+          label="Pagos"
+          value="payments"
+          icon={<Receipt />}
+          active={value === "payments"}
+          onClick={() => navigate("payments")}
+        />
 
         <NavItem
           label="Historial"
@@ -318,14 +334,23 @@ export function BottomNavbar() {
         />
       </Box>
 
-      <Dialog open={logoutDialogOpen} onClose={() => setLogoutDialogOpen(false)}>
+      <Dialog
+        open={logoutDialogOpen}
+        onClose={() => setLogoutDialogOpen(false)}
+      >
         <DialogTitle>¿Cerrar sesión?</DialogTitle>
         <DialogContent>
-          <DialogContentText>¿Estás seguro que querés cerrar sesión?</DialogContentText>
+          <DialogContentText>
+            ¿Estás seguro que querés cerrar sesión?
+          </DialogContentText>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setLogoutDialogOpen(false)} color="primary">Cancelar</Button>
-          <Button onClick={handleLogout} color="error" variant="contained">Salir</Button>
+          <Button onClick={() => setLogoutDialogOpen(false)} color="primary">
+            Cancelar
+          </Button>
+          <Button onClick={handleLogout} color="error" variant="contained">
+            Salir
+          </Button>
         </DialogActions>
       </Dialog>
     </Box>

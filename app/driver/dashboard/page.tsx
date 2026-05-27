@@ -1,13 +1,14 @@
 "use client";
 
 import {
+  Add,
   Assignment,
   Block,
   Chat,
   ChevronRight,
   DirectionsCar,
-  EditOutlined,
   Flag,
+  History,
   HourglassEmpty,
   LocationOn,
   MonetizationOn,
@@ -28,6 +29,7 @@ import {
   DialogContent,
   DialogTitle,
   Divider,
+  Fab,
   FormControlLabel,
   FormControlLabel as FormControlLabelRadio,
   IconButton,
@@ -38,6 +40,8 @@ import {
   Typography,
 } from "@mui/material";
 import { useQueryClient } from "@tanstack/react-query";
+import { formatDistanceToNow } from "date-fns";
+import { es } from "date-fns/locale";
 import { motion } from "framer-motion";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -46,25 +50,25 @@ import { MobileMatchCard } from "@/components/cards/MobileMatchCard";
 import { MobileContainer } from "@/components/layout/MobileContainer";
 import { MatchExpirationTimer } from "@/components/MatchExpirationTimer";
 import { AcceptMatchModal } from "@/components/modals/AcceptMatchModal";
+import { CreditPackagesShowcase } from "@/components/modals/CreditPackagesShowcase";
 import { RespondInquiryModal } from "@/components/modals/RespondInquiryModal";
-import { useReceivedInquiries } from "@/lib/hooks/queries/useAvailabilityInquiriesQueries";
-import { formatDistanceToNow } from "date-fns";
-import { es } from "date-fns/locale";
-import type { AvailabilityInquiry } from "@/lib/types/api";
 import { WelcomeHeader } from "@/components/ui/WelcomeHeader";
 import {
   useRespondToMatch,
   useToggleAvailability,
 } from "@/lib/hooks/mutations/useTravelMatchMutations";
 import { queryKeys } from "@/lib/hooks/queries/queryFactory";
+import { useReceivedInquiries } from "@/lib/hooks/queries/useAvailabilityInquiriesQueries";
+import { useUserFeedback } from "@/lib/hooks/queries/useFeedbackQueries";
 import { usePublicPricing } from "@/lib/hooks/queries/useSystemConfigQueries";
 import {
   useCharterAvailability,
   useCharterMatches,
 } from "@/lib/hooks/queries/useTravelMatchQueries";
 import { useMyVehicles } from "@/lib/hooks/queries/useVehicleQueries";
-import { useUserFeedback } from "@/lib/hooks/queries/useFeedbackQueries";
 import { useAuthStore } from "@/lib/stores/authStore";
+import { useCreditPurchaseStore } from "@/lib/stores/creditPurchaseStore";
+import type { AvailabilityInquiry } from "@/lib/types/api";
 import { type TravelMatch, VerificationStatus } from "@/lib/types/api";
 import { isMatchExpired } from "@/lib/utils/matchHelpers";
 
@@ -81,6 +85,7 @@ export default function DriverDashboard() {
     useCharterMatches();
   const respondMutation = useRespondToMatch();
   const { data: pricing } = usePublicPricing();
+  const { openModal: openCreditModal } = useCreditPurchaseStore();
 
   // Modal state
   const [acceptModalOpen, setAcceptModalOpen] = useState(false);
@@ -197,25 +202,31 @@ export default function DriverDashboard() {
   ) => {
     const newStatus = event.target.checked;
 
-    const availabilityKey = queryKeys.charter.availability(user?.id || '');
+    const availabilityKey = queryKeys.charter.availability(user?.id || "");
 
     if (!newStatus) {
       // Desconectar: optimistic update + revert en error
-      queryClient.setQueryData(availabilityKey, (old: typeof availabilityData) => ({
-        ...old,
-        isAvailable: false,
-        vehicleId: old?.vehicleId ?? null,
-      }));
+      queryClient.setQueryData(
+        availabilityKey,
+        (old: typeof availabilityData) => ({
+          ...old,
+          isAvailable: false,
+          vehicleId: old?.vehicleId ?? null,
+        }),
+      );
       toggleMutation.mutate(
         { isAvailable: false },
         {
           onSuccess: () => setReturnToOrigin(false),
           onError: () =>
-            queryClient.setQueryData(availabilityKey, (old: typeof availabilityData) => ({
-              ...old,
-              isAvailable: true,
-              vehicleId: old?.vehicleId ?? null,
-            })),
+            queryClient.setQueryData(
+              availabilityKey,
+              (old: typeof availabilityData) => ({
+                ...old,
+                isAvailable: true,
+                vehicleId: old?.vehicleId ?? null,
+              }),
+            ),
         },
       );
       return;
@@ -236,11 +247,14 @@ export default function DriverDashboard() {
         {
           onSuccess: () => toast.success("Estás en línea"),
           onError: () =>
-            queryClient.setQueryData(availabilityKey, (old: typeof availabilityData) => ({
-              ...old,
-              isAvailable: false,
-              vehicleId: old?.vehicleId ?? null,
-            })),
+            queryClient.setQueryData(
+              availabilityKey,
+              (old: typeof availabilityData) => ({
+                ...old,
+                isAvailable: false,
+                vehicleId: old?.vehicleId ?? null,
+              }),
+            ),
         },
       );
     } else {
@@ -256,7 +270,7 @@ export default function DriverDashboard() {
       toast.error("Selecciona un vehículo");
       return;
     }
-    const availabilityKey = queryKeys.charter.availability(user?.id || '');
+    const availabilityKey = queryKeys.charter.availability(user?.id || "");
     setVehicleSelectOpen(false);
     queryClient.setQueryData(availabilityKey, {
       isAvailable: true,
@@ -267,11 +281,14 @@ export default function DriverDashboard() {
       {
         onSuccess: () => toast.success("Estás en línea"),
         onError: () => {
-          queryClient.setQueryData(availabilityKey, (old: typeof availabilityData) => ({
-            ...old,
-            isAvailable: false,
-            vehicleId: old?.vehicleId ?? null,
-          }));
+          queryClient.setQueryData(
+            availabilityKey,
+            (old: typeof availabilityData) => ({
+              ...old,
+              isAvailable: false,
+              vehicleId: old?.vehicleId ?? null,
+            }),
+          );
           setSelectedVehicleId("");
           setVehicleSelectOpen(false);
         },
@@ -563,13 +580,30 @@ export default function DriverDashboard() {
                         : "Actívate para mostrarte disponible"}
                 </Typography>
               </Stack>
-              {/* Derecha: Switch — deshabilitado si no hay créditos suficientes */}
-              <Switch
-                checked={isAvailable}
-                onChange={handleAvailabilityChange}
-                color="secondary"
-                disabled={!isAvailable && ((user?.credits ?? 0) < 2 || hasNoVerifiedVehicles)}
-              />
+              {/* Derecha: botón recargar + Switch */}
+              <Stack direction="row" alignItems="center" gap={1}>
+                <Fab
+                  color="secondary"
+                  size="small"
+                  onClick={openCreditModal}
+                  aria-label="Recargar créditos"
+                  sx={{
+                    boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
+                    flexShrink: 0,
+                  }}
+                >
+                  <Add />
+                </Fab>
+                <Switch
+                  checked={isAvailable}
+                  onChange={handleAvailabilityChange}
+                  color="secondary"
+                  disabled={
+                    !isAvailable &&
+                    ((user?.credits ?? 0) < 2 || hasNoVerifiedVehicles)
+                  }
+                />
+              </Stack>
             </Stack>
 
             {isAvailable && activeVehicle && (
@@ -581,16 +615,41 @@ export default function DriverDashboard() {
                   borderColor: "divider",
                 }}
               >
-                <Stack direction="row" alignItems="center" justifyContent="space-between" gap={1}>
-                  <Stack direction="row" alignItems="center" gap={0.75} flex={1} minWidth={0}>
-                    <DirectionsCar sx={{ fontSize: 18, color: "text.secondary", flexShrink: 0 }} />
+                <Stack
+                  direction="row"
+                  alignItems="center"
+                  justifyContent="space-between"
+                  gap={1}
+                >
+                  <Stack
+                    direction="row"
+                    alignItems="center"
+                    gap={0.75}
+                    flex={1}
+                    minWidth={0}
+                  >
+                    <DirectionsCar
+                      sx={{
+                        fontSize: 18,
+                        color: "text.secondary",
+                        flexShrink: 0,
+                      }}
+                    />
                     <Typography variant="body2" fontWeight={600} noWrap>
-                      {[activeVehicle.brand, activeVehicle.model].filter(Boolean).join(" ") || "Vehículo"}
+                      {[activeVehicle.brand, activeVehicle.model]
+                        .filter(Boolean)
+                        .join(" ") || "Vehículo"}
                     </Typography>
                     <Chip
                       label={activeVehicle.plate}
                       size="small"
-                      sx={{ fontFamily: "monospace", fontSize: "0.68rem", fontWeight: 700, height: 20, flexShrink: 0 }}
+                      sx={{
+                        fontFamily: "monospace",
+                        fontSize: "0.68rem",
+                        fontWeight: 700,
+                        height: 20,
+                        flexShrink: 0,
+                      }}
                     />
                   </Stack>
                   <Button
@@ -599,15 +658,32 @@ export default function DriverDashboard() {
                     color="primary"
                     endIcon={<ChevronRight sx={{ fontSize: 16 }} />}
                     onClick={() => router.push("/driver/vehicles")}
-                    sx={{ textTransform: "none", fontWeight: 600, p: 0, minWidth: 0, flexShrink: 0 }}
+                    sx={{
+                      textTransform: "none",
+                      fontWeight: 600,
+                      p: 0,
+                      minWidth: 0,
+                      flexShrink: 0,
+                    }}
                   >
                     Gestionar
                   </Button>
                 </Stack>
                 {user?.pricePerKm != null && (
-                  <Stack direction="row" alignItems="center" gap={0.5} mt={0.75}>
-                    <MonetizationOn sx={{ fontSize: 15, color: "primary.main" }} />
-                    <Typography variant="body2" color="primary.main" fontWeight={600}>
+                  <Stack
+                    direction="row"
+                    alignItems="center"
+                    gap={0.5}
+                    mt={0.75}
+                  >
+                    <MonetizationOn
+                      sx={{ fontSize: 15, color: "primary.main" }}
+                    />
+                    <Typography
+                      variant="body2"
+                      color="primary.main"
+                      fontWeight={600}
+                    >
                       {user.pricePerKm} cr/km
                     </Typography>
                   </Stack>
@@ -684,26 +760,54 @@ export default function DriverDashboard() {
                 "&:hover": { bgcolor: "action.hover" },
               }}
             >
-              <Stack direction="row" alignItems="center" gap={0.25} width="100%">
-                <Typography variant="caption" color="text.secondary" fontWeight={600}>
+              <Stack
+                direction="row"
+                alignItems="center"
+                gap={0.25}
+                width="100%"
+              >
+                <Typography
+                  variant="caption"
+                  color="text.secondary"
+                  fontWeight={600}
+                >
                   Tarifa
                 </Typography>
-                <ChevronRight sx={{ fontSize: 13, color: "text.disabled", ml: "auto" }} />
+                <ChevronRight
+                  sx={{ fontSize: 13, color: "text.disabled", ml: "auto" }}
+                />
               </Stack>
               {user?.pricePerKm != null ? (
-                <Typography variant="subtitle1" fontWeight={700} lineHeight={1.2}>
+                <Typography
+                  variant="subtitle1"
+                  fontWeight={700}
+                  lineHeight={1.2}
+                >
                   {user.pricePerKm}
-                  <Typography component="span" variant="caption" color="text.secondary" sx={{ ml: 0.4 }}>
+                  <Typography
+                    component="span"
+                    variant="caption"
+                    color="text.secondary"
+                    sx={{ ml: 0.4 }}
+                  >
                     cr/km
                   </Typography>
                 </Typography>
               ) : (
-                <Typography variant="caption" color="warning.main" fontWeight={600}>
+                <Typography
+                  variant="caption"
+                  color="warning.main"
+                  fontWeight={600}
+                >
                   Sin configurar
                 </Typography>
               )}
               {pricing?.creditsPerKm && (
-                <Typography variant="caption" color="text.disabled" sx={{ fontSize: "0.6rem" }}>
+                <Typography
+                  variant="caption"
+                  color="text.disabled"
+                  sx={{ fontSize: "0.6rem" }}
+                >
                   Base: {pricing.creditsPerKm} cr/km
                 </Typography>
               )}
@@ -722,19 +826,38 @@ export default function DriverDashboard() {
                 "&:hover": { bgcolor: "action.hover" },
               }}
             >
-              <Stack direction="row" alignItems="center" gap={0.25} width="100%">
-                <Typography variant="caption" color="text.secondary" fontWeight={600}>
+              <Stack
+                direction="row"
+                alignItems="center"
+                gap={0.25}
+                width="100%"
+              >
+                <Typography
+                  variant="caption"
+                  color="text.secondary"
+                  fontWeight={600}
+                >
                   Reputación
                 </Typography>
-                <ChevronRight sx={{ fontSize: 13, color: "text.disabled", ml: "auto" }} />
+                <ChevronRight
+                  sx={{ fontSize: 13, color: "text.disabled", ml: "auto" }}
+                />
               </Stack>
               <Stack direction="row" alignItems="center" gap={0.4}>
                 <StarRounded sx={{ fontSize: 18, color: "warning.main" }} />
-                <Typography variant="subtitle1" fontWeight={700} lineHeight={1.2}>
+                <Typography
+                  variant="subtitle1"
+                  fontWeight={700}
+                  lineHeight={1.2}
+                >
                   {(myFeedback?.averageRating ?? 0).toFixed(1)}
                 </Typography>
               </Stack>
-              <Typography variant="caption" color="text.disabled" sx={{ fontSize: "0.6rem" }}>
+              <Typography
+                variant="caption"
+                color="text.disabled"
+                sx={{ fontSize: "0.6rem" }}
+              >
                 {myFeedback?.totalCount ?? 0} reseñas
               </Typography>
             </ButtonBase>
@@ -742,40 +865,77 @@ export default function DriverDashboard() {
             <Divider orientation="vertical" flexItem sx={{ my: 1.5 }} />
 
             {/* Columna: Créditos */}
-            <Box
+            <ButtonBase
+              onClick={openCreditModal}
               sx={{
-                display: "flex",
                 flexDirection: "column",
                 alignItems: "flex-start",
                 p: 2,
                 gap: 0.25,
+                "&:hover": { bgcolor: "action.hover" },
               }}
             >
-              <Typography variant="caption" color="text.secondary" fontWeight={600}>
-                Créditos
-              </Typography>
+              <Stack
+                direction="row"
+                alignItems="center"
+                gap={0.25}
+                width="100%"
+              >
+                <Typography
+                  variant="caption"
+                  color="text.secondary"
+                  fontWeight={600}
+                >
+                  Créditos
+                </Typography>
+                <Box
+                  component="span"
+                  role="button"
+                  aria-label="Ver mis pagos"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    router.push("/driver/payments");
+                  }}
+                  sx={{
+                    ml: "auto",
+                    display: "inline-flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    p: 0.25,
+                    borderRadius: 1,
+                    cursor: "pointer",
+                    color: "text.disabled",
+                    "&:hover": {
+                      color: "secondary.main",
+                      bgcolor: "action.hover",
+                    },
+                  }}
+                >
+                  <History sx={{ fontSize: 16 }} />
+                </Box>
+              </Stack>
               <Typography
                 variant="subtitle1"
                 fontWeight={700}
                 lineHeight={1.2}
-                color={(user?.credits ?? 0) >= 2 ? "success.main" : "error.main"}
+                color={
+                  (user?.credits ?? 0) >= 2 ? "success.main" : "error.main"
+                }
               >
                 {user?.credits ?? 0}
               </Typography>
-              <Typography variant="caption" color="text.disabled" sx={{ fontSize: "0.6rem" }}>
-                disponibles
+              <Typography
+                variant="caption"
+                color="text.disabled"
+                sx={{ fontSize: "0.6rem" }}
+              >
+                Recargar
               </Typography>
-            </Box>
+            </ButtonBase>
           </Box>
         </MotionCard>
 
         {/* Aviso de costo por aceptar solicitud */}
-        {(user?.credits ?? 0) < 2 && (
-          <Alert severity="warning" sx={{ mb: 2 }}>
-            Necesitás al menos 2 créditos para activarte y aceptar solicitudes.
-            Cada solicitud aceptada tiene un costo de 2 créditos.
-          </Alert>
-        )}
         {(user?.credits ?? 0) >= 2 && !isAvailable && (
           <Alert severity="warning" sx={{ mb: 2 }}>
             Aceptar una solicitud tiene un costo de 2 créditos.
@@ -949,14 +1109,29 @@ export default function DriverDashboard() {
                       p: 2,
                     }}
                   >
-                    <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, flex: 1, minWidth: 0 }}>
+                    <Box
+                      sx={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 1.5,
+                        flex: 1,
+                        minWidth: 0,
+                      }}
+                    >
                       <Person fontSize="small" sx={{ color: "primary.main" }} />
                       <Box sx={{ minWidth: 0 }}>
-                        <Typography variant="subtitle2" sx={{ fontWeight: 700 }} noWrap>
+                        <Typography
+                          variant="subtitle2"
+                          sx={{ fontWeight: 700 }}
+                          noWrap
+                        >
                           {inquiry.fromUser?.name ?? "Cliente"}
                         </Typography>
                         <Typography variant="caption" color="text.secondary">
-                          hace {formatDistanceToNow(new Date(inquiry.createdAt), { locale: es })}
+                          hace{" "}
+                          {formatDistanceToNow(new Date(inquiry.createdAt), {
+                            locale: es,
+                          })}
                         </Typography>
                       </Box>
                     </Box>
@@ -1222,6 +1397,9 @@ export default function DriverDashboard() {
           }}
           inquiry={selectedInquiry}
         />
+
+        {/* Modal de recarga de créditos (premium, reutilizado del flujo del cliente) */}
+        <CreditPackagesShowcase />
       </MobileContainer>
     </>
   );

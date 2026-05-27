@@ -347,6 +347,7 @@ export default function DriverMatchingDetailPage() {
                   {/* Complete trip button */}
                   <Button
                     variant="contained"
+                    color="secondary"
                     fullWidth
                     onClick={() => setFinalizeTripModalOpen(true)}
                     sx={{
@@ -354,8 +355,6 @@ export default function DriverMatchingDetailPage() {
                       minHeight: { xs: 44, md: "100%" },
                       fontWeight: 700,
                       fontSize: "0.85rem",
-                      bgcolor: "success.main",
-                      "&:hover": { bgcolor: "success.dark" },
                     }}
                   >
                     Finalizar Viaje

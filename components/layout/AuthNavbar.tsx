@@ -1,19 +1,19 @@
 "use client";
 
 import {
+  Chat as ChatIcon,
   Close as CloseIcon,
+  Dashboard as DashboardIcon,
+  DirectionsCar as DirectionsCarIcon,
+  History as HistoryIcon,
   Home as HomeIcon,
   Logout as LogoutIcon,
   Menu as MenuIcon,
   NotificationsNoneRounded as NotificationsIcon,
-  History as HistoryIcon,
   Payment as PaymentIcon,
-  Chat as ChatIcon,
-  Dashboard as DashboardIcon,
   Person as PersonIcon,
-  Settings as SettingsIcon,
-  DirectionsCar as DirectionsCarIcon,
   FlagOutlined as ReportsIcon,
+  Settings as SettingsIcon,
 } from "@mui/icons-material";
 import {
   AppBar,
@@ -35,13 +35,13 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import Logo from "@/components/ui/Logo";
 import { useLogout } from "@/lib/hooks/mutations/useAuthMutations";
+import { useUnreadNotificationCount } from "@/lib/hooks/queries/useNotificationQueries";
+import {
+  useCharterMatches,
+  useUserMatches,
+} from "@/lib/hooks/queries/useTravelMatchQueries";
 import { useAuthStore } from "@/lib/stores/authStore";
 import { isActiveTrip } from "@/lib/utils/matchHelpers";
-import {
-  useUserMatches,
-  useCharterMatches,
-} from "@/lib/hooks/queries/useTravelMatchQueries";
-import { useUnreadNotificationCount } from "@/lib/hooks/queries/useNotificationQueries";
 
 export function AuthNavbar() {
   const router = useRouter();
@@ -99,7 +99,7 @@ export function AuthNavbar() {
   };
 
   const handlePayments = () => {
-    router.push("/client/payments");
+    router.push(`${baseRoute}/payments`);
     setMobileOpen(false);
   };
 
@@ -226,8 +226,8 @@ export function AuthNavbar() {
               </Box>
             )}
 
-            {/* Pagos (Solo Clientes) */}
-            {user?.role === "user" && (
+            {/* Pagos (clientes y charters) */}
+            {(user?.role === "user" || user?.role === "charter") && (
               <Box
                 component="button"
                 onClick={handlePayments}
@@ -375,7 +375,11 @@ export function AuthNavbar() {
 
           {/* Desktop - Profile & Logout */}
           <Box
-            sx={{ display: { xs: "none", md: "flex" }, alignItems: "center", gap: 1 }}
+            sx={{
+              display: { xs: "none", md: "flex" },
+              alignItems: "center",
+              gap: 1,
+            }}
           >
             {/* Profile Avatar */}
             <Tooltip title="Mi perfil" arrow>
@@ -398,7 +402,9 @@ export function AuthNavbar() {
                   },
                 }}
               >
-                {user?.avatar ? null : (user?.name?.[0]?.toUpperCase() ?? <PersonIcon />)}
+                {user?.avatar
+                  ? null
+                  : (user?.name?.[0]?.toUpperCase() ?? <PersonIcon />)}
               </Avatar>
             </Tooltip>
 
@@ -520,27 +526,78 @@ export function AuthNavbar() {
             <ListItem
               component="button"
               onClick={handleDashboard}
-              sx={{ display: "flex", cursor: "pointer", color: "white", transition: "all 0.3s ease", "&:hover": { bgcolor: "rgba(220, 166, 33, 0.2)", transform: "translateX(8px)" } }}
+              sx={{
+                display: "flex",
+                cursor: "pointer",
+                color: "white",
+                transition: "all 0.3s ease",
+                "&:hover": {
+                  bgcolor: "rgba(220, 166, 33, 0.2)",
+                  transform: "translateX(8px)",
+                },
+              }}
             >
-              <ListItemIcon><DashboardIcon sx={{ color: "#DCA621", fontSize: 22 }} /></ListItemIcon>
-              <ListItemText primary="Dashboard" primaryTypographyProps={{ sx: { fontWeight: 600, color: "#DCA621", fontSize: "0.95rem" } }} />
+              <ListItemIcon>
+                <DashboardIcon sx={{ color: "#DCA621", fontSize: 22 }} />
+              </ListItemIcon>
+              <ListItemText
+                primary="Dashboard"
+                primaryTypographyProps={{
+                  sx: {
+                    fontWeight: 600,
+                    color: "#DCA621",
+                    fontSize: "0.95rem",
+                  },
+                }}
+              />
             </ListItem>
 
             {/* Avisos */}
             <ListItem
               component="button"
               onClick={handleNotifications}
-              sx={{ display: "flex", cursor: "pointer", color: "white", transition: "all 0.3s ease", "&:hover": { bgcolor: "rgba(220, 166, 33, 0.2)", transform: "translateX(8px)" } }}
+              sx={{
+                display: "flex",
+                cursor: "pointer",
+                color: "white",
+                transition: "all 0.3s ease",
+                "&:hover": {
+                  bgcolor: "rgba(220, 166, 33, 0.2)",
+                  transform: "translateX(8px)",
+                },
+              }}
             >
-              <ListItemIcon><NotificationsIcon sx={{ color: "#DCA621", fontSize: 22 }} /></ListItemIcon>
+              <ListItemIcon>
+                <NotificationsIcon sx={{ color: "#DCA621", fontSize: 22 }} />
+              </ListItemIcon>
               <ListItemText
                 primary="Avisos"
-                secondary={unreadCount > 0 ? `${unreadCount} sin leer` : undefined}
-                primaryTypographyProps={{ sx: { fontWeight: 600, color: "#DCA621", fontSize: "0.95rem" } }}
-                secondaryTypographyProps={{ sx: { color: "rgba(220,166,33,0.7)", fontSize: "0.75rem" } }}
+                secondary={
+                  unreadCount > 0 ? `${unreadCount} sin leer` : undefined
+                }
+                primaryTypographyProps={{
+                  sx: {
+                    fontWeight: 600,
+                    color: "#DCA621",
+                    fontSize: "0.95rem",
+                  },
+                }}
+                secondaryTypographyProps={{
+                  sx: { color: "rgba(220,166,33,0.7)", fontSize: "0.75rem" },
+                }}
               />
               {unreadCount > 0 && (
-                <Chip label={unreadCount} size="small" sx={{ bgcolor: "#DCA621", color: "#380116", fontWeight: 700, fontSize: "0.7rem", height: 20 }} />
+                <Chip
+                  label={unreadCount}
+                  size="small"
+                  sx={{
+                    bgcolor: "#DCA621",
+                    color: "#380116",
+                    fontWeight: 700,
+                    fontSize: "0.7rem",
+                    height: 20,
+                  }}
+                />
               )}
             </ListItem>
 
@@ -549,22 +606,62 @@ export function AuthNavbar() {
               <ListItem
                 component="button"
                 onClick={handleChat}
-                sx={{ display: "flex", cursor: "pointer", color: "white", transition: "all 0.3s ease", "&:hover": { bgcolor: "rgba(220, 166, 33, 0.2)", transform: "translateX(8px)" } }}
+                sx={{
+                  display: "flex",
+                  cursor: "pointer",
+                  color: "white",
+                  transition: "all 0.3s ease",
+                  "&:hover": {
+                    bgcolor: "rgba(220, 166, 33, 0.2)",
+                    transform: "translateX(8px)",
+                  },
+                }}
               >
-                <ListItemIcon><ChatIcon sx={{ color: "#DCA621", fontSize: 22 }} /></ListItemIcon>
-                <ListItemText primary="Chat Activo" primaryTypographyProps={{ sx: { fontWeight: 600, color: "#DCA621", fontSize: "0.95rem" } }} />
+                <ListItemIcon>
+                  <ChatIcon sx={{ color: "#DCA621", fontSize: 22 }} />
+                </ListItemIcon>
+                <ListItemText
+                  primary="Chat Activo"
+                  primaryTypographyProps={{
+                    sx: {
+                      fontWeight: 600,
+                      color: "#DCA621",
+                      fontSize: "0.95rem",
+                    },
+                  }}
+                />
               </ListItem>
             )}
 
-            {/* Pagos (solo clientes) */}
-            {user?.role === "user" && (
+            {/* Pagos (clientes y charters) */}
+            {(user?.role === "user" || user?.role === "charter") && (
               <ListItem
                 component="button"
                 onClick={handlePayments}
-                sx={{ display: "flex", cursor: "pointer", color: "white", transition: "all 0.3s ease", "&:hover": { bgcolor: "rgba(220, 166, 33, 0.2)", transform: "translateX(8px)" } }}
+                sx={{
+                  display: "flex",
+                  cursor: "pointer",
+                  color: "white",
+                  transition: "all 0.3s ease",
+                  "&:hover": {
+                    bgcolor: "rgba(220, 166, 33, 0.2)",
+                    transform: "translateX(8px)",
+                  },
+                }}
               >
-                <ListItemIcon><PaymentIcon sx={{ color: "#DCA621", fontSize: 22 }} /></ListItemIcon>
-                <ListItemText primary="Pagos" primaryTypographyProps={{ sx: { fontWeight: 600, color: "#DCA621", fontSize: "0.95rem" } }} />
+                <ListItemIcon>
+                  <PaymentIcon sx={{ color: "#DCA621", fontSize: 22 }} />
+                </ListItemIcon>
+                <ListItemText
+                  primary="Pagos"
+                  primaryTypographyProps={{
+                    sx: {
+                      fontWeight: 600,
+                      color: "#DCA621",
+                      fontSize: "0.95rem",
+                    },
+                  }}
+                />
               </ListItem>
             )}
 
@@ -572,21 +669,64 @@ export function AuthNavbar() {
             <ListItem
               component="button"
               onClick={handleHistory}
-              sx={{ display: "flex", cursor: "pointer", color: "white", transition: "all 0.3s ease", "&:hover": { bgcolor: "rgba(220, 166, 33, 0.2)", transform: "translateX(8px)" } }}
+              sx={{
+                display: "flex",
+                cursor: "pointer",
+                color: "white",
+                transition: "all 0.3s ease",
+                "&:hover": {
+                  bgcolor: "rgba(220, 166, 33, 0.2)",
+                  transform: "translateX(8px)",
+                },
+              }}
             >
-              <ListItemIcon><HistoryIcon sx={{ color: "#DCA621", fontSize: 22 }} /></ListItemIcon>
-              <ListItemText primary="Historial" primaryTypographyProps={{ sx: { fontWeight: 600, color: "#DCA621", fontSize: "0.95rem" } }} />
+              <ListItemIcon>
+                <HistoryIcon sx={{ color: "#DCA621", fontSize: 22 }} />
+              </ListItemIcon>
+              <ListItemText
+                primary="Historial"
+                primaryTypographyProps={{
+                  sx: {
+                    fontWeight: 600,
+                    color: "#DCA621",
+                    fontSize: "0.95rem",
+                  },
+                }}
+              />
             </ListItem>
 
             {/* Vehículos (solo charters) */}
             {isCharter && (
               <ListItem
                 component="button"
-                onClick={() => { router.push("/driver/vehicles"); setMobileOpen(false); }}
-                sx={{ display: "flex", cursor: "pointer", color: "white", transition: "all 0.3s ease", "&:hover": { bgcolor: "rgba(220, 166, 33, 0.2)", transform: "translateX(8px)" } }}
+                onClick={() => {
+                  router.push("/driver/vehicles");
+                  setMobileOpen(false);
+                }}
+                sx={{
+                  display: "flex",
+                  cursor: "pointer",
+                  color: "white",
+                  transition: "all 0.3s ease",
+                  "&:hover": {
+                    bgcolor: "rgba(220, 166, 33, 0.2)",
+                    transform: "translateX(8px)",
+                  },
+                }}
               >
-                <ListItemIcon><DirectionsCarIcon sx={{ color: "#DCA621", fontSize: 22 }} /></ListItemIcon>
-                <ListItemText primary="Vehículos" primaryTypographyProps={{ sx: { fontWeight: 600, color: "#DCA621", fontSize: "0.95rem" } }} />
+                <ListItemIcon>
+                  <DirectionsCarIcon sx={{ color: "#DCA621", fontSize: 22 }} />
+                </ListItemIcon>
+                <ListItemText
+                  primary="Vehículos"
+                  primaryTypographyProps={{
+                    sx: {
+                      fontWeight: 600,
+                      color: "#DCA621",
+                      fontSize: "0.95rem",
+                    },
+                  }}
+                />
               </ListItem>
             )}
 
@@ -594,40 +734,116 @@ export function AuthNavbar() {
             <ListItem
               component="button"
               onClick={handleReports}
-              sx={{ display: "flex", cursor: "pointer", color: "white", transition: "all 0.3s ease", "&:hover": { bgcolor: "rgba(220, 166, 33, 0.2)", transform: "translateX(8px)" } }}
+              sx={{
+                display: "flex",
+                cursor: "pointer",
+                color: "white",
+                transition: "all 0.3s ease",
+                "&:hover": {
+                  bgcolor: "rgba(220, 166, 33, 0.2)",
+                  transform: "translateX(8px)",
+                },
+              }}
             >
-              <ListItemIcon><ReportsIcon sx={{ color: "#DCA621", fontSize: 22 }} /></ListItemIcon>
-              <ListItemText primary="Reportes" primaryTypographyProps={{ sx: { fontWeight: 600, color: "#DCA621", fontSize: "0.95rem" } }} />
+              <ListItemIcon>
+                <ReportsIcon sx={{ color: "#DCA621", fontSize: 22 }} />
+              </ListItemIcon>
+              <ListItemText
+                primary="Reportes"
+                primaryTypographyProps={{
+                  sx: {
+                    fontWeight: 600,
+                    color: "#DCA621",
+                    fontSize: "0.95rem",
+                  },
+                }}
+              />
             </ListItem>
 
             {/* Mi Perfil */}
             <ListItem
               component="button"
               onClick={handleProfile}
-              sx={{ display: "flex", cursor: "pointer", color: "white", transition: "all 0.3s ease", "&:hover": { bgcolor: "rgba(220, 166, 33, 0.2)", transform: "translateX(8px)" } }}
+              sx={{
+                display: "flex",
+                cursor: "pointer",
+                color: "white",
+                transition: "all 0.3s ease",
+                "&:hover": {
+                  bgcolor: "rgba(220, 166, 33, 0.2)",
+                  transform: "translateX(8px)",
+                },
+              }}
             >
-              <ListItemIcon><PersonIcon sx={{ color: "#DCA621", fontSize: 22 }} /></ListItemIcon>
-              <ListItemText primary="Mi Perfil" primaryTypographyProps={{ sx: { fontWeight: 600, color: "#DCA621", fontSize: "0.95rem" } }} />
+              <ListItemIcon>
+                <PersonIcon sx={{ color: "#DCA621", fontSize: 22 }} />
+              </ListItemIcon>
+              <ListItemText
+                primary="Mi Perfil"
+                primaryTypographyProps={{
+                  sx: {
+                    fontWeight: 600,
+                    color: "#DCA621",
+                    fontSize: "0.95rem",
+                  },
+                }}
+              />
             </ListItem>
 
             {/* Configuración */}
             <ListItem
               component="button"
               onClick={handleSettings}
-              sx={{ display: "flex", cursor: "pointer", color: "white", transition: "all 0.3s ease", "&:hover": { bgcolor: "rgba(220, 166, 33, 0.2)", transform: "translateX(8px)" } }}
+              sx={{
+                display: "flex",
+                cursor: "pointer",
+                color: "white",
+                transition: "all 0.3s ease",
+                "&:hover": {
+                  bgcolor: "rgba(220, 166, 33, 0.2)",
+                  transform: "translateX(8px)",
+                },
+              }}
             >
-              <ListItemIcon><SettingsIcon sx={{ color: "#DCA621", fontSize: 22 }} /></ListItemIcon>
-              <ListItemText primary="Configuración" primaryTypographyProps={{ sx: { fontWeight: 600, color: "#DCA621", fontSize: "0.95rem" } }} />
+              <ListItemIcon>
+                <SettingsIcon sx={{ color: "#DCA621", fontSize: 22 }} />
+              </ListItemIcon>
+              <ListItemText
+                primary="Configuración"
+                primaryTypographyProps={{
+                  sx: {
+                    fontWeight: 600,
+                    color: "#DCA621",
+                    fontSize: "0.95rem",
+                  },
+                }}
+              />
             </ListItem>
 
             {/* Cerrar Sesión */}
             <ListItem
               component="button"
               onClick={handleLogout}
-              sx={{ display: "flex", cursor: "pointer", borderTop: "2px solid rgba(220, 166, 33, 0.3)", transition: "all 0.3s ease", "&:hover": { bgcolor: "rgba(220, 166, 33, 0.2)", transform: "translateX(8px)" } }}
+              sx={{
+                display: "flex",
+                cursor: "pointer",
+                borderTop: "2px solid rgba(220, 166, 33, 0.3)",
+                transition: "all 0.3s ease",
+                "&:hover": {
+                  bgcolor: "rgba(220, 166, 33, 0.2)",
+                  transform: "translateX(8px)",
+                },
+              }}
             >
-              <ListItemIcon><LogoutIcon sx={{ color: "#DCA621", fontSize: 22 }} /></ListItemIcon>
-              <ListItemText primary="Cerrar Sesión" primaryTypographyProps={{ sx: { fontWeight: 800, color: "#DCA621", fontSize: "1rem" } }} />
+              <ListItemIcon>
+                <LogoutIcon sx={{ color: "#DCA621", fontSize: 22 }} />
+              </ListItemIcon>
+              <ListItemText
+                primary="Cerrar Sesión"
+                primaryTypographyProps={{
+                  sx: { fontWeight: 800, color: "#DCA621", fontSize: "1rem" },
+                }}
+              />
             </ListItem>
           </List>
         </Box>
