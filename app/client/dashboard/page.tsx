@@ -16,7 +16,6 @@ import {
   AccordionDetails,
   AccordionSummary,
   Avatar,
-  Badge,
   Box,
   Button,
   Card,
@@ -132,7 +131,11 @@ export default function ClientDashboard() {
     <>
       <MobileContainer withBottomNav>
         {/* Welcome Header */}
-        <WelcomeHeader userName={user?.name} userRole="client" />
+        <WelcomeHeader
+          userName={user?.name}
+          userRole="client"
+          avatarUrl={user?.avatar ?? undefined}
+        />
 
         {/* Credits Card */}
         <MotionCard
@@ -225,50 +228,47 @@ export default function ClientDashboard() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.2 }}
+          whileHover={
+            !activeTrip
+              ? { y: -2, boxShadow: "0px 8px 24px rgba(56, 1, 22, 0.12)" }
+              : {}
+          }
           sx={{
             mb: 3,
-            overflow: "visible",
+            overflow: "hidden",
+            position: "relative",
+            background: "linear-gradient(135deg, #FFFFFF 0%, #F5F2E8 100%)",
+            borderTop: "3px solid",
+            borderTopColor: "secondary.main",
             transition: "all 0.2s ease-in-out",
           }}
         >
           <CardContent
             sx={{
-              p: { xs: 2.5, md: 3 },
+              p: { xs: 3, md: 3.5 },
               textAlign: "center",
               position: "relative",
             }}
           >
-            {/* Indicador de conductores disponibles con animación */}
-            <Badge
-              badgeContent="●"
-              color="success"
-              sx={{
-                mb: 2,
-                "& .MuiBadge-badge": {
-                  animation: "pulse 2s infinite",
-                },
-              }}
-            >
-              <Typography
-                variant="caption"
-                color="success.main"
-                sx={{ fontWeight: 600, pr: 2 }}
-              >
-                Conductores disponibles ahora
-              </Typography>
-            </Badge>
-
-            {/* Ícono de camión con animación sutil */}
+            {/* Ícono de camión en chip de marca */}
             <Box
               sx={{
+                width: { xs: 72, md: 64 },
+                height: { xs: 72, md: 64 },
+                mx: "auto",
+                mb: 2,
+                borderRadius: "50%",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                bgcolor: "rgba(56, 1, 22, 0.06)",
                 animation: activeTrip ? "none" : "pulse 3s infinite",
               }}
             >
               <LocalShipping
                 sx={{
-                  fontSize: { xs: 50, md: 40 },
+                  fontSize: { xs: 36, md: 32 },
                   color: "primary.main",
-                  mb: 2,
                 }}
               />
             </Box>
@@ -277,11 +277,20 @@ export default function ClientDashboard() {
               variant="h6"
               sx={{
                 fontWeight: 700,
-                mb: 2,
-                fontSize: { xs: "1.15rem", md: "1.25rem" },
+                mb: 0.75,
+                fontSize: { xs: "1.25rem", md: "1.35rem" },
+                color: "primary.main",
               }}
             >
               ¿Necesitás transportar algo?
+            </Typography>
+
+            <Typography
+              variant="body2"
+              color="text.secondary"
+              sx={{ mb: 2.5, maxWidth: 320, mx: "auto" }}
+            >
+              Publicá tu flete y recibí ofertas de chóferes
             </Typography>
 
             <MotionButton
@@ -311,14 +320,6 @@ export default function ClientDashboard() {
             >
               Solicitar Flete
             </MotionButton>
-
-            <Typography
-              variant="caption"
-              color="text.secondary"
-              sx={{ mt: 2, display: "block" }}
-            >
-              Conductores disponibles en tu zona
-            </Typography>
           </CardContent>
         </MotionCard>
 

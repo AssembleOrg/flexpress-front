@@ -1,6 +1,18 @@
-'use client';
+"use client";
 
-import { ArrowBack, CheckCircle, CreditCard, Download, LocalShipping, LocationOn, Flag, Map, ReportProblem, Star, Warning } from '@mui/icons-material';
+import {
+  ArrowBack,
+  CheckCircle,
+  CreditCard,
+  Download,
+  LocalShipping,
+  LocationOn,
+  Flag,
+  Map,
+  ReportProblem,
+  Star,
+  Warning,
+} from "@mui/icons-material";
 import {
   Alert,
   Box,
@@ -14,47 +26,44 @@ import {
   Rating,
   Stack,
   Typography,
-} from '@mui/material';
-import Link from 'next/link';
-import { useParams, useRouter } from 'next/navigation';
-import { useEffect, useState, useRef } from 'react';
-import toast from 'react-hot-toast';
+} from "@mui/material";
+import Link from "next/link";
+import { useParams, useRouter } from "next/navigation";
+import { useEffect, useState, useRef } from "react";
+import toast from "react-hot-toast";
 
-import { ErrorBoundary } from '@/components/ErrorBoundary';
-import { ChatWindow } from '@/components/chat/ChatWindow';
-import { FeedbackModal } from '@/components/feedback/FeedbackModal';
-import { ReportModal } from '@/components/modals/ReportModal';
-import { ConfirmCompletionModal } from '@/components/modals/ConfirmCompletionModal';
-import { MobileContainer } from '@/components/layout/MobileContainer';
-import { MobileHeader } from '@/components/layout/MobileHeader';
-import { TripDetailsCard } from '@/components/trip/TripDetailsCard';
-import { TripMetricsCard } from '@/components/trip/TripMetricsCard';
+import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { ChatWindow } from "@/components/chat/ChatWindow";
+import { FeedbackModal } from "@/components/feedback/FeedbackModal";
+import { ReportModal } from "@/components/modals/ReportModal";
+import { ConfirmCompletionModal } from "@/components/modals/ConfirmCompletionModal";
+import { MobileContainer } from "@/components/layout/MobileContainer";
+import { MobileHeader } from "@/components/layout/MobileHeader";
+import { TripDetailsCard } from "@/components/trip/TripDetailsCard";
+import { TripMetricsCard } from "@/components/trip/TripMetricsCard";
 import LeafletMap, {
   type MapMarker,
   type LeafletMapHandle,
-} from '@/components/ui/LeafletMap';
-import { MOBILE_BOTTOM_NAV_HEIGHT } from '@/lib/constants/mobileDesign';
-import { useMatch } from '@/lib/hooks/queries/useTravelMatchQueries';
+} from "@/components/ui/LeafletMap";
+import { MOBILE_BOTTOM_NAV_HEIGHT } from "@/lib/constants/mobileDesign";
+import { useMatch } from "@/lib/hooks/queries/useTravelMatchQueries";
 import {
   useCanGiveFeedback,
   useUserFeedback,
-} from '@/lib/hooks/queries/useFeedbackQueries';
-import { useCreateTripFromMatch } from '@/lib/hooks/mutations/useTravelMatchMutations';
-import { useClientConfirmCompletion } from '@/lib/hooks/mutations/useTripMutations';
+} from "@/lib/hooks/queries/useFeedbackQueries";
+import { useCreateTripFromMatch } from "@/lib/hooks/mutations/useTravelMatchMutations";
+import { useClientConfirmCompletion } from "@/lib/hooks/mutations/useTripMutations";
 import {
   useMatchUpdateListener,
   useTripCompletedListener,
-} from '@/lib/hooks/useWebSocket';
-import { useCountdown } from '@/lib/hooks/useCountdown';
-import { useAuthStore } from '@/lib/stores/authStore';
-import { conversationApi } from '@/lib/api/conversations';
-import axios from 'axios';
-import type { User } from '@/lib/types/api';
-import { TravelMatchStatus, UserRole } from '@/lib/types/api';
-import {
-  generateClientReceipt,
-  downloadPDF,
-} from '@/lib/utils/pdfGenerator';
+} from "@/lib/hooks/useWebSocket";
+import { useCountdown } from "@/lib/hooks/useCountdown";
+import { useAuthStore } from "@/lib/stores/authStore";
+import { conversationApi } from "@/lib/api/conversations";
+import axios from "axios";
+import type { User } from "@/lib/types/api";
+import { TravelMatchStatus, UserRole } from "@/lib/types/api";
+import { generateClientReceipt, downloadPDF } from "@/lib/utils/pdfGenerator";
 
 /**
  * Match detail page with conditional UI based on match status
@@ -81,7 +90,9 @@ export default function MatchDetailPage() {
     if (!match?.trip) return;
     const tripWithMatch = {
       ...match.trip,
-      charter: (match.trip.charter ?? match.charter) as { id: string; name: string; email: string; avatar?: string } | undefined,
+      charter: (match.trip.charter ?? match.charter) as
+        | { id: string; name: string; email: string; avatar?: string }
+        | undefined,
       travelMatch: {
         id: match.id,
         pickupAddress: match.pickupAddress,
@@ -99,8 +110,10 @@ export default function MatchDetailPage() {
   const hasCreatedTrip = useRef(false);
   const [conversationLoadingTimeout, setConversationLoadingTimeout] =
     useState(false);
-  const [conversationRecoveryAttempt, setConversationRecoveryAttempt] = useState(0);
-  const [conversationRecoveryFailed, setConversationRecoveryFailed] = useState(false);
+  const [conversationRecoveryAttempt, setConversationRecoveryAttempt] =
+    useState(0);
+  const [conversationRecoveryFailed, setConversationRecoveryFailed] =
+    useState(false);
   const isRecoveringConversation = useRef(false);
   const [charterFinalized, setCharterFinalized] = useState(false);
   const hasShownAcceptToast = useRef(false);
@@ -108,10 +121,10 @@ export default function MatchDetailPage() {
 
   // Feedback/Rating related hooks
   // Always call hooks (never conditionally) - use enabled option instead
-  const { data: charterRatingData } = useUserFeedback(match?.charterId || '', {
+  const { data: charterRatingData } = useUserFeedback(match?.charterId || "", {
     enabled: !!match?.charterId,
   });
-  const { data: canGiveFeedback } = useCanGiveFeedback(match?.tripId || '', {
+  const { data: canGiveFeedback } = useCanGiveFeedback(match?.tripId || "", {
     enabled: !!match?.tripId,
   });
 
@@ -127,11 +140,16 @@ export default function MatchDetailPage() {
     // React Query will auto-refetch via WebSocket invalidation
   });
 
-  // Recovery: si el match está ACCEPTED pero conversationId es null, reintentar creación
+  // Recovery: si el match puede tener chat (accepted/completed) pero no hay
+  // conversación (ni scalar ni relación), reintentar creación.
   useEffect(() => {
+    const canHaveChat =
+      match?.status === TravelMatchStatus.ACCEPTED ||
+      match?.status === TravelMatchStatus.COMPLETED;
     if (
-      match?.status !== TravelMatchStatus.ACCEPTED ||
-      match.conversationId ||
+      !canHaveChat ||
+      match?.conversationId ||
+      match?.conversation?.id ||
       conversationRecoveryFailed ||
       isRecoveringConversation.current
     ) {
@@ -143,7 +161,7 @@ export default function MatchDetailPage() {
     if (conversationRecoveryAttempt >= MAX_ATTEMPTS) {
       setConversationRecoveryFailed(true);
       setConversationLoadingTimeout(true);
-      console.warn('⚠️ [CONV RECOVERY] All recovery attempts exhausted');
+      console.warn("⚠️ [CONV RECOVERY] All recovery attempts exhausted");
       return;
     }
 
@@ -154,21 +172,30 @@ export default function MatchDetailPage() {
       isRecoveringConversation.current = true;
 
       const attemptNumber = conversationRecoveryAttempt + 1;
-      console.log(`🔄 [CONV RECOVERY] Attempt ${attemptNumber}/${MAX_ATTEMPTS} for match ${matchId}`);
+      console.log(
+        `🔄 [CONV RECOVERY] Attempt ${attemptNumber}/${MAX_ATTEMPTS} for match ${matchId}`,
+      );
       setConversationRecoveryAttempt(attemptNumber);
 
       try {
         await conversationApi.createFromMatch(matchId);
-        console.log(`✅ [CONV RECOVERY] Conversation created on attempt ${attemptNumber}`);
+        console.log(
+          `✅ [CONV RECOVERY] Conversation created on attempt ${attemptNumber}`,
+        );
         await new Promise((resolve) => setTimeout(resolve, 500));
         await refetchMatch();
       } catch (error) {
         if (axios.isAxiosError(error) && error.response?.status === 409) {
-          console.log('ℹ️ [CONV RECOVERY] 409 — conversation exists, refetching match...');
+          console.log(
+            "ℹ️ [CONV RECOVERY] 409 — conversation exists, refetching match...",
+          );
           await new Promise((resolve) => setTimeout(resolve, 500));
           await refetchMatch();
         } else {
-          console.error(`❌ [CONV RECOVERY] Attempt ${attemptNumber} failed:`, error);
+          console.error(
+            `❌ [CONV RECOVERY] Attempt ${attemptNumber} failed:`,
+            error,
+          );
         }
       } finally {
         isRecoveringConversation.current = false;
@@ -179,6 +206,7 @@ export default function MatchDetailPage() {
   }, [
     match?.status,
     match?.conversationId,
+    match?.conversation?.id,
     matchId,
     conversationRecoveryAttempt,
     conversationRecoveryFailed,
@@ -194,7 +222,7 @@ export default function MatchDetailPage() {
 
   const handleFinalizeTrip = () => {
     if (!canGiveFeedback) {
-      toast.error('Ya has dado feedback para este viaje');
+      toast.error("Ya has dado feedback para este viaje");
       return;
     }
     setFeedbackModalOpen(true);
@@ -206,7 +234,7 @@ export default function MatchDetailPage() {
       await clientConfirmCompletionMutation.mutateAsync(match.tripId);
       setConfirmCompletionModalOpen(false);
     } catch (error) {
-      console.error('Error confirming completion:', error);
+      console.error("Error confirming completion:", error);
     }
   };
 
@@ -215,7 +243,7 @@ export default function MatchDetailPage() {
     if (match?.status === TravelMatchStatus.ACCEPTED && match?.conversationId) {
       // Fix: Solo mostrar toast una vez para evitar duplicados
       if (!hasShownAcceptToast.current) {
-        toast.success('¡Chófer aceptó tu solicitud!');
+        toast.success("¡Chófer aceptó tu solicitud!");
         hasShownAcceptToast.current = true;
       }
       // Page will show ChatWindow via conditional rendering below
@@ -233,7 +261,7 @@ export default function MatchDetailPage() {
     ) {
       hasCreatedTrip.current = true;
       createTripMutation.mutateAsync(matchId).catch((err) => {
-        console.error('Auto trip creation failed:', err);
+        console.error("Auto trip creation failed:", err);
         hasCreatedTrip.current = false;
       });
     }
@@ -242,7 +270,7 @@ export default function MatchDetailPage() {
   // Auto-open feedback modal when trip is completed
   useEffect(() => {
     if (
-      match?.trip?.status === 'completed' &&
+      match?.trip?.status === "completed" &&
       canGiveFeedback === true &&
       !feedbackModalOpen
     ) {
@@ -255,10 +283,7 @@ export default function MatchDetailPage() {
   // ============================================
   if (isLoading) {
     return (
-      <Container
-        maxWidth='md'
-        sx={{ py: 4, textAlign: 'center' }}
-      >
+      <Container maxWidth="md" sx={{ py: 4, textAlign: "center" }}>
         <CircularProgress sx={{ mb: 2 }} />
         <Typography>Cargando detalles del viaje...</Typography>
       </Container>
@@ -270,21 +295,12 @@ export default function MatchDetailPage() {
   // ============================================
   if (!match) {
     return (
-      <Container
-        maxWidth='md'
-        sx={{ py: 4 }}
-      >
-        <Alert
-          severity='error'
-          sx={{ mb: 2 }}
-        >
+      <Container maxWidth="md" sx={{ py: 4 }}>
+        <Alert severity="error" sx={{ mb: 2 }}>
           <Typography>No se encontró la solicitud</Typography>
         </Alert>
-        <Link href='/client/dashboard'>
-          <Button
-            variant='contained'
-            color='secondary'
-          >
+        <Link href="/client/dashboard">
+          <Button variant="contained" color="secondary">
             Volver al Dashboard
           </Button>
         </Link>
@@ -302,73 +318,55 @@ export default function MatchDetailPage() {
     return (
       <MobileContainer>
         {/* Header */}
-        <Stack
-          direction='row'
-          alignItems='center'
-          spacing={1}
-          mb={2}
-        >
+        <Stack direction="row" alignItems="center" spacing={1} mb={2}>
           <IconButton
-            size='small'
+            size="small"
             onClick={() => router.back()}
-            sx={{ color: 'text.primary' }}
+            sx={{ color: "text.primary" }}
           >
-            <ArrowBack fontSize='small' />
+            <ArrowBack fontSize="small" />
           </IconButton>
-          <Typography
-            variant='h6'
-            fontWeight={700}
-          >
+          <Typography variant="h6" fontWeight={700}>
             Detalles del Viaje
           </Typography>
         </Stack>
 
         {/* Waiting for response alert */}
         <Alert
-          severity={countdown.isUrgent ? 'error' : 'warning'}
+          severity={countdown.isUrgent ? "error" : "warning"}
           sx={{ mb: 2 }}
         >
-          <Typography
-            variant='subtitle2'
-            fontWeight={700}
-            mb={0.5}
-          >
+          <Typography variant="subtitle2" fontWeight={700} mb={0.5}>
             {isCharter
-              ? '⏳ Solicitud Pendiente de Respuesta'
-              : '⏳ Pendiente de Respuesta'}
+              ? "⏳ Solicitud Pendiente de Respuesta"
+              : "⏳ Pendiente de Respuesta"}
           </Typography>
-          <Typography
-            variant='body2'
-            mb={0.5}
-          >
+          <Typography variant="body2" mb={0.5}>
             {isCharter ? (
               <>
-                Tienes una solicitud de viaje de{' '}
-                <strong>{match.user?.name || 'Cliente'}</strong>. Tiempo
-                restante:{' '}
+                Tienes una solicitud de viaje de{" "}
+                <strong>{match.user?.name || "Cliente"}</strong>. Tiempo
+                restante:{" "}
                 <strong
-                  style={{ color: countdown.isUrgent ? '#d32f2f' : 'inherit' }}
+                  style={{ color: countdown.isUrgent ? "#d32f2f" : "inherit" }}
                 >
                   {countdown.formatted}
                 </strong>
               </>
             ) : (
               <>
-                El chófer <strong>{match.charter?.name || 'Chófer'}</strong>{' '}
-                tiene{' '}
+                El chófer <strong>{match.charter?.name || "Chófer"}</strong>{" "}
+                tiene{" "}
                 <strong
-                  style={{ color: countdown.isUrgent ? '#d32f2f' : 'inherit' }}
+                  style={{ color: countdown.isUrgent ? "#d32f2f" : "inherit" }}
                 >
                   {countdown.formatted}
-                </strong>{' '}
+                </strong>{" "}
                 para responder a tu solicitud.
               </>
             )}
           </Typography>
-          <Typography
-            variant='caption'
-            color='text.secondary'
-          >
+          <Typography variant="caption" color="text.secondary">
             Mientras esperas, puedes revisar los detalles abajo.
           </Typography>
         </Alert>
@@ -378,77 +376,50 @@ export default function MatchDetailPage() {
           {/* Pickup and Destination */}
           <Card>
             <CardContent sx={{ p: 2 }}>
-              <Typography
-                variant='subtitle2'
-                fontWeight={700}
-                mb={1.5}
-              >
+              <Typography variant="subtitle2" fontWeight={700} mb={1.5}>
                 Ruta del Viaje
               </Typography>
 
               <Stack spacing={1}>
-                <Stack
-                  direction='row'
-                  spacing={1}
-                  alignItems='flex-start'
-                >
+                <Stack direction="row" spacing={1} alignItems="flex-start">
                   <LocationOn
-                    fontSize='small'
-                    sx={{ color: 'primary.main', mt: 0.1, flexShrink: 0 }}
+                    fontSize="small"
+                    sx={{ color: "primary.main", mt: 0.1, flexShrink: 0 }}
                   />
                   <Box>
-                    <Typography
-                      variant='caption'
-                      color='text.secondary'
-                    >
+                    <Typography variant="caption" color="text.secondary">
                       Origen
                     </Typography>
-                    <Typography
-                      variant='body2'
-                      fontWeight={600}
-                    >
-                      {match.pickupAddress || 'No especificado'}
+                    <Typography variant="body2" fontWeight={600}>
+                      {match.pickupAddress || "No especificado"}
                     </Typography>
                   </Box>
                 </Stack>
 
-                <Stack
-                  direction='row'
-                  spacing={1}
-                  alignItems='flex-start'
-                >
+                <Stack direction="row" spacing={1} alignItems="flex-start">
                   <Flag
-                    fontSize='small'
-                    sx={{ color: 'secondary.main', mt: 0.1, flexShrink: 0 }}
+                    fontSize="small"
+                    sx={{ color: "secondary.main", mt: 0.1, flexShrink: 0 }}
                   />
                   <Box>
-                    <Typography
-                      variant='caption'
-                      color='text.secondary'
-                    >
+                    <Typography variant="caption" color="text.secondary">
                       Destino
                     </Typography>
-                    <Typography
-                      variant='body2'
-                      fontWeight={600}
-                    >
-                      {match.destinationAddress || 'No especificado'}
+                    <Typography variant="body2" fontWeight={600}>
+                      {match.destinationAddress || "No especificado"}
                     </Typography>
                   </Box>
                 </Stack>
 
                 {match.scheduledDate && (
-                  <Typography
-                    variant='caption'
-                    color='text.secondary'
-                  >
-                    📅{' '}
-                    {new Date(match.scheduledDate).toLocaleDateString('es-ES', {
-                      year: 'numeric',
-                      month: 'long',
-                      day: 'numeric',
-                      hour: '2-digit',
-                      minute: '2-digit',
+                  <Typography variant="caption" color="text.secondary">
+                    📅{" "}
+                    {new Date(match.scheduledDate).toLocaleDateString("es-ES", {
+                      year: "numeric",
+                      month: "long",
+                      day: "numeric",
+                      hour: "2-digit",
+                      minute: "2-digit",
                     })}
                   </Typography>
                 )}
@@ -458,9 +429,9 @@ export default function MatchDetailPage() {
 
           {/* Action buttons */}
           <Button
-            variant='outlined'
-            color='error'
-            onClick={() => router.push('/client/dashboard')}
+            variant="outlined"
+            color="error"
+            onClick={() => router.push("/client/dashboard")}
             fullWidth
           >
             Cancelar Solicitud
@@ -477,48 +448,33 @@ export default function MatchDetailPage() {
     return (
       <MobileContainer>
         {/* Header */}
-        <Stack
-          direction='row'
-          alignItems='center'
-          spacing={1}
-          mb={2}
-        >
+        <Stack direction="row" alignItems="center" spacing={1} mb={2}>
           <IconButton
-            size='small'
+            size="small"
             onClick={() => router.back()}
-            sx={{ color: 'text.primary' }}
+            sx={{ color: "text.primary" }}
           >
-            <ArrowBack fontSize='small' />
+            <ArrowBack fontSize="small" />
           </IconButton>
-          <Typography
-            variant='h6'
-            fontWeight={700}
-          >
+          <Typography variant="h6" fontWeight={700}>
             Detalles del Viaje
           </Typography>
         </Stack>
 
         {/* Rejected alert */}
-        <Alert
-          severity='error'
-          sx={{ mb: 2 }}
-        >
-          <Typography
-            variant='subtitle2'
-            fontWeight={700}
-            mb={0.5}
-          >
+        <Alert severity="error" sx={{ mb: 2 }}>
+          <Typography variant="subtitle2" fontWeight={700} mb={0.5}>
             Solicitud Rechazada
           </Typography>
-          <Typography variant='body2'>
+          <Typography variant="body2">
             {isCharter ? (
               <>
-                Rechazaste la solicitud de viaje de{' '}
-                <strong>{match.user?.name || 'Cliente'}</strong>.
+                Rechazaste la solicitud de viaje de{" "}
+                <strong>{match.user?.name || "Cliente"}</strong>.
               </>
             ) : (
               <>
-                El chófer <strong>{match.charter?.name || 'Chófer'}</strong>{' '}
+                El chófer <strong>{match.charter?.name || "Chófer"}</strong>{" "}
                 rechazó tu solicitud de viaje. Puedes buscar otro chófer
                 disponible.
               </>
@@ -529,61 +485,37 @@ export default function MatchDetailPage() {
         {/* Trip details for reference */}
         <Card sx={{ mb: 2 }}>
           <CardContent sx={{ p: 2 }}>
-            <Typography
-              variant='subtitle2'
-              fontWeight={700}
-              mb={1.5}
-            >
+            <Typography variant="subtitle2" fontWeight={700} mb={1.5}>
               Detalles de tu Solicitud
             </Typography>
 
             <Stack spacing={1}>
-              <Stack
-                direction='row'
-                spacing={1}
-                alignItems='flex-start'
-              >
+              <Stack direction="row" spacing={1} alignItems="flex-start">
                 <LocationOn
-                  fontSize='small'
-                  sx={{ color: 'primary.main', mt: 0.1, flexShrink: 0 }}
+                  fontSize="small"
+                  sx={{ color: "primary.main", mt: 0.1, flexShrink: 0 }}
                 />
                 <Box>
-                  <Typography
-                    variant='caption'
-                    color='text.secondary'
-                  >
+                  <Typography variant="caption" color="text.secondary">
                     Origen
                   </Typography>
-                  <Typography
-                    variant='body2'
-                    fontWeight={600}
-                  >
-                    {match.pickupAddress || 'No especificado'}
+                  <Typography variant="body2" fontWeight={600}>
+                    {match.pickupAddress || "No especificado"}
                   </Typography>
                 </Box>
               </Stack>
 
-              <Stack
-                direction='row'
-                spacing={1}
-                alignItems='flex-start'
-              >
+              <Stack direction="row" spacing={1} alignItems="flex-start">
                 <Flag
-                  fontSize='small'
-                  sx={{ color: 'secondary.main', mt: 0.1, flexShrink: 0 }}
+                  fontSize="small"
+                  sx={{ color: "secondary.main", mt: 0.1, flexShrink: 0 }}
                 />
                 <Box>
-                  <Typography
-                    variant='caption'
-                    color='text.secondary'
-                  >
+                  <Typography variant="caption" color="text.secondary">
                     Destino
                   </Typography>
-                  <Typography
-                    variant='body2'
-                    fontWeight={600}
-                  >
-                    {match.destinationAddress || 'No especificado'}
+                  <Typography variant="body2" fontWeight={600}>
+                    {match.destinationAddress || "No especificado"}
                   </Typography>
                 </Box>
               </Stack>
@@ -593,11 +525,11 @@ export default function MatchDetailPage() {
 
         {/* Action button */}
         <Button
-          variant='contained'
-          color='primary'
-          onClick={() => router.push('/client/trips/new')}
+          variant="contained"
+          color="primary"
+          onClick={() => router.push("/client/trips/new")}
           fullWidth
-          size='large'
+          size="large"
         >
           Buscar Otro Chófer
         </Button>
@@ -612,40 +544,25 @@ export default function MatchDetailPage() {
     return (
       <MobileContainer>
         {/* Header */}
-        <Stack
-          direction='row'
-          alignItems='center'
-          spacing={1}
-          mb={2}
-        >
+        <Stack direction="row" alignItems="center" spacing={1} mb={2}>
           <IconButton
-            size='small'
+            size="small"
             onClick={() => router.back()}
-            sx={{ color: 'text.primary' }}
+            sx={{ color: "text.primary" }}
           >
-            <ArrowBack fontSize='small' />
+            <ArrowBack fontSize="small" />
           </IconButton>
-          <Typography
-            variant='h6'
-            fontWeight={700}
-          >
+          <Typography variant="h6" fontWeight={700}>
             Detalles del Viaje
           </Typography>
         </Stack>
 
         {/* Expired alert */}
-        <Alert
-          severity='warning'
-          sx={{ mb: 2 }}
-        >
-          <Typography
-            variant='subtitle2'
-            fontWeight={700}
-            mb={0.5}
-          >
+        <Alert severity="warning" sx={{ mb: 2 }}>
+          <Typography variant="subtitle2" fontWeight={700} mb={0.5}>
             ⏰ Solicitud Expirada
           </Typography>
-          <Typography variant='body2'>
+          <Typography variant="body2">
             El tiempo de espera para que el chófer respondiera ha expirado. Por
             favor, crea una nueva búsqueda para continuar.
           </Typography>
@@ -654,61 +571,37 @@ export default function MatchDetailPage() {
         {/* Trip details for reference */}
         <Card sx={{ mb: 2 }}>
           <CardContent sx={{ p: 2 }}>
-            <Typography
-              variant='subtitle2'
-              fontWeight={700}
-              mb={1.5}
-            >
+            <Typography variant="subtitle2" fontWeight={700} mb={1.5}>
               Detalles de tu Solicitud
             </Typography>
 
             <Stack spacing={1}>
-              <Stack
-                direction='row'
-                spacing={1}
-                alignItems='flex-start'
-              >
+              <Stack direction="row" spacing={1} alignItems="flex-start">
                 <LocationOn
-                  fontSize='small'
-                  sx={{ color: 'primary.main', mt: 0.1, flexShrink: 0 }}
+                  fontSize="small"
+                  sx={{ color: "primary.main", mt: 0.1, flexShrink: 0 }}
                 />
                 <Box>
-                  <Typography
-                    variant='caption'
-                    color='text.secondary'
-                  >
+                  <Typography variant="caption" color="text.secondary">
                     Origen
                   </Typography>
-                  <Typography
-                    variant='body2'
-                    fontWeight={600}
-                  >
-                    {match.pickupAddress || 'No especificado'}
+                  <Typography variant="body2" fontWeight={600}>
+                    {match.pickupAddress || "No especificado"}
                   </Typography>
                 </Box>
               </Stack>
 
-              <Stack
-                direction='row'
-                spacing={1}
-                alignItems='flex-start'
-              >
+              <Stack direction="row" spacing={1} alignItems="flex-start">
                 <Flag
-                  fontSize='small'
-                  sx={{ color: 'secondary.main', mt: 0.1, flexShrink: 0 }}
+                  fontSize="small"
+                  sx={{ color: "secondary.main", mt: 0.1, flexShrink: 0 }}
                 />
                 <Box>
-                  <Typography
-                    variant='caption'
-                    color='text.secondary'
-                  >
+                  <Typography variant="caption" color="text.secondary">
                     Destino
                   </Typography>
-                  <Typography
-                    variant='body2'
-                    fontWeight={600}
-                  >
-                    {match.destinationAddress || 'No especificado'}
+                  <Typography variant="body2" fontWeight={600}>
+                    {match.destinationAddress || "No especificado"}
                   </Typography>
                 </Box>
               </Stack>
@@ -718,11 +611,11 @@ export default function MatchDetailPage() {
 
         {/* Action button */}
         <Button
-          variant='contained'
-          color='primary'
-          onClick={() => router.push('/client/trips/new')}
+          variant="contained"
+          color="primary"
+          onClick={() => router.push("/client/trips/new")}
           fullWidth
-          size='large'
+          size="large"
         >
           Nueva Búsqueda
         </Button>
@@ -741,13 +634,13 @@ export default function MatchDetailPage() {
     const otherUser = isCharter
       ? {
           // Charter sees CLIENT as otherUser
-          id: match.user?.id || match.userId || '',
-          name: match.user?.name || 'Cliente',
-          email: match.user?.email || '',
+          id: match.user?.id || match.userId || "",
+          name: match.user?.name || "Cliente",
+          email: match.user?.email || "",
           role: UserRole.USER,
           credits: match.user?.credits || 0,
-          address: match.user?.address || '',
-          number: match.user?.number || '',
+          address: match.user?.address || "",
+          number: match.user?.number || "",
           avatar: match.user?.avatar || null,
           originAddress: match.user?.originAddress || null,
           originLatitude: match.user?.originLatitude || null,
@@ -757,13 +650,13 @@ export default function MatchDetailPage() {
         }
       : {
           // Client sees CHARTER as otherUser
-          id: match.charter?.id || match.charterId || '',
-          name: match.charter?.name || 'Chófer',
-          email: match.charter?.email || '',
+          id: match.charter?.id || match.charterId || "",
+          name: match.charter?.name || "Chófer",
+          email: match.charter?.email || "",
           role: UserRole.CHARTER,
           credits: match.charter?.credits || 0,
-          address: match.charter?.address || '',
-          number: match.charter?.number || '',
+          address: match.charter?.address || "",
+          number: match.charter?.number || "",
           avatar: match.charter?.avatar || null,
           originAddress: match.charter?.originAddress || null,
           originLatitude: match.charter?.originLatitude || null,
@@ -775,51 +668,54 @@ export default function MatchDetailPage() {
     // El chat necesita conversationId. Si falta, NO bloqueamos toda la vista:
     // mostramos el resto (estado del viaje, "Confirmar Recepción") y solo el
     // slot del chat queda en loading/recovery.
-    const conversationId = match.conversationId;
+    // El scalar match.conversationId puede quedar desincronizado (null) aunque
+    // la conversación exista; usamos la relación incluida por el backend como
+    // fallback.
+    const conversationId = match.conversationId ?? match.conversation?.id;
 
     // Determine trip status for UI
     const getStatusInfo = () => {
       if (!match.tripId) {
-        return { label: 'Iniciando viaje...', color: 'primary' as const };
+        return { label: "Iniciando viaje...", color: "primary" as const };
       }
-      if (match.trip?.status === 'completed') {
-        return { label: 'Completado', color: 'success' as const };
+      if (match.trip?.status === "completed") {
+        return { label: "Completado", color: "success" as const };
       }
-      if (match.trip?.status === 'charter_completed') {
+      if (match.trip?.status === "charter_completed") {
         return {
-          label: 'Esperando tu Confirmación',
-          color: 'warning' as const,
+          label: "Esperando tu Confirmación",
+          color: "warning" as const,
         };
       }
-      if (match.trip?.status === 'pending') {
-        return { label: 'En Progreso', color: 'primary' as const };
+      if (match.trip?.status === "pending") {
+        return { label: "En Progreso", color: "primary" as const };
       }
-      return { label: 'Confirmado', color: 'success' as const };
+      return { label: "Confirmado", color: "success" as const };
     };
 
     const statusInfo = getStatusInfo();
 
     // biome-ignore lint/suspicious/noConsole: diagnóstico temporal — remover cuando se confirme estructura del backend
-    console.log('[DEBUG] match.charter:', JSON.stringify(match.charter, null, 2));
+    console.log(
+      "[DEBUG] match.charter:",
+      JSON.stringify(match.charter, null, 2),
+    );
 
     return (
       <>
         {/* Mobile Header */}
         <MobileHeader
-          title='Chat con Chófer'
-          onBack={() => router.push('/client/dashboard')}
+          title="Chat con Chófer"
+          onBack={() => router.push("/client/dashboard")}
         />
 
-        <MobileContainer
-          withBottomNav
-          maxWidth='lg'
-        >
+        <MobileContainer withBottomNav maxWidth="lg">
           {/* Desktop Header */}
-          <Box sx={{ display: { xs: 'none', md: 'block' }, mb: 4 }}>
-            <Link href='/client/dashboard'>
+          <Box sx={{ display: { xs: "none", md: "block" }, mb: 4 }}>
+            <Link href="/client/dashboard">
               <Button
                 startIcon={<ArrowBack />}
-                variant='outlined'
+                variant="outlined"
                 sx={{ mb: 2 }}
               >
                 Volver
@@ -828,22 +724,18 @@ export default function MatchDetailPage() {
 
             <Box
               sx={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
               }}
             >
-              <Typography
-                variant='h4'
-                component='h1'
-                sx={{ fontWeight: 700 }}
-              >
+              <Typography variant="h4" component="h1" sx={{ fontWeight: 700 }}>
                 Detalles del Viaje
               </Typography>
               <Chip
                 label={statusInfo.label}
                 color={statusInfo.color}
-                size='small'
+                size="small"
                 sx={{ fontWeight: 600 }}
               />
             </Box>
@@ -852,8 +744,8 @@ export default function MatchDetailPage() {
           {/* Main content grid */}
           <Box
             sx={{
-              display: 'grid',
-              gridTemplateColumns: { xs: '1fr', md: '2fr 1fr' },
+              display: "grid",
+              gridTemplateColumns: { xs: "1fr", md: "2fr 1fr" },
               gap: 1.5,
             }}
           >
@@ -861,26 +753,27 @@ export default function MatchDetailPage() {
             <Box sx={{ order: { xs: 2, md: 1 } }}>
               {/* Trip Details Card */}
               <TripDetailsCard
-                origin={match.pickupAddress || 'No especificado'}
-                destination={match.destinationAddress || 'No especificado'}
+                origin={match.pickupAddress || "No especificado"}
+                destination={match.destinationAddress || "No especificado"}
                 scheduledDate={
                   match.scheduledDate
                     ? new Date(match.scheduledDate).toLocaleDateString(
-                        'es-ES',
+                        "es-ES",
                         {
-                          year: 'numeric',
-                          month: 'long',
-                          day: 'numeric',
-                          hour: '2-digit',
-                          minute: '2-digit',
-                        }
+                          year: "numeric",
+                          month: "long",
+                          day: "numeric",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        },
                       )
                     : undefined
                 }
+                cargo={match.cargoDescription}
                 otherUser={{
-                  name: match.charter?.name || 'Chófer',
+                  name: match.charter?.name || "Chófer",
                   avatar: match.charter?.avatar ?? undefined,
-                  role: 'Chófer',
+                  role: "Chófer",
                   rating: charterRatingData
                     ? {
                         average: charterRatingData.averageRating || 0,
@@ -895,20 +788,20 @@ export default function MatchDetailPage() {
                     ? [
                         {
                           icon: <LocalShipping sx={{ fontSize: 16 }} />,
-                          label: 'Vehículo',
+                          label: "Vehículo",
                           value:
                             [
                               match.charter.charterAvailability.vehicle.brand,
                               match.charter.charterAvailability.vehicle.model,
                             ]
                               .filter(Boolean)
-                              .join(' ') || 'Sin datos',
+                              .join(" ") || "Sin datos",
                         },
                         ...(match.charter.charterAvailability.vehicle.plate
                           ? [
                               {
                                 icon: <CreditCard sx={{ fontSize: 16 }} />,
-                                label: 'Patente',
+                                label: "Patente",
                                 value:
                                   match.charter.charterAvailability.vehicle
                                     .plate,
@@ -921,21 +814,19 @@ export default function MatchDetailPage() {
               />
 
               {/* Trip Metrics Card */}
-              <TripMetricsCard
-                distance={match.distanceKm ?? undefined}
-              />
+              <TripMetricsCard distance={match.distanceKm ?? undefined} />
 
               {/* Map Card */}
               <Card sx={{ mb: 1.5 }}>
                 <CardContent sx={{ p: 1.5 }}>
                   <Typography
-                    variant='caption'
-                    color='text.secondary'
+                    variant="caption"
+                    color="text.secondary"
                     sx={{
                       fontWeight: 600,
                       mb: 1,
-                      display: 'block',
-                      fontSize: '0.7rem',
+                      display: "block",
+                      fontSize: "0.7rem",
                     }}
                   >
                     Mapa del Viaje
@@ -946,62 +837,64 @@ export default function MatchDetailPage() {
                       {
                         lat: Number.parseFloat(match.pickupLatitude),
                         lon: Number.parseFloat(match.pickupLongitude),
-                        label: 'Origen',
-                        type: 'pickup',
+                        label: "Origen",
+                        type: "pickup",
                       },
                       {
                         lat: Number.parseFloat(match.destinationLatitude),
                         lon: Number.parseFloat(match.destinationLongitude),
-                        label: 'Destino',
-                        type: 'destination',
+                        label: "Destino",
+                        type: "destination",
                       },
                     ]}
-                    height='250px'
+                    height="250px"
                     disableInteraction={true}
                   />
 
                   {/* Map navigation buttons */}
-                  <Box sx={{ mt: 1.5, display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                  <Box
+                    sx={{ mt: 1.5, display: "flex", gap: 1, flexWrap: "wrap" }}
+                  >
                     <Button
-                      variant='outlined'
-                      size='small'
+                      variant="outlined"
+                      size="small"
                       fullWidth
                       startIcon={<LocationOn />}
                       onClick={() => {
                         mapRef.current?.centerOnMarker(
                           Number.parseFloat(match.pickupLatitude),
-                          Number.parseFloat(match.pickupLongitude)
+                          Number.parseFloat(match.pickupLongitude),
                         );
                       }}
                     >
                       Ver Origen
                     </Button>
                     <Button
-                      variant='outlined'
-                      size='small'
+                      variant="outlined"
+                      size="small"
                       fullWidth
                       startIcon={<Flag />}
                       onClick={() => {
                         mapRef.current?.centerOnMarker(
                           Number.parseFloat(match.destinationLatitude),
-                          Number.parseFloat(match.destinationLongitude)
+                          Number.parseFloat(match.destinationLongitude),
                         );
                       }}
                     >
                       Ver Destino
                     </Button>
                     <Button
-                      variant='contained'
-                      size='small'
+                      variant="contained"
+                      size="small"
                       fullWidth
                       startIcon={<Map />}
                       onClick={() => {
                         mapRef.current?.fitAllMarkers();
-                        toast.success('Mostrando ruta completa');
+                        toast.success("Mostrando ruta completa");
                       }}
                       sx={{
-                        bgcolor: 'secondary.main',
-                        '&:hover': { bgcolor: 'secondary.dark' },
+                        bgcolor: "secondary.main",
+                        "&:hover": { bgcolor: "secondary.dark" },
                       }}
                     >
                       Ruta Completa
@@ -1015,8 +908,8 @@ export default function MatchDetailPage() {
             <Box sx={{ order: { xs: 1, md: 2 } }}>
               <Box
                 sx={{
-                  position: 'relative',
-                  minHeight: { xs: '450px', md: '600px' },
+                  position: "relative",
+                  minHeight: { xs: "450px", md: "600px" },
                 }}
               >
                 {conversationId ? (
@@ -1024,34 +917,43 @@ export default function MatchDetailPage() {
                     <ChatWindow
                       conversationId={conversationId}
                       otherUser={otherUser}
-                      onClose={() => router.push('/client/dashboard')}
+                      onClose={() => router.push("/client/dashboard")}
                     />
                   </ErrorBoundary>
                 ) : (
-                  <Card sx={{ height: '100%' }}>
-                    <CardContent sx={{ textAlign: 'center', py: 6 }}>
+                  <Card sx={{ height: "100%" }}>
+                    <CardContent sx={{ textAlign: "center", py: 6 }}>
                       {!conversationRecoveryFailed ? (
                         <>
                           <CircularProgress sx={{ mb: 2 }} />
-                          <Typography variant='h6' color='textSecondary' sx={{ mb: 1 }}>
+                          <Typography
+                            variant="h6"
+                            color="textSecondary"
+                            sx={{ mb: 1 }}
+                          >
                             {conversationRecoveryAttempt === 0
-                              ? 'Preparando el chat...'
-                              : 'Configurando la conversación...'}
+                              ? "Preparando el chat..."
+                              : "Configurando la conversación..."}
                           </Typography>
-                          <Typography variant='caption' color='textSecondary'>
+                          <Typography variant="caption" color="textSecondary">
                             {conversationRecoveryAttempt === 0
-                              ? 'La conversación se está configurando. Podés confirmar la recepción abajo.'
+                              ? "La conversación se está configurando. Podés confirmar la recepción abajo."
                               : `Reintentando... (intento ${conversationRecoveryAttempt}/2)`}
                           </Typography>
                         </>
                       ) : (
-                        <Alert severity='warning' sx={{ textAlign: 'left' }}>
-                          <Typography variant='subtitle2' fontWeight={700} mb={0.5}>
+                        <Alert severity="warning" sx={{ textAlign: "left" }}>
+                          <Typography
+                            variant="subtitle2"
+                            fontWeight={700}
+                            mb={0.5}
+                          >
                             No se pudo cargar el chat
                           </Typography>
-                          <Typography variant='body2'>
-                            No pudimos conectar el chat automáticamente, pero podés
-                            seguir con el viaje desde los botones de abajo.
+                          <Typography variant="body2">
+                            No pudimos conectar el chat automáticamente, pero
+                            podés seguir con el viaje desde los botones de
+                            abajo.
                           </Typography>
                         </Alert>
                       )}
@@ -1061,50 +963,47 @@ export default function MatchDetailPage() {
               </Box>
 
               {/* Action Buttons - directly below chat */}
-              <Stack
-                spacing={1}
-                sx={{ mt: 1.5 }}
-              >
+              <Stack spacing={1} sx={{ mt: 1.5 }}>
                 {/* Estado 2: Trip confirmado, esperando charter */}
-                {match.tripId && match.trip?.status === 'pending' && (
+                {match.tripId && match.trip?.status === "pending" && (
                   <Box
                     sx={{
-                      display: 'grid',
-                      gridTemplateColumns: { xs: '1fr', sm: '2fr 1fr' },
+                      display: "grid",
+                      gridTemplateColumns: { xs: "1fr", sm: "2fr 1fr" },
                       gap: 1.5,
                     }}
                   >
                     {/* Status box - 2/3 width */}
                     <Box
                       sx={{
-                        bgcolor: 'background.paper',
-                        border: '2px solid',
-                        borderColor: 'success.main',
+                        bgcolor: "background.paper",
+                        border: "2px solid",
+                        borderColor: "success.main",
                         borderRadius: 1.5,
                         p: 1.5,
-                        display: 'flex',
-                        alignItems: 'center',
+                        display: "flex",
+                        alignItems: "center",
                         gap: 1.5,
                       }}
                     >
                       <CheckCircle
-                        sx={{ fontSize: 24, color: 'success.main' }}
+                        sx={{ fontSize: 24, color: "success.main" }}
                       />
                       <Box>
                         <Typography
-                          variant='body2'
+                          variant="body2"
                           sx={{
                             fontWeight: 700,
-                            fontSize: '0.85rem',
-                            color: 'text.primary',
+                            fontSize: "0.85rem",
+                            color: "text.primary",
                           }}
                         >
                           Viaje Confirmado
                         </Typography>
                         <Typography
-                          variant='caption'
-                          sx={{ fontSize: '0.7rem' }}
-                          color='text.secondary'
+                          variant="caption"
+                          sx={{ fontSize: "0.7rem" }}
+                          color="text.secondary"
                         >
                           Créditos reservados
                         </Typography>
@@ -1113,15 +1012,15 @@ export default function MatchDetailPage() {
 
                     {/* Problem button - 1/3 width */}
                     <Button
-                      variant='outlined'
-                      color='error'
+                      variant="outlined"
+                      color="error"
                       fullWidth
-                      size='small'
+                      size="small"
                       startIcon={<ReportProblem sx={{ fontSize: 18 }} />}
                       onClick={() => setReportModalOpen(true)}
                       sx={{
-                        minHeight: { xs: 40, sm: '100%' },
-                        fontSize: '0.8rem',
+                        minHeight: { xs: 40, sm: "100%" },
+                        fontSize: "0.8rem",
                       }}
                     >
                       Tuve un problema
@@ -1130,75 +1029,80 @@ export default function MatchDetailPage() {
                 )}
 
                 {/* Estado 3: Charter finalizó, cliente debe confirmar */}
-                {match.tripId && match.trip?.status === 'charter_completed' && (
+                {match.tripId && match.trip?.status === "charter_completed" && (
                   <Stack spacing={1}>
                     {reportSubmitted ? (
-                      <Alert severity='warning' sx={{ borderRadius: 1.5 }}>
-                        <Typography variant='body2' sx={{ fontWeight: 700, mb: 0.5 }}>
+                      <Alert severity="warning" sx={{ borderRadius: 1.5 }}>
+                        <Typography
+                          variant="body2"
+                          sx={{ fontWeight: 700, mb: 0.5 }}
+                        >
                           Reporte enviado
                         </Typography>
-                        <Typography variant='caption'>
-                          El equipo revisará el caso y te contactará. Podés cerrar esta pantalla.
+                        <Typography variant="caption">
+                          El equipo revisará el caso y te contactará. Podés
+                          cerrar esta pantalla.
                         </Typography>
                       </Alert>
                     ) : (
                       <>
                         <Box
                           sx={{
-                            bgcolor: 'primary.main',
-                            borderLeft: '4px solid',
-                            borderLeftColor: 'primary.dark',
+                            bgcolor: "primary.main",
+                            borderLeft: "4px solid",
+                            borderLeftColor: "primary.dark",
                             borderRadius: 1.5,
                             p: 1.5,
                           }}
                         >
                           <Typography
-                            variant='body2'
+                            variant="body2"
                             sx={{
                               fontWeight: 700,
-                              fontSize: '0.85rem',
+                              fontSize: "0.85rem",
                               mb: 0.5,
-                              color: 'white',
+                              color: "white",
                             }}
                           >
                             El Transportista Finalizó el Viaje
                           </Typography>
                           <Typography
-                            variant='caption'
+                            variant="caption"
                             sx={{
-                              fontSize: '0.7rem',
-                              color: 'white',
+                              fontSize: "0.7rem",
+                              color: "white",
                               opacity: 0.9,
                             }}
                           >
-                            Por favor confirma que has recibido tu carga correctamente.
+                            Por favor confirma que has recibido tu carga
+                            correctamente.
                           </Typography>
                         </Box>
 
                         <Button
-                          variant='contained'
-                          color='success'
+                          variant="contained"
+                          color="success"
                           fullWidth
                           onClick={() => setConfirmCompletionModalOpen(true)}
                           sx={{
                             minHeight: 48,
                             fontWeight: 700,
-                            fontSize: '0.9rem',
+                            fontSize: "0.9rem",
                           }}
                         >
                           Confirmar Recepción
                         </Button>
 
                         <Button
-                          variant='outlined'
-                          color='error'
+                          variant="outlined"
+                          color="error"
                           fullWidth
-                          size='small'
+                          size="small"
                           startIcon={<Warning sx={{ fontSize: 18 }} />}
                           onClick={() => setReportModalOpen(true)}
                           sx={{
                             minHeight: 40,
-                            fontSize: '0.8rem',
+                            fontSize: "0.8rem",
                           }}
                         >
                           Reportar Problema
@@ -1209,30 +1113,30 @@ export default function MatchDetailPage() {
                 )}
 
                 {/* Estado 4: Viaje completado por AMBOS */}
-                {match.tripId && match.trip?.status === 'completed' && (
+                {match.tripId && match.trip?.status === "completed" && (
                   <>
-                    <Box sx={{ textAlign: 'center', py: 1.5 }}>
+                    <Box sx={{ textAlign: "center", py: 1.5 }}>
                       <CheckCircle
-                        sx={{ fontSize: 52, color: 'success.main', mb: 1 }}
+                        sx={{ fontSize: 52, color: "success.main", mb: 1 }}
                       />
-                      <Typography variant='h6' fontWeight={700}>
+                      <Typography variant="h6" fontWeight={700}>
                         Viaje Completado
                       </Typography>
-                      <Typography variant='caption' color='text.secondary'>
+                      <Typography variant="caption" color="text.secondary">
                         Créditos transferidos exitosamente
                       </Typography>
 
                       <Stack
-                        direction='row'
-                        justifyContent='center'
+                        direction="row"
+                        justifyContent="center"
                         spacing={5}
                         sx={{ mt: 2.5 }}
                       >
-                        <Box sx={{ textAlign: 'center' }}>
+                        <Box sx={{ textAlign: "center" }}>
                           <IconButton
                             onClick={handleDownload}
                             sx={{
-                              bgcolor: 'action.hover',
+                              bgcolor: "action.hover",
                               width: 54,
                               height: 54,
                             }}
@@ -1240,28 +1144,28 @@ export default function MatchDetailPage() {
                             <Download />
                           </IconButton>
                           <Typography
-                            variant='caption'
-                            display='block'
+                            variant="caption"
+                            display="block"
                             sx={{ mt: 0.5 }}
                           >
                             Comprobante
                           </Typography>
                         </Box>
 
-                        <Box sx={{ textAlign: 'center' }}>
+                        <Box sx={{ textAlign: "center" }}>
                           <IconButton
                             onClick={() => setReportModalOpen(true)}
                             sx={{
-                              bgcolor: 'action.hover',
+                              bgcolor: "action.hover",
                               width: 54,
                               height: 54,
                             }}
                           >
-                            <ReportProblem sx={{ color: 'error.main' }} />
+                            <ReportProblem sx={{ color: "error.main" }} />
                           </IconButton>
                           <Typography
-                            variant='caption'
-                            display='block'
+                            variant="caption"
+                            display="block"
                             sx={{ mt: 0.5 }}
                           >
                             Reportar
@@ -1273,8 +1177,8 @@ export default function MatchDetailPage() {
                     {/* Calificación */}
                     {canGiveFeedback ? (
                       <Button
-                        variant='contained'
-                        color='primary'
+                        variant="contained"
+                        color="primary"
                         fullWidth
                         startIcon={<Star />}
                         onClick={() => setFeedbackModalOpen(true)}
@@ -1283,8 +1187,8 @@ export default function MatchDetailPage() {
                         Dar Calificación
                       </Button>
                     ) : (
-                      <Alert severity='success' sx={{ mb: 1 }}>
-                        <Typography variant='caption'>
+                      <Alert severity="success" sx={{ mb: 1 }}>
+                        <Typography variant="caption">
                           Gracias por tu calificación.
                         </Typography>
                       </Alert>
@@ -1300,9 +1204,9 @@ export default function MatchDetailPage() {
         <FeedbackModal
           open={feedbackModalOpen}
           onClose={() => setFeedbackModalOpen(false)}
-          tripId={match.tripId || ''}
-          toUserId={match.charterId || ''}
-          recipientName={match.charter?.name || 'Charter'}
+          tripId={match.tripId || ""}
+          toUserId={match.charterId || ""}
+          recipientName={match.charter?.name || "Charter"}
         />
 
         {/* Report Modal */}
@@ -1312,7 +1216,7 @@ export default function MatchDetailPage() {
             onClose={() => setReportModalOpen(false)}
             conversationId={match.conversation.id}
             reportedUserId={match.charter.id}
-            reportedUserName={match.charter.name || 'Chófer'}
+            reportedUserName={match.charter.name || "Chófer"}
             onSuccess={() => setReportSubmitted(true)}
           />
         )}
@@ -1322,10 +1226,9 @@ export default function MatchDetailPage() {
           open={confirmCompletionModalOpen}
           onClose={() => setConfirmCompletionModalOpen(false)}
           onConfirm={handleClientConfirmCompletion}
-          charterName={match.charter?.name || 'Transportista'}
+          charterName={match.charter?.name || "Transportista"}
           isLoading={clientConfirmCompletionMutation.isPending}
         />
-
       </>
     );
   }
@@ -1335,43 +1238,26 @@ export default function MatchDetailPage() {
   // ============================================
   if (match.status === TravelMatchStatus.CANCELLED) {
     return (
-      <Container
-        maxWidth='md'
-        sx={{ py: 4 }}
-      >
+      <Container maxWidth="md" sx={{ py: 4 }}>
         {/* Header */}
         <Box mb={4}>
-          <Link href='/client/dashboard'>
-            <Button
-              startIcon={<ArrowBack />}
-              variant='outlined'
-              sx={{ mb: 2 }}
-            >
+          <Link href="/client/dashboard">
+            <Button startIcon={<ArrowBack />} variant="outlined" sx={{ mb: 2 }}>
               Volver
             </Button>
           </Link>
 
-          <Typography
-            variant='h4'
-            component='h1'
-            sx={{ fontWeight: 700 }}
-          >
+          <Typography variant="h4" component="h1" sx={{ fontWeight: 700 }}>
             Viaje Cancelado
           </Typography>
         </Box>
 
         {/* Cancelled alert */}
-        <Alert
-          severity='warning'
-          sx={{ mb: 3 }}
-        >
-          <Typography
-            variant='h6'
-            sx={{ fontWeight: 600, mb: 1 }}
-          >
+        <Alert severity="warning" sx={{ mb: 3 }}>
+          <Typography variant="h6" sx={{ fontWeight: 600, mb: 1 }}>
             🚫 Viaje Cancelado
           </Typography>
-          <Typography variant='body2'>
+          <Typography variant="body2">
             Este viaje ha sido cancelado. Si tienes preguntas, contacta a
             soporte.
           </Typography>
@@ -1380,46 +1266,34 @@ export default function MatchDetailPage() {
         {/* Trip details for reference */}
         <Card sx={{ mb: 3 }}>
           <CardContent>
-            <Typography
-              variant='subtitle1'
-              sx={{ fontWeight: 600, mb: 2 }}
-            >
+            <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 2 }}>
               📍 Detalles de la Solicitud Cancelada
             </Typography>
 
             <Box sx={{ mb: 2 }}>
-              <Typography
-                variant='caption'
-                color='text.secondary'
-              >
+              <Typography variant="caption" color="text.secondary">
                 Origen
               </Typography>
-              <Typography variant='body2'>
-                {match.pickupAddress || 'No especificado'}
+              <Typography variant="body2">
+                {match.pickupAddress || "No especificado"}
               </Typography>
             </Box>
 
             <Box sx={{ mb: 2 }}>
-              <Typography
-                variant='caption'
-                color='text.secondary'
-              >
+              <Typography variant="caption" color="text.secondary">
                 Destino
               </Typography>
-              <Typography variant='body2'>
-                {match.destinationAddress || 'No especificado'}
+              <Typography variant="body2">
+                {match.destinationAddress || "No especificado"}
               </Typography>
             </Box>
 
             {match.charter?.name && (
               <Box>
-                <Typography
-                  variant='caption'
-                  color='text.secondary'
-                >
+                <Typography variant="caption" color="text.secondary">
                   Chófer Asignado
                 </Typography>
-                <Typography variant='body2'>{match.charter.name}</Typography>
+                <Typography variant="body2">{match.charter.name}</Typography>
               </Box>
             )}
           </CardContent>
@@ -1428,17 +1302,17 @@ export default function MatchDetailPage() {
         {/* Action buttons */}
         <Stack spacing={2}>
           <Button
-            variant='contained'
-            color='primary'
-            onClick={() => router.push('/client/trips/new')}
+            variant="contained"
+            color="primary"
+            onClick={() => router.push("/client/trips/new")}
             fullWidth
           >
             Nueva Búsqueda
           </Button>
           <Button
-            variant='outlined'
-            color='secondary'
-            onClick={() => router.push('/client/dashboard')}
+            variant="outlined"
+            color="secondary"
+            onClick={() => router.push("/client/dashboard")}
             fullWidth
           >
             Volver al Dashboard
@@ -1453,41 +1327,24 @@ export default function MatchDetailPage() {
   // ============================================
   if (match.status === TravelMatchStatus.SEARCHING) {
     return (
-      <Container
-        maxWidth='md'
-        sx={{ py: 4 }}
-      >
+      <Container maxWidth="md" sx={{ py: 4 }}>
         <Box mb={4}>
-          <Link href='/client/dashboard'>
-            <Button
-              startIcon={<ArrowBack />}
-              variant='outlined'
-              sx={{ mb: 2 }}
-            >
+          <Link href="/client/dashboard">
+            <Button startIcon={<ArrowBack />} variant="outlined" sx={{ mb: 2 }}>
               Volver
             </Button>
           </Link>
 
-          <Typography
-            variant='h4'
-            component='h1'
-            sx={{ fontWeight: 700 }}
-          >
+          <Typography variant="h4" component="h1" sx={{ fontWeight: 700 }}>
             Procesando Solicitud
           </Typography>
         </Box>
 
-        <Alert
-          severity='warning'
-          sx={{ mb: 3 }}
-        >
-          <Typography
-            variant='h6'
-            sx={{ fontWeight: 600, mb: 1 }}
-          >
+        <Alert severity="warning" sx={{ mb: 3 }}>
+          <Typography variant="h6" sx={{ fontWeight: 600, mb: 1 }}>
             🔍 Buscando Chóferes Disponibles
           </Typography>
-          <Typography variant='body2'>
+          <Typography variant="body2">
             Estamos procesando tu solicitud y buscando chóferes cercanos. Te
             notificaremos cuando encontremos opciones disponibles.
           </Typography>
@@ -1495,42 +1352,33 @@ export default function MatchDetailPage() {
 
         <Card sx={{ mb: 3 }}>
           <CardContent>
-            <Typography
-              variant='subtitle1'
-              sx={{ fontWeight: 600, mb: 2 }}
-            >
+            <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 2 }}>
               📍 Detalles de tu Solicitud
             </Typography>
 
             <Box sx={{ mb: 2 }}>
-              <Typography
-                variant='caption'
-                color='text.secondary'
-              >
+              <Typography variant="caption" color="text.secondary">
                 Origen
               </Typography>
-              <Typography variant='body2'>
-                {match.pickupAddress || 'No especificado'}
+              <Typography variant="body2">
+                {match.pickupAddress || "No especificado"}
               </Typography>
             </Box>
 
             <Box>
-              <Typography
-                variant='caption'
-                color='text.secondary'
-              >
+              <Typography variant="caption" color="text.secondary">
                 Destino
               </Typography>
-              <Typography variant='body2'>
-                {match.destinationAddress || 'No especificado'}
+              <Typography variant="body2">
+                {match.destinationAddress || "No especificado"}
               </Typography>
             </Box>
           </CardContent>
         </Card>
 
         <Button
-          variant='contained'
-          onClick={() => router.push('/client/dashboard')}
+          variant="contained"
+          onClick={() => router.push("/client/dashboard")}
           fullWidth
         >
           Volver al Dashboard
@@ -1542,7 +1390,7 @@ export default function MatchDetailPage() {
   // ============================================
   // FALLBACK: Unknown status
   // ============================================
-  console.error('❌ [MATCH DETAIL] Unknown match status:', {
+  console.error("❌ [MATCH DETAIL] Unknown match status:", {
     matchId: match.id,
     status: match.status,
     statusType: typeof match.status,
@@ -1551,30 +1399,17 @@ export default function MatchDetailPage() {
   });
 
   return (
-    <Container
-      maxWidth='md'
-      sx={{ py: 4 }}
-    >
-      <Alert
-        severity='warning'
-        sx={{ mb: 2 }}
-      >
+    <Container maxWidth="md" sx={{ py: 4 }}>
+      <Alert severity="warning" sx={{ mb: 2 }}>
         <Typography>
           Estado desconocido: "{match.status}" (tipo: {typeof match.status})
         </Typography>
-        <Typography
-          variant='caption'
-          display='block'
-          sx={{ mt: 1 }}
-        >
+        <Typography variant="caption" display="block" sx={{ mt: 1 }}>
           ID del match: {match.id}
         </Typography>
       </Alert>
-      <Link href='/client/dashboard'>
-        <Button
-          variant='contained'
-          color='secondary'
-        >
+      <Link href="/client/dashboard">
+        <Button variant="contained" color="secondary">
           Volver al Dashboard
         </Button>
       </Link>

@@ -50,18 +50,9 @@ export function AcceptMatchModal({
   isLoading = false,
   error = null,
 }: AcceptMatchModalProps) {
-  if (!match) return null;
-
-  const { data: clientFeedback } = useUserFeedback(match.userId);
+  const { data: clientFeedback } = useUserFeedback(match?.userId ?? "");
   const { data: myDrivers = [] } = useMyDrivers();
   const { data: myHelpers = [] } = useMyHelpers();
-
-  const availableDrivers = myDrivers.filter(
-    (d) => d.verificationStatus === "verified" && d.isEnabled,
-  );
-  const availableHelpers = myHelpers.filter(
-    (h) => h.verificationStatus === "verified" && h.isEnabled,
-  );
 
   const [driverSelection, setDriverSelection] = useState<string>(SELF_DRIVER_VALUE);
   const [selectedHelperIds, setSelectedHelperIds] = useState<string[]>([]);
@@ -72,6 +63,15 @@ export function AcceptMatchModal({
       setSelectedHelperIds([]);
     }
   }, [open]);
+
+  if (!match) return null;
+
+  const availableDrivers = myDrivers.filter(
+    (d) => d.verificationStatus === "verified" && d.isEnabled,
+  );
+  const availableHelpers = myHelpers.filter(
+    (h) => h.verificationStatus === "verified" && h.isEnabled,
+  );
 
   const maxHelpers = match.workersCount ?? 0;
   const showDriverPicker = availableDrivers.length > 0;

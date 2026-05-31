@@ -42,17 +42,17 @@ import LeafletMap, {
 import { MOBILE_BOTTOM_NAV_HEIGHT } from "@/lib/constants/mobileDesign";
 import { useToggleAvailability } from "@/lib/hooks/mutations/useTravelMatchMutations";
 import { useCharterCompleteTrip } from "@/lib/hooks/mutations/useTripMutations";
-import { useMatch, useCharterAvailability } from "@/lib/hooks/queries/useTravelMatchQueries";
+import {
+  useMatch,
+  useCharterAvailability,
+} from "@/lib/hooks/queries/useTravelMatchQueries";
 import { useTrip } from "@/lib/hooks/queries/useTripQueries";
 import { useMyVehicles } from "@/lib/hooks/queries/useVehicleQueries";
 import { useAuthStore } from "@/lib/stores/authStore";
 import { conversationApi } from "@/lib/api/conversations";
 import axios from "axios";
 import type { User, UserRole } from "@/lib/types/api";
-import {
-  generateCharterReceipt,
-  downloadPDF,
-} from "@/lib/utils/pdfGenerator";
+import { generateCharterReceipt, downloadPDF } from "@/lib/utils/pdfGenerator";
 
 export default function DriverMatchingDetailPage() {
   const params = useParams();
@@ -76,8 +76,10 @@ export default function DriverMatchingDetailPage() {
   const [finalizeTripModalOpen, setFinalizeTripModalOpen] = useState(false);
   const [availabilityConfirmed, setAvailabilityConfirmed] = useState(false);
   const [reportModalOpen, setReportModalOpen] = useState(false);
-  const [conversationRecoveryAttempt, setConversationRecoveryAttempt] = useState(0);
-  const [conversationRecoveryFailed, setConversationRecoveryFailed] = useState(false);
+  const [conversationRecoveryAttempt, setConversationRecoveryAttempt] =
+    useState(0);
+  const [conversationRecoveryFailed, setConversationRecoveryFailed] =
+    useState(false);
   const isRecoveringConversation = useRef(false);
   const mapRef = useRef<LeafletMapHandle>(null);
 
@@ -109,11 +111,15 @@ export default function DriverMatchingDetailPage() {
     }
   }, [match?.status, router]);
 
-  // Recovery: si el match está ACCEPTED pero conversationId es null, reintentar creación
+  // Recovery: si el match puede tener chat (accepted/completed) pero no hay
+  // conversación (ni scalar ni relación), reintentar creación.
   useEffect(() => {
+    const canHaveChat =
+      match?.status === "accepted" || match?.status === "completed";
     if (
-      match?.status !== "accepted" ||
-      match.conversationId ||
+      !canHaveChat ||
+      match?.conversationId ||
+      match?.conversation?.id ||
       conversationRecoveryFailed ||
       isRecoveringConversation.current
     ) {
@@ -135,21 +141,30 @@ export default function DriverMatchingDetailPage() {
       isRecoveringConversation.current = true;
 
       const attemptNumber = conversationRecoveryAttempt + 1;
-      console.log(`🔄 [CONV RECOVERY] Attempt ${attemptNumber}/${MAX_ATTEMPTS} for match ${matchId}`);
+      console.log(
+        `🔄 [CONV RECOVERY] Attempt ${attemptNumber}/${MAX_ATTEMPTS} for match ${matchId}`,
+      );
       setConversationRecoveryAttempt(attemptNumber);
 
       try {
         await conversationApi.createFromMatch(matchId);
-        console.log(`✅ [CONV RECOVERY] Conversation created on attempt ${attemptNumber}`);
+        console.log(
+          `✅ [CONV RECOVERY] Conversation created on attempt ${attemptNumber}`,
+        );
         await new Promise((resolve) => setTimeout(resolve, 500));
         await refetch();
       } catch (error) {
         if (axios.isAxiosError(error) && error.response?.status === 409) {
-          console.log("ℹ️ [CONV RECOVERY] 409 — conversation exists, refetching match...");
+          console.log(
+            "ℹ️ [CONV RECOVERY] 409 — conversation exists, refetching match...",
+          );
           await new Promise((resolve) => setTimeout(resolve, 500));
           await refetch();
         } else {
-          console.error(`❌ [CONV RECOVERY] Attempt ${attemptNumber} failed:`, error);
+          console.error(
+            `❌ [CONV RECOVERY] Attempt ${attemptNumber} failed:`,
+            error,
+          );
         }
       } finally {
         isRecoveringConversation.current = false;
@@ -160,6 +175,7 @@ export default function DriverMatchingDetailPage() {
   }, [
     match?.status,
     match?.conversationId,
+    match?.conversation?.id,
     matchId,
     conversationRecoveryAttempt,
     conversationRecoveryFailed,
@@ -193,6 +209,10 @@ export default function DriverMatchingDetailPage() {
       </Container>
     );
   }
+
+  // El scalar match.conversationId puede quedar desincronizado (null) aunque la
+  // conversación exista; usamos la relación incluida por el backend como fallback.
+  const conversationId = match.conversationId ?? match.conversation?.id;
 
   const isCompletingTrip = charterCompleteTripMutation.isPending;
   const tripCompleted = trip?.status === "completed";
@@ -245,13 +265,17 @@ export default function DriverMatchingDetailPage() {
         >
           {/* Left column: Chat + Action Buttons */}
           <Box>
-            {!match.conversationId ? (
+            {!conversationId ? (
               <Card>
                 <CardContent sx={{ textAlign: "center", py: 6 }}>
                   {!conversationRecoveryFailed ? (
                     <>
                       <CircularProgress sx={{ mb: 2 }} />
-                      <Typography variant="h6" color="textSecondary" sx={{ mb: 1 }}>
+                      <Typography
+                        variant="h6"
+                        color="textSecondary"
+                        sx={{ mb: 1 }}
+                      >
                         {conversationRecoveryAttempt === 0
                           ? "Preparando el chat..."
                           : "Configurando la conversación..."}
@@ -265,12 +289,17 @@ export default function DriverMatchingDetailPage() {
                   ) : (
                     <>
                       <Alert severity="error" sx={{ mb: 2, textAlign: "left" }}>
-                        <Typography variant="subtitle2" fontWeight={700} mb={0.5}>
+                        <Typography
+                          variant="subtitle2"
+                          fontWeight={700}
+                          mb={0.5}
+                        >
                           No se pudo configurar la conversación
                         </Typography>
                         <Typography variant="body2">
                           No pudimos conectar el chat automáticamente. Vuelve al
-                          dashboard e intenta acceder nuevamente en unos momentos.
+                          dashboard e intenta acceder nuevamente en unos
+                          momentos.
                         </Typography>
                       </Alert>
                       <Link href="/driver/dashboard">
@@ -290,7 +319,7 @@ export default function DriverMatchingDetailPage() {
                 }}
               >
                 <ChatWindow
-                  conversationId={match.conversationId}
+                  conversationId={conversationId}
                   otherUser={{
                     id: match.user?.id || "",
                     name: match.user?.name || "Usuario",
@@ -423,7 +452,12 @@ export default function DriverMatchingDetailPage() {
                       >
                         ¿Querés aparecer disponible para un nuevo viaje?
                       </Typography>
-                      <Stack direction="row" spacing={1} useFlexGap flexWrap="wrap">
+                      <Stack
+                        direction="row"
+                        spacing={1}
+                        useFlexGap
+                        flexWrap="wrap"
+                      >
                         {hasOrigin && (
                           <Button
                             variant="contained"
@@ -562,6 +596,7 @@ export default function DriverMatchingDetailPage() {
                     })
                   : undefined
               }
+              cargo={match.cargoDescription}
               otherUser={{
                 name: match.user?.name || "Cliente",
                 avatar: match.user?.avatar ?? undefined,
@@ -631,7 +666,9 @@ export default function DriverMatchingDetailPage() {
                 />
 
                 {/* Map navigation buttons */}
-                <Box sx={{ mt: 1.5, display: "flex", gap: 1, flexWrap: "wrap" }}>
+                <Box
+                  sx={{ mt: 1.5, display: "flex", gap: 1, flexWrap: "wrap" }}
+                >
                   <Button
                     variant="outlined"
                     size="small"
@@ -681,9 +718,7 @@ export default function DriverMatchingDetailPage() {
             </Card>
 
             {/* Trip Metrics Card */}
-            <TripMetricsCard
-              distance={match.distanceKm ?? undefined}
-            />
+            <TripMetricsCard distance={match.distanceKm ?? undefined} />
           </Box>
         </Box>
       </MobileContainer>
@@ -698,11 +733,11 @@ export default function DriverMatchingDetailPage() {
       />
 
       {/* Report Modal */}
-      {match.conversationId && (
+      {conversationId && (
         <ReportModal
           open={reportModalOpen}
           onClose={() => setReportModalOpen(false)}
-          conversationId={match.conversationId}
+          conversationId={conversationId}
           reportedUserId={match.userId}
           reportedUserName={match.user?.name || "Cliente"}
         />

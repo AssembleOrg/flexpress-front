@@ -10,9 +10,15 @@ interface WelcomeHeaderProps {
   userName?: string;
   userRole?: "client" | "charter";
   greeting?: string;
+  avatarUrl?: string;
 }
 
-export function WelcomeHeader({ userName, userRole, greeting }: WelcomeHeaderProps) {
+export function WelcomeHeader({
+  userName,
+  userRole,
+  greeting,
+  avatarUrl,
+}: WelcomeHeaderProps) {
   const router = useRouter();
   const firstName = userName?.split(" ")[0] || "Usuario";
   const initial = userName?.[0]?.toUpperCase() || "?";
@@ -33,6 +39,8 @@ export function WelcomeHeader({ userName, userRole, greeting }: WelcomeHeaderPro
         >
           <Tooltip title="Ver perfil" arrow placement="right">
             <Avatar
+              src={avatarUrl || undefined}
+              alt={userName}
               onClick={() => router.push("/profile")}
               sx={{
                 width: 56,

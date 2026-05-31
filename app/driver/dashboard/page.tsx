@@ -17,6 +17,7 @@ import {
 } from "@mui/icons-material";
 import {
   Alert,
+  Avatar,
   Box,
   Button,
   ButtonBase,
@@ -338,6 +339,7 @@ export default function DriverDashboard() {
             userName={user?.name}
             userRole="charter"
             greeting={greeting}
+            avatarUrl={user?.avatar ?? undefined}
           />
 
           <MotionCard
@@ -531,6 +533,7 @@ export default function DriverDashboard() {
           userName={user?.name}
           userRole="charter"
           greeting={greeting}
+          avatarUrl={user?.avatar ?? undefined}
         />
 
         {/* Status Toggle - Mobile-First */}
@@ -1209,13 +1212,23 @@ export default function DriverDashboard() {
                             fontWeight: 700,
                             display: "flex",
                             alignItems: "center",
-                            gap: 0.5,
+                            gap: 0.75,
                           }}
                         >
-                          <Person
-                            fontSize="small"
-                            sx={{ color: "primary.main" }}
-                          />
+                          <Avatar
+                            src={match.user?.avatar ?? undefined}
+                            alt={match.user?.name}
+                            sx={{
+                              width: 28,
+                              height: 28,
+                              fontSize: "0.8rem",
+                              bgcolor: "secondary.main",
+                              color: "primary.main",
+                              fontWeight: 700,
+                            }}
+                          >
+                            {match.user?.name?.[0] ?? "U"}
+                          </Avatar>
                           {match.user?.name}
                         </Typography>
                         <Typography

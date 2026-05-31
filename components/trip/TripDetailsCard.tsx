@@ -15,6 +15,7 @@ import {
   AccessTime,
   Person,
   Group,
+  LocalShipping,
 } from "@mui/icons-material";
 import { RatingDisplay } from "@/components/ui/RatingDisplay";
 
@@ -31,6 +32,10 @@ interface TripDetailsCardProps {
    * Scheduled date (formatted string)
    */
   scheduledDate?: string;
+  /**
+   * Cargo description provided by the client (what is being moved)
+   */
+  cargo?: string | null;
   /**
    * Other user info (charter or client)
    */
@@ -99,6 +104,7 @@ export function TripDetailsCard({
   origin,
   destination,
   scheduledDate,
+  cargo,
   otherUser,
   status,
   metadata = [],
@@ -180,7 +186,12 @@ export function TripDetailsCard({
           <Typography
             variant="caption"
             color="text.secondary"
-            sx={{ fontWeight: 600, mb: 0.75, display: "block", fontSize: "0.7rem" }}
+            sx={{
+              fontWeight: 600,
+              mb: 0.75,
+              display: "block",
+              fontSize: "0.7rem",
+            }}
           >
             Ruta del Viaje
           </Typography>
@@ -195,7 +206,12 @@ export function TripDetailsCard({
                 flexShrink: 0,
               }}
             />
-            <Typography variant="body2" fontSize="0.9rem" lineHeight={1.5} sx={{ minWidth: 0, wordBreak: 'break-word' }}>
+            <Typography
+              variant="body2"
+              fontSize="0.9rem"
+              lineHeight={1.5}
+              sx={{ minWidth: 0, wordBreak: "break-word" }}
+            >
               {origin}
             </Typography>
           </Box>
@@ -215,7 +231,7 @@ export function TripDetailsCard({
               fontSize="0.9rem"
               fontWeight={600}
               lineHeight={1.5}
-              sx={{ minWidth: 0, wordBreak: 'break-word' }}
+              sx={{ minWidth: 0, wordBreak: "break-word" }}
             >
               {destination}
             </Typography>
@@ -235,9 +251,7 @@ export function TripDetailsCard({
               borderRadius: 1.5,
             }}
           >
-            <CalendarToday
-              sx={{ fontSize: 18, color: "text.secondary" }}
-            />
+            <CalendarToday sx={{ fontSize: 18, color: "text.secondary" }} />
             <Box>
               <Typography variant="caption" color="text.secondary">
                 Fecha Programada
@@ -246,6 +260,44 @@ export function TripDetailsCard({
                 {scheduledDate}
               </Typography>
             </Box>
+          </Box>
+        )}
+
+        {/* Cargo — qué mueve el cliente */}
+        {cargo && (
+          <Box
+            p={1.5}
+            mb={1.5}
+            sx={{
+              bgcolor: "background.default",
+              borderRadius: 1.5,
+            }}
+          >
+            <Box display="flex" alignItems="center" gap={1} mb={0.75}>
+              <LocalShipping sx={{ fontSize: 18, color: "secondary.main" }} />
+              <Typography
+                variant="caption"
+                color="text.secondary"
+                sx={{
+                  fontSize: "0.7rem",
+                  fontWeight: 600,
+                  textTransform: "uppercase",
+                  letterSpacing: "0.3px",
+                }}
+              >
+                Qué mueve
+              </Typography>
+            </Box>
+            <Typography
+              variant="body2"
+              sx={{
+                fontSize: "0.9rem",
+                lineHeight: 1.4,
+                wordBreak: "break-word",
+              }}
+            >
+              {cargo}
+            </Typography>
           </Box>
         )}
 
@@ -292,13 +344,25 @@ export function TripDetailsCard({
             <Typography
               variant="caption"
               color="text.secondary"
-              sx={{ fontWeight: 600, mb: 1, display: "block", fontSize: "0.7rem" }}
+              sx={{
+                fontWeight: 600,
+                mb: 1,
+                display: "block",
+                fontSize: "0.7rem",
+              }}
             >
               Equipo del viaje
             </Typography>
 
-            <Box display="flex" alignItems="center" gap={1} mb={personnel.helpers.length > 0 ? 1 : 0}>
-              <Person sx={{ fontSize: 18, color: "secondary.main", flexShrink: 0 }} />
+            <Box
+              display="flex"
+              alignItems="center"
+              gap={1}
+              mb={personnel.helpers.length > 0 ? 1 : 0}
+            >
+              <Person
+                sx={{ fontSize: 18, color: "secondary.main", flexShrink: 0 }}
+              />
               <Typography variant="body2" sx={{ fontWeight: 600 }}>
                 {personnel.driver.name}
               </Typography>
@@ -306,7 +370,14 @@ export function TripDetailsCard({
 
             {personnel.helpers.length > 0 && (
               <Box display="flex" alignItems="flex-start" gap={1}>
-                <Group sx={{ fontSize: 18, color: "text.secondary", flexShrink: 0, mt: 0.4 }} />
+                <Group
+                  sx={{
+                    fontSize: 18,
+                    color: "text.secondary",
+                    flexShrink: 0,
+                    mt: 0.4,
+                  }}
+                />
                 <Box display="flex" gap={0.5} flexWrap="wrap">
                   {personnel.helpers.map((h, i) => (
                     <Chip
