@@ -35,8 +35,21 @@ export interface SelectCharterRequest {
 
 export interface RespondToMatchRequest {
   accept: boolean;
-  driverId?: string;
-  helperIds?: string[];
+}
+
+export interface ToggleAvailabilityRequest {
+  isAvailable: boolean;
+  vehicleId?: string;
+  activeDriverId?: string | null;
+  activeHelperIds?: string[];
+}
+
+/** Estado de disponibilidad + config activa que devuelve el backend. */
+export interface CharterAvailabilityState {
+  isAvailable: boolean;
+  vehicleId: string | null;
+  activeDriverId?: string | null;
+  activeHelperIds?: string[];
 }
 
 export const travelMatchingApi = {
@@ -301,24 +314,41 @@ export const travelMatchingApi = {
   },
 
   /**
-   * Get current charter availability status
+   * Get current charter availability status (incluye la config activa:
+   * vehículo + conductor activo + ayudantes)
    */
-  getAvailability: async (): Promise<{ isAvailable: boolean; vehicleId: string | null }> => {
+  getAvailability: async (): Promise<CharterAvailabilityState> => {
     const response = await api.get('/travel-matching/charter/availability');
     const data = response.data?.data;
     if (data && typeof data === 'object' && 'data' in data) {
-      return (data as { data: { isAvailable: boolean; vehicleId: string | null } }).data;
+      return (data as { data: CharterAvailabilityState }).data;
     }
     return data;
   },
 
   /**
-   * Toggle charter availability
+   * Toggle charter availability.
+   * Al activarse, opcionalmente fija la config activa: vehículo + conductor
+   * extra (activeDriverId) + ayudantes (activeHelperIds). Si se envía un
+   * conductor extra, el vehículo es obligatorio (validado en backend).
    */
-  toggleAvailability: async (isAvailable: boolean, vehicleId?: string) => {
-    const payload: { isAvailable: boolean; vehicleId?: string } = {
+  toggleAvailability: async (
+    isAvailable: boolean,
+    config?: {
+      vehicleId?: string;
+      activeDriverId?: string | null;
+      activeHelperIds?: string[];
+    },
+  ) => {
+    const payload: ToggleAvailabilityRequest = {
       isAvailable,
-      ...(vehicleId && { vehicleId }),
+      ...(config?.vehicleId && { vehicleId: config.vehicleId }),
+      ...(config?.activeDriverId !== undefined && {
+        activeDriverId: config.activeDriverId,
+      }),
+      ...(config?.activeHelperIds !== undefined && {
+        activeHelperIds: config.activeHelperIds,
+      }),
     };
     const response = await api.put('/travel-matching/charter/availability', payload);
     // biome-ignore lint/style/noNonNullAssertion: axios response guarantees data

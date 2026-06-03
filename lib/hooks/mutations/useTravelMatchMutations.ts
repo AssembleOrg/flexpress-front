@@ -112,14 +112,10 @@ export function useRespondToMatch() {
     mutationFn: ({
       matchId,
       accept,
-      driverId,
-      helperIds,
     }: {
       matchId: string;
       accept: boolean;
-      driverId?: string;
-      helperIds?: string[];
-    }) => travelMatchingApi.respondToMatch(matchId, { accept, driverId, helperIds }),
+    }) => travelMatchingApi.respondToMatch(matchId, { accept }),
 
     onSuccess: async (result, { matchId, accept }) => {
       // Update the match in cache (optimistic update)
@@ -264,8 +260,22 @@ export function useToggleAvailability() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ isAvailable, vehicleId }: { isAvailable: boolean; vehicleId?: string }) =>
-      travelMatchingApi.toggleAvailability(isAvailable, vehicleId),
+    mutationFn: ({
+      isAvailable,
+      vehicleId,
+      activeDriverId,
+      activeHelperIds,
+    }: {
+      isAvailable: boolean;
+      vehicleId?: string;
+      activeDriverId?: string | null;
+      activeHelperIds?: string[];
+    }) =>
+      travelMatchingApi.toggleAvailability(isAvailable, {
+        vehicleId,
+        activeDriverId,
+        activeHelperIds,
+      }),
 
     onSuccess: () => {
       queryClient.invalidateQueries({

@@ -8,6 +8,8 @@ import type { ApiResponse } from "@/lib/types/api";
 
 export interface PricingConfig {
   creditPrice: number;
+  // Email de contacto/soporte configurable (SystemConfig.contact_email)
+  contactEmail?: string;
   // Campos legacy — ya no se usan en la lógica de negocio
   creditsPerKm?: number;
   minimumCharge?: number;

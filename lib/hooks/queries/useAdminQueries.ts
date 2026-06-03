@@ -4,24 +4,25 @@
  */
 
 import { useQuery } from "@tanstack/react-query";
+import type { CharterFullDetail } from "@/lib/api/admin";
 import { adminApi } from "@/lib/api/admin";
-import { queryKeys } from "./queryFactory";
 import type {
-  UserFilters,
+  PaginatedResponse,
+  PaymentFilters,
   ReportFilters,
   TripFilters,
-  PaymentFilters,
-  PaginatedResponse,
+  UserFilters,
 } from "@/lib/types/admin";
 import type {
-  User,
-  Report,
-  Trip,
   Payment,
+  Report,
   SystemConfig,
+  Trip,
+  User,
   UserDocument,
   Vehicle,
 } from "@/lib/types/api";
+import { queryKeys } from "./queryFactory";
 
 // ============================================
 // USUARIOS
@@ -166,5 +167,20 @@ export function useAdminUserDocuments(userId: string) {
     queryKey: ["admin", "users", userId, "documents"],
     queryFn: () => adminApi.getUserDocuments(userId),
     enabled: !!userId,
+  });
+}
+
+/**
+ * Detalle consolidado de una cuenta charter (vehículos + conductores +
+ * ayudantes + documentos + config activa). Solo se carga para charters.
+ */
+export function useAdminCharterDetail(
+  charterId: string | null,
+  enabled = true,
+) {
+  return useQuery<CharterFullDetail>({
+    queryKey: ["admin", "charter-detail", charterId],
+    queryFn: () => adminApi.getCharterDetail(charterId as string),
+    enabled: !!charterId && enabled,
   });
 }

@@ -5,11 +5,13 @@ import {
   CheckCircle,
   CreditCard,
   Download,
+  Flag,
   LocalShipping,
   LocationOn,
-  Flag,
   Map,
+  Navigation,
   ReportProblem,
+  Route,
   Star,
   Warning,
 } from "@mui/icons-material";
@@ -27,43 +29,42 @@ import {
   Stack,
   Typography,
 } from "@mui/material";
+import axios from "axios";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import toast from "react-hot-toast";
-
-import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { ChatWindow } from "@/components/chat/ChatWindow";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { FeedbackModal } from "@/components/feedback/FeedbackModal";
-import { ReportModal } from "@/components/modals/ReportModal";
-import { ConfirmCompletionModal } from "@/components/modals/ConfirmCompletionModal";
 import { MobileContainer } from "@/components/layout/MobileContainer";
 import { MobileHeader } from "@/components/layout/MobileHeader";
+import { ConfirmCompletionModal } from "@/components/modals/ConfirmCompletionModal";
+import { ReportModal } from "@/components/modals/ReportModal";
 import { TripDetailsCard } from "@/components/trip/TripDetailsCard";
-import { TripMetricsCard } from "@/components/trip/TripMetricsCard";
 import LeafletMap, {
-  type MapMarker,
   type LeafletMapHandle,
+  type MapMarker,
 } from "@/components/ui/LeafletMap";
+import { conversationApi } from "@/lib/api/conversations";
 import { MOBILE_BOTTOM_NAV_HEIGHT } from "@/lib/constants/mobileDesign";
-import { useMatch } from "@/lib/hooks/queries/useTravelMatchQueries";
+import { useCreateTripFromMatch } from "@/lib/hooks/mutations/useTravelMatchMutations";
+import { useClientConfirmCompletion } from "@/lib/hooks/mutations/useTripMutations";
 import {
   useCanGiveFeedback,
   useUserFeedback,
 } from "@/lib/hooks/queries/useFeedbackQueries";
-import { useCreateTripFromMatch } from "@/lib/hooks/mutations/useTravelMatchMutations";
-import { useClientConfirmCompletion } from "@/lib/hooks/mutations/useTripMutations";
+import { useMatch } from "@/lib/hooks/queries/useTravelMatchQueries";
+import { useCountdown } from "@/lib/hooks/useCountdown";
 import {
   useMatchUpdateListener,
   useTripCompletedListener,
 } from "@/lib/hooks/useWebSocket";
-import { useCountdown } from "@/lib/hooks/useCountdown";
 import { useAuthStore } from "@/lib/stores/authStore";
-import { conversationApi } from "@/lib/api/conversations";
-import axios from "axios";
 import type { User } from "@/lib/types/api";
 import { TravelMatchStatus, UserRole } from "@/lib/types/api";
-import { generateClientReceipt, downloadPDF } from "@/lib/utils/pdfGenerator";
+import { getDirectionsUrl } from "@/lib/utils/mapLinks";
+import { downloadPDF, generateClientReceipt } from "@/lib/utils/pdfGenerator";
 
 /**
  * Match detail page with conditional UI based on match status
@@ -99,6 +100,9 @@ export default function MatchDetailPage() {
         destinationAddress: match.destinationAddress,
         estimatedCredits: match.estimatedCredits ?? 0,
         distanceKm: match.distanceKm,
+        // El snapshot del personal ya viene del backend en el match; sin esto
+        // el PDF del cliente no muestra la sección "Equipo del viaje".
+        personnel: match.personnel,
       },
     };
     const doc = generateClientReceipt(tripWithMatch);
@@ -813,24 +817,48 @@ export default function MatchDetailPage() {
                 }
               />
 
-              {/* Trip Metrics Card */}
-              <TripMetricsCard distance={match.distanceKm ?? undefined} />
-
               {/* Map Card */}
               <Card sx={{ mb: 1.5 }}>
                 <CardContent sx={{ p: 1.5 }}>
-                  <Typography
-                    variant="caption"
-                    color="text.secondary"
+                  {/* Header: título + distancia integrada (info-dense) */}
+                  <Box
                     sx={{
-                      fontWeight: 600,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
                       mb: 1,
-                      display: "block",
-                      fontSize: "0.7rem",
                     }}
                   >
-                    Mapa del Viaje
-                  </Typography>
+                    <Typography
+                      variant="caption"
+                      color="text.secondary"
+                      sx={{ fontWeight: 600, fontSize: "0.7rem" }}
+                    >
+                      Mapa del Viaje
+                    </Typography>
+                    {match.distanceKm != null && (
+                      <Box
+                        sx={{
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: 0.5,
+                          px: 1,
+                          py: 0.25,
+                          borderRadius: 999,
+                          bgcolor: "primary.main",
+                          color: "primary.contrastText",
+                        }}
+                      >
+                        <Route sx={{ fontSize: 14 }} />
+                        <Typography
+                          variant="caption"
+                          sx={{ fontWeight: 700, fontSize: "0.7rem" }}
+                        >
+                          {match.distanceKm.toFixed(1)} km
+                        </Typography>
+                      </Box>
+                    )}
+                  </Box>
                   <LeafletMap
                     ref={mapRef}
                     markers={[
@@ -851,55 +879,107 @@ export default function MatchDetailPage() {
                     disableInteraction={true}
                   />
 
-                  {/* Map navigation buttons */}
+                  {/* Segmented control estilo iOS: Origen / Destino / Ruta */}
                   <Box
-                    sx={{ mt: 1.5, display: "flex", gap: 1, flexWrap: "wrap" }}
+                    sx={{
+                      mt: 1.5,
+                      display: "flex",
+                      p: 0.5,
+                      gap: 0.5,
+                      bgcolor: "background.default",
+                      borderRadius: 2.5,
+                    }}
                   >
-                    <Button
-                      variant="outlined"
-                      size="small"
-                      fullWidth
-                      startIcon={<LocationOn />}
-                      onClick={() => {
-                        mapRef.current?.centerOnMarker(
+                    {[
+                      {
+                        key: "origen",
+                        label: "Origen",
+                        icon: <LocationOn sx={{ fontSize: 16 }} />,
+                        onClick: () =>
+                          mapRef.current?.centerOnMarker(
+                            Number.parseFloat(match.pickupLatitude),
+                            Number.parseFloat(match.pickupLongitude),
+                          ),
+                      },
+                      {
+                        key: "destino",
+                        label: "Destino",
+                        icon: <Flag sx={{ fontSize: 16 }} />,
+                        onClick: () =>
+                          mapRef.current?.centerOnMarker(
+                            Number.parseFloat(match.destinationLatitude),
+                            Number.parseFloat(match.destinationLongitude),
+                          ),
+                      },
+                      {
+                        key: "ruta",
+                        label: "Ruta",
+                        icon: <Map sx={{ fontSize: 16 }} />,
+                        onClick: () => mapRef.current?.fitAllMarkers(),
+                      },
+                    ].map((seg) => (
+                      <Box
+                        key={seg.key}
+                        component="button"
+                        onClick={seg.onClick}
+                        sx={{
+                          flex: 1,
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          gap: 0.5,
+                          py: 0.75,
+                          border: "none",
+                          cursor: "pointer",
+                          borderRadius: 2,
+                          bgcolor: "background.paper",
+                          color: "text.primary",
+                          fontWeight: 600,
+                          fontSize: "0.75rem",
+                          boxShadow: "0 1px 2px rgba(0,0,0,0.06)",
+                          transition:
+                            "transform 0.1s ease, box-shadow 0.1s ease",
+                          "&:active": {
+                            transform: "scale(0.97)",
+                            boxShadow: "none",
+                          },
+                        }}
+                      >
+                        {seg.icon}
+                        {seg.label}
+                      </Box>
+                    ))}
+                  </Box>
+
+                  {/* Botón primario: abrir Google Maps en modo navegación */}
+                  <Button
+                    variant="contained"
+                    fullWidth
+                    startIcon={<Navigation />}
+                    onClick={() =>
+                      window.open(
+                        getDirectionsUrl(
                           Number.parseFloat(match.pickupLatitude),
                           Number.parseFloat(match.pickupLongitude),
-                        );
-                      }}
-                    >
-                      Ver Origen
-                    </Button>
-                    <Button
-                      variant="outlined"
-                      size="small"
-                      fullWidth
-                      startIcon={<Flag />}
-                      onClick={() => {
-                        mapRef.current?.centerOnMarker(
                           Number.parseFloat(match.destinationLatitude),
                           Number.parseFloat(match.destinationLongitude),
-                        );
-                      }}
-                    >
-                      Ver Destino
-                    </Button>
-                    <Button
-                      variant="contained"
-                      size="small"
-                      fullWidth
-                      startIcon={<Map />}
-                      onClick={() => {
-                        mapRef.current?.fitAllMarkers();
-                        toast.success("Mostrando ruta completa");
-                      }}
-                      sx={{
-                        bgcolor: "secondary.main",
-                        "&:hover": { bgcolor: "secondary.dark" },
-                      }}
-                    >
-                      Ruta Completa
-                    </Button>
-                  </Box>
+                        ),
+                        "_blank",
+                        "noopener",
+                      )
+                    }
+                    sx={{
+                      mt: 1,
+                      py: 1.1,
+                      borderRadius: 2.5,
+                      textTransform: "none",
+                      fontWeight: 700,
+                      boxShadow: "none",
+                      "&:hover": { boxShadow: "none" },
+                    }}
+                  >
+                    Cómo llegar
+                  </Button>
                 </CardContent>
               </Card>
             </Box>
@@ -917,6 +997,14 @@ export default function MatchDetailPage() {
                     <ChatWindow
                       conversationId={conversationId}
                       otherUser={otherUser}
+                      activeDriver={
+                        match.personnel?.snapshot?.driver
+                          ? {
+                              name: match.personnel.snapshot.driver.name,
+                              phone: match.personnel.snapshot.driver.phone,
+                            }
+                          : null
+                      }
                       onClose={() => router.push("/client/dashboard")}
                     />
                   </ErrorBoundary>

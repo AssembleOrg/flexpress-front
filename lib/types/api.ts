@@ -92,6 +92,9 @@ export interface User {
   rejectionReason: string | null; // Reason if rejected
   verifiedAt: string | null;
   verifiedBy: string | null;
+  // Sanción a nivel cuenta (visible para el charter)
+  accountStatus?: "active" | "warned" | "banned";
+  accountStatusNote?: string | null;
   createdAt: string;
   updatedAt: string;
   charterAvailability?: {
@@ -160,6 +163,12 @@ export interface AvailableCharter {
   vehicleModel?: string | null;
   vehiclePlate?: string | null;
   vehicleYear?: number | null;
+  // Ejecutor activo: el conductor (extra o titular) que representa hoy a la
+  // cuenta. Es lo que el cliente ve antes de elegir → transparencia.
+  activeDriverName?: string;
+  activeDriverPhone?: string | null;
+  activeDriverAvatar?: string | null;
+  isTitularDriving?: boolean;
   driversCount?: number;
   helpersCount?: number;
   // true si el charter ya está atendiendo otro viaje (match accepted o trip activo).

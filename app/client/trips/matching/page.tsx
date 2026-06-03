@@ -23,6 +23,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ConfirmMatchModal } from '@/components/modals/ConfirmMatchModal';
 import { CharterCard } from '@/components/ui/CharterCard';
 import { RouteMap } from '@/components/ui/Map';
+import { WaitingForCharterCard } from '@/components/ui/WaitingForCharterCard';
 import { useSelectCharter, useCancelMatch } from '@/lib/hooks/mutations/useTravelMatchMutations';
 import { useCreateInquiry } from '@/lib/hooks/mutations/useAvailabilityInquiriesMutations';
 import { useUserFeedback } from '@/lib/hooks/queries/useFeedbackQueries';
@@ -516,55 +517,15 @@ export default function MatchingPage() {
         </Box>
       ) : (
         <Box>
-          {/* Alert when charter is pending acceptance */}
+          {/* Premium waiting card when charter is pending acceptance */}
           {selectedCharterPending && (
-            <Alert
-              severity='warning'
-              sx={{ mb: 3 }}
-            >
-              <Typography
-                variant='subtitle2'
-                sx={{ fontWeight: 600, mb: 1 }}
-              >
-                Esperando confirmación del chófer
-              </Typography>
-              <Typography variant='body2'>
-                El chófer <strong>{selectedCharterPending.charterName}</strong>{' '}
-                tiene hasta las{' '}
-                <strong>
-                  {getFormattedExpirationTime(currentMatch) ?? '...'}
-                </strong>{' '}
-                para responder tu solicitud.
-              </Typography>
-              {minutesLeft > 0 && (
-                <Typography
-                  variant='body2'
-                  sx={{ mt: 0.5 }}
-                >
-                  Tiempo restante: <strong>{minutesLeft} min</strong>
-                </Typography>
-              )}
-              <Typography
-                variant='body2'
-                sx={{ mt: 1 }}
-              >
-                Aquí en esta página será notificado cuando{' '}
-                <strong>acepte tu solicitud</strong>.
-              </Typography>
-              <Box sx={{ mt: 1.5 }}>
-                <Button
-                  size='small'
-                  variant='outlined'
-                  color='warning'
-                  onClick={handleCancelPending}
-                  disabled={cancelMutation.isPending}
-                >
-                  {cancelMutation.isPending
-                    ? 'Cancelando...'
-                    : 'Cancelar solicitud'}
-                </Button>
-              </Box>
-            </Alert>
+            <WaitingForCharterCard
+              charter={selectedCharterPending}
+              expirationLabel={getFormattedExpirationTime(currentMatch)}
+              minutesLeft={minutesLeft}
+              onCancel={handleCancelPending}
+              isCancelling={cancelMutation.isPending}
+            />
           )}
 
           {sortedCharters.map((charter) => {

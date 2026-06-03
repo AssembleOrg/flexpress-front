@@ -1,23 +1,16 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import { AttachMoney, LocalShipping, Person, Route } from "@mui/icons-material";
 import {
   Avatar,
   Box,
   Button,
-  Checkbox,
   Chip,
   CircularProgress,
   Dialog,
   DialogActions,
   DialogContent,
   DialogTitle,
-  FormControl,
-  FormControlLabel,
-  FormLabel,
-  Radio,
-  RadioGroup,
   Stack,
   Typography,
 } from "@mui/material";
@@ -27,19 +20,21 @@ import {
   useMyDrivers,
   useMyHelpers,
 } from "@/lib/hooks/queries/useCharterPersonnelQueries";
+import { useAuthStore } from "@/lib/stores/authStore";
+import type { CharterAvailabilityState } from "@/lib/api/travelMatching";
 import type { TravelMatch } from "@/lib/types/api";
 
 interface AcceptMatchModalProps {
   open: boolean;
   onClose: () => void;
-  onAccept: (selection: { driverId?: string; helperIds?: string[] }) => void;
+  onAccept: () => void;
   onReject: () => void;
   match: TravelMatch | null;
+  /** Config activa elegida al ponerse disponible: define quién ejecuta el viaje. */
+  availability?: CharterAvailabilityState | null;
   isLoading?: boolean;
   error?: string | null;
 }
-
-const SELF_DRIVER_VALUE = "__self__";
 
 export function AcceptMatchModal({
   open,
@@ -47,54 +42,33 @@ export function AcceptMatchModal({
   onAccept,
   onReject,
   match,
+  availability = null,
   isLoading = false,
   error = null,
 }: AcceptMatchModalProps) {
+  const { user } = useAuthStore();
   const { data: clientFeedback } = useUserFeedback(match?.userId ?? "");
   const { data: myDrivers = [] } = useMyDrivers();
   const { data: myHelpers = [] } = useMyHelpers();
 
-  const [driverSelection, setDriverSelection] = useState<string>(SELF_DRIVER_VALUE);
-  const [selectedHelperIds, setSelectedHelperIds] = useState<string[]>([]);
-
-  useEffect(() => {
-    if (open) {
-      setDriverSelection(SELF_DRIVER_VALUE);
-      setSelectedHelperIds([]);
-    }
-  }, [open]);
-
   if (!match) return null;
 
-  const availableDrivers = myDrivers.filter(
-    (d) => d.verificationStatus === "verified" && d.isEnabled,
-  );
-  const availableHelpers = myHelpers.filter(
-    (h) => h.verificationStatus === "verified" && h.isEnabled,
-  );
-
-  const maxHelpers = match.workersCount ?? 0;
-  const showDriverPicker = availableDrivers.length > 0;
-  const showHelperPicker = availableHelpers.length > 0 && maxHelpers > 0;
-
-  const toggleHelper = (id: string) => {
-    setSelectedHelperIds((current) => {
-      if (current.includes(id)) {
-        return current.filter((x) => x !== id);
-      }
-      if (current.length >= maxHelpers) {
-        return current;
-      }
-      return [...current, id];
-    });
-  };
+  // Resolver la identidad del ejecutor activo (lo que el cliente ya vio).
+  const activeDriver = availability?.activeDriverId
+    ? myDrivers.find((d) => d.id === availability.activeDriverId)
+    : null;
+  const activeDriverName = activeDriver
+    ? `${activeDriver.firstName} ${activeDriver.lastName}`.trim()
+    : `${user?.name ?? "Vos"} (titular)`;
+  const activeHelperNames = (availability?.activeHelperIds ?? [])
+    .map((id) => myHelpers.find((h) => h.id === id))
+    .filter(Boolean)
+    .map((h) => `${h!.firstName} ${h!.lastName}`.trim());
 
   const isValidState = match.status === "pending" || match.status === "searching";
 
   const handleAccept = () => {
-    const driverId = driverSelection !== SELF_DRIVER_VALUE ? driverSelection : undefined;
-    const helperIds = selectedHelperIds.length > 0 ? selectedHelperIds : undefined;
-    onAccept({ driverId, helperIds });
+    onAccept();
   };
 
   return (
@@ -195,77 +169,24 @@ export function AcceptMatchModal({
             </Box>
           </Box>
 
-          {!showDriverPicker && (
-            <Box sx={{ p: 1.5, bgcolor: "background.default", borderRadius: 1.5, display: "flex", alignItems: "center", gap: 1 }}>
-              <Person sx={{ fontSize: 18, color: "secondary.main" }} />
-              <Box>
-                <Typography variant="caption" color="text.secondary" sx={{ display: "block", fontSize: "0.7rem", fontWeight: 600 }}>
-                  Conductor
+          {/* Ejecutor activo (read-only): se eligió al ponerse disponible.
+              Es lo que el cliente ya vio al seleccionar este charter. */}
+          <Box sx={{ p: 1.5, bgcolor: "background.default", borderRadius: 1.5, display: "flex", alignItems: "center", gap: 1 }}>
+            <Person sx={{ fontSize: 18, color: "secondary.main" }} />
+            <Box sx={{ flex: 1, minWidth: 0 }}>
+              <Typography variant="caption" color="text.secondary" sx={{ display: "block", fontSize: "0.7rem", fontWeight: 600 }}>
+                Conduce
+              </Typography>
+              <Typography variant="body2" sx={{ fontWeight: 600, fontSize: "0.85rem" }} noWrap>
+                {activeDriverName}
+              </Typography>
+              {activeHelperNames.length > 0 && (
+                <Typography variant="caption" color="text.secondary" sx={{ fontSize: "0.7rem" }} noWrap>
+                  Ayudantes: {activeHelperNames.join(", ")}
                 </Typography>
-                <Typography variant="body2" sx={{ fontWeight: 600, fontSize: "0.85rem" }}>
-                  Conduce: vos (titular)
-                </Typography>
-              </Box>
+              )}
             </Box>
-          )}
-
-          {showDriverPicker && (
-            <Box sx={{ p: 1.5, bgcolor: "background.default", borderRadius: 1.5 }}>
-              <FormControl component="fieldset" fullWidth>
-                <FormLabel sx={{ fontSize: "0.8rem", fontWeight: 600, mb: 0.5 }}>
-                  ¿Quién conduce?
-                </FormLabel>
-                <RadioGroup
-                  value={driverSelection}
-                  onChange={(e) => setDriverSelection(e.target.value)}
-                >
-                  <FormControlLabel
-                    value={SELF_DRIVER_VALUE}
-                    control={<Radio size="small" />}
-                    label="Yo (titular)"
-                  />
-                  {availableDrivers.map((d) => (
-                    <FormControlLabel
-                      key={d.id}
-                      value={d.id}
-                      control={<Radio size="small" />}
-                      label={`${d.firstName} ${d.lastName}`}
-                    />
-                  ))}
-                </RadioGroup>
-              </FormControl>
-            </Box>
-          )}
-
-          {showHelperPicker && (
-            <Box sx={{ p: 1.5, bgcolor: "background.default", borderRadius: 1.5 }}>
-              <FormControl component="fieldset" fullWidth>
-                <FormLabel sx={{ fontSize: "0.8rem", fontWeight: 600, mb: 0.5 }}>
-                  Ayudantes (máx {maxHelpers})
-                </FormLabel>
-                <Stack>
-                  {availableHelpers.map((h) => {
-                    const checked = selectedHelperIds.includes(h.id);
-                    const disabled = !checked && selectedHelperIds.length >= maxHelpers;
-                    return (
-                      <FormControlLabel
-                        key={h.id}
-                        control={
-                          <Checkbox
-                            size="small"
-                            checked={checked}
-                            disabled={disabled}
-                            onChange={() => toggleHelper(h.id)}
-                          />
-                        }
-                        label={`${h.firstName} ${h.lastName}`}
-                      />
-                    );
-                  })}
-                </Stack>
-              </FormControl>
-            </Box>
-          )}
+          </Box>
         </Stack>
       </DialogContent>
 

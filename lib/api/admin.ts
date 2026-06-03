@@ -482,4 +482,70 @@ export const adminApi = {
     // biome-ignore lint/style/noNonNullAssertion: axios response guarantees data
     return response.data.data!;
   },
+
+  // ============================================
+  // CHARTER: DETALLE CONSOLIDADO + SANCIÓN A NIVEL CUENTA
+  // ============================================
+
+  /**
+   * Detalle consolidado de una cuenta charter: titular + vehículos +
+   * conductores + ayudantes (con documentos) + config activa.
+   * GET /users/:id/charter-detail
+   */
+  getCharterDetail: async (charterId: string): Promise<CharterFullDetail> => {
+    const response = await api.get<ApiResponse<CharterFullDetail>>(
+      `/users/${charterId}/charter-detail`,
+    );
+    // biome-ignore lint/style/noNonNullAssertion: axios response guarantees data
+    return response.data.data!;
+  },
+
+  /**
+   * Sanción a nivel cuenta (el titular es la unidad punible).
+   * PATCH /users/:id/account-status
+   */
+  updateAccountStatus: async (
+    charterId: string,
+    status: "active" | "warned" | "banned",
+    note?: string,
+  ): Promise<User> => {
+    const response = await api.patch<ApiResponse<User>>(
+      `/users/${charterId}/account-status`,
+      { status, note },
+    );
+    // biome-ignore lint/style/noNonNullAssertion: axios response guarantees data
+    return response.data.data!;
+  },
 };
+
+/** Detalle consolidado del charter para el panel admin. */
+export interface CharterFullDetail extends Omit<User, "charterAvailability"> {
+  accountStatus?: "active" | "warned" | "banned";
+  accountStatusNote?: string | null;
+  userDocuments?: UserDocument[];
+  vehicles?: (Vehicle & { documents?: unknown[] })[];
+  charterDrivers?: Array<{
+    id: string;
+    firstName: string;
+    lastName: string;
+    phone?: string | null;
+    photoUrl?: string | null;
+    verificationStatus: string;
+    isEnabled: boolean;
+    documents?: Array<{ id: string; type: string; side?: string | null; fileUrl: string; status: string }>;
+  }>;
+  charterHelpers?: Array<{
+    id: string;
+    firstName: string;
+    lastName: string;
+    photoUrl?: string | null;
+    verificationStatus: string;
+    isEnabled: boolean;
+    documents?: Array<{ id: string; type: string; side?: string | null; fileUrl: string; status: string }>;
+  }>;
+  charterAvailability?: {
+    isAvailable: boolean;
+    vehicle?: { brand?: string | null; model?: string | null; plate?: string | null } | null;
+    activeDriver?: { firstName: string; lastName: string } | null;
+  } | null;
+}

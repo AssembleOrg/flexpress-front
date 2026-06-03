@@ -4,11 +4,11 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import toast from "react-hot-toast";
 import { adminApi } from "@/lib/api/admin";
 import { queryKeys } from "@/lib/hooks/queries/queryFactory";
-import type { User, Report, SystemConfig, Vehicle } from "@/lib/types/api";
 import type {
   UpdateReportRequest,
   UpdateSystemConfigRequest,
 } from "@/lib/types/admin";
+import type { Report, SystemConfig, User, Vehicle } from "@/lib/types/api";
 
 /**
  * Admin Mutation Hooks
@@ -233,6 +233,54 @@ export function useVerifyVehicle() {
     onError: (error) => {
       console.error("Error verifying vehicle:", error);
       toast.error("Error al procesar la verificación del vehículo");
+    },
+  });
+}
+
+// ============================================
+// SANCIÓN A NIVEL CUENTA (el titular es la unidad punible)
+// ============================================
+
+/**
+ * Advertir o bloquear una cuenta charter.
+ * PATCH /users/:id/account-status
+ */
+export function useUpdateAccountStatus() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      charterId,
+      status,
+      note,
+    }: {
+      charterId: string;
+      status: "active" | "warned" | "banned";
+      note?: string;
+    }) => adminApi.updateAccountStatus(charterId, status, note),
+
+    onSuccess: (_, { charterId, status }) => {
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.admin.users.detail(charterId),
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["admin", "charter-detail", charterId],
+      });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.admin.users.all(),
+      });
+
+      const labels = {
+        active: "Cuenta reactivada",
+        warned: "Advertencia aplicada",
+        banned: "Cuenta bloqueada",
+      } as const;
+      toast.success(labels[status]);
+    },
+
+    onError: (error) => {
+      console.error("Error updating account status:", error);
+      toast.error("Error al actualizar el estado de la cuenta");
     },
   });
 }

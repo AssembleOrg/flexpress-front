@@ -22,14 +22,16 @@ function renderPersonnelSection(
   const { driver, helpers } = personnel.snapshot;
 
   const startY = ((doc as any).lastAutoTable?.finalY ?? 100) + 5;
-  const driverLabel = driver.id === null ? `${driver.name}` : driver.name;
+  // driver.id === null ⇒ maneja el titular de la cuenta. El nombre del snapshot
+  // ya incluye el sufijo "(titular)" en ese caso.
+  const driverLabel = driver.name;
   const helpersLabel = helpers.length > 0 ? helpers.map((h) => h.name).join(", ") : "—";
 
   autoTable(doc, {
     startY,
     head: [["Equipo del viaje", ""]],
     body: [
-      ["Conductor", driverLabel],
+      ["Conductor asignado", driverLabel],
       ["Ayudantes", helpersLabel],
     ],
     theme: "grid",
@@ -118,7 +120,7 @@ export function generateClientReceipt(trip: Trip) {
     startY: 85,
     head: [["Concepto", "Detalle"]],
     body: [
-      ["Chófer Asignado", trip.charter?.name || "No asignado"],
+      ["Titular de cuenta", trip.charter?.name || "No asignado"],
       ["Punto de Origen", match?.pickupAddress || "No especificado"],
       ["Punto de Destino", match?.destinationAddress || "No especificado"],
       ["Distancia Recorrida", `${match?.distanceKm?.toFixed(1) || "0"} km`],
@@ -252,7 +254,7 @@ export function generateCharterReceipt(trip: Trip) {
     startY: 85,
     head: [["Concepto", "Detalle"]],
     body: [
-      ["Chófer", charterName],
+      ["Titular de cuenta", charterName],
       ["Cliente Atendido", trip.user?.name || "No especificado"],
       ["Punto de Origen", match?.pickupAddress || "No especificado"],
       ["Punto de Destino", match?.destinationAddress || "No especificado"],

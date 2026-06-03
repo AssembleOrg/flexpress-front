@@ -9,6 +9,7 @@ import {
   LocalShipping,
   LocationOn,
   Map,
+  Navigation,
   ReportProblem,
 } from "@mui/icons-material";
 import {
@@ -24,6 +25,7 @@ import {
   Stack,
   Typography,
 } from "@mui/material";
+import axios from "axios";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
@@ -39,20 +41,20 @@ import LeafletMap, {
   type LeafletMapHandle,
   type MapMarker,
 } from "@/components/ui/LeafletMap";
+import { conversationApi } from "@/lib/api/conversations";
 import { MOBILE_BOTTOM_NAV_HEIGHT } from "@/lib/constants/mobileDesign";
 import { useToggleAvailability } from "@/lib/hooks/mutations/useTravelMatchMutations";
 import { useCharterCompleteTrip } from "@/lib/hooks/mutations/useTripMutations";
 import {
-  useMatch,
   useCharterAvailability,
+  useMatch,
 } from "@/lib/hooks/queries/useTravelMatchQueries";
 import { useTrip } from "@/lib/hooks/queries/useTripQueries";
 import { useMyVehicles } from "@/lib/hooks/queries/useVehicleQueries";
 import { useAuthStore } from "@/lib/stores/authStore";
-import { conversationApi } from "@/lib/api/conversations";
-import axios from "axios";
 import type { User, UserRole } from "@/lib/types/api";
-import { generateCharterReceipt, downloadPDF } from "@/lib/utils/pdfGenerator";
+import { getDirectionsUrl } from "@/lib/utils/mapLinks";
+import { downloadPDF, generateCharterReceipt } from "@/lib/utils/pdfGenerator";
 
 export default function DriverMatchingDetailPage() {
   const params = useParams();
@@ -714,6 +716,36 @@ export default function DriverMatchingDetailPage() {
                     Ruta Completa
                   </Button>
                 </Box>
+
+                {/* Botón primario: abrir Google Maps en modo navegación */}
+                <Button
+                  variant="contained"
+                  fullWidth
+                  startIcon={<Navigation />}
+                  onClick={() =>
+                    window.open(
+                      getDirectionsUrl(
+                        Number.parseFloat(match.pickupLatitude),
+                        Number.parseFloat(match.pickupLongitude),
+                        Number.parseFloat(match.destinationLatitude),
+                        Number.parseFloat(match.destinationLongitude),
+                      ),
+                      "_blank",
+                      "noopener",
+                    )
+                  }
+                  sx={{
+                    mt: 1,
+                    py: 1.1,
+                    borderRadius: 2.5,
+                    textTransform: "none",
+                    fontWeight: 700,
+                    boxShadow: "none",
+                    "&:hover": { boxShadow: "none" },
+                  }}
+                >
+                  Cómo llegar
+                </Button>
               </CardContent>
             </Card>
 

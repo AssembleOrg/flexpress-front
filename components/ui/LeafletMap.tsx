@@ -96,34 +96,43 @@ const LeafletMap = forwardRef<LeafletMapHandle, LeafletMapProps>(
     const markersRef = useRef<L.Marker[]>([]);
     const polylineRef = useRef<L.Polyline | null>(null);
     const [isMapReady, setIsMapReady] = useState(false);
+    // Clave estable de las coords ya auto-encajadas. Evita re-encajar el
+    // viewport (resetear el zoom del usuario) en re-renders donde el array
+    // `markers` cambia de referencia pero NO de coordenadas (p.ej. el
+    // countdown del cliente re-renderiza cada segundo).
+    const lastFitKeyRef = useRef<string>("");
 
     // Expose methods to parent component
-    useImperativeHandle(ref, () => ({
-      centerOnMarker: (lat: number, lon: number, zoom = 15) => {
-        if (!mapRef.current) return;
+    useImperativeHandle(
+      ref,
+      () => ({
+        centerOnMarker: (lat: number, lon: number, zoom = 15) => {
+          if (!mapRef.current) return;
 
-        mapRef.current.flyTo([lat, lon], zoom, {
-          duration: 0.8,
-          easeLinearity: 0.25,
-        });
-      },
-      fitAllMarkers: () => {
-        if (!mapRef.current || markersRef.current.length === 0) return;
-
-        const bounds = L.latLngBounds([]);
-        markersRef.current.forEach((marker) => {
-          bounds.extend(marker.getLatLng());
-        });
-
-        if (bounds.isValid() && markersRef.current.length > 1) {
-          mapRef.current.fitBounds(bounds, {
-            padding: [50, 50],
-            maxZoom: 15,
-            animate: true, // With animation for manual call
+          mapRef.current.flyTo([lat, lon], zoom, {
+            duration: 0.8,
+            easeLinearity: 0.25,
           });
-        }
-      },
-    }), [isMapReady]);
+        },
+        fitAllMarkers: () => {
+          if (!mapRef.current || markersRef.current.length === 0) return;
+
+          const bounds = L.latLngBounds([]);
+          markersRef.current.forEach((marker) => {
+            bounds.extend(marker.getLatLng());
+          });
+
+          if (bounds.isValid() && markersRef.current.length > 1) {
+            mapRef.current.fitBounds(bounds, {
+              padding: [50, 50],
+              maxZoom: 15,
+              animate: true, // With animation for manual call
+            });
+          }
+        },
+      }),
+      [isMapReady],
+    );
 
     // Initialize map
     useEffect(() => {
@@ -174,7 +183,16 @@ const LeafletMap = forwardRef<LeafletMapHandle, LeafletMapProps>(
       };
     }, []);
 
-    // Update markers
+    // Clave estable derivada solo de las coordenadas (no de la referencia
+    // del array). Es la señal real de "los marcadores cambiaron".
+    const markersKey = markers
+      .map((m) => `${m.lat},${m.lon},${m.type ?? ""}`)
+      .join("|");
+
+    // Update markers. `markers` se lee dentro vía closure; `markersKey`
+    // (derivada de sus coords) es la señal real de cambio — depender del array
+    // recrearía el viewport en cada re-render y resetearía el zoom del usuario.
+    // biome-ignore lint/correctness/useExhaustiveDependencies: ver nota arriba
     useEffect(() => {
       if (!mapRef.current || !isMapReady) {
         return;
@@ -256,22 +274,29 @@ const LeafletMap = forwardRef<LeafletMapHandle, LeafletMapProps>(
         }).addTo(mapRef.current);
       }
 
-      // Fit bounds to show all markers
-      if (bounds.isValid() && markers.length > 1) {
-        setTimeout(() => {
-          if (!mapRef.current) return;
-          mapRef.current.invalidateSize(); // Ensure dimensions are correct
-          mapRef.current.fitBounds(bounds, {
-            padding: [50, 50], // 50px padding on all sides
-            maxZoom: 15, // Don't zoom in too close
-            animate: false, // No animation on initial load
-          });
-        }, 100);
-      } else if (markers.length === 1) {
-        // If only one marker, center on it
-        mapRef.current?.setView([markers[0].lat, markers[0].lon], 15);
+      // Fit bounds to show all markers — SOLO cuando las coordenadas cambian
+      // de verdad. Si la referencia del array cambió pero las coords son las
+      // mismas, no tocamos el viewport para respetar el zoom/pan del usuario.
+      const coordsChanged = markersKey !== lastFitKeyRef.current;
+      if (coordsChanged) {
+        lastFitKeyRef.current = markersKey;
+
+        if (bounds.isValid() && markers.length > 1) {
+          setTimeout(() => {
+            if (!mapRef.current) return;
+            mapRef.current.invalidateSize(); // Ensure dimensions are correct
+            mapRef.current.fitBounds(bounds, {
+              padding: [50, 50], // 50px padding on all sides
+              maxZoom: 15, // Don't zoom in too close
+              animate: false, // No animation on initial load
+            });
+          }, 100);
+        } else if (markers.length === 1) {
+          // If only one marker, center on it
+          mapRef.current?.setView([markers[0].lat, markers[0].lon], 15);
+        }
       }
-    }, [markers, isMapReady, allowDragging, onMarkerDrag]);
+    }, [markersKey, isMapReady, allowDragging, onMarkerDrag]);
 
     if (isLoading) {
       return (

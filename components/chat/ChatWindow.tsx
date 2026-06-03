@@ -34,6 +34,14 @@ interface ChatWindowProps {
     name: string;
     avatar?: string | null;
   };
+  /**
+   * Conductor activo que ejecuta el viaje (sólo relevante del lado cliente).
+   * Da transparencia: el cliente coordina sabiendo quién va y su teléfono.
+   */
+  activeDriver?: {
+    name: string;
+    phone?: string | null;
+  } | null;
   onClose: () => void;
 }
 
@@ -45,6 +53,7 @@ interface ChatWindowProps {
 export function ChatWindow({
   conversationId,
   otherUser,
+  activeDriver = null,
   onClose,
 }: ChatWindowProps) {
   const { user } = useAuthStore();
@@ -236,15 +245,27 @@ export function ChatWindow({
       <CardHeader
         title={otherUser.name}
         subheader={
-          isConnected ? (
-            <Typography variant="caption" color="success.main">
-              ● En línea
-            </Typography>
-          ) : (
-            <Typography variant="caption" color="text.secondary">
-              Desconectado
-            </Typography>
-          )
+          <Box>
+            {isConnected ? (
+              <Typography variant="caption" color="success.main">
+                ● En línea
+              </Typography>
+            ) : (
+              <Typography variant="caption" color="text.secondary">
+                Desconectado
+              </Typography>
+            )}
+            {activeDriver && (
+              <Typography
+                variant="caption"
+                color="text.secondary"
+                sx={{ display: "block", lineHeight: 1.3 }}
+              >
+                Conduce: {activeDriver.name}
+                {activeDriver.phone ? ` · ${activeDriver.phone}` : ""}
+              </Typography>
+            )}
+          </Box>
         }
         action={
           <Box sx={{ display: "flex", gap: 1 }}>

@@ -25,17 +25,8 @@ import {
   CardContent,
   Chip,
   CircularProgress,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogTitle,
   Divider,
   Fab,
-  FormControlLabel,
-  FormControlLabel as FormControlLabelRadio,
-  IconButton,
-  Radio,
-  RadioGroup,
   Stack,
   Switch,
   Typography,
@@ -51,15 +42,22 @@ import { MobileMatchCard } from "@/components/cards/MobileMatchCard";
 import { MobileContainer } from "@/components/layout/MobileContainer";
 import { MatchExpirationTimer } from "@/components/MatchExpirationTimer";
 import { AcceptMatchModal } from "@/components/modals/AcceptMatchModal";
+import { ActivationModal } from "@/components/modals/ActivationModal";
 import { CreditPackagesShowcase } from "@/components/modals/CreditPackagesShowcase";
 import { RespondInquiryModal } from "@/components/modals/RespondInquiryModal";
+import { AccountStatusBanner } from "@/components/ui/AccountStatusBanner";
 import { WelcomeHeader } from "@/components/ui/WelcomeHeader";
+import { authApi } from "@/lib/api/auth";
 import {
   useRespondToMatch,
   useToggleAvailability,
 } from "@/lib/hooks/mutations/useTravelMatchMutations";
 import { queryKeys } from "@/lib/hooks/queries/queryFactory";
 import { useReceivedInquiries } from "@/lib/hooks/queries/useAvailabilityInquiriesQueries";
+import {
+  useMyDrivers,
+  useMyHelpers,
+} from "@/lib/hooks/queries/useCharterPersonnelQueries";
 import { useUserFeedback } from "@/lib/hooks/queries/useFeedbackQueries";
 import { usePublicPricing } from "@/lib/hooks/queries/useSystemConfigQueries";
 import {
@@ -78,7 +76,7 @@ const MotionCard = motion.create(Card);
 export default function DriverDashboard() {
   const router = useRouter();
   const queryClient = useQueryClient();
-  const { user, gender, returnToOrigin } = useAuthStore();
+  const { user, gender, returnToOrigin, updateUser } = useAuthStore();
   const { data: availabilityData } = useCharterAvailability();
   const isAvailable = availabilityData?.isAvailable ?? false;
   const toggleMutation = useToggleAvailability();
@@ -112,11 +110,31 @@ export default function DriverDashboard() {
     router.replace("/driver/dashboard");
   }, [searchParams, receivedInquiries, router]);
 
-  // Vehicle selection modal state (UI only — temporary while modal is open)
-  const [vehicleSelectOpen, setVehicleSelectOpen] = useState(false);
-  const [selectedVehicleId, setSelectedVehicleId] = useState<string>("");
-  const [pendingAvailabilityToggle, setPendingAvailabilityToggle] =
-    useState(false);
+  // Refrescar el perfil al montar para traer accountStatus fresco (warning/ban)
+  // sin WebSocket: reusa el patrón post-login (PATCH /users/:id con body vacío
+  // devuelve el perfil completo). Se ejecuta una vez al entrar al dashboard.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: solo al montar
+  useEffect(() => {
+    if (!user?.id) return;
+    authApi
+      .updateUser(user.id, {})
+      .then((fresh) => updateUser(fresh))
+      .catch(() => {
+        // No crítico: si falla, el dashboard sigue con el user en store.
+      });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Activation modal state (elegir conductor + vehículo + ayudantes al activarse)
+  const [activationOpen, setActivationOpen] = useState(false);
+  const { data: myDrivers = [] } = useMyDrivers();
+  const { data: myHelpers = [] } = useMyHelpers();
+  const hasExtraDrivers = myDrivers.some(
+    (d) => d.verificationStatus === "verified" && d.isEnabled,
+  );
+  const hasHelpers = myHelpers.some(
+    (h) => h.verificationStatus === "verified" && h.isEnabled,
+  );
 
   // Active vehicle ID comes from server state (availability query)
   const activeVehicleId = availabilityData?.vehicleId ?? null;
@@ -233,50 +251,64 @@ export default function DriverDashboard() {
     if (verifiedVehicles.length === 0) {
       toast.error("Necesitás al menos 1 vehículo verificado para activarte.");
       return;
-    } else if (verifiedVehicles.length === 1) {
-      // Un vehículo: asignar automáticamente sin modal
-      queryClient.setQueryData(availabilityKey, {
-        isAvailable: true,
-        vehicleId: verifiedVehicles[0].id,
-      });
-      toggleMutation.mutate(
-        { isAvailable: true, vehicleId: verifiedVehicles[0].id },
-        {
-          onSuccess: () => toast.success("Estás en línea"),
-          onError: () =>
-            queryClient.setQueryData(
-              availabilityKey,
-              (old: typeof availabilityData) => ({
-                ...old,
-                isAvailable: false,
-                vehicleId: old?.vehicleId ?? null,
-              }),
-            ),
-        },
-      );
-    } else {
-      // Múltiples vehículos: abrir modal de selección
-      setSelectedVehicleId("");
-      setVehicleSelectOpen(true);
-      setPendingAvailabilityToggle(true);
     }
-  };
 
-  const handleVehicleSelectConfirm = () => {
-    if (!selectedVehicleId) {
-      toast.error("Selecciona un vehículo");
+    // Si el charter tiene conductores extra o más de un vehículo, abrimos el
+    // modal de activación para que elija la config (conductor + vehículo +
+    // ayudantes). Caso simple (titular, 1 vehículo, sin extras): activar directo.
+    const hasExtras =
+      hasExtraDrivers || hasHelpers || verifiedVehicles.length > 1;
+    if (hasExtras) {
+      setActivationOpen(true);
       return;
     }
-    const availabilityKey = queryKeys.charter.availability(user?.id || "");
-    setVehicleSelectOpen(false);
+
+    // Caso simple: titular con un único vehículo verificado.
     queryClient.setQueryData(availabilityKey, {
       isAvailable: true,
-      vehicleId: selectedVehicleId,
+      vehicleId: verifiedVehicles[0].id,
+      activeDriverId: null,
+      activeHelperIds: [],
     });
     toggleMutation.mutate(
-      { isAvailable: true, vehicleId: selectedVehicleId },
+      {
+        isAvailable: true,
+        vehicleId: verifiedVehicles[0].id,
+        activeDriverId: null,
+        activeHelperIds: [],
+      },
       {
         onSuccess: () => toast.success("Estás en línea"),
+        onError: () =>
+          queryClient.setQueryData(
+            availabilityKey,
+            (old: typeof availabilityData) => ({
+              ...old,
+              isAvailable: false,
+              vehicleId: old?.vehicleId ?? null,
+            }),
+          ),
+      },
+    );
+  };
+
+  const handleActivationConfirm = (selection: {
+    vehicleId: string;
+    activeDriverId: string | null;
+    activeHelperIds: string[];
+  }) => {
+    const availabilityKey = queryKeys.charter.availability(user?.id || "");
+    queryClient.setQueryData(availabilityKey, {
+      isAvailable: true,
+      ...selection,
+    });
+    toggleMutation.mutate(
+      { isAvailable: true, ...selection },
+      {
+        onSuccess: () => {
+          setActivationOpen(false);
+          toast.success("Estás en línea");
+        },
         onError: () => {
           queryClient.setQueryData(
             availabilityKey,
@@ -286,18 +318,13 @@ export default function DriverDashboard() {
               vehicleId: old?.vehicleId ?? null,
             }),
           );
-          setSelectedVehicleId("");
-          setVehicleSelectOpen(false);
         },
       },
     );
-    setPendingAvailabilityToggle(false);
   };
 
-  const handleVehicleSelectCancel = () => {
-    setVehicleSelectOpen(false);
-    setSelectedVehicleId("");
-    setPendingAvailabilityToggle(false);
+  const handleActivationCancel = () => {
+    setActivationOpen(false);
   };
 
   const handleRejectMatch = (matchId: string) => {
@@ -536,6 +563,16 @@ export default function DriverDashboard() {
           avatarUrl={user?.avatar ?? undefined}
         />
 
+        {/* Aviso de estado de cuenta (advertencia / bloqueo) */}
+        {(user?.accountStatus === "warned" ||
+          user?.accountStatus === "banned") && (
+          <AccountStatusBanner
+            status={user.accountStatus}
+            note={user.accountStatusNote}
+            contactEmail={pricing?.contactEmail}
+          />
+        )}
+
         {/* Status Toggle - Mobile-First */}
         <MotionCard
           initial={{ opacity: 0, y: 20 }}
@@ -692,46 +729,22 @@ export default function DriverDashboard() {
           </CardContent>
         </MotionCard>
 
-        {/* Vehicle Selection Dialog */}
-        <Dialog
-          open={vehicleSelectOpen}
-          onClose={handleVehicleSelectCancel}
-          maxWidth="sm"
-          fullWidth
-        >
-          <DialogTitle>Selecciona tu vehículo</DialogTitle>
-          <DialogContent>
-            <Box sx={{ pt: 2 }}>
-              <RadioGroup
-                value={selectedVehicleId}
-                onChange={(e) => setSelectedVehicleId(e.target.value)}
-              >
-                {myVehicles
-                  .filter(
-                    (v) => v.verificationStatus === VerificationStatus.VERIFIED,
-                  )
-                  .map((vehicle) => (
-                    <FormControlLabelRadio
-                      key={vehicle.id}
-                      value={vehicle.id}
-                      control={<Radio />}
-                      label={`${vehicle.brand || "Sin marca"} ${vehicle.model || ""} (${vehicle.plate})`}
-                    />
-                  ))}
-              </RadioGroup>
-            </Box>
-          </DialogContent>
-          <DialogActions>
-            <Button onClick={handleVehicleSelectCancel}>Cancelar</Button>
-            <Button
-              onClick={handleVehicleSelectConfirm}
-              variant="contained"
-              disabled={!selectedVehicleId || toggleMutation.isPending}
-            >
-              Confirmar
-            </Button>
-          </DialogActions>
-        </Dialog>
+        {/* Activation Modal: elegir conductor + vehículo + ayudantes */}
+        <ActivationModal
+          open={activationOpen}
+          onClose={handleActivationCancel}
+          onConfirm={handleActivationConfirm}
+          isLoading={toggleMutation.isPending}
+          initial={
+            availabilityData
+              ? {
+                  vehicleId: availabilityData.vehicleId ?? undefined,
+                  activeDriverId: availabilityData.activeDriverId ?? null,
+                  activeHelperIds: availabilityData.activeHelperIds ?? [],
+                }
+              : null
+          }
+        />
 
         {/* Stats row: Tarifa + Reputación + Créditos */}
         <MotionCard
@@ -1345,15 +1358,13 @@ export default function DriverDashboard() {
             setAcceptModalOpen(false);
             setSelectedMatchForAccept(null);
           }}
-          onAccept={async (selection) => {
+          onAccept={async () => {
             if (selectedMatchForAccept) {
               try {
-                // Use mutateAsync to wait for the response
+                // El personal ya fue elegido al ponerse disponible; aceptar solo confirma.
                 await respondMutation.mutateAsync({
                   matchId: selectedMatchForAccept.id,
                   accept: true,
-                  driverId: selection.driverId,
-                  helperIds: selection.helperIds,
                 });
 
                 setAcceptModalOpen(false);
@@ -1394,6 +1405,7 @@ export default function DriverDashboard() {
             }
           }}
           match={selectedMatchForAccept}
+          availability={availabilityData}
           isLoading={respondMutation.isPending}
         />
 

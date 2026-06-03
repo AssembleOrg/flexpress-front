@@ -126,6 +126,46 @@ export function CharterCard({
           </Box>
         </Box>
 
+        {/* Hoy conduce: ejecutor activo (la cara de la oferta). Transparencia:
+            el cliente ve quién va antes de elegir. */}
+        {charter.activeDriverName && (
+          <Box
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              gap: 1,
+              mb: 1,
+              p: 1,
+              borderRadius: 1.5,
+              bgcolor: "action.hover",
+            }}
+          >
+            <Avatar
+              src={charter.activeDriverAvatar || undefined}
+              sx={{ width: 28, height: 28, fontSize: "0.8rem" }}
+            >
+              {charter.activeDriverName.charAt(0)}
+            </Avatar>
+            <Box sx={{ minWidth: 0, flex: 1 }}>
+              <Typography
+                variant="caption"
+                color="text.secondary"
+                sx={{ display: "block", fontSize: "0.65rem", fontWeight: 600, lineHeight: 1.1 }}
+              >
+                HOY CONDUCE
+              </Typography>
+              <Typography variant="body2" sx={{ fontWeight: 600, lineHeight: 1.2 }} noWrap>
+                {charter.activeDriverName}
+                {charter.isTitularDriving && (
+                  <Typography component="span" variant="caption" color="text.secondary" sx={{ ml: 0.5 }}>
+                    · titular
+                  </Typography>
+                )}
+              </Typography>
+            </Box>
+          </Box>
+        )}
+
         {/* Zona de trabajo */}
         <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1, flexWrap: "wrap" }}>
           <LocationOn sx={{ fontSize: 15, color: "secondary.main", flexShrink: 0 }} />
