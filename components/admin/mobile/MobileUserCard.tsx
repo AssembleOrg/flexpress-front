@@ -1,24 +1,31 @@
-import { Card, CardContent, Box, Typography, Avatar, Chip, IconButton, Tooltip, Stack } from "@mui/material";
-import { Edit as EditIcon, Delete as DeleteIcon } from "@mui/icons-material";
+import {
+  Box,
+  Typography,
+  Avatar,
+  Stack,
+  alpha,
+} from "@mui/material";
+import {
+  MonetizationOn as CreditIcon,
+  ChevronRight as ChevronRightIcon,
+} from "@mui/icons-material";
 import type { User } from "@/lib/types/api";
 
 interface MobileUserCardProps {
   user: User;
-  onEdit?: (user: User) => void;
-  onDelete?: (user: User) => void;
-  currentUserRole?: string;
+  onClick?: () => void;
 }
 
 const getRoleColor = (role: string) => {
   switch (role) {
     case "admin":
-      return { bg: "#380116", color: "white" };
+      return { bg: "#380116", color: "white", ring: "#380116" };
     case "moderator":
-      return { bg: "#4b011d", color: "white" };
+      return { bg: "#4b011d", color: "white", ring: "#4b011d" };
     case "charter":
-      return { bg: "#dca621", color: "#212121" };
+      return { bg: "#dca621", color: "#212121", ring: "#dca621" };
     default:
-      return { bg: "#757575", color: "white" };
+      return { bg: "#757575", color: "white", ring: "#757575" };
   }
 };
 
@@ -35,101 +42,99 @@ const getRoleLabel = (role: string) => {
   }
 };
 
-export function MobileUserCard({ user, onEdit, onDelete, currentUserRole }: MobileUserCardProps) {
+export function MobileUserCard({ user, onClick }: MobileUserCardProps) {
   const roleColors = getRoleColor(user.role);
-  const isAdmin = currentUserRole === "admin";
 
   return (
-    <Card
+    <Box
+      onClick={onClick}
       sx={{
-        mb: 2,
-        borderLeft: "4px solid",
-        borderLeftColor: "secondary.main",
+        mb: 1.5,
+        borderRadius: "16px",
+        bgcolor: "background.paper",
+        boxShadow: "0 2px 12px rgba(0,0,0,0.07)",
+        overflow: "hidden",
+        cursor: onClick ? "pointer" : "default",
+        transition: "box-shadow 0.15s ease, transform 0.1s ease",
+        "&:active": {
+          boxShadow: "0 1px 4px rgba(0,0,0,0.05)",
+          transform: "scale(0.985)",
+        },
       }}
     >
-      <CardContent sx={{ p: 2, "&:last-child": { pb: 2 } }}>
-        <Stack direction="row" spacing={1.5} alignItems="flex-start">
-          {/* Avatar */}
-          <Avatar
-            src={user.avatar || undefined}
-            sx={{
-              width: 36,
-              height: 36,
-              bgcolor: "secondary.main",
-            }}
+      <Stack direction="row" alignItems="center" sx={{ p: 1.75, gap: 1.5 }}>
+        {/* Avatar with role ring */}
+        <Avatar
+          src={user.avatar || undefined}
+          sx={{
+            width: 48,
+            height: 48,
+            bgcolor: roleColors.ring,
+            fontSize: "1.1rem",
+            fontWeight: 700,
+            flexShrink: 0,
+            outline: `3px solid ${alpha(roleColors.ring, 0.3)}`,
+            outlineOffset: "2px",
+          }}
+        >
+          {user.name[0]?.toUpperCase()}
+        </Avatar>
+
+        {/* Name + email + credits */}
+        <Box flex={1} minWidth={0}>
+          <Stack direction="row" alignItems="center" justifyContent="space-between" mb={0.25}>
+            <Typography
+              variant="subtitle2"
+              fontWeight={700}
+              fontSize="0.92rem"
+              noWrap
+              sx={{ maxWidth: "60%" }}
+            >
+              {user.name}
+            </Typography>
+            <Box
+              sx={{
+                px: 1,
+                py: 0.25,
+                borderRadius: "20px",
+                bgcolor: roleColors.bg,
+                color: roleColors.color,
+                fontSize: "0.68rem",
+                fontWeight: 600,
+                letterSpacing: "0.02em",
+                lineHeight: 1.6,
+                flexShrink: 0,
+              }}
+            >
+              {getRoleLabel(user.role)}
+            </Box>
+          </Stack>
+
+          <Typography
+            variant="caption"
+            color="text.secondary"
+            noWrap
+            sx={{ display: "block", fontSize: "0.73rem", mb: 0.75 }}
           >
-            {user.name[0]?.toUpperCase()}
-          </Avatar>
+            {user.email}
+          </Typography>
 
-          {/* Content */}
-          <Box flex={1}>
-            <Stack direction="row" justifyContent="space-between" alignItems="center" mb={0.5}>
-              <Typography variant="subtitle2" fontWeight={700} fontSize="0.9rem">
-                {user.name}
-              </Typography>
-              <Chip
-                label={getRoleLabel(user.role)}
-                size="small"
-                sx={{
-                  backgroundColor: roleColors.bg,
-                  color: roleColors.color,
-                  fontSize: "0.7rem",
-                  height: 22,
-                }}
-              />
-            </Stack>
+          <Stack direction="row" alignItems="center" gap={0.4}>
+            <CreditIcon sx={{ fontSize: 14, color: "#dca621" }} />
+            <Typography variant="caption" fontWeight={600} fontSize="0.73rem" color="text.primary">
+              {user.credits ?? 0}
+            </Typography>
+            <Typography variant="caption" fontSize="0.7rem" color="text.secondary">
+              créditos
+            </Typography>
+          </Stack>
+        </Box>
 
-            <Stack direction="row" justifyContent="space-between" alignItems="center">
-              <Chip
-                label={`Créditos: ${user.credits}`}
-                size="small"
-                variant="outlined"
-                sx={{
-                  fontSize: "0.7rem",
-                  height: 22,
-                }}
-              />
-
-              {/* Actions - Only for admin */}
-              {isAdmin && (
-                <Stack direction="row" spacing={0.5}>
-                  {onEdit && (
-                    <Tooltip title="Editar">
-                      <IconButton
-                        size="medium"
-                        onClick={() => onEdit(user)}
-                        sx={{
-                          p: 1.5,
-                          minWidth: 44,
-                          minHeight: 44,
-                        }}
-                      >
-                        <EditIcon sx={{ fontSize: 20 }} />
-                      </IconButton>
-                    </Tooltip>
-                  )}
-                  {onDelete && (
-                    <Tooltip title="Eliminar">
-                      <IconButton
-                        size="medium"
-                        color="error"
-                        onClick={() => onDelete(user)}
-                        sx={{
-                          p: 1.5,
-                          minWidth: 44,
-                          minHeight: 44,
-                        }}
-                      >
-                        <DeleteIcon sx={{ fontSize: 20 }} />
-                      </IconButton>
-                    </Tooltip>
-                  )}
-                </Stack>
-              )}
-            </Stack>
-          </Box>
-        </Stack>
-      </CardContent>
-    </Card>
+        {/* Navigation indicator */}
+        {onClick && (
+          <ChevronRightIcon sx={{ fontSize: 20, color: "text.disabled", flexShrink: 0 }} />
+        )}
+      </Stack>
+    </Box>
   );
 }

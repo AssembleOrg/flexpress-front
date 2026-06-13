@@ -60,10 +60,10 @@ export default function ReportDetailPage() {
       defaultValues: {
         status: report?.status,
         adminNotes: report?.adminNotes || "",
-        creditsToReporter: 0,
-        creditsFromReported: 0,
-        creditsToReported: 0,
-        creditsFromReporter: 0,
+        creditsToReporter: undefined,
+        creditsFromReported: undefined,
+        creditsToReported: undefined,
+        creditsFromReporter: undefined,
         resolvedInFavorOf: undefined,
       },
     });
@@ -74,10 +74,10 @@ export default function ReportDetailPage() {
       reset({
         status: report.status as any,
         adminNotes: report.adminNotes || "",
-        creditsToReporter: report.creditsToReporter ?? 0,
-        creditsFromReported: report.creditsFromReported ?? 0,
-        creditsToReported: report.creditsToReported ?? 0,
-        creditsFromReporter: report.creditsFromReporter ?? 0,
+        creditsToReporter: report.creditsToReporter ?? undefined,
+        creditsFromReported: report.creditsFromReported ?? undefined,
+        creditsToReported: report.creditsToReported ?? undefined,
+        creditsFromReporter: report.creditsFromReporter ?? undefined,
         resolvedInFavorOf: report.resolvedInFavorOf ?? undefined,
       });
     }
@@ -96,10 +96,10 @@ export default function ReportDetailPage() {
   // Reset credit inputs whenever the action is not applicable (anything but resolved)
   useEffect(() => {
     if (watchedStatus !== "resolved") {
-      setValue("creditsToReporter", 0);
-      setValue("creditsFromReported", 0);
-      setValue("creditsToReported", 0);
-      setValue("creditsFromReporter", 0);
+      setValue("creditsToReporter", undefined);
+      setValue("creditsFromReported", undefined);
+      setValue("creditsToReported", undefined);
+      setValue("creditsFromReporter", undefined);
       setValue("resolvedInFavorOf", undefined);
     }
   }, [watchedStatus, setValue]);
@@ -109,10 +109,10 @@ export default function ReportDetailPage() {
       data.status === "resolved"
         ? {
             ...data,
-            creditsToReporter: Number(data.creditsToReporter ?? 0),
-            creditsFromReported: Number(data.creditsFromReported ?? 0),
-            creditsToReported: Number(data.creditsToReported ?? 0),
-            creditsFromReporter: Number(data.creditsFromReporter ?? 0),
+            creditsToReporter: data.creditsToReporter || undefined,
+            creditsFromReported: data.creditsFromReported || undefined,
+            creditsToReported: data.creditsToReported || undefined,
+            creditsFromReporter: data.creditsFromReporter || undefined,
           }
         : {
             status: data.status,

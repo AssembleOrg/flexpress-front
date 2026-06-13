@@ -10,13 +10,16 @@ import {
   Stack,
   TextField,
   Button,
+  IconButton,
   CircularProgress,
   Dialog,
   DialogTitle,
   DialogContent,
   DialogActions,
 } from "@mui/material";
-import { ArrowBack as ArrowBackIcon } from "@mui/icons-material";
+import {
+  ArrowBackIosNew as ArrowBackIosNewIcon,
+} from "@mui/icons-material";
 import { useState, useEffect } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -28,13 +31,14 @@ import {
 } from "@/lib/hooks/mutations/useAdminMutations";
 import { CharterAdminPanel } from "@/components/admin/CharterAdminPanel";
 import { useAuthStore } from "@/lib/stores/authStore";
+import { normalizeArgentinePhone } from "@/lib/utils/phone";
 import type { User } from "@/lib/types/api";
 
 // Form validation schema
 const updateUserSchema = z.object({
   name: z.string().min(1, "El nombre es requerido"),
   email: z.string().email("Email inválido"),
-  number: z.string().min(1, "El teléfono es requerido"),
+  number: z.string().optional(),
   address: z.string().min(1, "La dirección es requerida"),
   credits: z.number().min(0, "Los créditos deben ser positivos"),
   role: z.enum(["admin", "subadmin", "user", "charter"]),
@@ -67,7 +71,7 @@ export default function UserEditPage() {
   const deleteUserMutation = useDeleteUser();
 
   // Form
-  const { control, handleSubmit, reset } = useForm<UpdateUserFormData>({
+  const { control, handleSubmit, reset, formState: { isDirty } } = useForm<UpdateUserFormData>({
     resolver: zodResolver(updateUserSchema),
     defaultValues: {
       name: user?.name || "",
@@ -94,9 +98,22 @@ export default function UserEditPage() {
   }, [user, reset]);
 
   const onSubmit = async (data: UpdateUserFormData) => {
+    const payload = { ...data };
+
+    if (payload.number?.trim()) {
+      const normalized = normalizeArgentinePhone(payload.number.trim());
+      if (normalized) {
+        payload.number = normalized;
+      } else {
+        delete payload.number;
+      }
+    } else {
+      delete payload.number;
+    }
+
     await updateUserMutation.mutateAsync({
       id: userId,
-      data: data as Partial<User>,
+      data: payload as Partial<User>,
     });
   };
 
@@ -135,13 +152,12 @@ export default function UserEditPage() {
   return (
     <Container maxWidth="md" sx={{ py: 4 }}>
       {/* Back Button */}
-      <Button
-        startIcon={<ArrowBackIcon />}
+      <IconButton
         onClick={() => router.back()}
-        sx={{ mb: 3 }}
+        sx={{ mb: 2, color: "text.primary" }}
       >
-        Volver
-      </Button>
+        <ArrowBackIosNewIcon fontSize="small" />
+      </IconButton>
 
       {/* Header */}
       <Typography variant="h5" sx={{ fontWeight: 700, mb: 4 }}>
@@ -197,7 +213,7 @@ export default function UserEditPage() {
                   variant="outlined"
                   fullWidth
                   error={!!error}
-                  helperText={error?.message}
+                  helperText={error?.message || "Ej: 1159330579 o +54 9 11 5933-0579 (opcional)"}
                 />
               )}
             />
@@ -256,10 +272,15 @@ export default function UserEditPage() {
                   variant="outlined"
                   fullWidth
                   type="number"
-                  inputProps={{ step: 1 }}
+                  inputProps={{ step: 1, min: 0 }}
                   error={!!error}
                   helperText={error?.message}
-                  onChange={(e) => field.onChange(Number(e.target.value))}
+                  value={field.value === 0 && !isDirty ? "" : field.value}
+                  onChange={(e) =>
+                    field.onChange(
+                      e.target.value === "" ? 0 : Number(e.target.value),
+                    )
+                  }
                 />
               )}
             />

@@ -1,7 +1,7 @@
-// Utilidad para celulares argentinos. Se guarda como un solo string `number`.
-// Formato canónico: "+54 9 11 1234-5678" (siempre celular 9, agrupado).
-// IMPORTANTE: mantener esta regex idéntica al @Matches del backend (DTOs).
-export const CANONICAL_AR_PHONE_REGEX = /^\+54 9 \d{2} \d{4}-\d{4}$/;
+// Utilidad para teléfonos argentinos. Se guarda como un solo string `number`.
+// Formato canónico móvil: "+54 9 11 1234-5678" | fijo: "+54 11 1234-5678".
+// Debe coincidir con AR_PHONE_REGEX en create-user.dto.ts y update-user.dto.ts.
+export const CANONICAL_AR_PHONE_REGEX = /^\+54( 9)? \d{2,4} \d{3,4}-\d{4}$/;
 
 // Extrae los 10 dígitos nacionales (área + abonado) limpiando país/9/0/15.
 // Devuelve null si no es un celular argentino válido.

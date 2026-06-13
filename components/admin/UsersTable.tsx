@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { DataGrid, GridColDef, GridPaginationModel } from "@mui/x-data-grid";
 import {
   Box,
@@ -19,16 +19,24 @@ import {
   MenuItem,
   IconButton,
   Tooltip,
+  Typography,
   useMediaQuery,
   useTheme,
 } from "@mui/material";
-import { Edit as EditIcon, Delete as DeleteIcon } from "@mui/icons-material";
+import {
+  Edit as EditIcon,
+  Delete as DeleteIcon,
+  ChevronLeft as ChevronLeftIcon,
+  ChevronRight as ChevronRightIcon,
+} from "@mui/icons-material";
 import { useRouter } from "next/navigation";
 import { useAdminUsers } from "@/lib/hooks/queries/useAdminQueries";
 import { useDeleteUser } from "@/lib/hooks/mutations/useAdminMutations";
 import { useAuthStore } from "@/lib/stores/authStore";
 import type { User } from "@/lib/types/api";
 import { MobileUserCard } from "./mobile/MobileUserCard";
+
+const MOBILE_PAGE_SIZE = 20;
 
 export function UsersTable() {
   const router = useRouter();
@@ -43,21 +51,27 @@ export function UsersTable() {
     pageSize: 10,
     page: 0,
   });
+  const [mobilePage, setMobilePage] = useState(0);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [userToDelete, setUserToDelete] = useState<User | null>(null);
+
+  // Reset to page 0 when filters change
+  useEffect(() => {
+    setPaginationModel((prev) => ({ ...prev, page: 0 }));
+    setMobilePage(0);
+  }, [searchText, roleFilter]);
 
   // Fetch ALL users (client-side filtering/pagination)
   const { data: users = [], isLoading } = useAdminUsers();
 
-  // Client-side filtering and pagination
-  const { paginatedUsers, totalUsers } = useMemo(() => {
+  // Client-side filtering — desktop DataGrid paginates itself, mobile slices manually
+  const { filteredUsers, paginatedMobileUsers, totalUsers } = useMemo(() => {
     if (!users || users.length === 0) {
-      return { paginatedUsers: [], totalUsers: 0 };
+      return { filteredUsers: [], paginatedMobileUsers: [], totalUsers: 0 };
     }
 
     let filtered = [...users];
 
-    // 1. Filter by search text (name + email)
     if (searchText.trim()) {
       const searchLower = searchText.toLowerCase();
       filtered = filtered.filter(
@@ -67,20 +81,16 @@ export function UsersTable() {
       );
     }
 
-    // 2. Filter by role
     if (roleFilter) {
       filtered = filtered.filter((user) => user.role === roleFilter);
     }
 
     const totalUsers = filtered.length;
+    const start = mobilePage * MOBILE_PAGE_SIZE;
+    const paginatedMobileUsers = filtered.slice(start, start + MOBILE_PAGE_SIZE);
 
-    // 3. Client-side pagination
-    const start = paginationModel.page * paginationModel.pageSize;
-    const end = start + paginationModel.pageSize;
-    const paginatedUsers = filtered.slice(start, end);
-
-    return { paginatedUsers, totalUsers };
-  }, [users, searchText, roleFilter, paginationModel]);
+    return { filteredUsers: filtered, paginatedMobileUsers, totalUsers };
+  }, [users, searchText, roleFilter, mobilePage]);
 
   const deleteUserMutation = useDeleteUser();
 
@@ -98,23 +108,9 @@ export function UsersTable() {
   };
 
   const handleEditClick = (user: User) => {
-    // Only admin can edit
     if (currentUser?.role === "admin") {
       router.push(`/admin/users/${user.id}`);
     }
-  };
-
-  const getRoleColor = (role: string) => {
-    const colors: Record<
-      string,
-      "default" | "primary" | "error" | "warning" | "success"
-    > = {
-      admin: "error",
-      subadmin: "warning",
-      user: "primary",
-      charter: "success",
-    };
-    return colors[role] || "default";
   };
 
   const getRoleLabel = (role: string) => {
@@ -165,20 +161,11 @@ export function UsersTable() {
         let chipSx = {};
 
         if (role === "admin") {
-          chipSx = {
-            backgroundColor: "#380116",
-            color: "white",
-          };
+          chipSx = { backgroundColor: "#380116", color: "white" };
         } else if (role === "subadmin") {
-          chipSx = {
-            backgroundColor: "#4b011d",
-            color: "white",
-          };
+          chipSx = { backgroundColor: "#4b011d", color: "white" };
         } else if (role === "charter") {
-          chipSx = {
-            backgroundColor: "#dca621",
-            color: "#212121",
-          };
+          chipSx = { backgroundColor: "#dca621", color: "#212121" };
         }
 
         return <Chip label={getRoleLabel(role)} size="small" sx={chipSx} />;
@@ -215,9 +202,7 @@ export function UsersTable() {
                   onClick={() => handleEditClick(params.row)}
                   sx={{
                     color: "#b7850d",
-                    "&:hover": {
-                      backgroundColor: "rgba(183, 133, 13, 0.15)",
-                    },
+                    "&:hover": { backgroundColor: "rgba(183, 133, 13, 0.15)" },
                   }}
                 >
                   <EditIcon fontSize="medium" />
@@ -229,9 +214,7 @@ export function UsersTable() {
                   onClick={() => handleDeleteClick(params.row)}
                   sx={{
                     color: "#e74c3c",
-                    "&:hover": {
-                      backgroundColor: "rgba(231, 76, 60, 0.15)",
-                    },
+                    "&:hover": { backgroundColor: "rgba(231, 76, 60, 0.15)" },
                   }}
                 >
                   <DeleteIcon fontSize="medium" />
@@ -244,12 +227,7 @@ export function UsersTable() {
     },
   ];
 
-  // Hide email and createdAt columns on mobile
-  const visibleColumns = isMobile
-    ? columns.filter(
-        (col) => !["email", "createdAt", "actions"].includes(col.field),
-      )
-    : columns;
+  const totalMobilePages = Math.ceil(totalUsers / MOBILE_PAGE_SIZE);
 
   return (
     <Box>
@@ -283,23 +261,52 @@ export function UsersTable() {
 
       {/* Conditional Rendering: Mobile Cards vs DataGrid */}
       {isMobile ? (
-        <Stack spacing={2}>
-          {paginatedUsers.map((user) => (
-            <MobileUserCard
-              key={user.id}
-              user={user}
-              onEdit={handleEditClick}
-              onDelete={handleDeleteClick}
-              currentUserRole={currentUser?.role}
-            />
-          ))}
-        </Stack>
+        <Box>
+          <Stack spacing={0}>
+            {paginatedMobileUsers.map((user) => (
+              <MobileUserCard
+                key={user.id}
+                user={user}
+                onClick={() => router.push(`/admin/users/${user.id}`)}
+              />
+            ))}
+          </Stack>
+
+          {/* Mobile pagination */}
+          {totalMobilePages > 1 && (
+            <Stack
+              direction="row"
+              justifyContent="center"
+              alignItems="center"
+              spacing={1}
+              sx={{ mt: 2, py: 1 }}
+            >
+              <IconButton
+                disabled={mobilePage === 0}
+                onClick={() => setMobilePage((p) => p - 1)}
+                size="small"
+              >
+                <ChevronLeftIcon />
+              </IconButton>
+              <Typography variant="caption" color="text.secondary" sx={{ minWidth: 60, textAlign: "center" }}>
+                {mobilePage + 1} / {totalMobilePages}
+              </Typography>
+              <IconButton
+                disabled={mobilePage >= totalMobilePages - 1}
+                onClick={() => setMobilePage((p) => p + 1)}
+                size="small"
+              >
+                <ChevronRightIcon />
+              </IconButton>
+            </Stack>
+          )}
+        </Box>
       ) : (
         <Box sx={{ height: 500, width: "100%" }}>
           <DataGrid
-            rows={paginatedUsers}
-            columns={visibleColumns}
-            pageSizeOptions={[5, 10, 20, 50]}
+            rows={filteredUsers}
+            columns={columns}
+            pageSizeOptions={[10, 25, 50]}
             paginationModel={paginationModel}
             onPaginationModelChange={setPaginationModel}
             paginationMode="client"
