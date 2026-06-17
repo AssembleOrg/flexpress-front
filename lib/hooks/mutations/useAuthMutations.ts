@@ -181,10 +181,14 @@ export function useUpdateUserProfile() {
       console.log("✅ [useUpdateUserProfile] pricePerKm enviado:", variables.data.pricePerKm);
 
       // Actualizar usuario en el store
-      // Si backend no devuelve pricePerKm, usar el valor enviado
+      // Si backend no devuelve los campos, usar los valores enviados
       updateUser({
         ...updatedUser,
         pricePerKm: updatedUser.pricePerKm ?? variables.data.pricePerKm,
+        pricePerWaitBlock:
+          updatedUser.pricePerWaitBlock ?? variables.data.pricePerWaitBlock,
+        chargesReturnTrip:
+          updatedUser.chargesReturnTrip ?? variables.data.chargesReturnTrip,
       });
 
       toast.success("Perfil actualizado exitosamente");

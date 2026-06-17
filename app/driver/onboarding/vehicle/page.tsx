@@ -253,11 +253,11 @@ export default function VehicleOnboardingPage() {
                   Tu precio por km
                 </Typography>
                 <TextField
-                  label="Tu precio por km (en créditos)"
+                  label="Tu precio por km (en pesos)"
                   type="number"
                   value={pricePerKm}
                   onChange={(e) => setPricePerKm(e.target.value === "" ? "" : Number(e.target.value))}
-                  helperText={`Sugerencia del sistema: ${pricing?.creditsPerKm ?? "..."} créditos/km`}
+                  helperText={`Sugerencia del sistema: $${pricing?.creditsPerKm ?? "..."} / km`}
                   inputProps={{ min: 0 }}
                   fullWidth
                 />

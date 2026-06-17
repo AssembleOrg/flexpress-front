@@ -85,7 +85,9 @@ export interface User {
   originAddress: string | null; // Solo charters
   originLatitude: string | null;
   originLongitude: string | null;
-  pricePerKm: number | null; // Precio por km del charter
+  pricePerKm: number | null; // Precio por km del charter (en pesos ARS)
+  pricePerWaitBlock: number | null; // Precio (ARS) por bloque de espera/carga; null/0 = no cobra
+  chargesReturnTrip: boolean; // Si cobra el viaje de vuelta al 50% del $/km
   documentationFrontUrl: string | null; // Solo charters
   documentationBackUrl: string | null; // Solo charters
   verificationStatus: VerificationStatus; // Charter verification status
@@ -159,6 +161,15 @@ export interface AvailableCharter {
   totalDistance: number; // km
   estimatedCredits: number;
   pricePerKm: number | null;
+  // Estimado del viaje en PESOS ARS (informativo, aproximado). null si el
+  // charter no configuró pricePerKm. Desglosado para mostrar al cliente.
+  pricePerWaitBlock: number | null;
+  chargesReturnTrip: boolean;
+  estimatedPriceArs: number | null; // total (con mínimo $20.000 aplicado)
+  estimatedPriceIdaArs: number | null; // tramo ida
+  estimatedPriceWaitArs: number | null; // tramo espera/carga
+  estimatedPriceReturnArs: number | null; // tramo vuelta (50%)
+  returnDistanceKm: number | null; // km del tramo de vuelta
   vehicleBrand?: string | null;
   vehicleModel?: string | null;
   vehiclePlate?: string | null;

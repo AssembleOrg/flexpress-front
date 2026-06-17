@@ -1,7 +1,6 @@
 "use client";
 
 import {
-  AttachMoney,
   DirectionsCar,
   Group,
   LocalShipping,
@@ -19,6 +18,7 @@ import {
   Typography,
 } from "@mui/material";
 import { RatingDisplay } from "@/components/ui/RatingDisplay";
+import { PriceBreakdown } from "@/components/ui/PriceBreakdown";
 import type { AvailableCharter } from "@/lib/types/api";
 
 interface CharterCardProps {
@@ -28,7 +28,6 @@ interface CharterCardProps {
   isPending?: boolean;
   averageRating?: number;
   totalReviews?: number;
-  systemPricePerKm?: number;
   // Cuando el charter está en viaje, se invoca este handler en vez de onSelect.
   // Si no se pasa, el card cae al comportamiento de "Seleccionar".
   onInquiry?: () => void;
@@ -42,7 +41,6 @@ export function CharterCard({
   isPending = false,
   averageRating = 0,
   totalReviews = 0,
-  systemPricePerKm,
   onInquiry,
   isInquiryLoading = false,
 }: CharterCardProps) {
@@ -200,18 +198,18 @@ export function CharterCard({
           </Box>
         )}
 
-        {/* Precio por km */}
-        {charter.pricePerKm != null && (
-          <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1.5 }}>
-            <AttachMoney sx={{ fontSize: 15, color: "success.main", flexShrink: 0 }} />
-            <Typography variant="body2" sx={{ fontWeight: 600 }}>
-              {charter.pricePerKm} cr/km
-            </Typography>
-            {systemPricePerKm != null && (
-              <Typography variant="caption" color="text.secondary">
-                · Ref. sistema: {systemPricePerKm} cr/km
-              </Typography>
-            )}
+        {/* Estimado del viaje en pesos (informativo, desglosado) */}
+        {charter.estimatedPriceArs != null && (
+          <Box sx={{ mb: 1.5 }}>
+            <PriceBreakdown
+              total={charter.estimatedPriceArs}
+              ida={charter.estimatedPriceIdaArs}
+              wait={charter.estimatedPriceWaitArs}
+              ret={charter.estimatedPriceReturnArs}
+              idaKm={charter.totalDistance}
+              returnKm={charter.returnDistanceKm}
+              pricePerKm={charter.pricePerKm}
+            />
           </Box>
         )}
 

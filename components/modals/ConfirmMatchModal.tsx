@@ -16,6 +16,7 @@ import {
   Typography,
 } from "@mui/material";
 import { RatingDisplay } from "@/components/ui/RatingDisplay";
+import { PriceBreakdown } from "@/components/ui/PriceBreakdown";
 import { useUserFeedback } from "@/lib/hooks/queries/useFeedbackQueries";
 import type { AvailableCharter, TravelMatch } from "@/lib/types/api";
 
@@ -207,6 +208,20 @@ export function ConfirmMatchModal({
               </Typography>
             </Box>
           </Box>
+
+          {/* Estimado del viaje en pesos (informativo, desglosado) */}
+          {selectedCharter.estimatedPriceArs != null && (
+            <PriceBreakdown
+              title="Estimado del viaje (aprox.)"
+              total={selectedCharter.estimatedPriceArs}
+              ida={selectedCharter.estimatedPriceIdaArs}
+              wait={selectedCharter.estimatedPriceWaitArs}
+              ret={selectedCharter.estimatedPriceReturnArs}
+              idaKm={selectedCharter.totalDistance}
+              returnKm={selectedCharter.returnDistanceKm}
+              footer="Es un valor aproximado e informativo. Lo coordinás con el chófer."
+            />
+          )}
 
           {/* Credit Status Alert */}
           {!hasEnoughCredits ? (

@@ -11,7 +11,6 @@ import {
   History,
   HourglassEmpty,
   LocationOn,
-  MonetizationOn,
   Person,
   StarRounded,
 } from "@mui/icons-material";
@@ -705,25 +704,6 @@ export default function DriverDashboard() {
                     Gestionar
                   </Button>
                 </Stack>
-                {user?.pricePerKm != null && (
-                  <Stack
-                    direction="row"
-                    alignItems="center"
-                    gap={0.5}
-                    mt={0.75}
-                  >
-                    <MonetizationOn
-                      sx={{ fontSize: 15, color: "primary.main" }}
-                    />
-                    <Typography
-                      variant="body2"
-                      color="primary.main"
-                      fontWeight={600}
-                    >
-                      {user.pricePerKm} cr/km
-                    </Typography>
-                  </Stack>
-                )}
               </Box>
             )}
           </CardContent>
@@ -795,14 +775,14 @@ export default function DriverDashboard() {
                   fontWeight={700}
                   lineHeight={1.2}
                 >
-                  {user.pricePerKm}
+                  ${user.pricePerKm}
                   <Typography
                     component="span"
                     variant="caption"
                     color="text.secondary"
                     sx={{ ml: 0.4 }}
                   >
-                    cr/km
+                    /km
                   </Typography>
                 </Typography>
               ) : (
@@ -814,15 +794,14 @@ export default function DriverDashboard() {
                   Sin configurar
                 </Typography>
               )}
-              {pricing?.creditsPerKm && (
-                <Typography
-                  variant="caption"
-                  color="text.disabled"
-                  sx={{ fontSize: "0.6rem" }}
-                >
-                  Base: {pricing.creditsPerKm} cr/km
-                </Typography>
-              )}
+              {/* Placeholder: reserva la 3ª línea para alinear la altura con
+                  las columnas Reputación y Créditos (que tienen subtítulo). */}
+              <Typography
+                variant="caption"
+                sx={{ fontSize: "0.6rem", visibility: "hidden" }}
+              >
+                &nbsp;
+              </Typography>
             </ButtonBase>
 
             <Divider orientation="vertical" flexItem sx={{ my: 1.5 }} />
@@ -946,6 +925,51 @@ export default function DriverDashboard() {
             </ButtonBase>
           </Box>
         </MotionCard>
+
+        {/* Aviso: configurar tarifa para aparecer con precio estimado.
+            Branding: oro sobre pergamino, sin icono (no es un Alert). */}
+        {user?.pricePerKm == null && (
+          <Box
+            sx={{
+              mb: 2,
+              p: 2,
+              borderRadius: 2,
+              bgcolor: "background.default",
+              border: "1px solid",
+              borderColor: "secondary.light",
+              borderLeft: "4px solid",
+              borderLeftColor: "secondary.main",
+              display: "flex",
+              flexDirection: { xs: "column", sm: "row" },
+              alignItems: { xs: "stretch", sm: "center" },
+              gap: 1.5,
+            }}
+          >
+            <Box sx={{ flex: 1, minWidth: 0 }}>
+              <Typography variant="subtitle2" fontWeight={700} color="primary.main">
+                Configurá tu tarifa
+              </Typography>
+              <Typography variant="caption" color="text.secondary">
+                Definí tu precio por km para que los clientes vean cuánto les
+                saldría el viaje y te elijan.
+              </Typography>
+            </Box>
+            <Button
+              color="secondary"
+              variant="contained"
+              onClick={() => router.push("/driver/settings")}
+              sx={{
+                textTransform: "none",
+                fontWeight: 700,
+                whiteSpace: "nowrap",
+                flexShrink: 0,
+                width: { xs: "100%", sm: "auto" },
+              }}
+            >
+              Configurar
+            </Button>
+          </Box>
+        )}
 
         {/* Aviso de costo por aceptar solicitud */}
         {(user?.credits ?? 0) >= 2 && !isAvailable && (

@@ -27,7 +27,6 @@ import { WaitingForCharterCard } from '@/components/ui/WaitingForCharterCard';
 import { useSelectCharter, useCancelMatch } from '@/lib/hooks/mutations/useTravelMatchMutations';
 import { useCreateInquiry } from '@/lib/hooks/mutations/useAvailabilityInquiriesMutations';
 import { useUserFeedback } from '@/lib/hooks/queries/useFeedbackQueries';
-import { usePublicPricing } from '@/lib/hooks/queries/useSystemConfigQueries';
 import { useMatch } from '@/lib/hooks/queries/useTravelMatchQueries';
 import { useMatchUpdateListener } from '@/lib/hooks/useWebSocket';
 import { useAuthStore } from '@/lib/stores/authStore';
@@ -43,7 +42,6 @@ function CharterCardWithRating({
   isLoading,
   isPending,
   onSelect,
-  systemPricePerKm,
   onInquiry,
   isInquiryLoading,
 }: {
@@ -51,7 +49,6 @@ function CharterCardWithRating({
   isLoading: boolean;
   isPending?: boolean;
   onSelect: () => void;
-  systemPricePerKm?: number;
   onInquiry?: () => void;
   isInquiryLoading?: boolean;
 }) {
@@ -65,7 +62,6 @@ function CharterCardWithRating({
       onSelect={onSelect}
       averageRating={feedback?.averageRating || 0}
       totalReviews={feedback?.totalCount || 0}
-      systemPricePerKm={systemPricePerKm}
       onInquiry={onInquiry}
       isInquiryLoading={isInquiryLoading}
     />
@@ -76,7 +72,6 @@ export default function MatchingPage() {
   const router = useRouter();
   const selectMutation = useSelectCharter();
   const cancelMutation = useCancelMatch();
-  const { data: pricing } = usePublicPricing();
 
   // Modal state
   const [confirmModalOpen, setConfirmModalOpen] = useState(false);
@@ -131,7 +126,9 @@ export default function MatchingPage() {
   } = useTravelMatchStore();
 
   // Orden de la lista de chóferes (reordena, no filtra)
-  const [sortBy, setSortBy] = useState<'distance' | 'helpers'>('distance');
+  const [sortBy, setSortBy] = useState<'distance' | 'helpers' | 'price'>(
+    'distance',
+  );
 
   const sortedCharters = useMemo(() => {
     const copy = [...availableCharters];
@@ -139,6 +136,15 @@ export default function MatchingPage() {
       return copy.sort((a, b) => {
         const diff = (b.helpersCount ?? 0) - (a.helpersCount ?? 0);
         if (diff !== 0) return diff;
+        return a.distanceToPickup - b.distanceToPickup;
+      });
+    }
+    if (sortBy === 'price') {
+      // Más barato primero. Charters sin estimado (null) van al final.
+      return copy.sort((a, b) => {
+        const pa = a.estimatedPriceArs ?? Number.POSITIVE_INFINITY;
+        const pb = b.estimatedPriceArs ?? Number.POSITIVE_INFINITY;
+        if (pa !== pb) return pa - pb;
         return a.distanceToPickup - b.distanceToPickup;
       });
     }
@@ -399,6 +405,7 @@ export default function MatchingPage() {
           >
             {([
               { key: 'distance', label: 'Cercanía' },
+              { key: 'price', label: 'Más barato' },
               { key: 'helpers', label: 'Más equipo' },
             ] as const).map(({ key, label }) => {
               const active = sortBy === key;
@@ -539,7 +546,6 @@ export default function MatchingPage() {
                 isLoading={selectMutation.isPending || !!selectedCharterPending}
                 isPending={isPending}
                 onSelect={() => handleSelectCharter(charter)}
-                systemPricePerKm={pricing?.creditsPerKm}
                 onInquiry={() => handleOpenInquiryConfirm(charter)}
                 isInquiryLoading={
                   createInquiryMutation.isPending &&

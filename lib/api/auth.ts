@@ -34,6 +34,8 @@ export interface UpdateUserRequest {
   originLatitude?: string | null;
   originLongitude?: string | null;
   pricePerKm?: number;
+  pricePerWaitBlock?: number;
+  chargesReturnTrip?: boolean;
 }
 
 export const authApi = {

@@ -41,6 +41,20 @@ const CONFIG_STRUCTURE: ConfigCategory[] = [
         adornment: "ARS",
         step: 0.01,
       },
+      {
+        key: "pricing_base_rate_per_km",
+        label: "Precio sugerido por km",
+        type: "number",
+        adornment: "$",
+        step: 50,
+      },
+      {
+        key: "pricing_minimum_charge",
+        label: "Mínimo del viaje",
+        type: "number",
+        adornment: "$",
+        step: 500,
+      },
     ],
   },
   {
@@ -72,6 +86,10 @@ const CONFIG_STRUCTURE: ConfigCategory[] = [
     ],
   },
 ];
+
+// Claves que no se editan desde el admin (siguen en la DB, solo se ocultan).
+// worker_rate alimenta el cálculo de créditos del matching, no el precio en pesos.
+const HIDDEN_KEYS = new Set(["pricing_worker_rate"]);
 
 const getFieldMetadata = (key: string): ConfigField | undefined => {
   for (const { fields } of CONFIG_STRUCTURE) {
@@ -203,7 +221,7 @@ export function SystemConfigTab() {
           );
         })}
 
-        {configs.some((c) => !getFieldMetadata(c.key)) && (
+        {configs.some((c) => !getFieldMetadata(c.key) && !HIDDEN_KEYS.has(c.key)) && (
           <Card
             sx={{
               borderRadius: 2,
@@ -217,7 +235,7 @@ export function SystemConfigTab() {
               </Typography>
               <Stack spacing={2.5}>
                 {configs
-                  .filter((c) => !getFieldMetadata(c.key))
+                  .filter((c) => !getFieldMetadata(c.key) && !HIDDEN_KEYS.has(c.key))
                   .map((config) => (
                     <TextField
                       key={config.id}
