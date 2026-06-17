@@ -288,7 +288,14 @@ export function useToggleAvailability() {
 
     onError: (error) => {
       console.error("❌ useToggleAvailability error:", error);
-      toast.error("Error al actualizar disponibilidad");
+      // El backend (NestJS) manda mensajes útiles en errores (ej:
+      // "Seleccioná el vehículo..."). El error NO lleva el double wrapper:
+      // el mensaje viene directo en response.data.message.
+      const message =
+        axios.isAxiosError(error) && error.response?.data?.message
+          ? (error.response.data.message as string)
+          : "Error al actualizar disponibilidad";
+      toast.error(message);
     },
   });
 }

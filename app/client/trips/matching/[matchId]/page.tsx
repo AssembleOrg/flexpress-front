@@ -342,8 +342,8 @@ export default function MatchDetailPage() {
         >
           <Typography variant="subtitle2" fontWeight={700} mb={0.5}>
             {isCharter
-              ? "⏳ Solicitud Pendiente de Respuesta"
-              : "⏳ Pendiente de Respuesta"}
+              ? "Solicitud Pendiente de Respuesta"
+              : "Pendiente de Respuesta"}
           </Typography>
           <Typography variant="body2" mb={0.5}>
             {isCharter ? (

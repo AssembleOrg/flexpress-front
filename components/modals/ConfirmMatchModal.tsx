@@ -54,7 +54,9 @@ export function ConfirmMatchModal({
   isLoading = false,
   userCredits = 0,
 }: ConfirmMatchModalProps) {
-  const { data: charterRating } = useUserFeedback(selectedCharter?.charterId ?? "");
+  const { data: charterRating } = useUserFeedback(
+    selectedCharter?.charterId ?? "",
+  );
 
   if (!match || !selectedCharter) {
     return null;
@@ -201,7 +203,7 @@ export function ConfirmMatchModal({
                 color="text.secondary"
                 sx={{ fontSize: "0.65rem" }}
               >
-                Crédito (comisión)
+                Crédito
               </Typography>
             </Box>
           </Box>
@@ -262,7 +264,11 @@ export function ConfirmMatchModal({
             "&:hover": { bgcolor: "secondary.dark" },
           }}
         >
-          {isLoading ? <CircularProgress size={20} sx={{ color: "inherit" }} /> : "Confirmar"}
+          {isLoading ? (
+            <CircularProgress size={20} sx={{ color: "inherit" }} />
+          ) : (
+            "Confirmar"
+          )}
         </Button>
       </DialogActions>
     </Dialog>
