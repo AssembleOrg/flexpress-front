@@ -33,11 +33,7 @@ import { useHydrated } from '@/lib/hooks/useHydrated';
 import { useAuthStore } from '@/lib/stores/authStore';
 import { useTravelMatchStore } from '@/lib/stores/travelMatchStore';
 import { isActiveTrip } from '@/lib/utils/matchHelpers';
-import {
-  VehicleSize,
-  VEHICLE_SIZE_LABELS,
-  VEHICLE_SIZE_SHORT,
-} from '@/lib/types/api';
+import { VehicleSize, VEHICLE_SIZE_LABELS } from '@/lib/types/api';
 
 const MotionCard = motion.create(Card);
 const MotionButton = motion.create(Button);
@@ -69,15 +65,14 @@ export default function NewTripPage() {
     destinationCoords,
     setPickupLocation,
     setDestinationLocation,
-    sizeFilter,
-    setSizeFilter,
   } = useTravelMatchStore();
 
-  // El tamaño elegido acá es preferencia inicial: preselecciona el filtro en la
-  // vista de matching (via store). "grande" habilita pedir ayudantes.
-  const vehicleSize = sizeFilter ?? VehicleSize.CHICO;
+  // Tamaño buscado: estado local, solo condiciona la opción de ayudantes
+  // ("grande" habilita pedir ayudantes). NO preselecciona el filtro de matching:
+  // la vista de resultados siempre abre con "Todos" (ver handleCreateMatch).
+  const [vehicleSize, setVehicleSize] = useState<VehicleSize>(VehicleSize.CHICO);
   const handleSizeChange = (s: VehicleSize) => {
-    setSizeFilter(s);
+    setVehicleSize(s);
     if (s !== VehicleSize.GRANDE) setHelpersNeeded(0);
   };
 
@@ -213,7 +208,10 @@ export default function NewTripPage() {
       },
       {
         onSuccess: () => {
-          useTravelMatchStore.getState().clearSearchForm?.();
+          const store = useTravelMatchStore.getState();
+          store.clearSearchForm?.();
+          // La vista de resultados siempre abre mostrando todos los tamaños.
+          store.setSizeFilter(null);
           router.push('/client/trips/matching');
         },
       }
@@ -507,7 +505,7 @@ export default function NewTripPage() {
                 </Typography>
               </Box>
 
-              {/* Tamaño de flete buscado (FC/FM/FG) — preselecciona el filtro en matching */}
+              {/* Tamaño de flete buscado — preselecciona el filtro en matching */}
               <Box sx={{ mb: 2 }}>
                 <Typography
                   variant='body2'
@@ -515,19 +513,17 @@ export default function NewTripPage() {
                 >
                   Tamaño de flete
                 </Typography>
-                <Stack direction='row' spacing={1}>
+                <Stack direction='row' spacing={1} flexWrap='wrap' useFlexGap>
                   {Object.values(VehicleSize).map((s) => {
                     const active = vehicleSize === s;
                     return (
                       <Chip
                         key={s}
-                        label={VEHICLE_SIZE_SHORT[s]}
-                        title={VEHICLE_SIZE_LABELS[s]}
+                        label={VEHICLE_SIZE_LABELS[s]}
                         onClick={() => handleSizeChange(s)}
                         color={active ? 'secondary' : 'default'}
                         variant={active ? 'filled' : 'outlined'}
                         sx={{
-                          minWidth: 56,
                           height: 40,
                           fontWeight: active ? 700 : 500,
                           cursor: 'pointer',

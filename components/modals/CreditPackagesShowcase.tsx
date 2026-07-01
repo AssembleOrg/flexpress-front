@@ -4,8 +4,10 @@ import {
   ArrowBackRounded,
   AutoAwesomeRounded,
   CheckCircleRounded,
+  CheckRounded,
   CloseRounded,
   CloudUploadRounded,
+  ContentCopyRounded,
   DiamondRounded,
   MilitaryTechRounded,
   WorkspacePremiumRounded,
@@ -14,6 +16,7 @@ import {
   Box,
   Button,
   CircularProgress,
+  IconButton,
   InputAdornment,
   Stack,
   TextField,
@@ -23,6 +26,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import type { ReactNode } from "react";
 import { useMemo, useState } from "react";
 import toast from "react-hot-toast";
+import { type BankAccount, BANK_ACCOUNTS } from "@/lib/constants/bankAccounts";
 import { useCreatePaymentRequest } from "@/lib/hooks/mutations/usePaymentMutations";
 import { usePublicPricing } from "@/lib/hooks/queries/useSystemConfigQueries";
 import { useCreditPurchaseStore } from "@/lib/stores/creditPurchaseStore";
@@ -350,6 +354,7 @@ function SelectStep({
         alignItems="center"
         textAlign="center"
         gap={0.75}
+        mt={{ xs: 3.5, md: 0 }}
         mb={{ xs: 2.5, md: 3 }}
       >
         <Typography
@@ -410,7 +415,13 @@ function SelectStep({
         }}
       >
         <Typography
-          sx={{ color: "#fff", fontWeight: 700, fontSize: "1rem", mb: 1.5 }}
+          sx={{
+            color: "#fff",
+            fontWeight: 700,
+            fontSize: "1rem",
+            mb: 1.5,
+            ml: 2,
+          }}
         >
           ¿Otro monto?
         </Typography>
@@ -418,6 +429,7 @@ function SelectStep({
           direction={{ xs: "column", sm: "row" }}
           gap={1.5}
           alignItems={{ xs: "stretch", sm: "center" }}
+          ml={2}
         >
           <TextField
             type="number"
@@ -463,7 +475,13 @@ function SelectStep({
         </Stack>
         {customARS > 0 && (
           <Typography
-            sx={{ mt: 1, color: GOLD, fontSize: "0.85rem", fontWeight: 600 }}
+            sx={{
+              mt: 1,
+              ml: 2,
+              color: GOLD,
+              fontSize: "0.85rem",
+              fontWeight: 600,
+            }}
           >
             → Recibirás {customCredits} créditos
           </Typography>
@@ -523,7 +541,9 @@ function CheckoutStep({
           border: `1px solid ${GOLD}55`,
         }}
       >
-        <Typography sx={{ color: "rgba(255,255,255,0.6)", fontSize: "0.8rem" }}>
+        <Typography
+          sx={{ color: "rgba(255,255,255,0.6)", fontSize: "0.8rem", ml: 2 }}
+        >
           Vas a recargar
         </Typography>
         <Stack
@@ -531,6 +551,7 @@ function CheckoutStep({
           alignItems="baseline"
           justifyContent="space-between"
           mt={0.5}
+          ml={2}
         >
           <Stack direction="row" alignItems="baseline" gap={0.75}>
             <Typography
@@ -560,6 +581,7 @@ function CheckoutStep({
             alignItems="center"
             gap={1}
             mt={1}
+            ml={2}
             flexWrap="wrap"
           >
             <Stack
@@ -599,25 +621,13 @@ function CheckoutStep({
       <Typography
         sx={{ color: "#fff", fontWeight: 700, fontSize: "0.95rem", mb: 1 }}
       >
-        Realizá la transferencia a:
+        Realizá la transferencia a alguna de estas cuentas:
       </Typography>
-      <Box
-        sx={{
-          p: 2,
-          borderRadius: 14,
-          mb: 2.5,
-          bgcolor: "rgba(255,255,255,0.06)",
-          border: "1px solid rgba(255,255,255,0.12)",
-        }}
-      >
-        <Typography
-          sx={{ color: "rgba(255,255,255,0.85)", fontSize: "0.9rem" }}
-        >
-          <strong>CBU:</strong> 0000003100012345678900
-          <br />
-          <strong>Alias:</strong> FLEXPRESS.PAGOS
-        </Typography>
-      </Box>
+      <Stack spacing={1.25} mb={2}>
+        {BANK_ACCOUNTS.map((account) => (
+          <BankAccountCard key={account.id} account={account} />
+        ))}
+      </Stack>
 
       {/* Upload de comprobante */}
       <Typography
@@ -831,34 +841,36 @@ function PackageCard({
           >
             créditos
           </Typography>
-          {pkg.bonusCredits > 0 && (
-            <Stack
-              direction="row"
-              alignItems="center"
-              gap={0.35}
+        </Stack>
+        {pkg.bonusCredits > 0 && (
+          <Stack
+            direction="row"
+            alignItems="center"
+            gap={0.35}
+            sx={{
+              mt: 0.5,
+              width: "fit-content",
+              px: 0.75,
+              py: 0.15,
+              borderRadius: 999,
+              bgcolor: `${GOLD}22`,
+              border: `1px solid ${GOLD}66`,
+            }}
+          >
+            <AutoAwesomeRounded sx={{ fontSize: 11, color: GOLD, flexShrink: 0 }} />
+            <Typography
               sx={{
-                ml: 0.5,
-                px: 0.75,
-                py: 0.15,
-                borderRadius: 999,
-                bgcolor: `${GOLD}22`,
-                border: `1px solid ${GOLD}66`,
+                color: GOLD,
+                fontSize: "0.6rem",
+                fontWeight: 800,
+                letterSpacing: "0.02em",
+                whiteSpace: "nowrap",
               }}
             >
-              <AutoAwesomeRounded sx={{ fontSize: 12, color: GOLD }} />
-              <Typography
-                sx={{
-                  color: GOLD,
-                  fontSize: "0.65rem",
-                  fontWeight: 800,
-                  letterSpacing: "0.03em",
-                }}
-              >
-                +{pkg.bonusCredits} BONUS
-              </Typography>
-            </Stack>
-          )}
-        </Stack>
+              +{pkg.bonusCredits} BONUS
+            </Typography>
+          </Stack>
+        )}
       </Box>
 
       {/* Derecha: precio + CTA */}
@@ -886,6 +898,90 @@ function PackageCard({
           Elegir
         </Button>
       </Stack>
+    </Box>
+  );
+}
+
+function BankAccountCard({ account }: { account: BankAccount }) {
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = async () => {
+    const text = `Alias: ${account.alias}\n${account.accountType}: ${account.accountNumber}\nTitular: ${account.holder}`;
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+      toast.success("Datos copiados");
+      setTimeout(() => setCopied(false), 1500);
+    } catch {
+      toast.error("No se pudo copiar");
+    }
+  };
+
+  return (
+    <Box
+      sx={{
+        p: 1.25,
+        borderRadius: 12,
+        bgcolor: "rgba(255,255,255,0.06)",
+        border: "1px solid rgba(255,255,255,0.12)",
+        display: "flex",
+        alignItems: "center",
+        gap: 1,
+      }}
+    >
+      <Box sx={{ flex: 1, minWidth: 0, ml: 2 }}>
+        <Stack direction="row" alignItems="center" gap={0.75} flexWrap="wrap">
+          <Typography
+            sx={{ color: "#fff", fontWeight: 700, fontSize: "0.85rem" }}
+          >
+            {account.alias}
+          </Typography>
+          {account.bank && (
+            <Box
+              sx={{
+                px: 0.75,
+                py: 0.15,
+                borderRadius: 999,
+                bgcolor: `${GOLD}22`,
+                border: `1px solid ${GOLD}66`,
+                color: GOLD,
+                fontSize: "0.6rem",
+                fontWeight: 800,
+                letterSpacing: "0.03em",
+                whiteSpace: "nowrap",
+              }}
+            >
+              {account.bank}
+            </Box>
+          )}
+        </Stack>
+        <Typography
+          sx={{ color: "rgba(255,255,255,0.85)", fontSize: "0.8rem", mt: 0.25 }}
+        >
+          {account.accountType}: {account.accountNumber}
+        </Typography>
+        <Typography
+          sx={{ color: "rgba(255,255,255,0.55)", fontSize: "0.7rem" }}
+        >
+          Titular: {account.holder}
+        </Typography>
+      </Box>
+      <IconButton
+        onClick={handleCopy}
+        aria-label={`Copiar datos de ${account.alias}`}
+        size="small"
+        sx={{
+          color: copied ? GOLD : "rgba(255,255,255,0.7)",
+          bgcolor: "rgba(255,255,255,0.06)",
+          "&:hover": { bgcolor: "rgba(255,255,255,0.14)" },
+        }}
+      >
+        {copied ? (
+          <CheckRounded sx={{ fontSize: 18 }} />
+        ) : (
+          <ContentCopyRounded sx={{ fontSize: 18 }} />
+        )}
+      </IconButton>
     </Box>
   );
 }

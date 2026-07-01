@@ -75,14 +75,15 @@ export enum VehicleSize {
   GRANDE = "grande",
 }
 
-// Label completo: Select de alta, tooltips, diálogos de admin (donde hay espacio).
+// Label estándar (entendible por el usuario) usado en toda la UI.
 export const VEHICLE_SIZE_LABELS: Record<VehicleSize, string> = {
   [VehicleSize.CHICO]: "Flete Chico",
   [VehicleSize.MEDIANO]: "Flete Mediano",
   [VehicleSize.GRANDE]: "Flete Grande",
 };
 
-// Label corto FC/FM/FG: pills y chips compactos (filtros del cliente, chips inline).
+// Abreviatura (FC/FM/FG). NO usar en UI de cara al usuario (no es entendible);
+// reservado para contextos internos/muy compactos si hicieran falta.
 export const VEHICLE_SIZE_SHORT: Record<VehicleSize, string> = {
   [VehicleSize.CHICO]: "FC",
   [VehicleSize.MEDIANO]: "FM",

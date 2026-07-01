@@ -112,23 +112,6 @@ export function Security() {
                       },
                     }}
                   >
-                    {/* Número decorativo */}
-                    <Typography
-                      sx={{
-                        position: "absolute",
-                        bottom: -20,
-                        right: 16,
-                        fontSize: "9rem",
-                        fontWeight: 900,
-                        lineHeight: 1,
-                        color: "rgba(220,166,33,0.07)",
-                        userSelect: "none",
-                        pointerEvents: "none",
-                      }}
-                    >
-                      01
-                    </Typography>
-
                     <VerifiedUser sx={{ fontSize: 48, color: "#DCA621" }} />
 
                     <Box>
@@ -197,22 +180,6 @@ export function Security() {
                     },
                   }}
                 >
-                  <Typography
-                    sx={{
-                      position: "absolute",
-                      bottom: -16,
-                      right: 12,
-                      fontSize: "6rem",
-                      fontWeight: 900,
-                      lineHeight: 1,
-                      color: "rgba(220,166,33,0.06)",
-                      userSelect: "none",
-                      pointerEvents: "none",
-                    }}
-                  >
-                    02
-                  </Typography>
-
                   <Chat sx={{ fontSize: 36, color: "#DCA621" }} />
                   <Box>
                     <Typography
@@ -273,22 +240,6 @@ export function Security() {
                     },
                   }}
                 >
-                  <Typography
-                    sx={{
-                      position: "absolute",
-                      bottom: -16,
-                      right: 12,
-                      fontSize: "6rem",
-                      fontWeight: 900,
-                      lineHeight: 1,
-                      color: "rgba(220,166,33,0.06)",
-                      userSelect: "none",
-                      pointerEvents: "none",
-                    }}
-                  >
-                    03
-                  </Typography>
-
                   <Support sx={{ fontSize: 36, color: "#DCA621" }} />
                   <Box>
                     <Typography

@@ -20,8 +20,8 @@ export interface TravelMatchState {
   destinationCoords: Coordinates | null;
   workersCount: number;
   scheduledDate: string | null;
-  // Preferencia de tamaño de flete: se elige en la búsqueda y filtra la lista de
-  // matching (client-side). null = "Todos". No se persiste. Default: chico.
+  // Filtro de tamaño en la vista de matching (client-side). null = "Todos".
+  // Siempre arranca en "Todos"; la búsqueda no lo preselecciona. No se persiste.
   sizeFilter: VehicleSize | null;
 }
 
@@ -59,7 +59,7 @@ export const useTravelMatchStore = create<
       destinationCoords: null,
       workersCount: 0,
       scheduledDate: null,
-      sizeFilter: VehicleSize.CHICO,
+      sizeFilter: null,
 
       // Acciones
       setCurrentMatch: (match: TravelMatch | null) =>

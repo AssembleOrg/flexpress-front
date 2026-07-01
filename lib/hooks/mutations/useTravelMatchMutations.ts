@@ -8,6 +8,7 @@ import { conversationApi } from "@/lib/api/conversations";
 import { queryKeys } from "@/lib/hooks/queries/queryFactory";
 import { useAuthStore } from "@/lib/stores/authStore";
 import { useTravelMatchStore } from "@/lib/stores/travelMatchStore";
+import { getCharterCreditCost } from "@/lib/utils/creditCost";
 
 /**
  * Travel Matching Mutation Hooks
@@ -121,11 +122,12 @@ export function useRespondToMatch() {
       // Update the match in cache (optimistic update)
       queryClient.setQueryData(queryKeys.matches.detail(matchId), result);
 
-      // Actualizar créditos del charter en el store local
+      // Actualizar créditos del charter en el store local (costo por distancia)
       if (accept) {
         const { user, updateUser } = useAuthStore.getState();
         if (user) {
-          updateUser({ credits: Math.max(0, user.credits - 2) });
+          const cost = getCharterCreditCost(result?.distanceKm);
+          updateUser({ credits: Math.max(0, user.credits - cost) });
         }
       }
 

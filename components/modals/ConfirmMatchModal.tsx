@@ -167,7 +167,10 @@ export function ConfirmMatchModal({
                 variant="h6"
                 sx={{ fontWeight: 700, fontSize: "1rem" }}
               >
-                {selectedCharter.totalDistance?.toFixed(1) || "0"} km
+                {(
+                  selectedCharter.totalDistance - selectedCharter.distanceToPickup
+                ).toFixed(1)}{" "}
+                km
               </Typography>
               <Typography
                 variant="caption"

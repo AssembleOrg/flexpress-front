@@ -32,7 +32,7 @@ import { useMatchUpdateListener } from '@/lib/hooks/useWebSocket';
 import { useAuthStore } from '@/lib/stores/authStore';
 import { useTravelMatchStore } from '@/lib/stores/travelMatchStore';
 import type { AvailableCharter } from '@/lib/types/api';
-import { VehicleSize, VEHICLE_SIZE_LABELS, VEHICLE_SIZE_SHORT } from '@/lib/types/api';
+import { VehicleSize, VEHICLE_SIZE_LABELS } from '@/lib/types/api';
 import { isMatchExpired, getFormattedExpirationTime, getMinutesUntilExpiration } from '@/lib/utils/matchHelpers';
 
 /**
@@ -448,28 +448,27 @@ export default function MatchingPage() {
           <Box
             sx={{
               mt: 1.5,
-              display: 'inline-flex',
+              display: 'flex',
+              flexWrap: 'wrap',
               p: 0.5,
               gap: 0.5,
               bgcolor: 'background.default',
-              borderRadius: 999,
+              borderRadius: 3,
             }}
           >
             {([
-              { key: null, label: 'Todos', title: 'Todos los tamaños' },
+              { key: null, label: 'Todos' },
               ...Object.values(VehicleSize).map((s) => ({
                 key: s,
-                label: VEHICLE_SIZE_SHORT[s],
-                title: VEHICLE_SIZE_LABELS[s],
+                label: VEHICLE_SIZE_LABELS[s],
               })),
-            ]).map(({ key, label, title }) => {
+            ]).map(({ key, label }) => {
               const active = sizeFilter === key;
               return (
                 <Box
                   key={key ?? 'all'}
                   component='button'
                   type='button'
-                  title={title}
                   onClick={() => setSizeFilter(key)}
                   sx={{
                     border: 'none',

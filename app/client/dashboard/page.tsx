@@ -39,11 +39,12 @@ import { formatDistanceToNow } from "date-fns";
 import { es } from "date-fns/locale";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useState, type SyntheticEvent } from "react";
 import { MobileContainer } from "@/components/layout/MobileContainer";
 import { CreditPackagesShowcase } from "@/components/modals/CreditPackagesShowcase";
 import { WelcomeHeader } from "@/components/ui/WelcomeHeader";
 import { INQUIRY_RESPONSE_LABELS } from "@/lib/constants/availabilityInquiry";
+import { useDismissedInquiries } from "@/lib/hooks/useDismissedInquiries";
 import { useSentInquiries } from "@/lib/hooks/queries/useAvailabilityInquiriesQueries";
 import { useUserMatches } from "@/lib/hooks/queries/useTravelMatchQueries";
 import { useAuthStore } from "@/lib/stores/authStore";
@@ -64,7 +65,22 @@ export default function ClientDashboard() {
 
   // Consultas de disponibilidad enviadas (oculto si no hay nada vivo)
   const { data: sentInquiries = [] } = useSentInquiries();
-  const visibleInquiries = sentInquiries.filter((i) => i.status !== "expired");
+  const { dismissed, dismiss } = useDismissedInquiries();
+  const visibleInquiries = sentInquiries.filter(
+    (i) => i.status !== "expired" && !(i.status === "answered" && dismissed.has(i.id)),
+  );
+  // El badge solo cuenta lo que realmente necesita atención: esperando
+  // respuesta, o respondida y todavía no vista por el cliente.
+  const unseenCount = visibleInquiries.filter(
+    (i) => i.status === "pending" || !dismissed.has(i.id),
+  ).length;
+  const handleInquiriesExpand = (_: SyntheticEvent, expanded: boolean) => {
+    if (!expanded) return;
+    const answeredIds = visibleInquiries
+      .filter((i) => i.status === "answered")
+      .map((i) => i.id);
+    dismiss(answeredIds);
+  };
 
   const handleRequestFreight = () => {
     // Prevent creating new trip if one is already active
@@ -323,7 +339,7 @@ export default function ClientDashboard() {
           </CardContent>
         </MotionCard>
 
-        {/* Mis consultas pendientes — solo visible si hay inquiries no expiradas */}
+        {/* Consultas de disponibilidad — solo visible si hay inquiries no expiradas/dismisseadas */}
         {visibleInquiries.length > 0 && (
           <MotionCard
             initial={{ opacity: 0, y: 20 }}
@@ -331,18 +347,25 @@ export default function ClientDashboard() {
             transition={{ duration: 0.5, delay: 0.25 }}
             sx={{ mb: 3 }}
           >
-            <Accordion defaultExpanded={false} disableGutters elevation={0}>
+            <Accordion
+              defaultExpanded={false}
+              disableGutters
+              elevation={0}
+              onChange={handleInquiriesExpand}
+            >
               <AccordionSummary expandIcon={<ExpandMoreIcon />}>
                 <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                   <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
-                    Mis consultas pendientes
+                    Consultas de disponibilidad
                   </Typography>
-                  <Chip
-                    label={visibleInquiries.length}
-                    size="small"
-                    color="warning"
-                    sx={{ height: 20, fontSize: "0.7rem", fontWeight: 700 }}
-                  />
+                  {unseenCount > 0 && (
+                    <Chip
+                      label={unseenCount}
+                      size="small"
+                      color="warning"
+                      sx={{ height: 20, fontSize: "0.7rem", fontWeight: 700 }}
+                    />
+                  )}
                 </Box>
               </AccordionSummary>
               <AccordionDetails sx={{ pt: 0 }}>

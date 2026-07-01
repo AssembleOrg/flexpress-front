@@ -1,6 +1,12 @@
 "use client";
 
-import { AttachMoney, LocalShipping, Person, Route } from "@mui/icons-material";
+import {
+  AttachMoney,
+  LocalShipping,
+  Navigation,
+  Person,
+  Route,
+} from "@mui/icons-material";
 import {
   Avatar,
   Box,
@@ -21,6 +27,9 @@ import {
   useMyHelpers,
 } from "@/lib/hooks/queries/useCharterPersonnelQueries";
 import { useAuthStore } from "@/lib/stores/authStore";
+import { useCreditPurchaseStore } from "@/lib/stores/creditPurchaseStore";
+import { getCharterCreditCost } from "@/lib/utils/creditCost";
+import { getDirectionsUrl } from "@/lib/utils/mapLinks";
 import type { CharterAvailabilityState } from "@/lib/api/travelMatching";
 import type { TravelMatch } from "@/lib/types/api";
 
@@ -47,11 +56,42 @@ export function AcceptMatchModal({
   error = null,
 }: AcceptMatchModalProps) {
   const { user } = useAuthStore();
+  const { openModal: openCreditStore } = useCreditPurchaseStore();
   const { data: clientFeedback } = useUserFeedback(match?.userId ?? "");
   const { data: myDrivers = [] } = useMyDrivers();
   const { data: myHelpers = [] } = useMyHelpers();
 
   if (!match) return null;
+
+  // Costo escalonado por distancia (misma tabla que el backend) y si el charter
+  // tiene saldo para pagarlo. Si no alcanza, bloqueamos y ofrecemos la tienda.
+  const charterCost = getCharterCreditCost(match.distanceKm);
+  const currentCredits = user?.credits ?? 0;
+  const hasEnoughCredits = currentCredits >= charterCost;
+
+  // Coords para "Ver ruta": sólo mostramos el botón si las 4 existen.
+  const pickupLat = Number.parseFloat(match.pickupLatitude);
+  const pickupLng = Number.parseFloat(match.pickupLongitude);
+  const destLat = Number.parseFloat(match.destinationLatitude);
+  const destLng = Number.parseFloat(match.destinationLongitude);
+  const canOpenRoute =
+    Number.isFinite(pickupLat) &&
+    Number.isFinite(pickupLng) &&
+    Number.isFinite(destLat) &&
+    Number.isFinite(destLng);
+
+  const handleOpenRoute = () => {
+    window.open(
+      getDirectionsUrl(pickupLat, pickupLng, destLat, destLng),
+      "_blank",
+      "noopener",
+    );
+  };
+
+  const handleBuyCredits = () => {
+    onClose();
+    openCreditStore();
+  };
 
   // Resolver la identidad del ejecutor activo (lo que el cliente ya vio).
   const activeDriver = availability?.activeDriverId
@@ -90,6 +130,23 @@ export function AcceptMatchModal({
               <Typography variant="body2" color="warning.dark">
                 ⚠️ Este viaje ya ha sido procesado o no está disponible.
               </Typography>
+            </Box>
+          )}
+
+          {isValidState && !hasEnoughCredits && (
+            <Box sx={{ p: 2, bgcolor: "error.light", borderRadius: 1, border: "1px solid", borderColor: "error.main" }}>
+              <Typography variant="body2" color="error.dark" sx={{ mb: 1 }}>
+                Necesitás {charterCost} créditos para aceptar este viaje. Tenés {currentCredits}.
+              </Typography>
+              <Button
+                onClick={handleBuyCredits}
+                variant="contained"
+                size="small"
+                fullWidth
+                sx={{ textTransform: "none", fontWeight: 700 }}
+              >
+                Comprar créditos
+              </Button>
             </Box>
           )}
 
@@ -145,6 +202,18 @@ export function AcceptMatchModal({
             <Typography variant="body2" sx={{ fontSize: "0.85rem", fontWeight: 600, lineHeight: 1.4 }}>
               {match.destinationAddress || "No especificado"}
             </Typography>
+            {canOpenRoute && (
+              <Button
+                onClick={handleOpenRoute}
+                startIcon={<Navigation sx={{ fontSize: 18 }} />}
+                variant="outlined"
+                size="small"
+                fullWidth
+                sx={{ mt: 1.25, textTransform: "none", fontWeight: 600 }}
+              >
+                Ver ruta en el mapa
+              </Button>
+            )}
           </Box>
 
           <Box sx={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 1.5 }}>
@@ -161,7 +230,7 @@ export function AcceptMatchModal({
             <Box sx={{ p: 1.5, bgcolor: "background.default", borderRadius: 1.5, textAlign: "center" }}>
               <AttachMoney sx={{ fontSize: 20, color: "warning.main", mb: 0.5 }} />
               <Typography variant="h6" sx={{ fontWeight: 700, fontSize: "1rem", color: "warning.main" }}>
-                2
+                {charterCost} {charterCost === 1 ? "crédito" : "créditos"}
               </Typography>
               <Typography variant="caption" color="text.secondary" sx={{ fontSize: "0.65rem" }}>
                 Costo al aceptar
@@ -196,7 +265,7 @@ export function AcceptMatchModal({
         </Button>
         <Button
           onClick={handleAccept}
-          disabled={isLoading || !isValidState}
+          disabled={isLoading || !isValidState || !hasEnoughCredits}
           variant="contained"
           sx={{ flex: 1, minHeight: 48, fontWeight: 700, bgcolor: "secondary.main", "&:hover": { bgcolor: "secondary.dark" } }}
           startIcon={isLoading ? <CircularProgress size={20} /> : undefined}
