@@ -32,6 +32,7 @@ import { useMatchUpdateListener } from '@/lib/hooks/useWebSocket';
 import { useAuthStore } from '@/lib/stores/authStore';
 import { useTravelMatchStore } from '@/lib/stores/travelMatchStore';
 import type { AvailableCharter } from '@/lib/types/api';
+import { VehicleSize, VEHICLE_SIZE_LABELS, VEHICLE_SIZE_SHORT } from '@/lib/types/api';
 import { isMatchExpired, getFormattedExpirationTime, getMinutesUntilExpiration } from '@/lib/utils/matchHelpers';
 
 /**
@@ -123,6 +124,8 @@ export default function MatchingPage() {
     pickupCoords,
     destinationAddress,
     destinationCoords,
+    sizeFilter,
+    setSizeFilter,
   } = useTravelMatchStore();
 
   // Orden de la lista de chóferes (reordena, no filtra)
@@ -131,7 +134,11 @@ export default function MatchingPage() {
   );
 
   const sortedCharters = useMemo(() => {
-    const copy = [...availableCharters];
+    // Filtro por tamaño (client-side). null = "Todos".
+    let copy = [...availableCharters];
+    if (sizeFilter) {
+      copy = copy.filter((c) => c.vehicleSize === sizeFilter);
+    }
     if (sortBy === 'helpers') {
       return copy.sort((a, b) => {
         const diff = (b.helpersCount ?? 0) - (a.helpersCount ?? 0);
@@ -149,7 +156,7 @@ export default function MatchingPage() {
       });
     }
     return copy.sort((a, b) => a.distanceToPickup - b.distanceToPickup);
-  }, [availableCharters, sortBy]);
+  }, [availableCharters, sortBy, sizeFilter]);
 
   // Polling fallback: Detect when charter accepts via polling (WebSocket may be unreliable)
   const { data: polledMatch } = useMatch(currentMatch?.id || '');
@@ -435,6 +442,55 @@ export default function MatchingPage() {
             })}
           </Box>
         )}
+
+        {/* Filtro por tamaño de flete (client-side). null = "Todos". */}
+        {availableCharters.length > 0 && (
+          <Box
+            sx={{
+              mt: 1.5,
+              display: 'inline-flex',
+              p: 0.5,
+              gap: 0.5,
+              bgcolor: 'background.default',
+              borderRadius: 999,
+            }}
+          >
+            {([
+              { key: null, label: 'Todos', title: 'Todos los tamaños' },
+              ...Object.values(VehicleSize).map((s) => ({
+                key: s,
+                label: VEHICLE_SIZE_SHORT[s],
+                title: VEHICLE_SIZE_LABELS[s],
+              })),
+            ]).map(({ key, label, title }) => {
+              const active = sizeFilter === key;
+              return (
+                <Box
+                  key={key ?? 'all'}
+                  component='button'
+                  type='button'
+                  title={title}
+                  onClick={() => setSizeFilter(key)}
+                  sx={{
+                    border: 'none',
+                    cursor: 'pointer',
+                    px: 2,
+                    py: 0.75,
+                    borderRadius: 999,
+                    fontSize: '0.8rem',
+                    fontWeight: active ? 700 : 500,
+                    fontFamily: 'inherit',
+                    color: active ? 'secondary.contrastText' : 'text.secondary',
+                    bgcolor: active ? 'secondary.main' : 'transparent',
+                    transition: 'all 0.2s ease-in-out',
+                  }}
+                >
+                  {label}
+                </Box>
+              );
+            })}
+          </Box>
+        )}
       </Box>
 
       {/* Mapa de ruta */}
@@ -534,6 +590,25 @@ export default function MatchingPage() {
               isCancelling={cancelMutation.isPending}
             />
           )}
+
+          {/* Filtro por tamaño dejó la lista vacía, pero hay charters de otros
+              tamaños. Distinto del alert de "0 chóferes en 30 km". */}
+          {!selectedCharterPending &&
+            sortedCharters.length === 0 &&
+            sizeFilter && (
+              <Box sx={{ textAlign: 'center', py: 4 }}>
+                <Typography sx={{ mb: 2 }} color='text.secondary'>
+                  No hay {VEHICLE_SIZE_LABELS[sizeFilter]} disponibles cerca.
+                </Typography>
+                <Button
+                  variant='outlined'
+                  color='secondary'
+                  onClick={() => setSizeFilter(null)}
+                >
+                  Ver todos los tamaños
+                </Button>
+              </Box>
+            )}
 
           {sortedCharters.map((charter) => {
             const isPending =

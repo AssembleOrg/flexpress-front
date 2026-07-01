@@ -62,7 +62,7 @@ import {
 } from "@/lib/hooks/useWebSocket";
 import { useAuthStore } from "@/lib/stores/authStore";
 import type { User } from "@/lib/types/api";
-import { TravelMatchStatus, UserRole } from "@/lib/types/api";
+import { TravelMatchStatus, UserRole, VEHICLE_SIZE_LABELS } from "@/lib/types/api";
 import { getDirectionsUrl } from "@/lib/utils/mapLinks";
 import { downloadPDF, generateClientReceipt } from "@/lib/utils/pdfGenerator";
 
@@ -809,6 +809,19 @@ export default function MatchDetailPage() {
                                 value:
                                   match.charter.charterAvailability.vehicle
                                     .plate,
+                              },
+                            ]
+                          : []),
+                        ...(match.charter.charterAvailability.vehicle.size
+                          ? [
+                              {
+                                icon: <LocalShipping sx={{ fontSize: 16 }} />,
+                                label: "Tamaño",
+                                value:
+                                  VEHICLE_SIZE_LABELS[
+                                    match.charter.charterAvailability.vehicle
+                                      .size
+                                  ],
                               },
                             ]
                           : []),

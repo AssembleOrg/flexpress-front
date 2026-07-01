@@ -20,6 +20,7 @@ import {
 import { RatingDisplay } from "@/components/ui/RatingDisplay";
 import { PriceBreakdown } from "@/components/ui/PriceBreakdown";
 import type { AvailableCharter } from "@/lib/types/api";
+import { VEHICLE_SIZE_LABELS, VEHICLE_SIZE_SHORT } from "@/lib/types/api";
 
 interface CharterCardProps {
   charter: AvailableCharter;
@@ -182,6 +183,16 @@ export function CharterCard({
             <Typography variant="body2" color="text.secondary" noWrap sx={{ flex: 1, minWidth: 0 }}>
               {[charter.vehicleBrand, charter.vehicleModel].filter(Boolean).join(" ")}
             </Typography>
+            {charter.vehicleSize && (
+              <Chip
+                label={VEHICLE_SIZE_SHORT[charter.vehicleSize]}
+                title={VEHICLE_SIZE_LABELS[charter.vehicleSize]}
+                size="small"
+                color="secondary"
+                variant="outlined"
+                sx={{ fontSize: "0.7rem", height: 20, fontWeight: 700, flexShrink: 0 }}
+              />
+            )}
             {charter.vehiclePlate && (
               <Chip
                 label={charter.vehiclePlate}

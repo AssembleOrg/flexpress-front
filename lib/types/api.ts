@@ -69,6 +69,26 @@ export enum VehicleDocumentType {
   VTV = "vtv",
 }
 
+export enum VehicleSize {
+  CHICO = "chico",
+  MEDIANO = "mediano",
+  GRANDE = "grande",
+}
+
+// Label completo: Select de alta, tooltips, diálogos de admin (donde hay espacio).
+export const VEHICLE_SIZE_LABELS: Record<VehicleSize, string> = {
+  [VehicleSize.CHICO]: "Flete Chico",
+  [VehicleSize.MEDIANO]: "Flete Mediano",
+  [VehicleSize.GRANDE]: "Flete Grande",
+};
+
+// Label corto FC/FM/FG: pills y chips compactos (filtros del cliente, chips inline).
+export const VEHICLE_SIZE_SHORT: Record<VehicleSize, string> = {
+  [VehicleSize.CHICO]: "FC",
+  [VehicleSize.MEDIANO]: "FM",
+  [VehicleSize.GRANDE]: "FG",
+};
+
 // ============================================
 // INTERFACES
 // ============================================
@@ -105,6 +125,7 @@ export interface User {
       model: string | null;
       plate: string;
       year: number | null;
+      size?: VehicleSize | null;
     } | null;
   } | null;
 }
@@ -174,6 +195,7 @@ export interface AvailableCharter {
   vehicleModel?: string | null;
   vehiclePlate?: string | null;
   vehicleYear?: number | null;
+  vehicleSize?: VehicleSize | null;
   // Ejecutor activo: el conductor (extra o titular) que representa hoy a la
   // cuenta. Es lo que el cliente ve antes de elegir → transparencia.
   activeDriverName?: string;
@@ -341,6 +363,7 @@ export interface Vehicle {
   model: string | null;
   year: number | null;
   alias: string | null;
+  size: VehicleSize;
   isEnabled: boolean;
   verificationStatus: VerificationStatus;
   rejectionReason: string | null;

@@ -18,7 +18,7 @@ import {
   Phone as PhoneIcon,
 } from "@mui/icons-material";
 import type { PendingCharterReviewItem, Vehicle } from "@/lib/types/api";
-import { DocumentReviewStatus, VerificationStatus } from "@/lib/types/api";
+import { DocumentReviewStatus, VerificationStatus, VEHICLE_SIZE_LABELS } from "@/lib/types/api";
 
 const DOC_TYPE_LABEL: Record<string, string> = {
   foto: "Foto",
@@ -194,6 +194,13 @@ export function MobileCharterVerificationCard({
                         {vehicle.brand ? ` — ${vehicle.brand}` : ""}
                         {vehicle.alias ? ` (${vehicle.alias})` : ""}
                       </Typography>
+                      <Chip
+                        label={VEHICLE_SIZE_LABELS[vehicle.size]}
+                        size="small"
+                        color="info"
+                        variant="filled"
+                        sx={{ height: 18, fontSize: "0.62rem", fontWeight: 700 }}
+                      />
                       <Chip
                         label={
                           vehicle.verificationStatus === VerificationStatus.VERIFIED

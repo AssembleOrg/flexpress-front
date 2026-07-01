@@ -4,6 +4,7 @@ import { DirectionsCar, NotificationsActive } from "@mui/icons-material";
 import { Avatar, Box, Button, Typography } from "@mui/material";
 import { motion } from "framer-motion";
 import type { AvailableCharter } from "@/lib/types/api";
+import { VEHICLE_SIZE_SHORT } from "@/lib/types/api";
 
 interface WaitingForCharterCardProps {
   charter: AvailableCharter;
@@ -133,6 +134,9 @@ export function WaitingForCharterCard({
               />
               <Typography variant="caption" noWrap sx={{ color: "text.secondary" }}>
                 {vehicle}
+                {charter.vehicleSize
+                  ? ` · ${VEHICLE_SIZE_SHORT[charter.vehicleSize]}`
+                  : ""}
               </Typography>
             </Box>
           )}

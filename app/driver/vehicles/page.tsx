@@ -51,6 +51,7 @@ import {
   type VehicleDocument,
   VerificationStatus,
   VehicleDocumentType,
+  VEHICLE_SIZE_LABELS,
 } from "@/lib/types/api";
 import { VEHICLE_BRANDS } from "@/lib/constants/vehicleBrands";
 
@@ -255,6 +256,7 @@ function VehicleCard({ vehicle }: { vehicle: Vehicle }) {
                   color={vehicle.isEnabled ? "success" : "default"}
                   label={vehicle.isEnabled ? "Disponible" : "No disponible"}
                 />
+                <StatusPill color="default" label={VEHICLE_SIZE_LABELS[vehicle.size]} />
               </Box>
               <Typography variant="body2" color="text.secondary" sx={{ mt: 0.75 }}>
                 {vehicle.brand || "Sin marca"} {vehicle.model && `- ${vehicle.model}`}

@@ -33,6 +33,11 @@ import { useHydrated } from '@/lib/hooks/useHydrated';
 import { useAuthStore } from '@/lib/stores/authStore';
 import { useTravelMatchStore } from '@/lib/stores/travelMatchStore';
 import { isActiveTrip } from '@/lib/utils/matchHelpers';
+import {
+  VehicleSize,
+  VEHICLE_SIZE_LABELS,
+  VEHICLE_SIZE_SHORT,
+} from '@/lib/types/api';
 
 const MotionCard = motion.create(Card);
 const MotionButton = motion.create(Button);
@@ -64,7 +69,17 @@ export default function NewTripPage() {
     destinationCoords,
     setPickupLocation,
     setDestinationLocation,
+    sizeFilter,
+    setSizeFilter,
   } = useTravelMatchStore();
+
+  // El tamaño elegido acá es preferencia inicial: preselecciona el filtro en la
+  // vista de matching (via store). "grande" habilita pedir ayudantes.
+  const vehicleSize = sizeFilter ?? VehicleSize.CHICO;
+  const handleSizeChange = (s: VehicleSize) => {
+    setSizeFilter(s);
+    if (s !== VehicleSize.GRANDE) setHelpersNeeded(0);
+  };
 
   // Mutation for creating match
   const createMatchMutation = useCreateMatch();
@@ -492,6 +507,37 @@ export default function NewTripPage() {
                 </Typography>
               </Box>
 
+              {/* Tamaño de flete buscado (FC/FM/FG) — preselecciona el filtro en matching */}
+              <Box sx={{ mb: 2 }}>
+                <Typography
+                  variant='body2'
+                  sx={{ fontWeight: 600, color: 'text.secondary', mb: 1 }}
+                >
+                  Tamaño de flete
+                </Typography>
+                <Stack direction='row' spacing={1}>
+                  {Object.values(VehicleSize).map((s) => {
+                    const active = vehicleSize === s;
+                    return (
+                      <Chip
+                        key={s}
+                        label={VEHICLE_SIZE_SHORT[s]}
+                        title={VEHICLE_SIZE_LABELS[s]}
+                        onClick={() => handleSizeChange(s)}
+                        color={active ? 'secondary' : 'default'}
+                        variant={active ? 'filled' : 'outlined'}
+                        sx={{
+                          minWidth: 56,
+                          height: 40,
+                          fontWeight: active ? 700 : 500,
+                          cursor: 'pointer',
+                        }}
+                      />
+                    );
+                  })}
+                </Stack>
+              </Box>
+
               <TextField
                 value={cargoText}
                 onChange={(e) => setCargoText(e.target.value.slice(0, CARGO_MAX))}
@@ -510,44 +556,47 @@ export default function NewTripPage() {
                 }}
               />
 
-              <Box sx={{ mt: 2 }}>
-                <Box
-                  sx={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 1,
-                    mb: 1,
-                  }}
-                >
-                  <Group sx={{ fontSize: 18, color: 'text.secondary' }} />
-                  <Typography
-                    variant='body2'
-                    sx={{ fontWeight: 600, color: 'text.secondary' }}
+              {/* Ayudantes: solo disponible para Flete Grande */}
+              {vehicleSize === VehicleSize.GRANDE && (
+                <Box sx={{ mt: 2 }}>
+                  <Box
+                    sx={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 1,
+                      mb: 1,
+                    }}
                   >
-                    Ayudantes que necesitás
-                  </Typography>
+                    <Group sx={{ fontSize: 18, color: 'text.secondary' }} />
+                    <Typography
+                      variant='body2'
+                      sx={{ fontWeight: 600, color: 'text.secondary' }}
+                    >
+                      Ayudantes que necesitás
+                    </Typography>
+                  </Box>
+                  <Stack direction='row' spacing={1}>
+                    {[0, 1, 2, 3, 4].map((n) => {
+                      const active = helpersNeeded === n;
+                      return (
+                        <Chip
+                          key={n}
+                          label={n === 0 ? 'Ninguno' : n}
+                          onClick={() => setHelpersNeeded(n)}
+                          color={active ? 'secondary' : 'default'}
+                          variant={active ? 'filled' : 'outlined'}
+                          sx={{
+                            minWidth: n === 0 ? 80 : 44,
+                            height: 40,
+                            fontWeight: active ? 700 : 500,
+                            cursor: 'pointer',
+                          }}
+                        />
+                      );
+                    })}
+                  </Stack>
                 </Box>
-                <Stack direction='row' spacing={1}>
-                  {[0, 1, 2, 3, 4].map((n) => {
-                    const active = helpersNeeded === n;
-                    return (
-                      <Chip
-                        key={n}
-                        label={n === 0 ? 'Ninguno' : n}
-                        onClick={() => setHelpersNeeded(n)}
-                        color={active ? 'secondary' : 'default'}
-                        variant={active ? 'filled' : 'outlined'}
-                        sx={{
-                          minWidth: n === 0 ? 80 : 44,
-                          height: 40,
-                          fontWeight: active ? 700 : 500,
-                          cursor: 'pointer',
-                        }}
-                      />
-                    );
-                  })}
-                </Stack>
-              </Box>
+              )}
             </Box>
           </motion.div>
 

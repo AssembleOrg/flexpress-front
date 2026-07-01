@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import toast from "react-hot-toast";
 import { api } from "@/lib/api";
-import type { Vehicle, VehicleDocument, VehicleDocumentType } from "@/lib/types/api";
+import type { Vehicle, VehicleDocument, VehicleDocumentType, VehicleSize } from "@/lib/types/api";
 
 export interface CreateVehicleRequest {
   plate: string;
@@ -9,6 +9,7 @@ export interface CreateVehicleRequest {
   model?: string;
   year?: number;
   alias?: string;
+  size?: VehicleSize;
 }
 
 export interface CreateVehicleDocumentRequest {

@@ -24,7 +24,7 @@ import {
 import { DirectionsCar, Add, CheckCircle } from "@mui/icons-material";
 import toast from "react-hot-toast";
 import { useCreateVehicle, useCreateVehicleDocument } from "@/lib/hooks/mutations/useVehicleMutations";
-import { VehicleDocumentType } from "@/lib/types/api";
+import { VehicleDocumentType, VehicleSize, VEHICLE_SIZE_LABELS } from "@/lib/types/api";
 import { uploadFiles } from "@/lib/uploadthing";
 import type { Vehicle } from "@/lib/types/api";
 import { useAuthStore } from "@/lib/stores/authStore";
@@ -39,6 +39,7 @@ const vehicleSchema = z.object({
   brand: z.string().optional(),
   model: z.string().optional(),
   year: z.coerce.number().int().min(1990).max(2100).optional(),
+  size: z.nativeEnum(VehicleSize).default(VehicleSize.CHICO),
 });
 
 type VehicleForm = z.infer<typeof vehicleSchema>;
@@ -117,7 +118,7 @@ function VehicleOnboardingForm({ onVehicleCreated, vehicleNumber }: { onVehicleC
 
   const { register, handleSubmit, control, formState: { errors } } = useForm<any>({
     resolver: zodResolver(vehicleSchema),
-    defaultValues: { plate: "", brand: "", model: "", year: "" },
+    defaultValues: { plate: "", brand: "", model: "", year: "", size: VehicleSize.CHICO },
   });
 
   const onSubmit = (data: VehicleForm) => {
@@ -166,7 +167,26 @@ function VehicleOnboardingForm({ onVehicleCreated, vehicleNumber }: { onVehicleC
               </FormControl>
               <TextField {...register("model")} label="Modelo" sx={{ flex: 1, minWidth: 120 }} />
               <TextField {...register("year")} label="Año" type="number" sx={{ flex: 1, minWidth: 100 }} />
+              <FormControl sx={{ flex: 1, minWidth: 160 }}>
+                <InputLabel>Tamaño del flete</InputLabel>
+                <Controller
+                  name="size"
+                  control={control}
+                  render={({ field }) => (
+                    <Select {...field} label="Tamaño del flete">
+                      {Object.values(VehicleSize).map((s) => (
+                        <MenuItem key={s} value={s}>
+                          {VEHICLE_SIZE_LABELS[s]}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  )}
+                />
+              </FormControl>
             </Box>
+            <Typography variant="caption" color="text.secondary" sx={{ display: "block", mt: 1 }}>
+              El tamaño no se puede cambiar luego. "Flete Grande" habilita que el cliente pida ayudantes.
+            </Typography>
             <Button
               type="submit"
               variant="contained"

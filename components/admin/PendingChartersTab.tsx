@@ -36,7 +36,7 @@ import {
 import { usePendingCharters, usePendingVehicles } from "@/lib/hooks/queries/useAdminQueries";
 import { useVerifyCharter, useVerifyVehicle } from "@/lib/hooks/mutations/useAdminMutations";
 import type { PendingCharterReviewItem, Vehicle } from "@/lib/types/api";
-import { DocumentReviewStatus, VerificationStatus } from "@/lib/types/api";
+import { DocumentReviewStatus, VerificationStatus, VEHICLE_SIZE_LABELS } from "@/lib/types/api";
 import { MobileCharterVerificationCard } from "./mobile/MobileCharterVerificationCard";
 import { useTheme, useMediaQuery } from "@mui/material";
 
@@ -54,6 +54,21 @@ function docStatusColor(status: DocumentReviewStatus) {
   if (status === DocumentReviewStatus.APPROVED) return "#2e7d32";
   if (status === DocumentReviewStatus.REJECTED) return "#d32f2f";
   return "#dca621";
+}
+
+// Tamaño declarado del flete: el admin debe verlo para detectar errores
+// (ej: un camión cargado como "Flete Chico"). Prominente (filled, info) para
+// que resalte y se distinga del chip de estado.
+function VehicleSizeChip({ size }: { size: Vehicle["size"] }) {
+  return (
+    <Chip
+      label={VEHICLE_SIZE_LABELS[size]}
+      size="small"
+      color="info"
+      variant="filled"
+      sx={{ height: 20, fontSize: "0.7rem", fontWeight: 700 }}
+    />
+  );
 }
 
 // ─── Vehicle section inside accordion ────────────────────────────────────────
@@ -79,6 +94,7 @@ function VehicleSection({ vehicle, index, onApprove, onReject, isPending }: Vehi
           {vehicle.model ? ` ${vehicle.model}` : ""}
           {vehicle.alias ? ` (${vehicle.alias})` : ""}
         </Typography>
+        <VehicleSizeChip size={vehicle.size} />
         <Chip
           label={
             isVerified ? "Aprobado" : isRejected ? "Rechazado" : "Pendiente"
@@ -198,6 +214,7 @@ function StandaloneVehicleCard({ vehicle, onApprove, onReject, isPending }: Stan
               {vehicle.model ? ` ${vehicle.model}` : ""}
               {vehicle.year ? ` (${vehicle.year})` : ""}
             </Typography>
+            <VehicleSizeChip size={vehicle.size} />
             <Chip label="Pendiente" size="small" color="warning" sx={{ fontSize: "0.65rem", height: 20 }} />
             {vehicle.charter && (
               <>
@@ -715,6 +732,7 @@ export function PendingChartersTab() {
                       <Typography variant="body2" flex={1}>
                         {v.plate}{v.brand ? ` — ${v.brand}` : ""}{v.model ? ` ${v.model}` : ""}
                       </Typography>
+                      <VehicleSizeChip size={v.size} />
                       <Chip
                         label={isVerified ? "Aprobado" : isRejected ? "Rechazado" : "Pendiente"}
                         size="small"
@@ -801,6 +819,14 @@ export function PendingChartersTab() {
             ¿Aprobar el vehículo <strong>{approveVehicle?.plate}</strong>
             {approveVehicle?.brand ? ` — ${approveVehicle.brand}` : ""}?
           </Typography>
+          {approveVehicle && (
+            <Stack direction="row" spacing={1} alignItems="center" sx={{ mt: 1.5 }}>
+              <Typography variant="caption" color="text.secondary">
+                Tamaño declarado:
+              </Typography>
+              <VehicleSizeChip size={approveVehicle.size} />
+            </Stack>
+          )}
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setApproveVehicleDialogOpen(false)}>Cancelar</Button>

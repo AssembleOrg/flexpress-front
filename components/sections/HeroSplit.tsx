@@ -159,7 +159,7 @@ export function HeroSplit() {
       <Box
         display="flex"
         flexDirection="row"
-        gap={4}
+        gap={2}
         sx={{
           width: "100%",
           position: "relative",
@@ -179,6 +179,7 @@ export function HeroSplit() {
             px: 2,
             fontSize: "1rem",
             fontWeight: 700,
+            whiteSpace: "nowrap",
             boxShadow: "0 10px 30px rgba(220, 166, 33, 0.3)",
             flex: 1,
             minWidth: "100px",
@@ -200,6 +201,7 @@ export function HeroSplit() {
             px: 2,
             fontSize: "1rem",
             fontWeight: 700,
+            whiteSpace: "nowrap",
             boxShadow: "0 10px 30px rgba(220, 166, 33, 0.3)",
             flex: 1,
             minWidth: "100px",
@@ -209,7 +211,7 @@ export function HeroSplit() {
             },
           }}
         >
-          Ser Conductor
+          Iniciar Sesión
         </Button>
       </Box>
     </Box>
@@ -426,6 +428,7 @@ export function HeroSplit() {
                         px: 2,
                         fontSize: "1.1rem",
                         fontWeight: 600,
+                        whiteSpace: "nowrap",
                         color: "white",
                         borderColor: "white",
                         borderWidth: 2,
@@ -435,7 +438,7 @@ export function HeroSplit() {
                         },
                       }}
                     >
-                      Ser Conductor
+                      Iniciar Sesión
                     </Button>
                   </motion.div>
                 </Box>

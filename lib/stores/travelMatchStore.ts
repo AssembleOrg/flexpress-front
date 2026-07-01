@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import type { AvailableCharter, TravelMatch } from "@/lib/types/api";
+import { VehicleSize } from "@/lib/types/api";
 
 export interface Coordinates {
   lat: number;
@@ -19,6 +20,9 @@ export interface TravelMatchState {
   destinationCoords: Coordinates | null;
   workersCount: number;
   scheduledDate: string | null;
+  // Preferencia de tamaño de flete: se elige en la búsqueda y filtra la lista de
+  // matching (client-side). null = "Todos". No se persiste. Default: chico.
+  sizeFilter: VehicleSize | null;
 }
 
 interface TravelMatchActions {
@@ -34,6 +38,7 @@ interface TravelMatchActions {
   setDestinationLocation: (address: string, coords: Coordinates) => void;
   setWorkersCount: (count: number) => void;
   setScheduledDate: (date: string | null) => void;
+  setSizeFilter: (size: VehicleSize | null) => void;
   clearSearchForm: () => void;
 }
 
@@ -54,6 +59,7 @@ export const useTravelMatchStore = create<
       destinationCoords: null,
       workersCount: 0,
       scheduledDate: null,
+      sizeFilter: VehicleSize.CHICO,
 
       // Acciones
       setCurrentMatch: (match: TravelMatch | null) =>
@@ -106,6 +112,8 @@ export const useTravelMatchStore = create<
       setWorkersCount: (count: number) => set({ workersCount: count }),
 
       setScheduledDate: (date: string | null) => set({ scheduledDate: date }),
+
+      setSizeFilter: (size: VehicleSize | null) => set({ sizeFilter: size }),
 
       clearSearchForm: () =>
         set({
