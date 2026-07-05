@@ -19,12 +19,12 @@ import {
 } from '@mui/material';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ConfirmMatchModal } from '@/components/modals/ConfirmMatchModal';
 import { CharterCard } from '@/components/ui/CharterCard';
 import { RouteMap } from '@/components/ui/Map';
 import { WaitingForCharterCard } from '@/components/ui/WaitingForCharterCard';
-import { useSelectCharter, useCancelMatch } from '@/lib/hooks/mutations/useTravelMatchMutations';
+import { useSelectCharter, useCancelMatch, useCreateMatch } from '@/lib/hooks/mutations/useTravelMatchMutations';
 import { useCreateInquiry } from '@/lib/hooks/mutations/useAvailabilityInquiriesMutations';
 import { useUserFeedback } from '@/lib/hooks/queries/useFeedbackQueries';
 import { useMatch } from '@/lib/hooks/queries/useTravelMatchQueries';
@@ -73,6 +73,19 @@ export default function MatchingPage() {
   const router = useRouter();
   const selectMutation = useSelectCharter();
   const cancelMutation = useCancelMatch();
+  const createMatchMutation = useCreateMatch();
+
+  // Evita el doble descuento de crédito cuando socket + polling reportan el
+  // mismo ACCEPTED. Se marca por match para no bloquear futuros matches.
+  const chargedCreditMatchId = useRef<string | null>(null);
+
+  // Evita regenerar la búsqueda dos veces cuando el mismo evento terminal llega
+  // por dos vías (socket + watchdog, o cancel + socket CANCELLED).
+  const isRegenerating = useRef(false);
+
+  // Idempotencia de eventos terminales (REJECTED/EXPIRED/CANCELLED): no procesar
+  // dos veces el mismo (match + estado) que puede llegar por socket y polling.
+  const handledTerminal = useRef<string | null>(null);
 
   // Modal state
   const [confirmModalOpen, setConfirmModalOpen] = useState(false);
@@ -128,6 +141,60 @@ export default function MatchingPage() {
     setSizeFilter,
   } = useTravelMatchStore();
 
+  // ¿El match permite (re)seleccionar chófer? Alineado con el guard del backend
+  // (searching/pending/rejected). En estados terminales (accepted/completed/
+  // cancelled/expired) la lista queda deshabilitada y se regenera la búsqueda.
+  const isMatchSelectable =
+    !!currentMatch &&
+    ['searching', 'pending', 'rejected'].includes(currentMatch.status);
+
+  // Regenera la búsqueda reutilizando los datos del match actual (origen,
+  // destino, ayudantes, carga) y deja al cliente en la lista con chóferes
+  // frescos, SIN re-completar el formulario. Se usa cuando el match quedó en un
+  // estado no reseleccionable (cancelado/expirado). Si algo falla, cae al
+  // formulario, que conserva las direcciones desde el store persistido.
+  const researchWithSameData = useCallback(async () => {
+    // Guard contra doble regeneración (socket + watchdog en el mismo tick).
+    if (isRegenerating.current) return;
+
+    const match = useTravelMatchStore.getState().currentMatch;
+    if (!match) {
+      router.push('/client/trips/new');
+      return;
+    }
+
+    // Sin créditos no tiene sentido regenerar: el viaje no podría cerrarse.
+    // Avisamos y mandamos al formulario, que muestra el CTA de recargar.
+    const currentCredits = useAuthStore.getState().user?.credits ?? 0;
+    if (currentCredits < 1) {
+      setNotificationMessage('No tenés créditos para buscar otro chófer.');
+      setNotificationOpen(true);
+      router.push('/client/trips/new');
+      return;
+    }
+
+    isRegenerating.current = true;
+    try {
+      await createMatchMutation.mutateAsync({
+        pickupAddress: match.pickupAddress,
+        pickupLatitude: match.pickupLatitude,
+        pickupLongitude: match.pickupLongitude,
+        destinationAddress: match.destinationAddress,
+        destinationLatitude: match.destinationLatitude,
+        destinationLongitude: match.destinationLongitude,
+        workersCount: match.workersCount,
+        cargoDescription: match.cargoDescription || undefined,
+        scheduledDate: match.scheduledDate || undefined,
+      });
+      chargedCreditMatchId.current = null;
+      handledTerminal.current = null;
+    } catch {
+      router.push('/client/trips/new');
+    } finally {
+      isRegenerating.current = false;
+    }
+  }, [createMatchMutation, router]);
+
   // Orden de la lista de chóferes (reordena, no filtra)
   const [sortBy, setSortBy] = useState<'distance' | 'helpers' | 'price'>(
     'distance',
@@ -167,10 +234,15 @@ export default function MatchingPage() {
       console.log('🔔 [MATCHING] Match status updated:', status);
 
       if (status === 'ACCEPTED') {
-        // Descontar 1 crédito al cliente cuando el charter acepta
-        const { user: currentUser, updateUser } = useAuthStore.getState();
-        if (currentUser) {
-          updateUser({ credits: Math.max(0, currentUser.credits - 1) });
+        // Descontar 1 crédito al cliente cuando el charter acepta.
+        // Guard de idempotencia: socket y polling pueden reportar el mismo
+        // ACCEPTED; solo descontamos una vez por match.
+        if (currentMatch?.id && chargedCreditMatchId.current !== currentMatch.id) {
+          chargedCreditMatchId.current = currentMatch.id;
+          const { user: currentUser, updateUser } = useAuthStore.getState();
+          if (currentUser) {
+            updateUser({ credits: Math.max(0, currentUser.credits - 1) });
+          }
         }
 
         setNotificationMessage(
@@ -185,19 +257,59 @@ export default function MatchingPage() {
             router.push(`/client/trips/matching/${currentMatch.id}`);
           }
         }, 2000);
-      } else if (status === 'REJECTED') {
-        setNotificationMessage(
-          `El chófer ${selectedCharterPending?.charterName} no pudo aceptar tu solicitud.`
-        );
-        setNotificationOpen(true);
+      } else if (
+        status === 'REJECTED' ||
+        status === 'EXPIRED' ||
+        status === 'CANCELLED'
+      ) {
+        // Solo procesamos un evento terminal si estábamos esperando a un chófer.
+        // Un disparo con pending ya en null es un duplicado tardío (socket +
+        // polling) o un eco: lo ignoramos.
+        if (!selectedCharterPending) return;
+
+        // Idempotencia extra por si el mismo evento llega dos veces mientras el
+        // pending sigue seteado. Key = match + estado + chófer pendiente.
+        const terminalKey = `${currentMatch?.id ?? ''}:${status}:${selectedCharterPending.charterId}`;
+        if (handledTerminal.current === terminalKey) return;
+        handledTerminal.current = terminalKey;
+
         setSelectedCharterPending(null);
-      } else if (status === 'EXPIRED') {
-        setNotificationMessage('La solicitud ha expirado.');
-        setNotificationOpen(true);
-        setSelectedCharterPending(null);
+
+        if (status === 'REJECTED') {
+          // El match queda 'rejected' pero reseleccionable: quitamos al chófer
+          // que rechazó de la lista para que no se lo pueda volver a elegir.
+          const rejectedId = selectedCharterPending?.charterId;
+          if (rejectedId) {
+            const store = useTravelMatchStore.getState();
+            store.setAvailableCharters(
+              store.availableCharters.filter(
+                (c) => c.charterId !== rejectedId,
+              ),
+            );
+          }
+          setNotificationMessage(
+            `El chófer ${selectedCharterPending?.charterName} no pudo aceptar tu solicitud. Podés elegir otro.`
+          );
+          setNotificationOpen(true);
+        } else {
+          // EXPIRED / CANCELLED son terminales no reseleccionables:
+          // regeneramos la búsqueda para poder elegir otro sin re-tipear.
+          setNotificationMessage(
+            status === 'EXPIRED'
+              ? 'La solicitud expiró. Buscando chóferes de nuevo…'
+              : 'La solicitud fue cancelada. Buscando chóferes de nuevo…'
+          );
+          setNotificationOpen(true);
+          void researchWithSameData();
+        }
       }
     },
-    [selectedCharterPending?.charterName, currentMatch?.id, router]
+    [
+      selectedCharterPending,
+      currentMatch?.id,
+      router,
+      researchWithSameData,
+    ]
   );
 
   // Listen for match updates
@@ -246,26 +358,30 @@ export default function MatchingPage() {
     return () => clearInterval(interval);
   }, [selectedCharterPending, currentMatch]);
 
-  // Monitor expiration: if match expires while we have a pending charter, clear it
+  // Monitor expiration: if match expires while we have a pending charter,
+  // regenera la búsqueda para que el cliente pueda elegir otro chófer.
   useEffect(() => {
     if (!selectedCharterPending || !currentMatch) {
       return;
     }
 
+    let handled = false;
     // Check every 5 seconds if the match has expired
     const expirationCheckInterval = setInterval(() => {
-      if (isMatchExpired(currentMatch)) {
+      if (!handled && isMatchExpired(currentMatch)) {
+        handled = true;
         console.warn(
-          `⏰ [MATCHING PAGE] Match ${currentMatch.id} has expired, clearing pending charter`
+          `⏰ [MATCHING PAGE] Match ${currentMatch.id} has expired, re-buscando`
         );
         setSelectedCharterPending(null);
-        setNotificationMessage('La solicitud ha expirado.');
+        setNotificationMessage('La solicitud expiró. Buscando chóferes de nuevo…');
         setNotificationOpen(true);
+        void researchWithSameData();
       }
     }, 5000);
 
     return () => clearInterval(expirationCheckInterval);
-  }, [selectedCharterPending, currentMatch]);
+  }, [selectedCharterPending, currentMatch, researchWithSameData]);
 
   // Si no hay match activo, mostrar mensaje
   if (!currentMatch) {
@@ -294,21 +410,27 @@ export default function MatchingPage() {
     );
   }
 
-  // Cancel pending charter selection
+  // Cancel pending charter selection.
+  // Conserva la búsqueda: cancela el match actual y regenera uno nuevo con los
+  // mismos datos para que el cliente pueda elegir otro chófer sin re-tipear.
   const handleCancelPending = async () => {
     if (!currentMatch) return;
     try {
       await cancelMutation.mutateAsync(currentMatch.id);
-      useTravelMatchStore.getState().clearPersistedMatch();
-      router.push('/client/trips/new');
+      chargedCreditMatchId.current = null;
+      setSelectedCharterPending(null);
+      // Regenera la búsqueda; si falla, researchWithSameData cae al formulario.
+      await researchWithSameData();
     } catch {
-      // error handled by mutation's onError toast
+      // error handled by mutations' onError toast
     }
   };
 
   // Abrir modal de confirmación cuando user selecciona un charter
   const handleSelectCharter = (charter: AvailableCharter) => {
-    if (selectedCharterPending) return;
+    // No permitir seleccionar mientras se espera confirmación de otro chófer,
+    // ni sobre un match en estado no seleccionable.
+    if (selectedCharterPending || !isMatchSelectable) return;
     setSelectedCharterForConfirm(charter);
     setConfirmModalOpen(true);
   };
@@ -617,7 +739,12 @@ export default function MatchingPage() {
               <CharterCardWithRating
                 key={charter.charterId}
                 charter={charter}
-                isLoading={selectMutation.isPending || !!selectedCharterPending}
+                isLoading={
+                  selectMutation.isPending ||
+                  createMatchMutation.isPending ||
+                  !!selectedCharterPending ||
+                  !isMatchSelectable
+                }
                 isPending={isPending}
                 onSelect={() => handleSelectCharter(charter)}
                 onInquiry={() => handleOpenInquiryConfirm(charter)}

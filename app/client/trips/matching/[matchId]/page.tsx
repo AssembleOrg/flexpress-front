@@ -48,7 +48,10 @@ import LeafletMap, {
 } from "@/components/ui/LeafletMap";
 import { conversationApi } from "@/lib/api/conversations";
 import { MOBILE_BOTTOM_NAV_HEIGHT } from "@/lib/constants/mobileDesign";
-import { useCreateTripFromMatch } from "@/lib/hooks/mutations/useTravelMatchMutations";
+import {
+  useCreateMatch,
+  useCreateTripFromMatch,
+} from "@/lib/hooks/mutations/useTravelMatchMutations";
 import { useClientConfirmCompletion } from "@/lib/hooks/mutations/useTripMutations";
 import {
   useCanGiveFeedback,
@@ -110,7 +113,42 @@ export default function MatchDetailPage() {
   };
   const { data: match, isLoading, refetch: refetchMatch } = useMatch(matchId);
   const createTripMutation = useCreateTripFromMatch();
+  const createMatchMutation = useCreateMatch();
   const clientConfirmCompletionMutation = useClientConfirmCompletion();
+
+  // Recuperación tras rechazo/expiración/cancelación: regenera la búsqueda con
+  // los MISMOS datos del match (origen, destino, ayudantes, carga) y lleva al
+  // cliente a la lista de chóferes, sin re-completar el formulario.
+  const handleSearchAnother = async () => {
+    if (!match) {
+      router.push("/client/trips/new");
+      return;
+    }
+    // Sin créditos no se puede cerrar un viaje: mandamos al formulario, que
+    // muestra el CTA de recargar créditos.
+    if ((user?.credits ?? 0) < 1) {
+      toast.error("No tenés créditos para buscar otro chófer.");
+      router.push("/client/trips/new");
+      return;
+    }
+    try {
+      await createMatchMutation.mutateAsync({
+        pickupAddress: match.pickupAddress,
+        pickupLatitude: match.pickupLatitude,
+        pickupLongitude: match.pickupLongitude,
+        destinationAddress: match.destinationAddress,
+        destinationLatitude: match.destinationLatitude,
+        destinationLongitude: match.destinationLongitude,
+        workersCount: match.workersCount,
+        cargoDescription: match.cargoDescription || undefined,
+        scheduledDate: match.scheduledDate || undefined,
+      });
+      router.push("/client/trips/matching");
+    } catch {
+      // Fallback: el formulario tiene los datos del store persistido.
+      router.push("/client/trips/new");
+    }
+  };
   const hasCreatedTrip = useRef(false);
   const [conversationLoadingTimeout, setConversationLoadingTimeout] =
     useState(false);
@@ -531,7 +569,8 @@ export default function MatchDetailPage() {
         <Button
           variant="contained"
           color="primary"
-          onClick={() => router.push("/client/trips/new")}
+          onClick={handleSearchAnother}
+          disabled={createMatchMutation.isPending}
           fullWidth
           size="large"
         >
@@ -617,7 +656,8 @@ export default function MatchDetailPage() {
         <Button
           variant="contained"
           color="primary"
-          onClick={() => router.push("/client/trips/new")}
+          onClick={handleSearchAnother}
+          disabled={createMatchMutation.isPending}
           fullWidth
           size="large"
         >
@@ -1405,7 +1445,8 @@ export default function MatchDetailPage() {
           <Button
             variant="contained"
             color="primary"
-            onClick={() => router.push("/client/trips/new")}
+            onClick={handleSearchAnother}
+            disabled={createMatchMutation.isPending}
             fullWidth
           >
             Nueva Búsqueda

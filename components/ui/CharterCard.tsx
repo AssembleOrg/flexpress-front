@@ -208,18 +208,10 @@ export function CharterCard({
           </Box>
         )}
 
-        {/* Estimado del viaje en pesos (informativo, desglosado) */}
+        {/* Estimado del viaje en pesos (informativo, aproximado por km) */}
         {charter.estimatedPriceArs != null && (
           <Box sx={{ mb: 1.5 }}>
-            <PriceBreakdown
-              total={charter.estimatedPriceArs}
-              ida={charter.estimatedPriceIdaArs}
-              wait={charter.estimatedPriceWaitArs}
-              ret={charter.estimatedPriceReturnArs}
-              idaKm={charter.totalDistance}
-              returnKm={charter.returnDistanceKm}
-              pricePerKm={charter.pricePerKm}
-            />
+            <PriceBreakdown total={charter.estimatedPriceArs} />
           </Box>
         )}
 

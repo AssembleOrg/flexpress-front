@@ -52,14 +52,26 @@ export function useCreateMatch() {
         .getState()
         .setAvailableCharters(result.availableCharters);
 
-      toast.success(
-        `¡${result.availableCharters.length} chóferes encontrados!`,
-      );
+      if (result.availableCharters.length > 0) {
+        toast.success(
+          `¡${result.availableCharters.length} chóferes encontrados!`,
+        );
+      } else {
+        toast("No hay chóferes disponibles cerca en este momento.", {
+          icon: "🔎",
+        });
+      }
     },
 
     onError: (error) => {
       console.error("❌ useCreateMatch error:", error);
-      toast.error("Error al crear búsqueda de viaje");
+      // Mostrar el mensaje real del backend (ej: sin créditos) en vez del
+      // genérico, para que el cliente entienda por qué falló.
+      const message =
+        axios.isAxiosError(error) && error.response?.data?.message
+          ? (error.response.data.message as string)
+          : "Error al crear búsqueda de viaje";
+      toast.error(message);
     },
   });
 }
@@ -95,7 +107,13 @@ export function useSelectCharter() {
 
     onError: (error) => {
       console.error("❌ useSelectCharter error:", error);
-      toast.error("Error al seleccionar chófer");
+      // Mostrar el mensaje real del backend (ej: estado no seleccionable) en
+      // vez de un genérico que oculta la causa.
+      const message =
+        axios.isAxiosError(error) && error.response?.data?.message
+          ? (error.response.data.message as string)
+          : "Error al seleccionar chófer";
+      toast.error(message);
     },
   });
 }

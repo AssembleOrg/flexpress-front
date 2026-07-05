@@ -26,9 +26,7 @@ import { PriceBreakdown } from "@/components/ui/PriceBreakdown";
 // Ejemplo concreto para que el charter vea cómo queda su estimado.
 // Bernal → Claypole ≈ 11 km (línea recta), ida y vuelta similares.
 const EXAMPLE_IDA_KM = 11;
-const EXAMPLE_RETURN_KM = 11;
 const MIN_PRICE_ARS = 20000;
-const RETURN_FACTOR = 0.5;
 
 export default function SettingsPage() {
   const router = useRouter();
@@ -49,21 +47,18 @@ export default function SettingsPage() {
   }, [user?.pricePerKm, user?.pricePerWaitBlock, user?.chargesReturnTrip]);
 
   // Preview en vivo: replica la fórmula del backend con un viaje de ejemplo
-  // (Bernal → Claypole). Es lo mismo que verá el cliente.
+  // (Bernal → Claypole). Es lo mismo que verá el cliente: solo el aproximado de
+  // la ida (con mínimo). Espera y vuelta no suman al total mostrado.
   const preview = useMemo(() => {
     const km = typeof pricePerKm === "number" ? pricePerKm : 0;
     if (km <= 0) return null;
-    const wait = typeof pricePerWaitBlock === "number" ? pricePerWaitBlock : 0;
     const ida = EXAMPLE_IDA_KM * km;
-    const ret = chargesReturnTrip ? EXAMPLE_RETURN_KM * km * RETURN_FACTOR : 0;
-    const total = Math.max(ida + wait + ret, MIN_PRICE_ARS);
+    const total = Math.max(ida, MIN_PRICE_ARS);
     return {
       total: Math.round(total),
       ida: Math.round(ida),
-      wait: Math.round(wait),
-      ret: Math.round(ret),
     };
-  }, [pricePerKm, pricePerWaitBlock, chargesReturnTrip]);
+  }, [pricePerKm]);
 
   const handleSave = async () => {
     if (typeof pricePerKm !== "number" || pricePerKm <= 0) {
@@ -184,15 +179,7 @@ export default function SettingsPage() {
                   Así lo vería el cliente · ejemplo Bernal → Claypole (
                   {EXAMPLE_IDA_KM} km)
                 </Typography>
-                <PriceBreakdown
-                  total={preview.total}
-                  ida={preview.ida}
-                  wait={preview.wait}
-                  ret={preview.ret}
-                  idaKm={EXAMPLE_IDA_KM}
-                  returnKm={chargesReturnTrip ? EXAMPLE_RETURN_KM : null}
-                  pricePerKm={typeof pricePerKm === "number" ? pricePerKm : null}
-                />
+                <PriceBreakdown total={preview.total} />
               </Box>
             )}
 

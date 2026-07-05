@@ -212,16 +212,11 @@ export function ConfirmMatchModal({
             </Box>
           </Box>
 
-          {/* Estimado del viaje en pesos (informativo, desglosado) */}
+          {/* Estimado del viaje en pesos (informativo, aproximado por km) */}
           {selectedCharter.estimatedPriceArs != null && (
             <PriceBreakdown
               title="Estimado del viaje (aprox.)"
               total={selectedCharter.estimatedPriceArs}
-              ida={selectedCharter.estimatedPriceIdaArs}
-              wait={selectedCharter.estimatedPriceWaitArs}
-              ret={selectedCharter.estimatedPriceReturnArs}
-              idaKm={selectedCharter.totalDistance}
-              returnKm={selectedCharter.returnDistanceKm}
               footer="Es un valor aproximado e informativo. Lo coordinás con el chófer."
             />
           )}
