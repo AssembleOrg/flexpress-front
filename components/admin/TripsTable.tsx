@@ -1,12 +1,26 @@
 "use client";
 
-import { useState } from "react";
+import { Visibility as VisibilityIcon } from "@mui/icons-material";
+import {
+  Box,
+  IconButton,
+  Stack,
+  Tooltip,
+  useMediaQuery,
+  useTheme,
+} from "@mui/material";
+import {
+  DataGrid,
+  type GridColDef,
+  type GridPaginationModel,
+} from "@mui/x-data-grid";
 import Link from "next/link";
-import { DataGrid, GridColDef, GridPaginationModel } from "@mui/x-data-grid";
-import { Box, useMediaQuery, useTheme, Stack } from "@mui/material";
+import { useState } from "react";
 import { useAdminTrips } from "@/lib/hooks/queries/useAdminQueries";
 import type { Trip } from "@/lib/types/api";
+import { formatDate } from "@/lib/utils/formatDate";
 import { MobileTripAdminCard } from "./mobile/MobileTripAdminCard";
+import { TripDetailModal } from "./modals/TripDetailModal";
 
 export function TripsTable() {
   const theme = useTheme();
@@ -16,6 +30,7 @@ export function TripsTable() {
     pageSize: 10,
     page: 0,
   });
+  const [selectedTrip, setSelectedTrip] = useState<Trip | null>(null);
 
   // Queries
   const { data, isLoading } = useAdminTrips({
@@ -118,33 +133,47 @@ export function TripsTable() {
       },
     },
     {
-      field: "scheduledDate",
-      headerName: "Fecha Programada",
-      width: 150,
-      renderCell: (params) => {
-        if (!params.row.scheduledDate) return "-";
-        const date = new Date(params.row.scheduledDate);
-        return date.toLocaleDateString("es-AR");
-      },
-    },
-    {
       field: "createdAt",
       headerName: "Fecha de Creación",
       width: 150,
-      renderCell: (params) => {
-        const date = new Date(params.row.createdAt);
-        return date.toLocaleDateString("es-AR");
-      },
+      renderCell: (params) => formatDate(params.row.createdAt),
+    },
+    {
+      field: "actions",
+      headerName: "Acciones",
+      width: 110,
+      sortable: false,
+      filterable: false,
+      align: "center",
+      headerAlign: "center",
+      renderCell: (params) => (
+        <Stack
+          direction="row"
+          justifyContent="center"
+          alignItems="center"
+          sx={{ width: "100%", height: "100%" }}
+        >
+          <Tooltip title="Ver detalles">
+            <IconButton
+              size="small"
+              onClick={() => setSelectedTrip(params.row)}
+              sx={{
+                color: "#b7850d",
+                "&:hover": { backgroundColor: "rgba(183, 133, 13, 0.15)" },
+              }}
+            >
+              <VisibilityIcon fontSize="small" />
+            </IconButton>
+          </Tooltip>
+        </Stack>
+      ),
     },
   ];
 
-  // Hide address, scheduledDate, createdAt columns on mobile
+  // Hide address, cargo, team, createdAt columns on mobile
   const visibleColumns = isMobile
     ? columns.filter(
-        (col) =>
-          !["address", "cargo", "team", "scheduledDate", "createdAt"].includes(
-            col.field,
-          ),
+        (col) => !["address", "cargo", "team", "createdAt"].includes(col.field),
       )
     : columns;
 
@@ -154,12 +183,17 @@ export function TripsTable() {
       {isMobile ? (
         <Stack spacing={2}>
           {(data?.data ?? []).map((trip) => (
-            <MobileTripAdminCard key={trip.id} trip={trip} />
+            <MobileTripAdminCard
+              key={trip.id}
+              trip={trip}
+              onClick={() => setSelectedTrip(trip)}
+            />
           ))}
         </Stack>
       ) : (
-        <Box sx={{ height: 500, width: "100%" }}>
+        <Box sx={{ width: "100%" }}>
           <DataGrid
+            autoHeight
             rows={data?.data ?? []}
             columns={visibleColumns}
             pageSizeOptions={[5, 10, 20, 50]}
@@ -170,6 +204,12 @@ export function TripsTable() {
           />
         </Box>
       )}
+
+      <TripDetailModal
+        trip={selectedTrip}
+        open={selectedTrip !== null}
+        onClose={() => setSelectedTrip(null)}
+      />
     </Box>
   );
 }

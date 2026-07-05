@@ -1,39 +1,44 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
-import { DataGrid, GridColDef, GridPaginationModel } from "@mui/x-data-grid";
 import {
+  ChevronLeft as ChevronLeftIcon,
+  ChevronRight as ChevronRightIcon,
+  DeleteOutline as DeleteIcon,
+  Visibility as VisibilityIcon,
+} from "@mui/icons-material";
+import {
+  Avatar,
   Box,
   Button,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
   Chip,
-  Avatar,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  FormControl,
+  IconButton,
+  InputLabel,
+  MenuItem,
+  Select,
   Stack,
   TextField,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-  IconButton,
   Tooltip,
   Typography,
   useMediaQuery,
   useTheme,
 } from "@mui/material";
 import {
-  Edit as EditIcon,
-  Delete as DeleteIcon,
-  ChevronLeft as ChevronLeftIcon,
-  ChevronRight as ChevronRightIcon,
-} from "@mui/icons-material";
+  DataGrid,
+  type GridColDef,
+  type GridPaginationModel,
+} from "@mui/x-data-grid";
 import { useRouter } from "next/navigation";
-import { useAdminUsers } from "@/lib/hooks/queries/useAdminQueries";
+import { useEffect, useMemo, useState } from "react";
 import { useDeleteUser } from "@/lib/hooks/mutations/useAdminMutations";
+import { useAdminUsers } from "@/lib/hooks/queries/useAdminQueries";
 import { useAuthStore } from "@/lib/stores/authStore";
 import type { User } from "@/lib/types/api";
+import { formatDate } from "@/lib/utils/formatDate";
 import { MobileUserCard } from "./mobile/MobileUserCard";
 
 const MOBILE_PAGE_SIZE = 20;
@@ -87,7 +92,10 @@ export function UsersTable() {
 
     const totalUsers = filtered.length;
     const start = mobilePage * MOBILE_PAGE_SIZE;
-    const paginatedMobileUsers = filtered.slice(start, start + MOBILE_PAGE_SIZE);
+    const paginatedMobileUsers = filtered.slice(
+      start,
+      start + MOBILE_PAGE_SIZE,
+    );
 
     return { filteredUsers: filtered, paginatedMobileUsers, totalUsers };
   }, [users, searchText, roleFilter, mobilePage]);
@@ -107,10 +115,8 @@ export function UsersTable() {
     setUserToDelete(null);
   };
 
-  const handleEditClick = (user: User) => {
-    if (currentUser?.role === "admin") {
-      router.push(`/admin/users/${user.id}`);
-    }
+  const handleViewClick = (user: User) => {
+    router.push(`/admin/users/${user.id}`);
   };
 
   const getRoleLabel = (role: string) => {
@@ -181,46 +187,53 @@ export function UsersTable() {
       field: "createdAt",
       headerName: "Fecha de Registro",
       width: 150,
-      renderCell: (params) => {
-        const date = new Date(params.row.createdAt);
-        return date.toLocaleDateString("es-AR");
-      },
+      renderCell: (params) => formatDate(params.row.createdAt),
     },
     {
       field: "actions",
       headerName: "Acciones",
-      width: 110,
+      width: 120,
       sortable: false,
       filterable: false,
+      align: "center",
+      headerAlign: "center",
       renderCell: (params) => (
-        <Stack direction="row" spacing={0.5}>
+        <Stack
+          direction="row"
+          spacing={0.5}
+          justifyContent="center"
+          alignItems="center"
+          sx={{ width: "100%", height: "100%" }}
+        >
+          <Tooltip title="Ver detalles">
+            <IconButton
+              size="small"
+              onClick={() => handleViewClick(params.row)}
+              sx={{
+                color: "#b7850d",
+                "&:hover": { backgroundColor: "rgba(183, 133, 13, 0.15)" },
+              }}
+            >
+              <VisibilityIcon fontSize="small" />
+            </IconButton>
+          </Tooltip>
           {currentUser?.role === "admin" && (
-            <>
-              <Tooltip title="Editar usuario">
-                <IconButton
-                  size="small"
-                  onClick={() => handleEditClick(params.row)}
-                  sx={{
-                    color: "#b7850d",
-                    "&:hover": { backgroundColor: "rgba(183, 133, 13, 0.15)" },
-                  }}
-                >
-                  <EditIcon fontSize="medium" />
-                </IconButton>
-              </Tooltip>
-              <Tooltip title="Eliminar usuario">
-                <IconButton
-                  size="small"
-                  onClick={() => handleDeleteClick(params.row)}
-                  sx={{
-                    color: "#e74c3c",
-                    "&:hover": { backgroundColor: "rgba(231, 76, 60, 0.15)" },
-                  }}
-                >
-                  <DeleteIcon fontSize="medium" />
-                </IconButton>
-              </Tooltip>
-            </>
+            <Tooltip title="Eliminar usuario">
+              <IconButton
+                size="small"
+                onClick={() => handleDeleteClick(params.row)}
+                sx={{
+                  color: "#c0392b",
+                  opacity: 0.7,
+                  "&:hover": {
+                    opacity: 1,
+                    backgroundColor: "rgba(192, 57, 43, 0.12)",
+                  },
+                }}
+              >
+                <DeleteIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
           )}
         </Stack>
       ),
@@ -288,7 +301,11 @@ export function UsersTable() {
               >
                 <ChevronLeftIcon />
               </IconButton>
-              <Typography variant="caption" color="text.secondary" sx={{ minWidth: 60, textAlign: "center" }}>
+              <Typography
+                variant="caption"
+                color="text.secondary"
+                sx={{ minWidth: 60, textAlign: "center" }}
+              >
                 {mobilePage + 1} / {totalMobilePages}
               </Typography>
               <IconButton
@@ -302,8 +319,9 @@ export function UsersTable() {
           )}
         </Box>
       ) : (
-        <Box sx={{ height: 500, width: "100%" }}>
+        <Box sx={{ width: "100%" }}>
           <DataGrid
+            autoHeight
             rows={filteredUsers}
             columns={columns}
             pageSizeOptions={[10, 25, 50]}

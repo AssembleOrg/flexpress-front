@@ -37,6 +37,9 @@ import { useAuthStore } from "@/lib/stores/authStore";
 import type { UpdateReportRequest } from "@/lib/types/admin";
 import type { UserRole } from "@/lib/types/api";
 import { TravelMatchStatus } from "@/lib/types/api";
+import { getCharterCreditCost } from "@/lib/utils/creditCost";
+import { formatDateTime } from "@/lib/utils/formatDate";
+import { formatPhoneInput } from "@/lib/utils/phone";
 
 export default function ReportDetailPage() {
   const router = useRouter();
@@ -90,19 +93,15 @@ export default function ReportDetailPage() {
   const reportedCredits = report?.reported?.credits ?? 0;
   const reporterCredits = report?.reporter?.credits ?? 0;
   const creditActionsEnabled = watchedStatus === "resolved";
-  const exceedsReportedBalance = creditActionsEnabled && watchedFromReported > reportedCredits;
-  const exceedsReporterBalance = creditActionsEnabled && watchedFromReporter > reporterCredits;
+  const exceedsReportedBalance =
+    creditActionsEnabled && watchedFromReported > reportedCredits;
+  const exceedsReporterBalance =
+    creditActionsEnabled && watchedFromReporter > reporterCredits;
 
-  // Reset credit inputs whenever the action is not applicable (anything but resolved)
-  useEffect(() => {
-    if (watchedStatus !== "resolved") {
-      setValue("creditsToReporter", undefined);
-      setValue("creditsFromReported", undefined);
-      setValue("creditsToReported", undefined);
-      setValue("creditsFromReporter", undefined);
-      setValue("resolvedInFavorOf", undefined);
-    }
-  }, [watchedStatus, setValue]);
+  // El bloque de créditos solo se muestra cuando el estado es "resolved", pero NO
+  // borramos lo que el admin ya escribió al cambiar de estado: si vuelve a
+  // "resolved" recupera sus valores. `onSubmit` ya se encarga de no enviarlos
+  // cuando el estado final no es "resolved".
 
   const onSubmit = async (data: UpdateReportRequest) => {
     const payload: UpdateReportRequest =
@@ -249,7 +248,7 @@ export default function ReportDetailPage() {
                 color="textSecondary"
                 sx={{ mb: 1 }}
               >
-                REPORTADOR
+                QUIEN REPORTA
               </Typography>
               <Stack direction="row" spacing={2} alignItems="center">
                 <Avatar sx={{ width: 50, height: 50 }}>
@@ -261,6 +260,15 @@ export default function ReportDetailPage() {
                   </Typography>
                   <Typography variant="caption" color="textSecondary">
                     {report.reporter?.email}
+                  </Typography>
+                  <Typography
+                    variant="caption"
+                    display="block"
+                    color="textSecondary"
+                  >
+                    {report.reporter?.number
+                      ? formatPhoneInput(report.reporter.number)
+                      : "—"}
                   </Typography>
                   <Typography
                     variant="caption"
@@ -282,7 +290,7 @@ export default function ReportDetailPage() {
                 color="textSecondary"
                 sx={{ mb: 1 }}
               >
-                REPORTADO
+                USUARIO REPORTADO
               </Typography>
               <Stack direction="row" spacing={2} alignItems="center">
                 <Avatar sx={{ width: 50, height: 50 }}>
@@ -294,6 +302,15 @@ export default function ReportDetailPage() {
                   </Typography>
                   <Typography variant="caption" color="textSecondary">
                     {report.reported?.email}
+                  </Typography>
+                  <Typography
+                    variant="caption"
+                    display="block"
+                    color="textSecondary"
+                  >
+                    {report.reported?.number
+                      ? formatPhoneInput(report.reported.number)
+                      : "—"}
                   </Typography>
                   <Typography
                     variant="caption"
@@ -381,20 +398,18 @@ export default function ReportDetailPage() {
                   </Typography>
                 </Stack>
               )}
-              {travelMatch.estimatedCredits != null && (
-                <Stack direction="row" spacing={1}>
-                  <Typography
-                    variant="body2"
-                    color="textSecondary"
-                    sx={{ minWidth: 140 }}
-                  >
-                    Créditos estimados:
-                  </Typography>
-                  <Typography variant="body2">
-                    {travelMatch.estimatedCredits}
-                  </Typography>
-                </Stack>
-              )}
+              <Stack direction="row" spacing={1}>
+                <Typography
+                  variant="body2"
+                  color="textSecondary"
+                  sx={{ minWidth: 140 }}
+                >
+                  Costo del viaje:
+                </Typography>
+                <Typography variant="body2">
+                  {getCharterCreditCost(travelMatch.distanceKm)} créditos
+                </Typography>
+              </Stack>
               {travelMatch.scheduledDate && (
                 <Stack direction="row" spacing={1}>
                   <Typography
@@ -405,9 +420,7 @@ export default function ReportDetailPage() {
                     Fecha programada:
                   </Typography>
                   <Typography variant="body2">
-                    {new Date(travelMatch.scheduledDate).toLocaleString(
-                      "es-AR",
-                    )}
+                    {formatDateTime(travelMatch.scheduledDate)}
                   </Typography>
                 </Stack>
               )}
@@ -420,7 +433,7 @@ export default function ReportDetailPage() {
                   Creado:
                 </Typography>
                 <Typography variant="body2">
-                  {new Date(travelMatch.createdAt).toLocaleString("es-AR")}
+                  {formatDateTime(travelMatch.createdAt)}
                 </Typography>
               </Stack>
               {(travelMatch.status === TravelMatchStatus.COMPLETED ||
@@ -436,7 +449,7 @@ export default function ReportDetailPage() {
                       : "Cancelado:"}
                   </Typography>
                   <Typography variant="body2">
-                    {new Date(travelMatch.updatedAt).toLocaleString("es-AR")}
+                    {formatDateTime(travelMatch.updatedAt)}
                   </Typography>
                 </Stack>
               )}
@@ -496,7 +509,7 @@ export default function ReportDetailPage() {
                           {msg.sender?.name}
                         </Typography>
                         <Typography variant="caption" color="textSecondary">
-                          {new Date(msg.createdAt).toLocaleString("es-AR")}
+                          {formatDateTime(msg.createdAt)}
                         </Typography>
                       </Stack>
                       <Box
@@ -526,17 +539,16 @@ export default function ReportDetailPage() {
           </Typography>
           <Stack spacing={2}>
             <Typography variant="caption">
-              Creado: {new Date(report.createdAt).toLocaleString("es-AR")}
+              Creado: {formatDateTime(report.createdAt)}
             </Typography>
             {report.updatedAt !== report.createdAt && (
               <Typography variant="caption">
-                Actualizado:{" "}
-                {new Date(report.updatedAt).toLocaleString("es-AR")}
+                Actualizado: {formatDateTime(report.updatedAt)}
               </Typography>
             )}
             {report.resolvedAt && (
               <Typography variant="caption">
-                Resuelto: {new Date(report.resolvedAt).toLocaleString("es-AR")}
+                Resuelto: {formatDateTime(report.resolvedAt)}
               </Typography>
             )}
 
@@ -544,7 +556,7 @@ export default function ReportDetailPage() {
             {(currentUser?.role === "admin" ||
               currentUser?.role === "subadmin") && (
               <Button variant="contained" onClick={() => setDialogOpen(true)}>
-                Editar Reporte
+                Editar reporte
               </Button>
             )}
           </Stack>
@@ -559,10 +571,9 @@ export default function ReportDetailPage() {
         fullWidth
         fullScreen={isMobile}
       >
-        <DialogTitle sx={{ pb: 1 }}>Actualizar Reporte</DialogTitle>
+        <DialogTitle sx={{ pb: 1 }}>Editar reporte</DialogTitle>
         <DialogContent sx={{ px: { xs: 2, md: 3 }, pt: 2 }}>
           <Stack spacing={2.5}>
-
             {/* Estado */}
             <Controller
               name="status"
@@ -570,11 +581,7 @@ export default function ReportDetailPage() {
               render={({ field }) => (
                 <FormControl fullWidth>
                   <InputLabel id="status-label">Estado</InputLabel>
-                  <Select
-                    labelId="status-label"
-                    label="Estado"
-                    {...field}
-                  >
+                  <Select labelId="status-label" label="Estado" {...field}>
                     <MenuItem value="pending">Pendiente</MenuItem>
                     <MenuItem value="investigating">
                       <Box>
@@ -608,12 +615,14 @@ export default function ReportDetailPage() {
             {/* Alerta contextual según estado */}
             {watchedStatus === "investigating" && (
               <Alert severity="info" sx={{ py: 0.5 }}>
-                Ambas partes recibirán una notificación de que el reporte está siendo revisado.
+                Ambas partes recibirán una notificación de que el reporte está
+                siendo revisado.
               </Alert>
             )}
             {watchedStatus === "dismissed" && (
               <Alert severity="warning" sx={{ py: 0.5 }}>
-                El reporte se cerrará sin acción. Se notificará a reportador y reportado.
+                El reporte se cerrará sin acción. Se notificará a reportador y
+                reportado.
               </Alert>
             )}
 
@@ -621,7 +630,11 @@ export default function ReportDetailPage() {
             {creditActionsEnabled && (
               <>
                 <Divider textAlign="left">
-                  <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>
+                  <Typography
+                    variant="caption"
+                    color="text.secondary"
+                    sx={{ fontWeight: 600 }}
+                  >
                     ACCIONES DE CRÉDITOS
                   </Typography>
                 </Divider>
@@ -632,7 +645,9 @@ export default function ReportDetailPage() {
                   control={control}
                   render={({ field }) => (
                     <FormControl fullWidth>
-                      <InputLabel id="favor-label">Resolución a favor de</InputLabel>
+                      <InputLabel id="favor-label">
+                        Resolución a favor de
+                      </InputLabel>
                       <Select
                         labelId="favor-label"
                         label="Resolución a favor de"
@@ -641,12 +656,16 @@ export default function ReportDetailPage() {
                       >
                         <MenuItem value="">— Sin especificar —</MenuItem>
                         <MenuItem value="reporter">
-                          A favor de {report.reporter?.name ?? "reportador"} (quien reportó)
+                          A favor de {report.reporter?.name ?? "reportador"}{" "}
+                          (quien reportó)
                         </MenuItem>
                         <MenuItem value="reported">
-                          A favor de {report.reported?.name ?? "reportado"} (quien fue reportado)
+                          A favor de {report.reported?.name ?? "reportado"}{" "}
+                          (quien fue reportado)
                         </MenuItem>
-                        <MenuItem value="company">Sin responsabilidad clara (empresa)</MenuItem>
+                        <MenuItem value="company">
+                          Sin responsabilidad clara (empresa)
+                        </MenuItem>
                       </Select>
                     </FormControl>
                   )}
@@ -664,7 +683,11 @@ export default function ReportDetailPage() {
                         {...field}
                         value={field.value || ""}
                         onChange={(e) =>
-                          field.onChange(e.target.value === "" ? undefined : Number(e.target.value))
+                          field.onChange(
+                            e.target.value === ""
+                              ? undefined
+                              : Number(e.target.value),
+                          )
                         }
                         placeholder="0"
                         variant="outlined"
@@ -700,7 +723,11 @@ export default function ReportDetailPage() {
                         {...field}
                         value={field.value || ""}
                         onChange={(e) =>
-                          field.onChange(e.target.value === "" ? undefined : Number(e.target.value))
+                          field.onChange(
+                            e.target.value === ""
+                              ? undefined
+                              : Number(e.target.value),
+                          )
                         }
                         placeholder="0"
                         variant="outlined"
@@ -732,7 +759,11 @@ export default function ReportDetailPage() {
                 </Box>
 
                 <Divider textAlign="left">
-                  <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>
+                  <Typography
+                    variant="caption"
+                    color="text.secondary"
+                    sx={{ fontWeight: 600 }}
+                  >
                     SI EL REPORTE FUE FALSO
                   </Typography>
                 </Divider>
@@ -749,7 +780,11 @@ export default function ReportDetailPage() {
                         {...field}
                         value={field.value || ""}
                         onChange={(e) =>
-                          field.onChange(e.target.value === "" ? undefined : Number(e.target.value))
+                          field.onChange(
+                            e.target.value === ""
+                              ? undefined
+                              : Number(e.target.value),
+                          )
                         }
                         placeholder="0"
                         variant="outlined"
@@ -786,7 +821,11 @@ export default function ReportDetailPage() {
                         {...field}
                         value={field.value || ""}
                         onChange={(e) =>
-                          field.onChange(e.target.value === "" ? undefined : Number(e.target.value))
+                          field.onChange(
+                            e.target.value === ""
+                              ? undefined
+                              : Number(e.target.value),
+                          )
                         }
                         placeholder="0"
                         variant="outlined"
@@ -842,9 +881,15 @@ export default function ReportDetailPage() {
           <Button
             onClick={handleSubmit(onSubmit)}
             variant="contained"
-            disabled={updateReportMutation.isPending || exceedsReportedBalance || exceedsReporterBalance}
+            disabled={
+              updateReportMutation.isPending ||
+              exceedsReportedBalance ||
+              exceedsReporterBalance
+            }
           >
-            {updateReportMutation.isPending ? "Guardando..." : "Guardar cambios"}
+            {updateReportMutation.isPending
+              ? "Guardando..."
+              : "Guardar cambios"}
           </Button>
         </DialogActions>
       </Dialog>
