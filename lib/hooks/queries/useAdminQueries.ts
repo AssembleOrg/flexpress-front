@@ -11,7 +11,6 @@ import type {
   PaymentFilters,
   ReportFilters,
   TripFilters,
-  UserFilters,
 } from "@/lib/types/admin";
 import type {
   Payment,

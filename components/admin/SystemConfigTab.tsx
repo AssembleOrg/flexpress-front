@@ -1,6 +1,5 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import {
   Box,
   Button,
@@ -12,9 +11,10 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
+import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
-import { useSystemConfigs } from "@/lib/hooks/queries/useAdminQueries";
 import { useUpdateSystemConfig } from "@/lib/hooks/mutations/useAdminMutations";
+import { useSystemConfigs } from "@/lib/hooks/queries/useAdminQueries";
 
 // ============ CONFIG STRUCTURE (display only) ============
 type ConfigField = {
@@ -61,7 +61,11 @@ const CONFIG_STRUCTURE: ConfigCategory[] = [
     category: "Información de la Empresa y Contacto",
     fields: [
       { key: "company_name", label: "Nombre de la Empresa", type: "text" },
-      { key: "company_address", label: "Dirección de la Empresa", type: "text" },
+      {
+        key: "company_address",
+        label: "Dirección de la Empresa",
+        type: "text",
+      },
       { key: "contact_email", label: "Email de Contacto", type: "email" },
       { key: "contact_phone", label: "Teléfono de Contacto", type: "text" },
     ],
@@ -141,7 +145,12 @@ export function SystemConfigTab() {
 
   if (isLoading) {
     return (
-      <Box display="flex" justifyContent="center" alignItems="center" minHeight="400px">
+      <Box
+        display="flex"
+        justifyContent="center"
+        alignItems="center"
+        minHeight="400px"
+      >
         <CircularProgress />
       </Box>
     );
@@ -186,7 +195,10 @@ export function SystemConfigTab() {
               }}
             >
               <CardContent>
-                <Typography variant="h6" sx={{ fontWeight: 700, mb: 3, color: "#380116" }}>
+                <Typography
+                  variant="h6"
+                  sx={{ fontWeight: 700, mb: 3, color: "#380116" }}
+                >
                   {category}
                 </Typography>
                 <Stack spacing={2.5}>
@@ -199,12 +211,19 @@ export function SystemConfigTab() {
                         label={field.label}
                         type={field.type === "number" ? "number" : "text"}
                         value={values[field.key] ?? ""}
-                        onChange={(e) => handleChange(field.key, e.target.value)}
+                        onChange={(e) =>
+                          handleChange(field.key, e.target.value)
+                        }
                         slotProps={{
                           input: {
-                            step: field.type === "number" && field.step ? field.step : undefined,
+                            step:
+                              field.type === "number" && field.step
+                                ? field.step
+                                : undefined,
                             endAdornment: field.adornment ? (
-                              <InputAdornment position="end">{field.adornment}</InputAdornment>
+                              <InputAdornment position="end">
+                                {field.adornment}
+                              </InputAdornment>
                             ) : undefined,
                           } as any,
                         }}
@@ -221,7 +240,9 @@ export function SystemConfigTab() {
           );
         })}
 
-        {configs.some((c) => !getFieldMetadata(c.key) && !HIDDEN_KEYS.has(c.key)) && (
+        {configs.some(
+          (c) => !getFieldMetadata(c.key) && !HIDDEN_KEYS.has(c.key),
+        ) && (
           <Card
             sx={{
               borderRadius: 2,
@@ -230,12 +251,17 @@ export function SystemConfigTab() {
             }}
           >
             <CardContent>
-              <Typography variant="h6" sx={{ fontWeight: 700, mb: 3, color: "#380116" }}>
+              <Typography
+                variant="h6"
+                sx={{ fontWeight: 700, mb: 3, color: "#380116" }}
+              >
                 Otros
               </Typography>
               <Stack spacing={2.5}>
                 {configs
-                  .filter((c) => !getFieldMetadata(c.key) && !HIDDEN_KEYS.has(c.key))
+                  .filter(
+                    (c) => !getFieldMetadata(c.key) && !HIDDEN_KEYS.has(c.key),
+                  )
                   .map((config) => (
                     <TextField
                       key={config.id}
@@ -269,7 +295,9 @@ export function SystemConfigTab() {
               "&:disabled": { backgroundColor: "#ccc", color: "#999" },
             }}
           >
-            {updateMutation.isPending ? "Guardando..." : "Guardar Todos los Cambios"}
+            {updateMutation.isPending
+              ? "Guardando..."
+              : "Guardar Todos los Cambios"}
           </Button>
         </Box>
       </Stack>

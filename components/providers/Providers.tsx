@@ -1,15 +1,19 @@
 "use client";
 
-import { useEffect } from "react";
-import { useRouter } from "next/navigation";
-import { QueryClient, QueryClientProvider, useQueryClient } from "@tanstack/react-query";
+import {
+  QueryClient,
+  QueryClientProvider,
+  useQueryClient,
+} from "@tanstack/react-query";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import { APIProvider } from "@vis.gl/react-google-maps";
+import { useRouter } from "next/navigation";
+import { useEffect } from "react";
 import { Toaster } from "react-hot-toast";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
-import { useWebSocket } from "@/lib/hooks/useWebSocket";
-import { usePushPermission } from "@/lib/hooks/usePushPermission";
 import { queryKeys } from "@/lib/hooks/queries/queryFactory";
+import { usePushPermission } from "@/lib/hooks/usePushPermission";
+import { useWebSocket } from "@/lib/hooks/useWebSocket";
 import { useAuthStore } from "@/lib/stores/authStore";
 import { StoreHydration } from "./StoreHydration";
 import { ThemeProvider } from "./ThemeProvider";
@@ -44,12 +48,15 @@ function WebSocketInitializer() {
 
   useEffect(() => {
     const handleVisibility = () => {
-      if (document.visibilityState === 'visible') {
-        queryClient.invalidateQueries({ queryKey: queryKeys.notifications.all });
+      if (document.visibilityState === "visible") {
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.notifications.all,
+        });
       }
     };
-    document.addEventListener('visibilitychange', handleVisibility);
-    return () => document.removeEventListener('visibilitychange', handleVisibility);
+    document.addEventListener("visibilitychange", handleVisibility);
+    return () =>
+      document.removeEventListener("visibilitychange", handleVisibility);
   }, [queryClient]);
 
   return null;
@@ -69,16 +76,21 @@ function SWMessageListener() {
   const router = useRouter();
 
   useEffect(() => {
-    if (typeof window === "undefined" || !("serviceWorker" in navigator)) return;
+    if (typeof window === "undefined" || !("serviceWorker" in navigator))
+      return;
 
     const handler = (event: MessageEvent) => {
-      if (event.data?.type === "NAVIGATE" && typeof event.data.url === "string") {
+      if (
+        event.data?.type === "NAVIGATE" &&
+        typeof event.data.url === "string"
+      ) {
         router.push(event.data.url);
       }
     };
 
     navigator.serviceWorker.addEventListener("message", handler);
-    return () => navigator.serviceWorker.removeEventListener("message", handler);
+    return () =>
+      navigator.serviceWorker.removeEventListener("message", handler);
   }, [router]);
 
   return null;

@@ -16,7 +16,7 @@ export function formatDateTime(
 ): string {
   if (value == null) return "—";
   const date = value instanceof Date ? value : new Date(value);
-  if (isNaN(date.getTime())) return "—";
+  if (Number.isNaN(date.getTime())) return "—";
 
   return date.toLocaleString("es-AR", {
     timeZone: AR_TIME_ZONE,
@@ -36,7 +36,7 @@ export function formatDateTime(
 export function formatDate(value: string | Date | null | undefined): string {
   if (value == null) return "—";
   const date = value instanceof Date ? value : new Date(value);
-  if (isNaN(date.getTime())) return "—";
+  if (Number.isNaN(date.getTime())) return "—";
 
   return date.toLocaleDateString("es-AR", {
     timeZone: AR_TIME_ZONE,

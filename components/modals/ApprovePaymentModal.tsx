@@ -1,5 +1,6 @@
 "use client";
 
+import { CheckCircle } from "@mui/icons-material";
 import {
   Alert,
   Box,
@@ -12,7 +13,6 @@ import {
   Stack,
   Typography,
 } from "@mui/material";
-import { CheckCircle } from "@mui/icons-material";
 
 /**
  * ApprovePaymentModal

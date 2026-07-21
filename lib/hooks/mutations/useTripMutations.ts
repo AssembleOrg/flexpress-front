@@ -1,10 +1,10 @@
-'use client';
+"use client";
 
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import toast from 'react-hot-toast';
-import { tripsApi } from '@/lib/api/trips';
-import { queryKeys } from '@/lib/hooks/queries/queryFactory';
-import { useAuthStore } from '@/lib/stores/authStore';
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import toast from "react-hot-toast";
+import { tripsApi } from "@/lib/api/trips";
+import { queryKeys } from "@/lib/hooks/queries/queryFactory";
+import { useAuthStore } from "@/lib/stores/authStore";
 
 /**
  * Trip Mutation Hooks
@@ -23,17 +23,17 @@ export function useAcceptTrip() {
   return useMutation({
     mutationFn: (tripId: string) => tripsApi.accept(tripId),
 
-    onSuccess: async (_result, tripId) => {
+    onSuccess: async (_result, _tripId) => {
       // Refetch all trips (force immediate update)
       await queryClient.refetchQueries({
         queryKey: queryKeys.trips.all,
       });
 
-      toast.success('¡Viaje aceptado!');
+      toast.success("¡Viaje aceptado!");
     },
 
     onError: () => {
-      toast.error('Error al aceptar viaje');
+      toast.error("Error al aceptar viaje");
     },
   });
 }
@@ -60,11 +60,11 @@ export function useConfirmTrip() {
         queryKey: queryKeys.trips.all,
       });
 
-      toast.success('¡Viaje confirmado!');
+      toast.success("¡Viaje confirmado!");
     },
 
     onError: () => {
-      toast.error('Error al confirmar viaje');
+      toast.error("Error al confirmar viaje");
     },
   });
 }
@@ -86,11 +86,11 @@ export function useCancelTrip() {
         queryKey: queryKeys.trips.all,
       });
 
-      toast.success('Viaje cancelado');
+      toast.success("Viaje cancelado");
     },
 
     onError: () => {
-      toast.error('Error al cancelar viaje');
+      toast.error("Error al cancelar viaje");
     },
   });
 }
@@ -105,7 +105,7 @@ export function useCompleteTrip() {
   return useMutation({
     mutationFn: (tripId: string) => tripsApi.complete(tripId),
 
-    onSuccess: async (_result, tripId) => {
+    onSuccess: async (_result, _tripId) => {
       // Refetch all trips (force immediate update)
       await queryClient.refetchQueries({
         queryKey: queryKeys.trips.all,
@@ -116,11 +116,11 @@ export function useCompleteTrip() {
         queryKey: queryKeys.matches.all,
       });
 
-      toast.success('¡Viaje completado!');
+      toast.success("¡Viaje completado!");
     },
 
     onError: () => {
-      toast.error('Error al completar viaje');
+      toast.error("Error al completar viaje");
     },
   });
 }
@@ -135,7 +135,7 @@ export function useCharterCompleteTrip() {
   return useMutation({
     mutationFn: (tripId: string) => tripsApi.charterComplete(tripId),
 
-    onSuccess: async (_result, tripId) => {
+    onSuccess: async (_result, _tripId) => {
       // Refetch all trips (force immediate update)
       await queryClient.refetchQueries({
         queryKey: queryKeys.trips.all,
@@ -150,7 +150,7 @@ export function useCharterCompleteTrip() {
     },
 
     onError: () => {
-      toast.error('Error al finalizar viaje');
+      toast.error("Error al finalizar viaje");
     },
   });
 }
@@ -165,7 +165,7 @@ export function useClientConfirmCompletion() {
   return useMutation({
     mutationFn: (tripId: string) => tripsApi.clientConfirm(tripId),
 
-    onSuccess: async (_result, tripId) => {
+    onSuccess: async (_result, _tripId) => {
       // Refetch all trips (force immediate update)
       await queryClient.refetchQueries({
         queryKey: queryKeys.trips.all,
@@ -176,11 +176,11 @@ export function useClientConfirmCompletion() {
         queryKey: queryKeys.matches.all,
       });
 
-      toast.success('Viaje completado. ¡Gracias por usar FlexPress!');
+      toast.success("Viaje completado. ¡Gracias por usar FlexPress!");
     },
 
     onError: () => {
-      toast.error('Error al confirmar finalización');
+      toast.error("Error al confirmar finalización");
     },
   });
 }
@@ -209,18 +209,18 @@ export function useRateTrip() {
 
       // Invalidate feedback related queries
       queryClient.invalidateQueries({
-        queryKey: queryKeys.feedback.my(user?.id || ''),
+        queryKey: queryKeys.feedback.my(user?.id || ""),
       });
 
       queryClient.invalidateQueries({
         queryKey: queryKeys.feedback.all,
       });
 
-      toast.success('¡Gracias por tu reseña!');
+      toast.success("¡Gracias por tu reseña!");
     },
 
     onError: () => {
-      toast.error('Error al enviar reseña');
+      toast.error("Error al enviar reseña");
     },
   });
 }

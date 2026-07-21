@@ -23,7 +23,7 @@ import { TypingIndicator } from "@/components/chat/TypingIndicator";
 import { ReportModal } from "@/components/modals/ReportModal";
 import { useSendMessage } from "@/lib/hooks/mutations/useConversationMutations";
 import { useConversationMessages } from "@/lib/hooks/queries/useConversationQueries";
-import { useWebSocket, useSocketEmit } from "@/lib/hooks/useWebSocket";
+import { useSocketEmit, useWebSocket } from "@/lib/hooks/useWebSocket";
 import { useAuthStore } from "@/lib/stores/authStore";
 import type { Message } from "@/lib/types/api";
 
@@ -111,10 +111,10 @@ export function ChatWindow({
   useLayoutEffect(() => {
     messagesEndRef.current?.scrollIntoView({
       behavior: "smooth",
-      block: "nearest",    // NO hacer scroll del viewport si ya está visible
-      inline: "nearest"    // NO hacer scroll horizontal
+      block: "nearest", // NO hacer scroll del viewport si ya está visible
+      inline: "nearest", // NO hacer scroll horizontal
     });
-  }, [messages.length]);
+  }, []);
 
   // 🔧 OPTIMIZACIÓN: Join conversation room for real-time messaging
   // Usa el objeto memoizado socketEmit que ahora es estable entre renders
@@ -369,7 +369,9 @@ export function ChatWindow({
                   message={message}
                   isOwn={message.senderId === user?.id}
                   senderAvatar={
-                    message.senderId !== user?.id ? (otherUser.avatar ?? undefined) : undefined
+                    message.senderId !== user?.id
+                      ? (otherUser.avatar ?? undefined)
+                      : undefined
                   }
                   senderName={
                     message.senderId !== user?.id ? otherUser.name : undefined

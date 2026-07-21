@@ -1,7 +1,8 @@
-'use client';
+"use client";
 
-import { Avatar, Box, Typography } from '@mui/material';
-import type { Message } from '@/lib/types/api';
+import { Box, Typography } from "@mui/material";
+import { SignedAvatar } from "@/components/ui/SignedAvatar";
+import type { Message } from "@/lib/types/api";
 
 interface MessageBubbleProps {
   message: Message;
@@ -23,7 +24,7 @@ export function MessageBubble({
 }: MessageBubbleProps) {
   // Validar estructura del mensaje
   if (!message?.content || !message?.createdAt) {
-    console.warn('⚠️ [MessageBubble] Mensaje con datos incompletos:', message);
+    console.warn("⚠️ [MessageBubble] Mensaje con datos incompletos:", message);
     return null;
   }
 
@@ -31,75 +32,75 @@ export function MessageBubble({
     try {
       const date = new Date(createdAt);
       if (Number.isNaN(date.getTime())) {
-        console.warn('⚠️ [MessageBubble] createdAt inválido:', createdAt);
-        return '';
+        console.warn("⚠️ [MessageBubble] createdAt inválido:", createdAt);
+        return "";
       }
-      return date.toLocaleTimeString('es-AR', {
-        hour: '2-digit',
-        minute: '2-digit',
+      return date.toLocaleTimeString("es-AR", {
+        hour: "2-digit",
+        minute: "2-digit",
       });
     } catch {
-      return '';
+      return "";
     }
   };
 
   return (
     <Box
-      display='flex'
-      justifyContent={isOwn ? 'flex-end' : 'flex-start'}
+      display="flex"
+      justifyContent={isOwn ? "flex-end" : "flex-start"}
       mb={1}
-      alignItems='flex-end'
+      alignItems="flex-end"
       gap={1}
     >
       {/* Avatar (only for other user messages) */}
       {!isOwn && (
-        <Avatar
-          src={senderAvatar}
-          alt={senderName || 'Usuario'}
+        <SignedAvatar
+          value={senderAvatar}
+          alt={senderName || "Usuario"}
           sx={{
             width: 32,
             height: 32,
-            bgcolor: 'secondary.main',
-            color: 'primary.main',
-            fontSize: '0.875rem',
+            bgcolor: "secondary.main",
+            color: "primary.main",
+            fontSize: "0.875rem",
             fontWeight: 700,
           }}
         >
-          {senderName?.[0] || 'U'}
-        </Avatar>
+          {senderName?.[0] || "U"}
+        </SignedAvatar>
       )}
 
       <Box
         sx={{
-          maxWidth: '70%',
+          maxWidth: "70%",
           borderRadius: 2,
           px: 2,
           py: 1,
-          backgroundColor: isOwn ? 'primary.main' : 'grey.200',
-          color: isOwn ? 'primary.contrastText' : 'text.primary',
-          wordBreak: 'break-word',
+          backgroundColor: isOwn ? "primary.main" : "grey.200",
+          color: isOwn ? "primary.contrastText" : "text.primary",
+          wordBreak: "break-word",
         }}
       >
         <Typography
-          variant='body2'
+          variant="body2"
           sx={{
-            whiteSpace: 'pre-wrap',
-            color: 'inherit',
+            whiteSpace: "pre-wrap",
+            color: "inherit",
           }}
         >
           {message.content}
         </Typography>
         <Box
-          display='flex'
-          alignItems='center'
+          display="flex"
+          alignItems="center"
           gap={0.5}
           mt={0.5}
-          justifyContent={isOwn ? 'flex-end' : 'flex-start'}
+          justifyContent={isOwn ? "flex-end" : "flex-start"}
         >
           <Typography
-            variant='caption'
+            variant="caption"
             sx={{
-              color: isOwn ? 'primary.contrastText' : 'text.secondary',
+              color: isOwn ? "primary.contrastText" : "text.secondary",
             }}
           >
             {formatTime(message.createdAt)}
@@ -107,13 +108,13 @@ export function MessageBubble({
           {/* Message status indicator (only for own messages) */}
           {isOwn && (
             <Typography
-              variant='caption'
+              variant="caption"
               sx={{
-                color: 'primary.contrastText',
-                fontSize: '0.75rem',
+                color: "primary.contrastText",
+                fontSize: "0.75rem",
               }}
             >
-              {message.isRead ? '✓✓' : '✓'}
+              {message.isRead ? "✓✓" : "✓"}
             </Typography>
           )}
         </Box>

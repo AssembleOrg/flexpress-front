@@ -1,10 +1,7 @@
 "use client";
 
+import { Route, Schedule } from "@mui/icons-material";
 import { Box, Card, CardContent, Typography } from "@mui/material";
-import {
-  Route,
-  Schedule,
-} from "@mui/icons-material";
 
 interface MetricItem {
   icon: React.ReactNode;

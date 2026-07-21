@@ -1,9 +1,17 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import {
+  Add,
+  CancelRounded,
+  CheckCircleRounded,
+  DirectionsCar,
+  Edit,
+  HourglassTopRounded,
+  Upload,
+} from "@mui/icons-material";
 import {
   Alert,
+  alpha,
   Box,
   Button,
   Card,
@@ -24,36 +32,30 @@ import {
   Switch,
   TextField,
   Typography,
-  alpha,
   useTheme,
 } from "@mui/material";
-import {
-  Add,
-  CancelRounded,
-  CheckCircleRounded,
-  DirectionsCar,
-  Edit,
-  HourglassTopRounded,
-  Upload,
-} from "@mui/icons-material";
-import { useMyVehicles } from "@/lib/hooks/queries/useVehicleQueries";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
+import toast from "react-hot-toast";
+import { AuthGuard } from "@/components/guards/AuthGuard";
+import { BottomNavbar } from "@/components/layout/BottomNavbar";
+import { PageTransition } from "@/components/ui/PageTransition";
+import { VEHICLE_BRANDS } from "@/lib/constants/vehicleBrands";
 import {
   useCreateVehicleDocument,
   useToggleVehicleEnabled,
   useUpdateVehicle,
 } from "@/lib/hooks/mutations/useVehicleMutations";
-import { AuthGuard } from "@/components/guards/AuthGuard";
-import { BottomNavbar } from "@/components/layout/BottomNavbar";
-import { PageTransition } from "@/components/ui/PageTransition";
+import { useMyVehicles } from "@/lib/hooks/queries/useVehicleQueries";
 import {
   DocumentReviewStatus,
+  VEHICLE_SIZE_LABELS,
   type Vehicle,
   type VehicleDocument,
-  VerificationStatus,
   VehicleDocumentType,
-  VEHICLE_SIZE_LABELS,
+  VerificationStatus,
 } from "@/lib/types/api";
-import { VEHICLE_BRANDS } from "@/lib/constants/vehicleBrands";
+import { uploadToStorage } from "@/lib/upload";
 
 // ─── Shared visual atoms (estilo macOS, alineado con /driver/personal) ───────
 
@@ -62,7 +64,9 @@ type SemColor = "success" | "warning" | "error" | "default";
 function StatusPill({ color, label }: { color: SemColor; label: string }) {
   const theme = useTheme();
   const main =
-    color === "default" ? theme.palette.text.disabled : theme.palette[color].main;
+    color === "default"
+      ? theme.palette.text.disabled
+      : theme.palette[color].main;
   return (
     <Box
       sx={{
@@ -79,7 +83,15 @@ function StatusPill({ color, label }: { color: SemColor; label: string }) {
         lineHeight: 1,
       }}
     >
-      <Box sx={{ width: 7, height: 7, borderRadius: "50%", bgcolor: main, flexShrink: 0 }} />
+      <Box
+        sx={{
+          width: 7,
+          height: 7,
+          borderRadius: "50%",
+          bgcolor: main,
+          flexShrink: 0,
+        }}
+      />
       {label}
     </Box>
   );
@@ -127,9 +139,19 @@ function VehicleDocRow({
         {label}
       </Typography>
       <Box sx={{ display: "inline-flex", alignItems: "center", gap: 1 }}>
-        <Box sx={{ display: "inline-flex", alignItems: "center", gap: 0.5, color: `${color}.main` }}>
+        <Box
+          sx={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 0.5,
+            color: `${color}.main`,
+          }}
+        >
           <Icon sx={{ fontSize: 16 }} />
-          <Typography variant="caption" sx={{ fontWeight: 600, color: `${color}.dark` }}>
+          <Typography
+            variant="caption"
+            sx={{ fontWeight: 600, color: `${color}.dark` }}
+          >
             {statusText}
           </Typography>
         </Box>
@@ -163,13 +185,16 @@ function VehicleCard({ vehicle }: { vehicle: Vehicle }) {
   const [editOpen, setEditOpen] = useState(false);
   const [editBrand, setEditBrand] = useState(vehicle.brand ?? "");
   const [editModel, setEditModel] = useState(vehicle.model ?? "");
-  const [editYear, setEditYear] = useState<string>(vehicle.year?.toString() ?? "");
+  const [editYear, setEditYear] = useState<string>(
+    vehicle.year?.toString() ?? "",
+  );
   const [editAlias, setEditAlias] = useState(vehicle.alias ?? "");
 
   // Re-upload doc dialog state
   const [reuploadDoc, setReuploadDoc] = useState<VehicleDocument | null>(null);
-  const [reuploadUrl, setReuploadUrl] = useState("");
+  const [reuploadFile, setReuploadFile] = useState<File | null>(null);
   const [reuploadExpiry, setReuploadExpiry] = useState("");
+  const [reuploadUploading, setReuploadUploading] = useState(false);
 
   const handleToggle = () => {
     if (!isVerified) return;
@@ -177,7 +202,12 @@ function VehicleCard({ vehicle }: { vehicle: Vehicle }) {
   };
 
   const handleEditSave = async () => {
-    const payload: { brand?: string; model?: string; year?: number; alias?: string } = {};
+    const payload: {
+      brand?: string;
+      model?: string;
+      year?: number;
+      alias?: string;
+    } = {};
     if (editBrand) payload.brand = editBrand;
     if (editModel) payload.model = editModel;
     if (editYear) payload.year = Number(editYear);
@@ -187,15 +217,29 @@ function VehicleCard({ vehicle }: { vehicle: Vehicle }) {
   };
 
   const handleReupload = async () => {
-    if (!reuploadDoc || !reuploadUrl.trim()) return;
-    await createDocMutation.mutateAsync({
-      type: reuploadDoc.type,
-      fileUrl: reuploadUrl.trim(),
-      ...(reuploadExpiry ? { expiresAt: reuploadExpiry } : {}),
-    });
-    setReuploadDoc(null);
-    setReuploadUrl("");
-    setReuploadExpiry("");
+    if (!reuploadDoc || !reuploadFile) return;
+    setReuploadUploading(true);
+    try {
+      // La foto es pública; el resto (cédula/seguro/vtv) privado.
+      const scope =
+        reuploadDoc.type === VehicleDocumentType.FOTO
+          ? "vehicle-foto"
+          : "vehicle-doc";
+      const result = await uploadToStorage(scope, reuploadFile, vehicle.id);
+      await createDocMutation.mutateAsync({
+        type: reuploadDoc.type,
+        fileUrl: result.key, // KEY (bucket privado): se muestra con URL firmada
+        ...(reuploadExpiry ? { expiresAt: reuploadExpiry } : {}),
+      });
+      toast.success("Documento subido");
+      setReuploadDoc(null);
+      setReuploadFile(null);
+      setReuploadExpiry("");
+    } catch {
+      toast.error("Error al subir el documento");
+    } finally {
+      setReuploadUploading(false);
+    }
   };
 
   const statusColor = (s: VerificationStatus) => {
@@ -226,7 +270,8 @@ function VehicleCard({ vehicle }: { vehicle: Vehicle }) {
           boxShadow: "0 1px 2px rgba(0,0,0,0.04), 0 4px 16px rgba(0,0,0,0.06)",
           transition: "box-shadow 0.2s ease",
           "&:hover": {
-            boxShadow: "0 2px 4px rgba(0,0,0,0.05), 0 8px 24px rgba(0,0,0,0.09)",
+            boxShadow:
+              "0 2px 4px rgba(0,0,0,0.05), 0 8px 24px rgba(0,0,0,0.09)",
           },
         }}
       >
@@ -243,11 +288,17 @@ function VehicleCard({ vehicle }: { vehicle: Vehicle }) {
               <Typography
                 variant="h6"
                 fontWeight={700}
-                sx={{ fontFamily: "monospace", fontSize: "1.2rem", letterSpacing: "0.04em" }}
+                sx={{
+                  fontFamily: "monospace",
+                  fontSize: "1.2rem",
+                  letterSpacing: "0.04em",
+                }}
               >
                 {vehicle.plate}
               </Typography>
-              <Box sx={{ display: "flex", gap: 0.75, flexWrap: "wrap", mt: 0.75 }}>
+              <Box
+                sx={{ display: "flex", gap: 0.75, flexWrap: "wrap", mt: 0.75 }}
+              >
                 <StatusPill
                   color={statusColor(vehicle.verificationStatus)}
                   label={statusLabel(vehicle.verificationStatus)}
@@ -256,10 +307,18 @@ function VehicleCard({ vehicle }: { vehicle: Vehicle }) {
                   color={vehicle.isEnabled ? "success" : "default"}
                   label={vehicle.isEnabled ? "Disponible" : "No disponible"}
                 />
-                <StatusPill color="default" label={VEHICLE_SIZE_LABELS[vehicle.size]} />
+                <StatusPill
+                  color="default"
+                  label={VEHICLE_SIZE_LABELS[vehicle.size]}
+                />
               </Box>
-              <Typography variant="body2" color="text.secondary" sx={{ mt: 0.75 }}>
-                {vehicle.brand || "Sin marca"} {vehicle.model && `- ${vehicle.model}`}
+              <Typography
+                variant="body2"
+                color="text.secondary"
+                sx={{ mt: 0.75 }}
+              >
+                {vehicle.brand || "Sin marca"}{" "}
+                {vehicle.model && `- ${vehicle.model}`}
                 {vehicle.year && ` (${vehicle.year})`}
               </Typography>
             </Box>
@@ -291,7 +350,9 @@ function VehicleCard({ vehicle }: { vehicle: Vehicle }) {
                   <Typography variant="caption" sx={{ fontWeight: 600 }}>
                     Motivo del rechazo:
                   </Typography>
-                  <Typography variant="body2">{vehicle.rejectionReason}</Typography>
+                  <Typography variant="body2">
+                    {vehicle.rejectionReason}
+                  </Typography>
                 </Alert>
               )}
               <Button
@@ -333,7 +394,7 @@ function VehicleCard({ vehicle }: { vehicle: Vehicle }) {
                       status={doc.status}
                       onReupload={() => {
                         setReuploadDoc(doc);
-                        setReuploadUrl("");
+                        setReuploadFile(null);
                         setReuploadExpiry("");
                       }}
                     />
@@ -346,12 +407,19 @@ function VehicleCard({ vehicle }: { vehicle: Vehicle }) {
       </Card>
 
       {/* Edit Dialog (only for REJECTED vehicles) */}
-      <Dialog open={editOpen} onClose={() => setEditOpen(false)} maxWidth="sm" fullWidth>
+      <Dialog
+        open={editOpen}
+        onClose={() => setEditOpen(false)}
+        maxWidth="sm"
+        fullWidth
+      >
         <DialogTitle>Editar vehículo — {vehicle.plate}</DialogTitle>
         <DialogContent>
           <Stack spacing={2} sx={{ pt: 1 }}>
             <Alert severity="warning" sx={{ fontSize: "0.8rem" }}>
-              Al guardar, el vehículo volverá a estado <strong>Pendiente</strong> para re-verificación. La patente no puede modificarse.
+              Al guardar, el vehículo volverá a estado{" "}
+              <strong>Pendiente</strong> para re-verificación. La patente no
+              puede modificarse.
             </Alert>
             <FormControl fullWidth size="small">
               <InputLabel>Marca</InputLabel>
@@ -362,7 +430,9 @@ function VehicleCard({ vehicle }: { vehicle: Vehicle }) {
               >
                 <MenuItem value="">Sin especificar</MenuItem>
                 {VEHICLE_BRANDS.map((b) => (
-                  <MenuItem key={b} value={b}>{b}</MenuItem>
+                  <MenuItem key={b} value={b}>
+                    {b}
+                  </MenuItem>
                 ))}
               </Select>
             </FormControl>
@@ -404,20 +474,34 @@ function VehicleCard({ vehicle }: { vehicle: Vehicle }) {
       </Dialog>
 
       {/* Re-upload Document Dialog */}
-      <Dialog open={!!reuploadDoc} onClose={() => setReuploadDoc(null)} maxWidth="sm" fullWidth>
+      <Dialog
+        open={!!reuploadDoc}
+        onClose={() => setReuploadDoc(null)}
+        maxWidth="sm"
+        fullWidth
+      >
         <DialogTitle>
-          Re-subir documento — {reuploadDoc ? (docTypeLabel[reuploadDoc.type] ?? reuploadDoc.type) : ""}
+          Re-subir documento —{" "}
+          {reuploadDoc
+            ? (docTypeLabel[reuploadDoc.type] ?? reuploadDoc.type)
+            : ""}
         </DialogTitle>
         <DialogContent>
           <Stack spacing={2} sx={{ pt: 1 }}>
-            <TextField
-              label="URL del nuevo documento"
-              size="small"
-              value={reuploadUrl}
-              onChange={(e) => setReuploadUrl(e.target.value)}
-              placeholder="https://..."
-              fullWidth
-            />
+            <Button
+              variant="outlined"
+              component="label"
+              startIcon={<Upload />}
+              sx={{ justifyContent: "flex-start", textTransform: "none" }}
+            >
+              {reuploadFile ? reuploadFile.name : "Seleccionar archivo"}
+              <input
+                type="file"
+                accept="image/*,application/pdf"
+                hidden
+                onChange={(e) => setReuploadFile(e.target.files?.[0] ?? null)}
+              />
+            </Button>
             {(reuploadDoc?.type === VehicleDocumentType.SEGURO ||
               reuploadDoc?.type === VehicleDocumentType.VTV) && (
               <TextField
@@ -437,9 +521,13 @@ function VehicleCard({ vehicle }: { vehicle: Vehicle }) {
           <Button
             onClick={handleReupload}
             variant="contained"
-            disabled={!reuploadUrl.trim() || createDocMutation.isPending}
+            disabled={
+              !reuploadFile || reuploadUploading || createDocMutation.isPending
+            }
           >
-            {createDocMutation.isPending ? "Subiendo..." : "Subir"}
+            {reuploadUploading || createDocMutation.isPending
+              ? "Subiendo..."
+              : "Subir"}
           </Button>
         </DialogActions>
       </Dialog>
@@ -456,7 +544,14 @@ export default function VehiclesPage() {
   if (isLoading) {
     return (
       <AuthGuard message="Por favor inicia sesión">
-        <Box sx={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "100vh" }}>
+        <Box
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            minHeight: "100vh",
+          }}
+        >
           <CircularProgress />
         </Box>
       </AuthGuard>
@@ -466,7 +561,9 @@ export default function VehiclesPage() {
   const canAddMore =
     vehicles.length === 0 ||
     (vehicles.length < 2 &&
-      vehicles.every((v) => v.verificationStatus === VerificationStatus.VERIFIED));
+      vehicles.every(
+        (v) => v.verificationStatus === VerificationStatus.VERIFIED,
+      ));
 
   return (
     <AuthGuard message="Por favor inicia sesión">
@@ -496,12 +593,26 @@ export default function VehiclesPage() {
             </Box>
 
             {vehicles.length === 0 ? (
-              <Paper elevation={2} sx={{ p: 4, textAlign: "center", borderRadius: 2, bgcolor: "action.hover" }}>
-                <DirectionsCar sx={{ fontSize: 64, color: "text.secondary", mb: 2 }} />
+              <Paper
+                elevation={2}
+                sx={{
+                  p: 4,
+                  textAlign: "center",
+                  borderRadius: 2,
+                  bgcolor: "action.hover",
+                }}
+              >
+                <DirectionsCar
+                  sx={{ fontSize: 64, color: "text.secondary", mb: 2 }}
+                />
                 <Typography variant="h6" color="text.secondary" gutterBottom>
                   Sin vehículos registrados
                 </Typography>
-                <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+                <Typography
+                  variant="body2"
+                  color="text.secondary"
+                  sx={{ mb: 3 }}
+                >
                   Registra tu primer vehículo para comenzar a operar
                 </Typography>
                 <Button
@@ -532,7 +643,8 @@ export default function VehiclesPage() {
                 )}
                 {!canAddMore && vehicles.length < 2 && (
                   <Alert severity="info" sx={{ mt: 2 }}>
-                    Tu vehículo está en revisión. Podrás agregar otro una vez que sea verificado.
+                    Tu vehículo está en revisión. Podrás agregar otro una vez
+                    que sea verificado.
                   </Alert>
                 )}
               </Box>

@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
 import { Close, ErrorOutline, InfoOutlined } from "@mui/icons-material";
 import { Box, Collapse, IconButton, Link, Typography } from "@mui/material";
+import { useState } from "react";
 
 interface AccountStatusBannerProps {
   status: "warned" | "banned";
@@ -60,16 +60,29 @@ export function AccountStatusBanner({
             {note ? (
               <Typography
                 component="span"
-                sx={{ fontWeight: 400, color: "text.secondary", ml: 0.5, fontSize: "0.82rem" }}
+                sx={{
+                  fontWeight: 400,
+                  color: "text.secondary",
+                  ml: 0.5,
+                  fontSize: "0.82rem",
+                }}
               >
                 — {note}
               </Typography>
             ) : null}
           </Typography>
           {contactEmail && (
-            <Typography variant="caption" color="text.secondary" sx={{ fontSize: "0.7rem" }}>
+            <Typography
+              variant="caption"
+              color="text.secondary"
+              sx={{ fontSize: "0.7rem" }}
+            >
               ¿Dudas? Escribinos a{" "}
-              <Link href={`mailto:${contactEmail}`} underline="hover" sx={{ fontWeight: 600 }}>
+              <Link
+                href={`mailto:${contactEmail}`}
+                underline="hover"
+                sx={{ fontWeight: 600 }}
+              >
                 {contactEmail}
               </Link>
             </Typography>

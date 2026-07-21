@@ -1,14 +1,9 @@
 import {
-  Box,
-  Typography,
-  Avatar,
-  Stack,
-  alpha,
-} from "@mui/material";
-import {
-  MonetizationOn as CreditIcon,
   ChevronRight as ChevronRightIcon,
+  MonetizationOn as CreditIcon,
 } from "@mui/icons-material";
+import { alpha, Box, Stack, Typography } from "@mui/material";
+import { SignedAvatar } from "@/components/ui/SignedAvatar";
 import type { User } from "@/lib/types/api";
 
 interface MobileUserCardProps {
@@ -64,8 +59,8 @@ export function MobileUserCard({ user, onClick }: MobileUserCardProps) {
     >
       <Stack direction="row" alignItems="center" sx={{ p: 1.75, gap: 1.5 }}>
         {/* Avatar with role ring */}
-        <Avatar
-          src={user.avatar || undefined}
+        <SignedAvatar
+          value={user.avatar}
           sx={{
             width: 48,
             height: 48,
@@ -78,11 +73,16 @@ export function MobileUserCard({ user, onClick }: MobileUserCardProps) {
           }}
         >
           {user.name[0]?.toUpperCase()}
-        </Avatar>
+        </SignedAvatar>
 
         {/* Name + email + credits */}
         <Box flex={1} minWidth={0}>
-          <Stack direction="row" alignItems="center" justifyContent="space-between" mb={0.25}>
+          <Stack
+            direction="row"
+            alignItems="center"
+            justifyContent="space-between"
+            mb={0.25}
+          >
             <Typography
               variant="subtitle2"
               fontWeight={700}
@@ -121,10 +121,19 @@ export function MobileUserCard({ user, onClick }: MobileUserCardProps) {
 
           <Stack direction="row" alignItems="center" gap={0.4}>
             <CreditIcon sx={{ fontSize: 14, color: "#dca621" }} />
-            <Typography variant="caption" fontWeight={600} fontSize="0.73rem" color="text.primary">
+            <Typography
+              variant="caption"
+              fontWeight={600}
+              fontSize="0.73rem"
+              color="text.primary"
+            >
               {user.credits ?? 0}
             </Typography>
-            <Typography variant="caption" fontSize="0.7rem" color="text.secondary">
+            <Typography
+              variant="caption"
+              fontSize="0.7rem"
+              color="text.secondary"
+            >
               créditos
             </Typography>
           </Stack>
@@ -132,7 +141,9 @@ export function MobileUserCard({ user, onClick }: MobileUserCardProps) {
 
         {/* Navigation indicator */}
         {onClick && (
-          <ChevronRightIcon sx={{ fontSize: 20, color: "text.disabled", flexShrink: 0 }} />
+          <ChevronRightIcon
+            sx={{ fontSize: 20, color: "text.disabled", flexShrink: 0 }}
+          />
         )}
       </Stack>
     </Box>

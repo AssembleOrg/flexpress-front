@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
-import { AuthNavbar } from "@/components/layout/AuthNavbar";
-import { BottomNavbar } from "@/components/layout/BottomNavbar";
 import { AuthGuard } from "@/components/guards/AuthGuard";
 import { RoleGuard } from "@/components/guards/RoleGuard";
+import { AuthNavbar } from "@/components/layout/AuthNavbar";
+import { BottomNavbar } from "@/components/layout/BottomNavbar";
 
 export const metadata: Metadata = {
   title: "Cliente - Flexpress",

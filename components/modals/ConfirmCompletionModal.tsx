@@ -1,5 +1,6 @@
 "use client";
 
+import { CheckCircle } from "@mui/icons-material";
 import {
   Alert,
   Button,
@@ -11,7 +12,6 @@ import {
   Stack,
   Typography,
 } from "@mui/material";
-import { CheckCircle } from "@mui/icons-material";
 
 /**
  * ConfirmCompletionModal

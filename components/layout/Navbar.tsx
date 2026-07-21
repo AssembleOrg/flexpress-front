@@ -7,7 +7,6 @@ import NotificationsNoneRoundedIcon from "@mui/icons-material/NotificationsNoneR
 import SettingsIcon from "@mui/icons-material/Settings";
 import {
   AppBar,
-  Avatar,
   Badge,
   Box,
   Chip,
@@ -17,19 +16,20 @@ import {
   MenuItem,
   Toolbar,
   Typography,
+  useMediaQuery,
   useTheme,
 } from "@mui/material";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import Logo from "@/components/ui/Logo";
 import { NotificationsDropdown } from "@/components/NotificationsDropdown";
+import Logo from "@/components/ui/Logo";
+import { SignedAvatar } from "@/components/ui/SignedAvatar";
 import { useLogout } from "@/lib/hooks/mutations/useAuthMutations";
+import { useUnreadNotificationCount } from "@/lib/hooks/queries/useNotificationQueries";
 import { useHydrated } from "@/lib/hooks/useHydrated";
 import { useAuthStore } from "@/lib/stores/authStore";
 import { useCreditPurchaseStore } from "@/lib/stores/creditPurchaseStore";
-import { useUnreadNotificationCount } from "@/lib/hooks/queries/useNotificationQueries";
-import { useMediaQuery } from "@mui/material";
 
 export function Navbar() {
   const router = useRouter();
@@ -170,8 +170,8 @@ export function Navbar() {
               {/* User Menu */}
               <Box>
                 <IconButton onClick={handleMenuOpen} sx={{ p: 0 }}>
-                  <Avatar
-                    src={user.avatar || undefined}
+                  <SignedAvatar
+                    value={user.avatar}
                     alt={user.name}
                     sx={{
                       bgcolor: theme.palette.secondary.main,
@@ -180,7 +180,7 @@ export function Navbar() {
                     }}
                   >
                     {user.name?.charAt(0).toUpperCase() || "U"}
-                  </Avatar>
+                  </SignedAvatar>
                 </IconButton>
                 <Menu
                   anchorEl={anchorEl}

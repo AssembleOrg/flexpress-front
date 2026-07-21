@@ -1,21 +1,20 @@
 "use client";
 
 import {
+  Dashboard as DashboardIcon,
+  Logout as LogoutIcon,
+} from "@mui/icons-material";
+import {
   AppBar,
   Avatar,
   Box,
-  Button,
   IconButton,
   Menu,
   MenuItem,
   Toolbar,
-  Typography,
   Tooltip,
+  Typography,
 } from "@mui/material";
-import {
-  Logout as LogoutIcon,
-  Dashboard as DashboardIcon,
-} from "@mui/icons-material";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import Logo from "@/components/ui/Logo";
@@ -80,8 +79,16 @@ export function AdminNavbar() {
         </Box>
 
         {/* User Info y Menu */}
-        <Box sx={{ display: "flex", alignItems: "center", gap: { xs: 1, md: 2 } }}>
-          <Box sx={{ textAlign: "right", display: { xs: "none", md: "flex" }, flexDirection: "column" }}>
+        <Box
+          sx={{ display: "flex", alignItems: "center", gap: { xs: 1, md: 2 } }}
+        >
+          <Box
+            sx={{
+              textAlign: "right",
+              display: { xs: "none", md: "flex" },
+              flexDirection: "column",
+            }}
+          >
             <Typography
               variant="body2"
               sx={{ fontWeight: 500, color: "#212121" }}

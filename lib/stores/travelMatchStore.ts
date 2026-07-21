@@ -1,7 +1,10 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import type { AvailableCharter, TravelMatch } from "@/lib/types/api";
-import { VehicleSize } from "@/lib/types/api";
+import type {
+  AvailableCharter,
+  TravelMatch,
+  VehicleSize,
+} from "@/lib/types/api";
 
 export interface Coordinates {
   lat: number;

@@ -1,6 +1,7 @@
 "use client";
 
-import { Avatar, Box } from "@mui/material";
+import { Box } from "@mui/material";
+import { SignedAvatar } from "@/components/ui/SignedAvatar";
 
 interface TypingIndicatorProps {
   userName?: string;
@@ -25,8 +26,8 @@ export function TypingIndicator({
       gap={1}
     >
       {/* Avatar */}
-      <Avatar
-        src={userAvatar}
+      <SignedAvatar
+        value={userAvatar}
         alt={userName}
         sx={{
           width: 32,
@@ -38,7 +39,7 @@ export function TypingIndicator({
         }}
       >
         {userName[0]}
-      </Avatar>
+      </SignedAvatar>
 
       {/* Typing bubble with animated dots */}
       <Box

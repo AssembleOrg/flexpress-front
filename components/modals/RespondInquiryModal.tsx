@@ -1,7 +1,6 @@
 "use client";
 
 import {
-  Avatar,
   Box,
   Button,
   Dialog,
@@ -11,15 +10,13 @@ import {
   Stack,
   Typography,
 } from "@mui/material";
-import { useRespondInquiry } from "@/lib/hooks/mutations/useAvailabilityInquiriesMutations";
+import { SignedAvatar } from "@/components/ui/SignedAvatar";
 import {
   INQUIRY_RESPONSE_CODES,
   INQUIRY_RESPONSE_LABELS,
 } from "@/lib/constants/availabilityInquiry";
-import type {
-  AvailabilityInquiry,
-  InquiryResponseCode,
-} from "@/lib/types/api";
+import { useRespondInquiry } from "@/lib/hooks/mutations/useAvailabilityInquiriesMutations";
+import type { AvailabilityInquiry, InquiryResponseCode } from "@/lib/types/api";
 
 interface RespondInquiryModalProps {
   open: boolean;
@@ -49,9 +46,9 @@ export function RespondInquiryModal({
     <Dialog open={open} onClose={onClose} maxWidth="xs" fullWidth>
       <DialogTitle>
         <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
-          <Avatar src={inquiry.fromUser?.avatar ?? undefined}>
+          <SignedAvatar value={inquiry.fromUser?.avatar}>
             {clientName.charAt(0)}
-          </Avatar>
+          </SignedAvatar>
           <Box>
             <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
               Consulta de {clientName}

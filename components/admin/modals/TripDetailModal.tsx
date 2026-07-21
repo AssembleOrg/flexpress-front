@@ -31,7 +31,6 @@ function getStatusChip(status: Trip["status"]): {
       return { label: "Esperando cliente", color: "warning" };
     case "cancelled":
       return { label: "Cancelado", color: "error" };
-    case "pending":
     default:
       return { label: "Pendiente", color: "primary" };
   }

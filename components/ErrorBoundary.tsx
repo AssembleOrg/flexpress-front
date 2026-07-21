@@ -74,7 +74,10 @@ export class ErrorBoundary extends React.Component<Props, State> {
           }
           return { countdown: 0, retryDisabled: false };
         }
-        return { countdown: newCountdown, retryDisabled: prevState.retryDisabled };
+        return {
+          countdown: newCountdown,
+          retryDisabled: prevState.retryDisabled,
+        };
       });
     }, 1000);
 

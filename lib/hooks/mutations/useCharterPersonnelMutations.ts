@@ -1,15 +1,15 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import toast from "react-hot-toast";
 import {
-  charterPersonnelApi,
-  type CreateDriverPayload,
-  type UpdateDriverPayload,
   type CreateDriverDocumentPayload,
-  type CreateHelperPayload,
-  type UpdateHelperPayload,
+  type CreateDriverPayload,
   type CreateHelperDocumentPayload,
-  type ReviewEntityPayload,
+  type CreateHelperPayload,
+  charterPersonnelApi,
   type ReviewDocumentPayload,
+  type ReviewEntityPayload,
+  type UpdateDriverPayload,
+  type UpdateHelperPayload,
 } from "@/lib/api/charterPersonnel";
 import { queryKeys } from "@/lib/hooks/queries/queryFactory";
 
@@ -28,10 +28,13 @@ function toastError(err: any, fallback: string) {
 export function useCreateDriver() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (payload: CreateDriverPayload) => charterPersonnelApi.createDriver(payload),
+    mutationFn: (payload: CreateDriverPayload) =>
+      charterPersonnelApi.createDriver(payload),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: driversKey });
-      toast.success("Conductor creado. Subí los documentos y esperá la verificación.");
+      toast.success(
+        "Conductor creado. Subí los documentos y esperá la verificación.",
+      );
     },
     onError: (err) => toastError(err, "Error al crear conductor"),
   });
@@ -40,10 +43,13 @@ export function useCreateDriver() {
 export function useUpdateDriver(id: string) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (payload: UpdateDriverPayload) => charterPersonnelApi.updateDriver(id, payload),
+    mutationFn: (payload: UpdateDriverPayload) =>
+      charterPersonnelApi.updateDriver(id, payload),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: driversKey });
-      qc.invalidateQueries({ queryKey: queryKeys.charterPersonnel.driverDetail(id) });
+      qc.invalidateQueries({
+        queryKey: queryKeys.charterPersonnel.driverDetail(id),
+      });
       toast.success("Conductor actualizado. Pendiente de re-verificación.");
     },
     onError: (err) => toastError(err, "Error al actualizar conductor"),
@@ -56,7 +62,9 @@ export function useToggleDriverEnabled(id: string) {
     mutationFn: () => charterPersonnelApi.toggleDriverEnabled(id),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: driversKey });
-      qc.invalidateQueries({ queryKey: queryKeys.charterPersonnel.driverDetail(id) });
+      qc.invalidateQueries({
+        queryKey: queryKeys.charterPersonnel.driverDetail(id),
+      });
     },
     onError: (err) => toastError(err, "Error al cambiar estado del conductor"),
   });
@@ -81,7 +89,9 @@ export function useUploadDriverDocument(driverId: string) {
       charterPersonnelApi.uploadDriverDocument(driverId, payload),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: driversKey });
-      qc.invalidateQueries({ queryKey: queryKeys.charterPersonnel.driverDetail(driverId) });
+      qc.invalidateQueries({
+        queryKey: queryKeys.charterPersonnel.driverDetail(driverId),
+      });
     },
     onError: (err) => toastError(err, "Error al subir documento"),
   });
@@ -92,7 +102,8 @@ export function useUploadDriverDocument(driverId: string) {
 export function useCreateHelper() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (payload: CreateHelperPayload) => charterPersonnelApi.createHelper(payload),
+    mutationFn: (payload: CreateHelperPayload) =>
+      charterPersonnelApi.createHelper(payload),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: helpersKey });
       toast.success("Ayudante creado. Subí el DNI y esperá la verificación.");
@@ -104,10 +115,13 @@ export function useCreateHelper() {
 export function useUpdateHelper(id: string) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (payload: UpdateHelperPayload) => charterPersonnelApi.updateHelper(id, payload),
+    mutationFn: (payload: UpdateHelperPayload) =>
+      charterPersonnelApi.updateHelper(id, payload),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: helpersKey });
-      qc.invalidateQueries({ queryKey: queryKeys.charterPersonnel.helperDetail(id) });
+      qc.invalidateQueries({
+        queryKey: queryKeys.charterPersonnel.helperDetail(id),
+      });
       toast.success("Ayudante actualizado. Pendiente de re-verificación.");
     },
     onError: (err) => toastError(err, "Error al actualizar ayudante"),
@@ -120,7 +134,9 @@ export function useToggleHelperEnabled(id: string) {
     mutationFn: () => charterPersonnelApi.toggleHelperEnabled(id),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: helpersKey });
-      qc.invalidateQueries({ queryKey: queryKeys.charterPersonnel.helperDetail(id) });
+      qc.invalidateQueries({
+        queryKey: queryKeys.charterPersonnel.helperDetail(id),
+      });
     },
     onError: (err) => toastError(err, "Error al cambiar estado del ayudante"),
   });
@@ -145,7 +161,9 @@ export function useUploadHelperDocument(helperId: string) {
       charterPersonnelApi.uploadHelperDocument(helperId, payload),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: helpersKey });
-      qc.invalidateQueries({ queryKey: queryKeys.charterPersonnel.helperDetail(helperId) });
+      qc.invalidateQueries({
+        queryKey: queryKeys.charterPersonnel.helperDetail(helperId),
+      });
     },
     onError: (err) => toastError(err, "Error al subir documento"),
   });
@@ -156,12 +174,19 @@ export function useUploadHelperDocument(helperId: string) {
 export function useAdminReviewDriver() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, payload }: { id: string; payload: ReviewEntityPayload }) =>
-      charterPersonnelApi.adminReviewDriver(id, payload),
+    mutationFn: ({
+      id,
+      payload,
+    }: {
+      id: string;
+      payload: ReviewEntityPayload;
+    }) => charterPersonnelApi.adminReviewDriver(id, payload),
     onSuccess: (_, vars) => {
       qc.invalidateQueries({ queryKey: pendingDriversKey });
       toast.success(
-        vars.payload.status === "verified" ? "Conductor aprobado" : "Conductor rechazado",
+        vars.payload.status === "verified"
+          ? "Conductor aprobado"
+          : "Conductor rechazado",
       );
     },
     onError: (err) => toastError(err, "Error al revisar conductor"),
@@ -171,12 +196,19 @@ export function useAdminReviewDriver() {
 export function useAdminReviewHelper() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, payload }: { id: string; payload: ReviewEntityPayload }) =>
-      charterPersonnelApi.adminReviewHelper(id, payload),
+    mutationFn: ({
+      id,
+      payload,
+    }: {
+      id: string;
+      payload: ReviewEntityPayload;
+    }) => charterPersonnelApi.adminReviewHelper(id, payload),
     onSuccess: (_, vars) => {
       qc.invalidateQueries({ queryKey: pendingHelpersKey });
       toast.success(
-        vars.payload.status === "verified" ? "Ayudante aprobado" : "Ayudante rechazado",
+        vars.payload.status === "verified"
+          ? "Ayudante aprobado"
+          : "Ayudante rechazado",
       );
     },
     onError: (err) => toastError(err, "Error al revisar ayudante"),
@@ -186,8 +218,13 @@ export function useAdminReviewHelper() {
 export function useAdminReviewDriverDocument() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ docId, payload }: { docId: string; payload: ReviewDocumentPayload }) =>
-      charterPersonnelApi.adminReviewDriverDocument(docId, payload),
+    mutationFn: ({
+      docId,
+      payload,
+    }: {
+      docId: string;
+      payload: ReviewDocumentPayload;
+    }) => charterPersonnelApi.adminReviewDriverDocument(docId, payload),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: pendingDriversKey });
     },
@@ -198,8 +235,13 @@ export function useAdminReviewDriverDocument() {
 export function useAdminReviewHelperDocument() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ docId, payload }: { docId: string; payload: ReviewDocumentPayload }) =>
-      charterPersonnelApi.adminReviewHelperDocument(docId, payload),
+    mutationFn: ({
+      docId,
+      payload,
+    }: {
+      docId: string;
+      payload: ReviewDocumentPayload;
+    }) => charterPersonnelApi.adminReviewHelperDocument(docId, payload),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: pendingHelpersKey });
     },

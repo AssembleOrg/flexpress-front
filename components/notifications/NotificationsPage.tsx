@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import {
   Box,
   Button,
@@ -8,24 +7,22 @@ import {
   Divider,
   Typography,
 } from "@mui/material";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useState } from "react";
+import type { AppNotification } from "@/lib/api/notifications";
 import { notificationsApi } from "@/lib/api/notifications";
-import { queryKeys } from "@/lib/hooks/queries/queryFactory";
 import {
-  useUnreadNotificationCount,
-} from "@/lib/hooks/queries/useNotificationQueries";
-import {
-  useMarkNotificationRead,
   useMarkAllNotificationsRead,
+  useMarkNotificationRead,
 } from "@/lib/hooks/mutations/useNotificationMutations";
+import { queryKeys } from "@/lib/hooks/queries/queryFactory";
+import { useUnreadNotificationCount } from "@/lib/hooks/queries/useNotificationQueries";
+import { useAuthStore } from "@/lib/stores/authStore";
 import {
   EmptyState,
   NotificationItem,
   NotificationSkeleton,
 } from "./NotificationItem";
-import type { AppNotification } from "@/lib/api/notifications";
-import { useQuery } from "@tanstack/react-query";
-import { useAuthStore } from "@/lib/stores/authStore";
 
 function useNotificationsPaged() {
   const { token } = useAuthStore();
@@ -43,21 +40,29 @@ export function NotificationsPage() {
   const { data: countData } = useUnreadNotificationCount();
   const { data, isLoading } = useNotificationsPaged();
   const { mutate: markRead } = useMarkNotificationRead();
-  const { mutate: markAll, isPending: isMarkingAll } = useMarkAllNotificationsRead();
+  const { mutate: markAll, isPending: isMarkingAll } =
+    useMarkAllNotificationsRead();
 
-  const [extraNotifications, setExtraNotifications] = useState<AppNotification[]>([]);
-  const [nextCursor, setNextCursor] = useState<string | null | undefined>(undefined);
+  const [extraNotifications, setExtraNotifications] = useState<
+    AppNotification[]
+  >([]);
+  const [nextCursor, setNextCursor] = useState<string | null | undefined>(
+    undefined,
+  );
   const [isLoadingMore, setIsLoadingMore] = useState(false);
 
   const unreadCount = countData?.count ?? 0;
   const baseNotifications = data?.notifications ?? [];
-  const initialCursor = nextCursor === undefined ? data?.nextCursor : nextCursor;
+  const initialCursor =
+    nextCursor === undefined ? data?.nextCursor : nextCursor;
   const allNotifications = [...baseNotifications, ...extraNotifications];
 
   const handleRead = (id: string, actionUrl?: string) => {
     markRead({ id, actionUrl });
     // Invalidar para mantener badge sincronizado
-    queryClient.invalidateQueries({ queryKey: queryKeys.notifications.unreadCount() });
+    queryClient.invalidateQueries({
+      queryKey: queryKeys.notifications.unreadCount(),
+    });
   };
 
   const handleLoadMore = async () => {
@@ -154,16 +159,23 @@ export function NotificationsPage() {
       </Box>
 
       {/* List */}
-      <Box sx={{ bgcolor: "background.paper", mx: { sm: 2, md: 4 }, mt: { sm: 2 }, borderRadius: { sm: 2 }, overflow: "hidden", boxShadow: { sm: "0 2px 8px rgba(0,0,0,0.06)" } }}>
+      <Box
+        sx={{
+          bgcolor: "background.paper",
+          mx: { sm: 2, md: 4 },
+          mt: { sm: 2 },
+          borderRadius: { sm: 2 },
+          overflow: "hidden",
+          boxShadow: { sm: "0 2px 8px rgba(0,0,0,0.06)" },
+        }}
+      >
         {isLoading ? (
-          <>
-            {[...Array(5)].map((_, i) => (
-              <Box key={i}>
-                <NotificationSkeleton fullPage />
-                {i < 4 && <Divider />}
-              </Box>
-            ))}
-          </>
+          [...Array(5)].map((_, i) => (
+            <Box key={i}>
+              <NotificationSkeleton fullPage />
+              {i < 4 && <Divider />}
+            </Box>
+          ))
         ) : allNotifications.length === 0 ? (
           <EmptyState />
         ) : (
@@ -187,7 +199,11 @@ export function NotificationsPage() {
                   size="small"
                   onClick={handleLoadMore}
                   disabled={isLoadingMore}
-                  startIcon={isLoadingMore ? <CircularProgress size={14} color="inherit" /> : null}
+                  startIcon={
+                    isLoadingMore ? (
+                      <CircularProgress size={14} color="inherit" />
+                    ) : null
+                  }
                   sx={{
                     borderColor: "primary.main",
                     color: "primary.main",

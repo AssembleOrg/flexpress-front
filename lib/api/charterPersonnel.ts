@@ -3,12 +3,12 @@ import type {
   ApiResponse,
   CharterDriver,
   CharterDriverDocument,
+  CharterDriverDocumentType,
   CharterHelper,
   CharterHelperDocument,
-  DocumentSide,
-  CharterDriverDocumentType,
   CharterHelperDocumentType,
   DocumentReviewStatus,
+  DocumentSide,
   VerificationStatus,
 } from "../types/api";
 
@@ -52,35 +52,58 @@ export interface CreateHelperDocumentPayload {
 }
 
 export interface ReviewEntityPayload {
-  status: Extract<VerificationStatus, VerificationStatus.VERIFIED | VerificationStatus.REJECTED>;
+  status: Extract<
+    VerificationStatus,
+    VerificationStatus.VERIFIED | VerificationStatus.REJECTED
+  >;
   rejectionReason?: string;
 }
 
 export interface ReviewDocumentPayload {
-  status: Extract<DocumentReviewStatus, DocumentReviewStatus.APPROVED | DocumentReviewStatus.REJECTED>;
+  status: Extract<
+    DocumentReviewStatus,
+    DocumentReviewStatus.APPROVED | DocumentReviewStatus.REJECTED
+  >;
   rejectionReason?: string;
 }
 
 export const charterPersonnelApi = {
   // Drivers
   listMyDrivers: async (): Promise<CharterDriver[]> => {
-    const res = await api.get<ApiResponse<CharterDriver[]>>("/charter-personnel/drivers/me");
+    const res = await api.get<ApiResponse<CharterDriver[]>>(
+      "/charter-personnel/drivers/me",
+    );
     return res.data.data ?? [];
   },
   getDriver: async (id: string): Promise<CharterDriver | null> => {
-    const res = await api.get<ApiResponse<CharterDriver>>(`/charter-personnel/drivers/${id}`);
+    const res = await api.get<ApiResponse<CharterDriver>>(
+      `/charter-personnel/drivers/${id}`,
+    );
     return res.data.data ?? null;
   },
-  createDriver: async (payload: CreateDriverPayload): Promise<CharterDriver> => {
-    const res = await api.post<ApiResponse<CharterDriver>>("/charter-personnel/drivers", payload);
+  createDriver: async (
+    payload: CreateDriverPayload,
+  ): Promise<CharterDriver> => {
+    const res = await api.post<ApiResponse<CharterDriver>>(
+      "/charter-personnel/drivers",
+      payload,
+    );
     return res.data.data as CharterDriver;
   },
-  updateDriver: async (id: string, payload: UpdateDriverPayload): Promise<CharterDriver> => {
-    const res = await api.patch<ApiResponse<CharterDriver>>(`/charter-personnel/drivers/${id}`, payload);
+  updateDriver: async (
+    id: string,
+    payload: UpdateDriverPayload,
+  ): Promise<CharterDriver> => {
+    const res = await api.patch<ApiResponse<CharterDriver>>(
+      `/charter-personnel/drivers/${id}`,
+      payload,
+    );
     return res.data.data as CharterDriver;
   },
   toggleDriverEnabled: async (id: string): Promise<CharterDriver> => {
-    const res = await api.patch<ApiResponse<CharterDriver>>(`/charter-personnel/drivers/${id}/toggle-enabled`);
+    const res = await api.patch<ApiResponse<CharterDriver>>(
+      `/charter-personnel/drivers/${id}/toggle-enabled`,
+    );
     return res.data.data as CharterDriver;
   },
   deleteDriver: async (id: string): Promise<void> => {
@@ -99,23 +122,40 @@ export const charterPersonnelApi = {
 
   // Helpers
   listMyHelpers: async (): Promise<CharterHelper[]> => {
-    const res = await api.get<ApiResponse<CharterHelper[]>>("/charter-personnel/helpers/me");
+    const res = await api.get<ApiResponse<CharterHelper[]>>(
+      "/charter-personnel/helpers/me",
+    );
     return res.data.data ?? [];
   },
   getHelper: async (id: string): Promise<CharterHelper | null> => {
-    const res = await api.get<ApiResponse<CharterHelper>>(`/charter-personnel/helpers/${id}`);
+    const res = await api.get<ApiResponse<CharterHelper>>(
+      `/charter-personnel/helpers/${id}`,
+    );
     return res.data.data ?? null;
   },
-  createHelper: async (payload: CreateHelperPayload): Promise<CharterHelper> => {
-    const res = await api.post<ApiResponse<CharterHelper>>("/charter-personnel/helpers", payload);
+  createHelper: async (
+    payload: CreateHelperPayload,
+  ): Promise<CharterHelper> => {
+    const res = await api.post<ApiResponse<CharterHelper>>(
+      "/charter-personnel/helpers",
+      payload,
+    );
     return res.data.data as CharterHelper;
   },
-  updateHelper: async (id: string, payload: UpdateHelperPayload): Promise<CharterHelper> => {
-    const res = await api.patch<ApiResponse<CharterHelper>>(`/charter-personnel/helpers/${id}`, payload);
+  updateHelper: async (
+    id: string,
+    payload: UpdateHelperPayload,
+  ): Promise<CharterHelper> => {
+    const res = await api.patch<ApiResponse<CharterHelper>>(
+      `/charter-personnel/helpers/${id}`,
+      payload,
+    );
     return res.data.data as CharterHelper;
   },
   toggleHelperEnabled: async (id: string): Promise<CharterHelper> => {
-    const res = await api.patch<ApiResponse<CharterHelper>>(`/charter-personnel/helpers/${id}/toggle-enabled`);
+    const res = await api.patch<ApiResponse<CharterHelper>>(
+      `/charter-personnel/helpers/${id}/toggle-enabled`,
+    );
     return res.data.data as CharterHelper;
   },
   deleteHelper: async (id: string): Promise<void> => {
@@ -134,21 +174,31 @@ export const charterPersonnelApi = {
 
   // Admin
   adminListPendingDrivers: async (): Promise<CharterDriver[]> => {
-    const res = await api.get<ApiResponse<CharterDriver[]>>("/charter-personnel/admin/drivers/pending");
+    const res = await api.get<ApiResponse<CharterDriver[]>>(
+      "/charter-personnel/admin/drivers/pending",
+    );
     return res.data.data ?? [];
   },
   adminListPendingHelpers: async (): Promise<CharterHelper[]> => {
-    const res = await api.get<ApiResponse<CharterHelper[]>>("/charter-personnel/admin/helpers/pending");
+    const res = await api.get<ApiResponse<CharterHelper[]>>(
+      "/charter-personnel/admin/helpers/pending",
+    );
     return res.data.data ?? [];
   },
-  adminReviewDriver: async (id: string, payload: ReviewEntityPayload): Promise<CharterDriver> => {
+  adminReviewDriver: async (
+    id: string,
+    payload: ReviewEntityPayload,
+  ): Promise<CharterDriver> => {
     const res = await api.patch<ApiResponse<CharterDriver>>(
       `/charter-personnel/admin/drivers/${id}/review`,
       payload,
     );
     return res.data.data as CharterDriver;
   },
-  adminReviewHelper: async (id: string, payload: ReviewEntityPayload): Promise<CharterHelper> => {
+  adminReviewHelper: async (
+    id: string,
+    payload: ReviewEntityPayload,
+  ): Promise<CharterHelper> => {
     const res = await api.patch<ApiResponse<CharterHelper>>(
       `/charter-personnel/admin/helpers/${id}/review`,
       payload,

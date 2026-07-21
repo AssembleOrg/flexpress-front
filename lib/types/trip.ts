@@ -8,11 +8,7 @@ export interface Trip {
   workersCount: number;
   cargoDescription?: string | null;
   scheduledDate: string | null;
-  status:
-    | "pending"
-    | "charter_completed"
-    | "completed"
-    | "cancelled";
+  status: "pending" | "charter_completed" | "completed" | "cancelled";
   createdAt: string;
   updatedAt: string;
 

@@ -1,6 +1,5 @@
 "use client";
 
-import { Box, Skeleton, Typography } from "@mui/material";
 import {
   CancelOutlined,
   ChatBubbleOutlineRounded,
@@ -11,6 +10,7 @@ import {
   FlagOutlined,
   NotificationsNoneRounded,
 } from "@mui/icons-material";
+import { Box, Skeleton, Typography } from "@mui/material";
 import { formatDistanceToNow } from "date-fns";
 import { es } from "date-fns/locale";
 import type { AppNotification } from "@/lib/api/notifications";
@@ -30,7 +30,10 @@ export const NOTIFICATION_META: Record<
 
 export function getNotificationMeta(type: string) {
   return (
-    NOTIFICATION_META[type] ?? { Icon: NotificationsNoneRounded, color: "#503933" }
+    NOTIFICATION_META[type] ?? {
+      Icon: NotificationsNoneRounded,
+      color: "#503933",
+    }
   );
 }
 
@@ -58,14 +61,20 @@ interface NotificationItemProps {
   fullPage?: boolean;
 }
 
-export function NotificationItem({ notification, onRead, fullPage = false }: NotificationItemProps) {
+export function NotificationItem({
+  notification,
+  onRead,
+  fullPage = false,
+}: NotificationItemProps) {
   const { Icon, color } = getNotificationMeta(notification.type);
   const isUnread = !notification.isRead;
 
   return (
     <Box
       component="button"
-      onClick={() => onRead(notification.id, notification.data?.actionUrl ?? undefined)}
+      onClick={() =>
+        onRead(notification.id, notification.data?.actionUrl ?? undefined)
+      }
       sx={{
         width: "100%",
         display: "flex",
@@ -74,7 +83,8 @@ export function NotificationItem({ notification, onRead, fullPage = false }: Not
         px: fullPage ? 2.5 : 2,
         py: fullPage ? 2 : 1.5,
         border: "none",
-        borderLeft: fullPage && isUnread ? `3px solid ${color}` : "3px solid transparent",
+        borderLeft:
+          fullPage && isUnread ? `3px solid ${color}` : "3px solid transparent",
         background: isUnread ? "rgba(56,1,22,0.04)" : "transparent",
         cursor: "pointer",
         textAlign: "left",
@@ -160,9 +170,20 @@ export function NotificationItem({ notification, onRead, fullPage = false }: Not
   );
 }
 
-export function NotificationSkeleton({ fullPage = false }: { fullPage?: boolean }) {
+export function NotificationSkeleton({
+  fullPage = false,
+}: {
+  fullPage?: boolean;
+}) {
   return (
-    <Box sx={{ display: "flex", gap: 1.5, px: fullPage ? 2.5 : 2, py: fullPage ? 2 : 1.5 }}>
+    <Box
+      sx={{
+        display: "flex",
+        gap: 1.5,
+        px: fullPage ? 2.5 : 2,
+        py: fullPage ? 2 : 1.5,
+      }}
+    >
       <Skeleton
         variant="circular"
         width={fullPage ? 40 : 36}
@@ -202,9 +223,14 @@ export function EmptyState() {
           mb: 0.5,
         }}
       >
-        <NotificationsNoneRounded sx={{ fontSize: 32, color: "primary.main" }} />
+        <NotificationsNoneRounded
+          sx={{ fontSize: 32, color: "primary.main" }}
+        />
       </Box>
-      <Typography variant="body1" sx={{ fontWeight: 700, color: "text.primary" }}>
+      <Typography
+        variant="body1"
+        sx={{ fontWeight: 700, color: "text.primary" }}
+      >
         Sin notificaciones
       </Typography>
       <Typography

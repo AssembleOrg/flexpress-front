@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import {
   Alert,
   Button,
@@ -13,6 +12,7 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
+import { useState } from "react";
 
 /**
  * RejectPaymentModal

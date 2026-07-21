@@ -25,7 +25,6 @@ import {
   CircularProgress,
   Container,
   IconButton,
-  Rating,
   Stack,
   Typography,
 } from "@mui/material";
@@ -42,12 +41,8 @@ import { MobileHeader } from "@/components/layout/MobileHeader";
 import { ConfirmCompletionModal } from "@/components/modals/ConfirmCompletionModal";
 import { ReportModal } from "@/components/modals/ReportModal";
 import { TripDetailsCard } from "@/components/trip/TripDetailsCard";
-import LeafletMap, {
-  type LeafletMapHandle,
-  type MapMarker,
-} from "@/components/ui/LeafletMap";
+import LeafletMap, { type LeafletMapHandle } from "@/components/ui/LeafletMap";
 import { conversationApi } from "@/lib/api/conversations";
-import { MOBILE_BOTTOM_NAV_HEIGHT } from "@/lib/constants/mobileDesign";
 import {
   useCreateMatch,
   useCreateTripFromMatch,
@@ -64,8 +59,11 @@ import {
   useTripCompletedListener,
 } from "@/lib/hooks/useWebSocket";
 import { useAuthStore } from "@/lib/stores/authStore";
-import type { User } from "@/lib/types/api";
-import { TravelMatchStatus, UserRole, VEHICLE_SIZE_LABELS } from "@/lib/types/api";
+import {
+  TravelMatchStatus,
+  UserRole,
+  VEHICLE_SIZE_LABELS,
+} from "@/lib/types/api";
 import { getDirectionsUrl } from "@/lib/utils/mapLinks";
 import { downloadPDF, generateClientReceipt } from "@/lib/utils/pdfGenerator";
 
@@ -150,14 +148,14 @@ export default function MatchDetailPage() {
     }
   };
   const hasCreatedTrip = useRef(false);
-  const [conversationLoadingTimeout, setConversationLoadingTimeout] =
+  const [_conversationLoadingTimeout, setConversationLoadingTimeout] =
     useState(false);
   const [conversationRecoveryAttempt, setConversationRecoveryAttempt] =
     useState(0);
   const [conversationRecoveryFailed, setConversationRecoveryFailed] =
     useState(false);
   const isRecoveringConversation = useRef(false);
-  const [charterFinalized, setCharterFinalized] = useState(false);
+  const [_charterFinalized, setCharterFinalized] = useState(false);
   const hasShownAcceptToast = useRef(false);
   const mapRef = useRef<LeafletMapHandle>(null);
 
@@ -262,7 +260,7 @@ export default function MatchDetailPage() {
     refetchMatch();
   });
 
-  const handleFinalizeTrip = () => {
+  const _handleFinalizeTrip = () => {
     if (!canGiveFeedback) {
       toast.error("Ya has dado feedback para este viaje");
       return;
@@ -307,7 +305,14 @@ export default function MatchDetailPage() {
         hasCreatedTrip.current = false;
       });
     }
-  }, [match?.status, match?.conversationId, match?.tripId, isClient, matchId]);
+  }, [
+    match?.status,
+    match?.conversationId,
+    match?.tripId,
+    isClient,
+    matchId,
+    createTripMutation.mutateAsync,
+  ]);
 
   // Auto-open feedback modal when trip is completed
   useEffect(() => {

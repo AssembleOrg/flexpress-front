@@ -1,7 +1,7 @@
 "use client";
 
-import { AppBar, Box, IconButton, Toolbar, Typography } from "@mui/material";
 import { ChevronLeft } from "@mui/icons-material";
+import { AppBar, Box, IconButton, Toolbar, Typography } from "@mui/material";
 import { useRouter } from "next/navigation";
 import { MOBILE_HEADER_HEIGHT, Z_INDEX } from "@/lib/constants/mobileDesign";
 

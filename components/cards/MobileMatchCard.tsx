@@ -1,21 +1,21 @@
 "use client";
 
-import type { ReactNode } from "react";
 import {
-  Box,
-  Card,
-  CardContent,
-  Typography,
-  Avatar,
-  Button,
-  Chip,
-} from "@mui/material";
-import {
-  LocationOn,
-  Flag,
   AccessTime,
   CalendarToday,
+  Flag,
+  LocationOn,
 } from "@mui/icons-material";
+import {
+  Box,
+  Button,
+  Card,
+  CardContent,
+  Chip,
+  Typography,
+} from "@mui/material";
+import type { ReactNode } from "react";
+import { SignedAvatar } from "@/components/ui/SignedAvatar";
 
 interface MobileMatchCardProps {
   /**
@@ -119,8 +119,8 @@ export function MobileMatchCard({
           mb={1.5}
         >
           <Box display="flex" alignItems="center" gap={1}>
-            <Avatar
-              src={user.avatar}
+            <SignedAvatar
+              value={user.avatar}
               alt={user.name}
               sx={{
                 width: 36,
@@ -131,7 +131,7 @@ export function MobileMatchCard({
               }}
             >
               {user.name[0]}
-            </Avatar>
+            </SignedAvatar>
             <Typography variant="subtitle2" fontWeight={700} fontSize="0.9rem">
               {user.name}
             </Typography>
@@ -157,9 +157,7 @@ export function MobileMatchCard({
         <Box mb={1.5}>
           {/* Origin */}
           <Box display="flex" alignItems="flex-start" gap={1} mb={0.5}>
-            <LocationOn
-              sx={{ fontSize: 18, color: "primary.main", mt: 0.2 }}
-            />
+            <LocationOn sx={{ fontSize: 18, color: "primary.main", mt: 0.2 }} />
             <Typography variant="body2" fontSize="0.85rem" lineHeight={1.4}>
               {origin}
             </Typography>

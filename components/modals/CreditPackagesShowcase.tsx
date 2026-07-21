@@ -26,11 +26,11 @@ import { AnimatePresence, motion } from "framer-motion";
 import type { ReactNode } from "react";
 import { useMemo, useState } from "react";
 import toast from "react-hot-toast";
-import { type BankAccount, BANK_ACCOUNTS } from "@/lib/constants/bankAccounts";
+import { BANK_ACCOUNTS, type BankAccount } from "@/lib/constants/bankAccounts";
 import { useCreatePaymentRequest } from "@/lib/hooks/mutations/usePaymentMutations";
 import { usePublicPricing } from "@/lib/hooks/queries/useSystemConfigQueries";
 import { useCreditPurchaseStore } from "@/lib/stores/creditPurchaseStore";
-import { useUploadThing } from "@/lib/uploadthing";
+import { uploadToStorage } from "@/lib/upload";
 
 /**
  * Modal REAL de recarga de créditos (premium bottom-sheet).
@@ -108,7 +108,10 @@ export function CreditPackagesShowcase() {
 
   const { data: pricing } = usePublicPricing();
   const createPaymentMutation = useCreatePaymentRequest();
-  const { startUpload, isUploading } = useUploadThing("receiptUploader");
+  const [isUploading, setIsUploading] = useState(false);
+  // Preview local del comprobante: el receipt es privado (se guarda la KEY, no una URL),
+  // así que para mostrarlo en el checkout usamos un object URL del File en memoria.
+  const [receiptPreview, setReceiptPreview] = useState<string | null>(null);
 
   const [step, setStep] = useState<Step>("select");
   const [customARS, setCustomARS] = useState(0);
@@ -130,6 +133,10 @@ export function CreditPackagesShowcase() {
     setCustomARS(0);
     setUploadError(null);
     setBreakdown({ base: 0, bonus: 0 });
+    setReceiptPreview((prev) => {
+      if (prev) URL.revokeObjectURL(prev);
+      return null;
+    });
     setStep("select");
     closeModal();
   };
@@ -156,18 +163,24 @@ export function CreditPackagesShowcase() {
   const handleFileUpload = async (
     event: React.ChangeEvent<HTMLInputElement>,
   ) => {
-    const files = event.target.files;
-    if (!files || files.length === 0) return;
+    const file = event.target.files?.[0];
+    if (!file) return;
     setUploadError(null);
+    setIsUploading(true);
+    // Preview inmediato desde el archivo local (el receipt privado guarda la key, no una URL).
+    setReceiptPreview((prev) => {
+      if (prev) URL.revokeObjectURL(prev);
+      return URL.createObjectURL(file);
+    });
     try {
-      const result = await startUpload(Array.from(files));
-      if (result?.[0]) {
-        setReceiptUrl(result[0].url);
-        toast.success("Comprobante subido correctamente");
-      }
+      const result = await uploadToStorage("receipt", file);
+      setReceiptUrl(result.url);
+      toast.success("Comprobante subido correctamente");
     } catch {
       setUploadError("Error al subir el comprobante");
       toast.error("Error al subir el comprobante");
+    } finally {
+      setIsUploading(false);
     }
   };
 
@@ -311,8 +324,15 @@ export function CreditPackagesShowcase() {
                     bonusCredits={breakdown.bonus}
                     amount={customAmount}
                     receiptUrl={receiptUrl}
+                    receiptPreview={receiptPreview}
                     onBack={() => setStep("select")}
-                    onChangeReceipt={() => setReceiptUrl(null)}
+                    onChangeReceipt={() => {
+                      setReceiptUrl(null);
+                      setReceiptPreview((prev) => {
+                        if (prev) URL.revokeObjectURL(prev);
+                        return null;
+                      });
+                    }}
                     onFileUpload={handleFileUpload}
                     onSubmit={handleSubmit}
                     isUploading={isUploading}
@@ -497,6 +517,7 @@ function CheckoutStep({
   bonusCredits,
   amount,
   receiptUrl,
+  receiptPreview,
   onBack,
   onChangeReceipt,
   onFileUpload,
@@ -510,6 +531,7 @@ function CheckoutStep({
   bonusCredits: number;
   amount: number;
   receiptUrl: string | null;
+  receiptPreview: string | null;
   onBack: () => void;
   onChangeReceipt: () => void;
   onFileUpload: (e: React.ChangeEvent<HTMLInputElement>) => void;
@@ -654,7 +676,7 @@ function CheckoutStep({
             <Box mt={2}>
               <Box
                 component="img"
-                src={receiptUrl}
+                src={receiptPreview ?? undefined}
                 alt="Comprobante"
                 sx={{ maxWidth: 200, borderRadius: 2 }}
               />
@@ -857,7 +879,9 @@ function PackageCard({
               border: `1px solid ${GOLD}66`,
             }}
           >
-            <AutoAwesomeRounded sx={{ fontSize: 11, color: GOLD, flexShrink: 0 }} />
+            <AutoAwesomeRounded
+              sx={{ fontSize: 11, color: GOLD, flexShrink: 0 }}
+            />
             <Typography
               sx={{
                 color: GOLD,

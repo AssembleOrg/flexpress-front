@@ -8,7 +8,6 @@ import {
   Route,
 } from "@mui/icons-material";
 import {
-  Avatar,
   Box,
   Button,
   Chip,
@@ -21,17 +20,18 @@ import {
   Typography,
 } from "@mui/material";
 import { RatingDisplay } from "@/components/ui/RatingDisplay";
-import { useUserFeedback } from "@/lib/hooks/queries/useFeedbackQueries";
+import { SignedAvatar } from "@/components/ui/SignedAvatar";
+import type { CharterAvailabilityState } from "@/lib/api/travelMatching";
 import {
   useMyDrivers,
   useMyHelpers,
 } from "@/lib/hooks/queries/useCharterPersonnelQueries";
+import { useUserFeedback } from "@/lib/hooks/queries/useFeedbackQueries";
 import { useAuthStore } from "@/lib/stores/authStore";
 import { useCreditPurchaseStore } from "@/lib/stores/creditPurchaseStore";
+import type { TravelMatch } from "@/lib/types/api";
 import { getCharterCreditCost } from "@/lib/utils/creditCost";
 import { getDirectionsUrl } from "@/lib/utils/mapLinks";
-import type { CharterAvailabilityState } from "@/lib/api/travelMatching";
-import type { TravelMatch } from "@/lib/types/api";
 
 interface AcceptMatchModalProps {
   open: boolean;
@@ -103,9 +103,10 @@ export function AcceptMatchModal({
   const activeHelperNames = (availability?.activeHelperIds ?? [])
     .map((id) => myHelpers.find((h) => h.id === id))
     .filter(Boolean)
-    .map((h) => `${h!.firstName} ${h!.lastName}`.trim());
+    .map((h) => `${h?.firstName} ${h?.lastName}`.trim());
 
-  const isValidState = match.status === "pending" || match.status === "searching";
+  const isValidState =
+    match.status === "pending" || match.status === "searching";
 
   const handleAccept = () => {
     onAccept();
@@ -120,13 +121,31 @@ export function AcceptMatchModal({
       <DialogContent sx={{ py: 1.5 }}>
         <Stack spacing={1.5}>
           {error && (
-            <Box sx={{ p: 2, bgcolor: "error.light", borderRadius: 1, border: "1px solid", borderColor: "error.main" }}>
-              <Typography variant="body2" color="error.dark">{error}</Typography>
+            <Box
+              sx={{
+                p: 2,
+                bgcolor: "error.light",
+                borderRadius: 1,
+                border: "1px solid",
+                borderColor: "error.main",
+              }}
+            >
+              <Typography variant="body2" color="error.dark">
+                {error}
+              </Typography>
             </Box>
           )}
 
           {!isValidState && (
-            <Box sx={{ p: 2, bgcolor: "warning.light", borderRadius: 1, border: "1px solid", borderColor: "warning.main" }}>
+            <Box
+              sx={{
+                p: 2,
+                bgcolor: "warning.light",
+                borderRadius: 1,
+                border: "1px solid",
+                borderColor: "warning.main",
+              }}
+            >
               <Typography variant="body2" color="warning.dark">
                 ⚠️ Este viaje ya ha sido procesado o no está disponible.
               </Typography>
@@ -134,9 +153,18 @@ export function AcceptMatchModal({
           )}
 
           {isValidState && !hasEnoughCredits && (
-            <Box sx={{ p: 2, bgcolor: "error.light", borderRadius: 1, border: "1px solid", borderColor: "error.main" }}>
+            <Box
+              sx={{
+                p: 2,
+                bgcolor: "error.light",
+                borderRadius: 1,
+                border: "1px solid",
+                borderColor: "error.main",
+              }}
+            >
               <Typography variant="body2" color="error.dark" sx={{ mb: 1 }}>
-                Necesitás {charterCost} créditos para aceptar este viaje. Tenés {currentCredits}.
+                Necesitás {charterCost} créditos para aceptar este viaje. Tenés{" "}
+                {currentCredits}.
               </Typography>
               <Button
                 onClick={handleBuyCredits}
@@ -150,12 +178,27 @@ export function AcceptMatchModal({
             </Box>
           )}
 
-          <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, p: 1.5, bgcolor: "action.hover", borderRadius: 1.5 }}>
-            <Avatar src={match.user?.avatar || undefined} sx={{ width: 48, height: 48 }}>
+          <Box
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              gap: 1.5,
+              p: 1.5,
+              bgcolor: "action.hover",
+              borderRadius: 1.5,
+            }}
+          >
+            <SignedAvatar
+              value={match.user?.avatar}
+              sx={{ width: 48, height: 48 }}
+            >
               {match.user?.name?.[0]?.toUpperCase() || "U"}
-            </Avatar>
+            </SignedAvatar>
             <Box sx={{ flex: 1 }}>
-              <Typography variant="subtitle2" sx={{ fontWeight: 600, fontSize: "0.95rem" }}>
+              <Typography
+                variant="subtitle2"
+                sx={{ fontWeight: 600, fontSize: "0.95rem" }}
+              >
                 {match.user?.name || "Cliente"}
               </Typography>
               <Box mt={0.5}>
@@ -169,15 +212,35 @@ export function AcceptMatchModal({
           </Box>
 
           {(match.cargoDescription || (match.workersCount ?? 0) > 0) && (
-            <Box sx={{ p: 1.5, bgcolor: "background.default", borderRadius: 1.5 }}>
-              <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 0.75 }}>
+            <Box
+              sx={{ p: 1.5, bgcolor: "background.default", borderRadius: 1.5 }}
+            >
+              <Box
+                sx={{ display: "flex", alignItems: "center", gap: 1, mb: 0.75 }}
+              >
                 <LocalShipping sx={{ fontSize: 18, color: "secondary.main" }} />
-                <Typography variant="caption" color="text.secondary" sx={{ fontSize: "0.7rem", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.3px" }}>
+                <Typography
+                  variant="caption"
+                  color="text.secondary"
+                  sx={{
+                    fontSize: "0.7rem",
+                    fontWeight: 600,
+                    textTransform: "uppercase",
+                    letterSpacing: "0.3px",
+                  }}
+                >
                   Qué mueve
                 </Typography>
               </Box>
               {match.cargoDescription && (
-                <Typography variant="body2" sx={{ fontSize: "0.9rem", lineHeight: 1.4, mb: (match.workersCount ?? 0) > 0 ? 1 : 0 }}>
+                <Typography
+                  variant="body2"
+                  sx={{
+                    fontSize: "0.9rem",
+                    lineHeight: 1.4,
+                    mb: (match.workersCount ?? 0) > 0 ? 1 : 0,
+                  }}
+                >
                   {match.cargoDescription}
                 </Typography>
               )}
@@ -192,14 +255,27 @@ export function AcceptMatchModal({
             </Box>
           )}
 
-          <Box sx={{ p: 1.5, bgcolor: "background.default", borderRadius: 1.5 }}>
-            <Typography variant="caption" color="text.secondary" display="block" sx={{ mb: 1, fontSize: "0.7rem", fontWeight: 600 }}>
+          <Box
+            sx={{ p: 1.5, bgcolor: "background.default", borderRadius: 1.5 }}
+          >
+            <Typography
+              variant="caption"
+              color="text.secondary"
+              display="block"
+              sx={{ mb: 1, fontSize: "0.7rem", fontWeight: 600 }}
+            >
               Origen → Destino
             </Typography>
-            <Typography variant="body2" sx={{ fontSize: "0.85rem", lineHeight: 1.4, mb: 0.5 }}>
+            <Typography
+              variant="body2"
+              sx={{ fontSize: "0.85rem", lineHeight: 1.4, mb: 0.5 }}
+            >
               {match.pickupAddress || "No especificado"}
             </Typography>
-            <Typography variant="body2" sx={{ fontSize: "0.85rem", fontWeight: 600, lineHeight: 1.4 }}>
+            <Typography
+              variant="body2"
+              sx={{ fontSize: "0.85rem", fontWeight: 600, lineHeight: 1.4 }}
+            >
               {match.destinationAddress || "No especificado"}
             </Typography>
             {canOpenRoute && (
@@ -216,23 +292,59 @@ export function AcceptMatchModal({
             )}
           </Box>
 
-          <Box sx={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 1.5 }}>
-            <Box sx={{ p: 1.5, bgcolor: "background.default", borderRadius: 1.5, textAlign: "center" }}>
+          <Box
+            sx={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 1.5 }}
+          >
+            <Box
+              sx={{
+                p: 1.5,
+                bgcolor: "background.default",
+                borderRadius: 1.5,
+                textAlign: "center",
+              }}
+            >
               <Route sx={{ fontSize: 20, color: "primary.main", mb: 0.5 }} />
-              <Typography variant="h6" sx={{ fontWeight: 700, fontSize: "1rem" }}>
+              <Typography
+                variant="h6"
+                sx={{ fontWeight: 700, fontSize: "1rem" }}
+              >
                 {match.distanceKm?.toFixed(1) || "0"} km
               </Typography>
-              <Typography variant="caption" color="text.secondary" sx={{ fontSize: "0.65rem" }}>
+              <Typography
+                variant="caption"
+                color="text.secondary"
+                sx={{ fontSize: "0.65rem" }}
+              >
                 Distancia
               </Typography>
             </Box>
 
-            <Box sx={{ p: 1.5, bgcolor: "background.default", borderRadius: 1.5, textAlign: "center" }}>
-              <AttachMoney sx={{ fontSize: 20, color: "warning.main", mb: 0.5 }} />
-              <Typography variant="h6" sx={{ fontWeight: 700, fontSize: "1rem", color: "warning.main" }}>
+            <Box
+              sx={{
+                p: 1.5,
+                bgcolor: "background.default",
+                borderRadius: 1.5,
+                textAlign: "center",
+              }}
+            >
+              <AttachMoney
+                sx={{ fontSize: 20, color: "warning.main", mb: 0.5 }}
+              />
+              <Typography
+                variant="h6"
+                sx={{
+                  fontWeight: 700,
+                  fontSize: "1rem",
+                  color: "warning.main",
+                }}
+              >
                 {charterCost} {charterCost === 1 ? "crédito" : "créditos"}
               </Typography>
-              <Typography variant="caption" color="text.secondary" sx={{ fontSize: "0.65rem" }}>
+              <Typography
+                variant="caption"
+                color="text.secondary"
+                sx={{ fontSize: "0.65rem" }}
+              >
                 Costo al aceptar
               </Typography>
             </Box>
@@ -240,17 +352,39 @@ export function AcceptMatchModal({
 
           {/* Ejecutor activo (read-only): se eligió al ponerse disponible.
               Es lo que el cliente ya vio al seleccionar este charter. */}
-          <Box sx={{ p: 1.5, bgcolor: "background.default", borderRadius: 1.5, display: "flex", alignItems: "center", gap: 1 }}>
+          <Box
+            sx={{
+              p: 1.5,
+              bgcolor: "background.default",
+              borderRadius: 1.5,
+              display: "flex",
+              alignItems: "center",
+              gap: 1,
+            }}
+          >
             <Person sx={{ fontSize: 18, color: "secondary.main" }} />
             <Box sx={{ flex: 1, minWidth: 0 }}>
-              <Typography variant="caption" color="text.secondary" sx={{ display: "block", fontSize: "0.7rem", fontWeight: 600 }}>
+              <Typography
+                variant="caption"
+                color="text.secondary"
+                sx={{ display: "block", fontSize: "0.7rem", fontWeight: 600 }}
+              >
                 Conduce
               </Typography>
-              <Typography variant="body2" sx={{ fontWeight: 600, fontSize: "0.85rem" }} noWrap>
+              <Typography
+                variant="body2"
+                sx={{ fontWeight: 600, fontSize: "0.85rem" }}
+                noWrap
+              >
                 {activeDriverName}
               </Typography>
               {activeHelperNames.length > 0 && (
-                <Typography variant="caption" color="text.secondary" sx={{ fontSize: "0.7rem" }} noWrap>
+                <Typography
+                  variant="caption"
+                  color="text.secondary"
+                  sx={{ fontSize: "0.7rem" }}
+                  noWrap
+                >
                   Ayudantes: {activeHelperNames.join(", ")}
                 </Typography>
               )}
@@ -259,15 +393,35 @@ export function AcceptMatchModal({
         </Stack>
       </DialogContent>
 
-      <DialogActions sx={{ p: 2, gap: 1.5, display: "flex", justifyContent: "space-between" }}>
-        <Button onClick={onReject} disabled={isLoading || !isValidState} variant="outlined" color="error" size="large" sx={{ flex: 1, minHeight: 48 }}>
+      <DialogActions
+        sx={{
+          p: 2,
+          gap: 1.5,
+          display: "flex",
+          justifyContent: "space-between",
+        }}
+      >
+        <Button
+          onClick={onReject}
+          disabled={isLoading || !isValidState}
+          variant="outlined"
+          color="error"
+          size="large"
+          sx={{ flex: 1, minHeight: 48 }}
+        >
           Rechazar
         </Button>
         <Button
           onClick={handleAccept}
           disabled={isLoading || !isValidState || !hasEnoughCredits}
           variant="contained"
-          sx={{ flex: 1, minHeight: 48, fontWeight: 700, bgcolor: "secondary.main", "&:hover": { bgcolor: "secondary.dark" } }}
+          sx={{
+            flex: 1,
+            minHeight: 48,
+            fontWeight: 700,
+            bgcolor: "secondary.main",
+            "&:hover": { bgcolor: "secondary.dark" },
+          }}
           startIcon={isLoading ? <CircularProgress size={20} /> : undefined}
         >
           {isLoading ? "Aceptando..." : "Aceptar"}

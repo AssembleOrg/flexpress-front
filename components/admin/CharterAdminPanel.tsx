@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import {
   Badge,
   Block,
@@ -25,8 +24,10 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
-import { useAdminCharterDetail } from "@/lib/hooks/queries/useAdminQueries";
+import { useState } from "react";
+import { PrivateDocThumb } from "@/components/ui/PrivateImage";
 import { useUpdateAccountStatus } from "@/lib/hooks/mutations/useAdminMutations";
+import { useAdminCharterDetail } from "@/lib/hooks/queries/useAdminQueries";
 
 interface CharterAdminPanelProps {
   charterId: string;
@@ -47,12 +48,17 @@ export function CharterAdminPanel({ charterId }: CharterAdminPanelProps) {
   const [dialog, setDialog] = useState<null | AccountStatus>(null);
   const [note, setNote] = useState("");
 
-  const status: AccountStatus = (detail?.accountStatus ?? "active") as AccountStatus;
+  const status: AccountStatus = (detail?.accountStatus ??
+    "active") as AccountStatus;
 
   const handleConfirm = () => {
     if (!dialog) return;
     updateStatus.mutate(
-      { charterId, status: dialog, note: dialog === "active" ? undefined : note },
+      {
+        charterId,
+        status: dialog,
+        note: dialog === "active" ? undefined : note,
+      },
       {
         onSuccess: () => {
           setDialog(null);
@@ -81,7 +87,16 @@ export function CharterAdminPanel({ charterId }: CharterAdminPanelProps) {
       {/* Estado de cuenta + sanción */}
       <Card sx={{ mt: 3, borderRadius: 3 }}>
         <CardContent>
-          <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", mb: 2, flexWrap: "wrap", gap: 1 }}>
+          <Box
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              mb: 2,
+              flexWrap: "wrap",
+              gap: 1,
+            }}
+          >
             <Typography variant="h6" sx={{ fontWeight: 700 }}>
               Estado de la cuenta
             </Typography>
@@ -89,17 +104,29 @@ export function CharterAdminPanel({ charterId }: CharterAdminPanelProps) {
           </Box>
 
           {detail.accountStatusNote && status !== "active" && (
-            <Box sx={{ p: 1.5, bgcolor: "action.hover", borderRadius: 2, mb: 2 }}>
-              <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 700 }}>
+            <Box
+              sx={{ p: 1.5, bgcolor: "action.hover", borderRadius: 2, mb: 2 }}
+            >
+              <Typography
+                variant="caption"
+                color="text.secondary"
+                sx={{ fontWeight: 700 }}
+              >
                 MOTIVO
               </Typography>
-              <Typography variant="body2">{detail.accountStatusNote}</Typography>
+              <Typography variant="body2">
+                {detail.accountStatusNote}
+              </Typography>
             </Box>
           )}
 
-          <Typography variant="caption" color="text.secondary" sx={{ display: "block", mb: 1.5 }}>
-            La sanción es a nivel cuenta: rating y reportes pertenecen al titular.
-            Un error de un conductor recae sobre el titular.
+          <Typography
+            variant="caption"
+            color="text.secondary"
+            sx={{ display: "block", mb: 1.5 }}
+          >
+            La sanción es a nivel cuenta: rating y reportes pertenecen al
+            titular. Un error de un conductor recae sobre el titular.
           </Typography>
 
           <Stack direction="row" spacing={1.5} flexWrap="wrap" useFlexGap>
@@ -192,7 +219,11 @@ export function CharterAdminPanel({ charterId }: CharterAdminPanelProps) {
             <Typography variant="h6" sx={{ fontWeight: 700 }}>
               Documentos del titular
             </Typography>
-            <Chip label={detail.userDocuments?.length ?? 0} size="small" sx={{ ml: "auto" }} />
+            <Chip
+              label={detail.userDocuments?.length ?? 0}
+              size="small"
+              sx={{ ml: "auto" }}
+            />
           </Box>
           {(detail.userDocuments?.length ?? 0) === 0 ? (
             <Typography variant="body2" color="text.secondary">
@@ -202,22 +233,21 @@ export function CharterAdminPanel({ charterId }: CharterAdminPanelProps) {
             <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
               {detail.userDocuments?.map((doc) => (
                 <Box key={doc.id} sx={{ textAlign: "center" }}>
-                  <a href={doc.fileUrl} target="_blank" rel="noopener noreferrer">
-                    <img
-                      src={doc.fileUrl}
-                      alt={`DNI ${doc.side ?? ""}`}
-                      style={{
-                        width: 120,
-                        height: 84,
-                        objectFit: "cover",
-                        borderRadius: 6,
-                        border: `2px solid ${docStatusColor(doc.status)}`,
-                        display: "block",
-                      }}
-                    />
-                  </a>
+                  <PrivateDocThumb
+                    value={doc.fileUrl}
+                    alt={`DNI ${doc.side ?? ""}`}
+                    imgStyle={{
+                      width: 120,
+                      height: 84,
+                      border: `2px solid ${docStatusColor(doc.status)}`,
+                    }}
+                  />
                   <Typography variant="caption" color="text.secondary">
-                    {doc.side === "front" ? "Frente" : doc.side === "back" ? "Dorso" : doc.type}
+                    {doc.side === "front"
+                      ? "Frente"
+                      : doc.side === "back"
+                        ? "Dorso"
+                        : doc.type}
                   </Typography>
                 </Box>
               ))}
@@ -271,7 +301,12 @@ export function CharterAdminPanel({ charterId }: CharterAdminPanelProps) {
       />
 
       {/* Diálogo de sanción */}
-      <Dialog open={dialog !== null} onClose={() => setDialog(null)} maxWidth="xs" fullWidth>
+      <Dialog
+        open={dialog !== null}
+        onClose={() => setDialog(null)}
+        maxWidth="xs"
+        fullWidth
+      >
         <DialogTitle sx={{ fontWeight: 700 }}>
           {dialog === "active"
             ? status === "warned"
@@ -305,9 +340,16 @@ export function CharterAdminPanel({ charterId }: CharterAdminPanelProps) {
           <Button onClick={() => setDialog(null)}>Cancelar</Button>
           <Button
             variant="contained"
-            color={dialog === "banned" ? "error" : dialog === "warned" ? "warning" : "success"}
+            color={
+              dialog === "banned"
+                ? "error"
+                : dialog === "warned"
+                  ? "warning"
+                  : "success"
+            }
             disabled={
-              updateStatus.isPending || (dialog !== "active" && note.trim() === "")
+              updateStatus.isPending ||
+              (dialog !== "active" && note.trim() === "")
             }
             onClick={handleConfirm}
           >
@@ -329,12 +371,27 @@ function docStatusColor(s: string): string {
 
 function AccountStatusChip({ status }: { status: AccountStatus }) {
   const map = {
-    active: { label: "Activa", color: "success" as const, icon: <CheckCircle /> },
-    warned: { label: "Advertida", color: "warning" as const, icon: <Warning /> },
+    active: {
+      label: "Activa",
+      color: "success" as const,
+      icon: <CheckCircle />,
+    },
+    warned: {
+      label: "Advertida",
+      color: "warning" as const,
+      icon: <Warning />,
+    },
     banned: { label: "Bloqueada", color: "error" as const, icon: <Block /> },
   };
   const cfg = map[status];
-  return <Chip icon={cfg.icon} label={cfg.label} color={cfg.color} sx={{ fontWeight: 700 }} />;
+  return (
+    <Chip
+      icon={cfg.icon}
+      label={cfg.label}
+      color={cfg.color}
+      sx={{ fontWeight: 700 }}
+    />
+  );
 }
 
 interface EntityItem {
@@ -343,7 +400,13 @@ interface EntityItem {
   subtitle?: string;
   status: string;
   isEnabled: boolean;
-  documents: Array<{ id: string; type: string; side?: string | null; fileUrl: string; status: string }>;
+  documents: Array<{
+    id: string;
+    type: string;
+    side?: string | null;
+    fileUrl: string;
+    status: string;
+  }>;
 }
 
 function EntitySection({
@@ -377,8 +440,19 @@ function EntitySection({
         ) : (
           <Stack spacing={1.5}>
             {items.map((it) => (
-              <Box key={it.id} sx={{ p: 1.5, bgcolor: "action.hover", borderRadius: 2 }}>
-                <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: it.documents.length ? 1 : 0, flexWrap: "wrap" }}>
+              <Box
+                key={it.id}
+                sx={{ p: 1.5, bgcolor: "action.hover", borderRadius: 2 }}
+              >
+                <Box
+                  sx={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 1,
+                    mb: it.documents.length ? 1 : 0,
+                    flexWrap: "wrap",
+                  }}
+                >
                   <Box sx={{ minWidth: 0, flex: 1 }}>
                     <Typography variant="body2" sx={{ fontWeight: 600 }} noWrap>
                       {it.title}
@@ -392,29 +466,34 @@ function EntitySection({
                   <Chip
                     label={it.status}
                     size="small"
-                    sx={{ bgcolor: statusColor(it.status), color: "#fff", textTransform: "capitalize" }}
+                    sx={{
+                      bgcolor: statusColor(it.status),
+                      color: "#fff",
+                      textTransform: "capitalize",
+                    }}
                   />
                   {!it.isEnabled && (
-                    <Chip label="Deshabilitado" size="small" variant="outlined" color="default" />
+                    <Chip
+                      label="Deshabilitado"
+                      size="small"
+                      variant="outlined"
+                      color="default"
+                    />
                   )}
                 </Box>
                 {it.documents.length > 0 && (
                   <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
                     {it.documents.map((doc) => (
-                      <a key={doc.id} href={doc.fileUrl} target="_blank" rel="noopener noreferrer">
-                        <img
-                          src={doc.fileUrl}
-                          alt={`${doc.type} ${doc.side ?? ""}`}
-                          style={{
-                            width: 96,
-                            height: 70,
-                            objectFit: "cover",
-                            borderRadius: 6,
-                            border: `2px solid ${statusColor(doc.status)}`,
-                            display: "block",
-                          }}
-                        />
-                      </a>
+                      <PrivateDocThumb
+                        key={doc.id}
+                        value={doc.fileUrl}
+                        alt={`${doc.type} ${doc.side ?? ""}`}
+                        imgStyle={{
+                          width: 96,
+                          height: 70,
+                          border: `2px solid ${statusColor(doc.status)}`,
+                        }}
+                      />
                     ))}
                   </Stack>
                 )}

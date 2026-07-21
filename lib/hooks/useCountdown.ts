@@ -17,7 +17,7 @@ interface CountdownResult {
  */
 export function useCountdown(expiresAt: string | Date | null): CountdownResult {
   const [timeLeft, setTimeLeft] = useState<CountdownResult>(() =>
-    calculateTimeLeft(expiresAt)
+    calculateTimeLeft(expiresAt),
   );
 
   useEffect(() => {
@@ -55,7 +55,7 @@ function calculateTimeLeft(expiresAt: string | Date | null): CountdownResult {
     };
   }
 
-  const now = new Date().getTime();
+  const now = Date.now();
   const expiry = new Date(expiresAt).getTime();
   const diff = expiry - now;
 

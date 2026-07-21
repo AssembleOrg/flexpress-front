@@ -1,9 +1,9 @@
-'use client';
+"use client";
 
-import { useQuery } from '@tanstack/react-query';
-import { notificationsApi } from '@/lib/api/notifications';
-import { queryKeys } from './queryFactory';
-import { useAuthStore } from '@/lib/stores/authStore';
+import { useQuery } from "@tanstack/react-query";
+import { notificationsApi } from "@/lib/api/notifications";
+import { useAuthStore } from "@/lib/stores/authStore";
+import { queryKeys } from "./queryFactory";
 
 export function useUnreadNotificationCount() {
   const { token } = useAuthStore();

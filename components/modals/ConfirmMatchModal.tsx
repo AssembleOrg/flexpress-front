@@ -3,7 +3,6 @@
 import { AttachMoney, Route } from "@mui/icons-material";
 import {
   Alert,
-  Avatar,
   Box,
   Button,
   CircularProgress,
@@ -11,12 +10,12 @@ import {
   DialogActions,
   DialogContent,
   DialogTitle,
-  Divider,
   Stack,
   Typography,
 } from "@mui/material";
-import { RatingDisplay } from "@/components/ui/RatingDisplay";
 import { PriceBreakdown } from "@/components/ui/PriceBreakdown";
+import { RatingDisplay } from "@/components/ui/RatingDisplay";
+import { SignedAvatar } from "@/components/ui/SignedAvatar";
 import { useUserFeedback } from "@/lib/hooks/queries/useFeedbackQueries";
 import type { AvailableCharter, TravelMatch } from "@/lib/types/api";
 
@@ -89,12 +88,12 @@ export function ConfirmMatchModal({
             }}
           >
             {/* Avatar */}
-            <Avatar
-              src={selectedCharter.charterAvatar || undefined}
+            <SignedAvatar
+              value={selectedCharter.charterAvatar}
               sx={{ width: 48, height: 48 }}
             >
               {selectedCharter.charterName?.charAt(0).toUpperCase()}
-            </Avatar>
+            </SignedAvatar>
 
             {/* Charter Details */}
             <Box sx={{ flex: 1 }}>
@@ -168,7 +167,8 @@ export function ConfirmMatchModal({
                 sx={{ fontWeight: 700, fontSize: "1rem" }}
               >
                 {(
-                  selectedCharter.totalDistance - selectedCharter.distanceToPickup
+                  selectedCharter.totalDistance -
+                  selectedCharter.distanceToPickup
                 ).toFixed(1)}{" "}
                 km
               </Typography>

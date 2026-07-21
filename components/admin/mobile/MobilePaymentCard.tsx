@@ -1,5 +1,13 @@
+import {
+  Box,
+  Button,
+  Card,
+  CardContent,
+  Chip,
+  Stack,
+  Typography,
+} from "@mui/material";
 import Link from "next/link";
-import { Card, CardContent, Box, Typography, Chip, Button, Stack } from "@mui/material";
 import type { Payment } from "@/lib/types/api";
 
 interface MobilePaymentCardProps {
@@ -9,7 +17,9 @@ interface MobilePaymentCardProps {
   onViewReceipt: (url: string) => void;
 }
 
-const getStatusColor = (status: string): "warning" | "success" | "error" | "default" => {
+const getStatusColor = (
+  status: string,
+): "warning" | "success" | "error" | "default" => {
   switch (status) {
     case "pending":
       return "warning";
@@ -48,7 +58,12 @@ const getBorderColor = (status: string) => {
   }
 };
 
-export function MobilePaymentCard({ payment, onApprove, onReject, onViewReceipt }: MobilePaymentCardProps) {
+export function MobilePaymentCard({
+  payment,
+  onApprove,
+  onReject,
+  onViewReceipt,
+}: MobilePaymentCardProps) {
   const truncatedId = payment.id.substring(0, 8);
 
   return (
@@ -62,20 +77,31 @@ export function MobilePaymentCard({ payment, onApprove, onReject, onViewReceipt 
       <CardContent sx={{ p: 2, "&:last-child": { pb: 2 } }}>
         <Stack spacing={1}>
           {/* Status and ID */}
-          <Stack direction="row" justifyContent="space-between" alignItems="center">
+          <Stack
+            direction="row"
+            justifyContent="space-between"
+            alignItems="center"
+          >
             <Chip
               label={getStatusLabel(payment.status)}
               color={getStatusColor(payment.status)}
               size="small"
               sx={{ fontSize: "0.7rem", height: 22 }}
             />
-            <Typography variant="caption" color="text.secondary" fontSize="0.75rem">
+            <Typography
+              variant="caption"
+              color="text.secondary"
+              fontSize="0.75rem"
+            >
               ID: {truncatedId}...
             </Typography>
           </Stack>
 
           {/* User name as link */}
-          <Link href={`/admin/users/${payment.userId}`} style={{ textDecoration: "none" }}>
+          <Link
+            href={`/admin/users/${payment.userId}`}
+            style={{ textDecoration: "none" }}
+          >
             <Typography
               variant="subtitle2"
               fontWeight={700}

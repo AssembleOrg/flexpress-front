@@ -22,7 +22,8 @@ export function RoleGuard({ children, requiredRole }: RoleGuardProps) {
   // Redirect if user has wrong role
   useEffect(() => {
     if (hydrated && user && user.role !== requiredRole) {
-      const correctDashboard = user.role === "charter" ? "/driver/dashboard" : "/client/dashboard";
+      const correctDashboard =
+        user.role === "charter" ? "/driver/dashboard" : "/client/dashboard";
       router.replace(correctDashboard);
     }
   }, [hydrated, user, requiredRole, router]);
@@ -52,8 +53,8 @@ export function RoleGuard({ children, requiredRole }: RoleGuardProps) {
                 Acceso no autorizado
               </Typography>
               <Typography variant="body1" color="text.secondary" sx={{ mt: 2 }}>
-                No tienes permiso para acceder a esta sección.
-                Redirigiendo a tu dashboard...
+                No tienes permiso para acceder a esta sección. Redirigiendo a tu
+                dashboard...
               </Typography>
             </Box>
           </Container>

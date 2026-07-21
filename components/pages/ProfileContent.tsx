@@ -13,7 +13,6 @@ import ReportOutlinedIcon from "@mui/icons-material/ReportOutlined";
 import SaveIcon from "@mui/icons-material/Save";
 import StarIcon from "@mui/icons-material/Star";
 import {
-  Avatar,
   Box,
   Button,
   Card,
@@ -34,6 +33,7 @@ import { AuthNavbar } from "@/components/layout/AuthNavbar";
 import { BottomNavbar } from "@/components/layout/BottomNavbar";
 import { AddressInput } from "@/components/ui/AddressInput";
 import { PageTransition } from "@/components/ui/PageTransition";
+import { SignedAvatar } from "@/components/ui/SignedAvatar";
 import { useUpdateUserProfile } from "@/lib/hooks/mutations/useAuthMutations";
 import {
   useMyDrivers,
@@ -255,8 +255,8 @@ export function ProfileContent() {
                     borderColor="divider"
                   >
                     <Box sx={{ position: "relative", flexShrink: 0 }}>
-                      <Avatar
-                        src={user?.avatar || undefined}
+                      <SignedAvatar
+                        value={user?.avatar}
                         alt={user?.name}
                         sx={{
                           width: { xs: 100, md: 120 },
@@ -268,7 +268,7 @@ export function ProfileContent() {
                         }}
                       >
                         {user?.name?.charAt(0).toUpperCase() || "U"}
-                      </Avatar>
+                      </SignedAvatar>
                     </Box>
                     <Box textAlign={{ xs: "center", sm: "left" }}>
                       <Typography

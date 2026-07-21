@@ -47,7 +47,7 @@ export const useNotificationsStore = create<NotificationsState>()(
       markAsRead: (notificationId) => {
         set((state) => ({
           creditNotifications: state.creditNotifications.map((notif) =>
-            notif.id === notificationId ? { ...notif, read: true } : notif
+            notif.id === notificationId ? { ...notif, read: true } : notif,
           ),
         }));
       },

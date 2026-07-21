@@ -1,8 +1,9 @@
 "use client";
 
 import { DirectionsCar, NotificationsActive } from "@mui/icons-material";
-import { Avatar, Box, Button, Typography } from "@mui/material";
+import { Box, Button, Typography } from "@mui/material";
 import { motion } from "framer-motion";
+import { SignedAvatar } from "@/components/ui/SignedAvatar";
 import type { AvailableCharter } from "@/lib/types/api";
 import { VEHICLE_SIZE_LABELS } from "@/lib/types/api";
 
@@ -72,8 +73,8 @@ export function WaitingForCharterCard({
       {/* Cabecera: avatar + nombre + estado en vivo */}
       <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
         <Box sx={{ position: "relative", flexShrink: 0 }}>
-          <Avatar
-            src={charter.charterAvatar || undefined}
+          <SignedAvatar
+            value={charter.charterAvatar}
             alt={charter.charterName}
             sx={{
               width: 52,
@@ -83,7 +84,7 @@ export function WaitingForCharterCard({
             }}
           >
             {charter.charterName.charAt(0)}
-          </Avatar>
+          </SignedAvatar>
           {/* Dot pulsante estilo iOS (en vivo) */}
           <Box
             sx={{
@@ -132,7 +133,11 @@ export function WaitingForCharterCard({
               <DirectionsCar
                 sx={{ fontSize: 14, color: "text.secondary", flexShrink: 0 }}
               />
-              <Typography variant="caption" noWrap sx={{ color: "text.secondary" }}>
+              <Typography
+                variant="caption"
+                noWrap
+                sx={{ color: "text.secondary" }}
+              >
                 {vehicle}
                 {charter.vehicleSize
                   ? ` · ${VEHICLE_SIZE_LABELS[charter.vehicleSize]}`

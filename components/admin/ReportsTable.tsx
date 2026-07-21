@@ -1,23 +1,26 @@
 "use client";
 
-import { useState } from "react";
-import { DataGrid, GridColDef, GridPaginationModel } from "@mui/x-data-grid";
+import { Visibility as VisibilityIcon } from "@mui/icons-material";
 import {
   Box,
   Button,
   Chip,
-  Stack,
   FormControl,
   InputLabel,
-  Select,
   MenuItem,
+  Select,
+  Stack,
   useMediaQuery,
   useTheme,
 } from "@mui/material";
-import { Visibility as VisibilityIcon } from "@mui/icons-material";
+import {
+  DataGrid,
+  type GridColDef,
+  type GridPaginationModel,
+} from "@mui/x-data-grid";
 import { useRouter } from "next/navigation";
+import { useState } from "react";
 import { useAdminReports } from "@/lib/hooks/queries/useAdminQueries";
-import type { Report } from "@/lib/types/api";
 import { MobileReportCard } from "./mobile/MobileReportCard";
 
 export function ReportsTable() {
@@ -41,7 +44,7 @@ export function ReportsTable() {
     status: statusFilter || undefined,
   });
 
-  const getStatusColor = (status: string) => {
+  const _getStatusColor = (status: string) => {
     const colors: Record<
       string,
       "default" | "primary" | "error" | "warning" | "success"

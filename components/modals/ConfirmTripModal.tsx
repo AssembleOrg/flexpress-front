@@ -1,5 +1,6 @@
 "use client";
 
+import { Warning } from "@mui/icons-material";
 import {
   Alert,
   Button,
@@ -11,7 +12,6 @@ import {
   Stack,
   Typography,
 } from "@mui/material";
-import { Warning } from "@mui/icons-material";
 
 /**
  * ConfirmTripModal
@@ -77,7 +77,11 @@ export function ConfirmTripModal({
           variant="contained"
           color="success"
         >
-          {isLoading ? <CircularProgress size={18} sx={{ color: "inherit" }} /> : "Confirmar Viaje"}
+          {isLoading ? (
+            <CircularProgress size={18} sx={{ color: "inherit" }} />
+          ) : (
+            "Confirmar Viaje"
+          )}
         </Button>
       </DialogActions>
     </Dialog>

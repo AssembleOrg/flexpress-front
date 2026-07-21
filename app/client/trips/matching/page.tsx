@@ -1,6 +1,6 @@
-'use client';
+"use client";
 
-import { ArrowBack } from '@mui/icons-material';
+import { ArrowBack } from "@mui/icons-material";
 import {
   Alert,
   Box,
@@ -16,24 +16,32 @@ import {
   DialogTitle,
   Snackbar,
   Typography,
-} from '@mui/material';
-import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ConfirmMatchModal } from '@/components/modals/ConfirmMatchModal';
-import { CharterCard } from '@/components/ui/CharterCard';
-import { RouteMap } from '@/components/ui/Map';
-import { WaitingForCharterCard } from '@/components/ui/WaitingForCharterCard';
-import { useSelectCharter, useCancelMatch, useCreateMatch } from '@/lib/hooks/mutations/useTravelMatchMutations';
-import { useCreateInquiry } from '@/lib/hooks/mutations/useAvailabilityInquiriesMutations';
-import { useUserFeedback } from '@/lib/hooks/queries/useFeedbackQueries';
-import { useMatch } from '@/lib/hooks/queries/useTravelMatchQueries';
-import { useMatchUpdateListener } from '@/lib/hooks/useWebSocket';
-import { useAuthStore } from '@/lib/stores/authStore';
-import { useTravelMatchStore } from '@/lib/stores/travelMatchStore';
-import type { AvailableCharter } from '@/lib/types/api';
-import { VehicleSize, VEHICLE_SIZE_LABELS } from '@/lib/types/api';
-import { isMatchExpired, getFormattedExpirationTime, getMinutesUntilExpiration } from '@/lib/utils/matchHelpers';
+} from "@mui/material";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { ConfirmMatchModal } from "@/components/modals/ConfirmMatchModal";
+import { CharterCard } from "@/components/ui/CharterCard";
+import { RouteMap } from "@/components/ui/Map";
+import { WaitingForCharterCard } from "@/components/ui/WaitingForCharterCard";
+import { useCreateInquiry } from "@/lib/hooks/mutations/useAvailabilityInquiriesMutations";
+import {
+  useCancelMatch,
+  useCreateMatch,
+  useSelectCharter,
+} from "@/lib/hooks/mutations/useTravelMatchMutations";
+import { useUserFeedback } from "@/lib/hooks/queries/useFeedbackQueries";
+import { useMatch } from "@/lib/hooks/queries/useTravelMatchQueries";
+import { useMatchUpdateListener } from "@/lib/hooks/useWebSocket";
+import { useAuthStore } from "@/lib/stores/authStore";
+import { useTravelMatchStore } from "@/lib/stores/travelMatchStore";
+import type { AvailableCharter } from "@/lib/types/api";
+import { VEHICLE_SIZE_LABELS, VehicleSize } from "@/lib/types/api";
+import {
+  getFormattedExpirationTime,
+  getMinutesUntilExpiration,
+  isMatchExpired,
+} from "@/lib/utils/matchHelpers";
 
 /**
  * Charter card wrapper that fetches and displays rating
@@ -113,7 +121,11 @@ export default function MatchingPage() {
     createInquiryMutation.mutate(selectedCharterForInquiry.charterId, {
       onSettled: () => handleCloseInquiryConfirm(),
     });
-  }, [createInquiryMutation, selectedCharterForInquiry, handleCloseInquiryConfirm]);
+  }, [
+    createInquiryMutation,
+    selectedCharterForInquiry,
+    handleCloseInquiryConfirm,
+  ]);
 
   // State to track selected charter waiting for acceptance
   const [selectedCharterPending, setSelectedCharterPending] =
@@ -124,7 +136,7 @@ export default function MatchingPage() {
 
   // Notification state
   const [notificationOpen, setNotificationOpen] = useState(false);
-  const [notificationMessage, setNotificationMessage] = useState('');
+  const [notificationMessage, setNotificationMessage] = useState("");
 
   // User state (for credits validation)
   const { user } = useAuthStore();
@@ -146,7 +158,7 @@ export default function MatchingPage() {
   // cancelled/expired) la lista queda deshabilitada y se regenera la búsqueda.
   const isMatchSelectable =
     !!currentMatch &&
-    ['searching', 'pending', 'rejected'].includes(currentMatch.status);
+    ["searching", "pending", "rejected"].includes(currentMatch.status);
 
   // Regenera la búsqueda reutilizando los datos del match actual (origen,
   // destino, ayudantes, carga) y deja al cliente en la lista con chóferes
@@ -159,7 +171,7 @@ export default function MatchingPage() {
 
     const match = useTravelMatchStore.getState().currentMatch;
     if (!match) {
-      router.push('/client/trips/new');
+      router.push("/client/trips/new");
       return;
     }
 
@@ -167,9 +179,9 @@ export default function MatchingPage() {
     // Avisamos y mandamos al formulario, que muestra el CTA de recargar.
     const currentCredits = useAuthStore.getState().user?.credits ?? 0;
     if (currentCredits < 1) {
-      setNotificationMessage('No tenés créditos para buscar otro chófer.');
+      setNotificationMessage("No tenés créditos para buscar otro chófer.");
       setNotificationOpen(true);
-      router.push('/client/trips/new');
+      router.push("/client/trips/new");
       return;
     }
 
@@ -189,15 +201,15 @@ export default function MatchingPage() {
       chargedCreditMatchId.current = null;
       handledTerminal.current = null;
     } catch {
-      router.push('/client/trips/new');
+      router.push("/client/trips/new");
     } finally {
       isRegenerating.current = false;
     }
   }, [createMatchMutation, router]);
 
   // Orden de la lista de chóferes (reordena, no filtra)
-  const [sortBy, setSortBy] = useState<'distance' | 'helpers' | 'price'>(
-    'distance',
+  const [sortBy, setSortBy] = useState<"distance" | "helpers" | "price">(
+    "distance",
   );
 
   const sortedCharters = useMemo(() => {
@@ -206,14 +218,14 @@ export default function MatchingPage() {
     if (sizeFilter) {
       copy = copy.filter((c) => c.vehicleSize === sizeFilter);
     }
-    if (sortBy === 'helpers') {
+    if (sortBy === "helpers") {
       return copy.sort((a, b) => {
         const diff = (b.helpersCount ?? 0) - (a.helpersCount ?? 0);
         if (diff !== 0) return diff;
         return a.distanceToPickup - b.distanceToPickup;
       });
     }
-    if (sortBy === 'price') {
+    if (sortBy === "price") {
       // Más barato primero. Charters sin estimado (null) van al final.
       return copy.sort((a, b) => {
         const pa = a.estimatedPriceArs ?? Number.POSITIVE_INFINITY;
@@ -226,18 +238,21 @@ export default function MatchingPage() {
   }, [availableCharters, sortBy, sizeFilter]);
 
   // Polling fallback: Detect when charter accepts via polling (WebSocket may be unreliable)
-  const { data: polledMatch } = useMatch(currentMatch?.id || '');
+  const { data: polledMatch } = useMatch(currentMatch?.id || "");
 
   // Handler for when match is updated (charter accepts/rejects)
   const handleMatchUpdated = useCallback(
     (status: string) => {
-      console.log('🔔 [MATCHING] Match status updated:', status);
+      console.log("🔔 [MATCHING] Match status updated:", status);
 
-      if (status === 'ACCEPTED') {
+      if (status === "ACCEPTED") {
         // Descontar 1 crédito al cliente cuando el charter acepta.
         // Guard de idempotencia: socket y polling pueden reportar el mismo
         // ACCEPTED; solo descontamos una vez por match.
-        if (currentMatch?.id && chargedCreditMatchId.current !== currentMatch.id) {
+        if (
+          currentMatch?.id &&
+          chargedCreditMatchId.current !== currentMatch.id
+        ) {
           chargedCreditMatchId.current = currentMatch.id;
           const { user: currentUser, updateUser } = useAuthStore.getState();
           if (currentUser) {
@@ -246,21 +261,21 @@ export default function MatchingPage() {
         }
 
         setNotificationMessage(
-          `¡El chófer ${selectedCharterPending?.charterName} aceptó tu solicitud!`
+          `¡El chófer ${selectedCharterPending?.charterName} aceptó tu solicitud!`,
         );
         setNotificationOpen(true);
 
         // Auto-navigate after 2 seconds
         setTimeout(() => {
           if (currentMatch?.id) {
-            console.log('🚀 [MATCHING] Redirecting to match detail...');
+            console.log("🚀 [MATCHING] Redirecting to match detail...");
             router.push(`/client/trips/matching/${currentMatch.id}`);
           }
         }, 2000);
       } else if (
-        status === 'REJECTED' ||
-        status === 'EXPIRED' ||
-        status === 'CANCELLED'
+        status === "REJECTED" ||
+        status === "EXPIRED" ||
+        status === "CANCELLED"
       ) {
         // Solo procesamos un evento terminal si estábamos esperando a un chófer.
         // Un disparo con pending ya en null es un duplicado tardío (socket +
@@ -269,47 +284,40 @@ export default function MatchingPage() {
 
         // Idempotencia extra por si el mismo evento llega dos veces mientras el
         // pending sigue seteado. Key = match + estado + chófer pendiente.
-        const terminalKey = `${currentMatch?.id ?? ''}:${status}:${selectedCharterPending.charterId}`;
+        const terminalKey = `${currentMatch?.id ?? ""}:${status}:${selectedCharterPending.charterId}`;
         if (handledTerminal.current === terminalKey) return;
         handledTerminal.current = terminalKey;
 
         setSelectedCharterPending(null);
 
-        if (status === 'REJECTED') {
+        if (status === "REJECTED") {
           // El match queda 'rejected' pero reseleccionable: quitamos al chófer
           // que rechazó de la lista para que no se lo pueda volver a elegir.
           const rejectedId = selectedCharterPending?.charterId;
           if (rejectedId) {
             const store = useTravelMatchStore.getState();
             store.setAvailableCharters(
-              store.availableCharters.filter(
-                (c) => c.charterId !== rejectedId,
-              ),
+              store.availableCharters.filter((c) => c.charterId !== rejectedId),
             );
           }
           setNotificationMessage(
-            `El chófer ${selectedCharterPending?.charterName} no pudo aceptar tu solicitud. Podés elegir otro.`
+            `El chófer ${selectedCharterPending?.charterName} no pudo aceptar tu solicitud. Podés elegir otro.`,
           );
           setNotificationOpen(true);
         } else {
           // EXPIRED / CANCELLED son terminales no reseleccionables:
           // regeneramos la búsqueda para poder elegir otro sin re-tipear.
           setNotificationMessage(
-            status === 'EXPIRED'
-              ? 'La solicitud expiró. Buscando chóferes de nuevo…'
-              : 'La solicitud fue cancelada. Buscando chóferes de nuevo…'
+            status === "EXPIRED"
+              ? "La solicitud expiró. Buscando chóferes de nuevo…"
+              : "La solicitud fue cancelada. Buscando chóferes de nuevo…",
           );
           setNotificationOpen(true);
           void researchWithSameData();
         }
       }
     },
-    [
-      selectedCharterPending,
-      currentMatch?.id,
-      router,
-      researchWithSameData,
-    ]
+    [selectedCharterPending, currentMatch?.id, router, researchWithSameData],
   );
 
   // Listen for match updates
@@ -320,27 +328,28 @@ export default function MatchingPage() {
     if (!polledMatch || !selectedCharterPending) return;
 
     if (
-      polledMatch.status === 'accepted' &&
-      currentMatch?.status !== 'accepted'
+      polledMatch.status === "accepted" &&
+      currentMatch?.status !== "accepted"
     ) {
       console.log(
-        `✅ [POLLING] Match accepted detected via polling for match ${polledMatch.id}`
+        `✅ [POLLING] Match accepted detected via polling for match ${polledMatch.id}`,
       );
-      handleMatchUpdated('ACCEPTED');
+      handleMatchUpdated("ACCEPTED");
     } else if (
-      polledMatch.status === 'rejected' &&
-      currentMatch?.status !== 'rejected'
+      polledMatch.status === "rejected" &&
+      currentMatch?.status !== "rejected"
     ) {
       console.log(
-        `❌ [POLLING] Match rejected detected via polling for match ${polledMatch.id}`
+        `❌ [POLLING] Match rejected detected via polling for match ${polledMatch.id}`,
       );
-      handleMatchUpdated('REJECTED');
+      handleMatchUpdated("REJECTED");
     }
   }, [
     polledMatch?.status,
     selectedCharterPending,
     currentMatch?.status,
     handleMatchUpdated,
+    polledMatch,
   ]);
 
   // Garantiza hidratación del store desde localStorage al montar la página
@@ -371,10 +380,12 @@ export default function MatchingPage() {
       if (!handled && isMatchExpired(currentMatch)) {
         handled = true;
         console.warn(
-          `⏰ [MATCHING PAGE] Match ${currentMatch.id} has expired, re-buscando`
+          `⏰ [MATCHING PAGE] Match ${currentMatch.id} has expired, re-buscando`,
         );
         setSelectedCharterPending(null);
-        setNotificationMessage('La solicitud expiró. Buscando chóferes de nuevo…');
+        setNotificationMessage(
+          "La solicitud expiró. Buscando chóferes de nuevo…",
+        );
         setNotificationOpen(true);
         void researchWithSameData();
       }
@@ -386,23 +397,14 @@ export default function MatchingPage() {
   // Si no hay match activo, mostrar mensaje
   if (!currentMatch) {
     return (
-      <Container
-        maxWidth='md'
-        sx={{ py: 4 }}
-      >
-        <Alert
-          severity='warning'
-          sx={{ mb: 2 }}
-        >
+      <Container maxWidth="md" sx={{ py: 4 }}>
+        <Alert severity="warning" sx={{ mb: 2 }}>
           <Typography>
             No hay búsqueda activa. Por favor crea una nueva búsqueda.
           </Typography>
         </Alert>
-        <Link href='/client/trips/new'>
-          <Button
-            variant='contained'
-            color='secondary'
-          >
+        <Link href="/client/trips/new">
+          <Button variant="contained" color="secondary">
             Crear Nueva Búsqueda
           </Button>
         </Link>
@@ -440,7 +442,7 @@ export default function MatchingPage() {
     if (!currentMatch || !selectedCharterForConfirm) return;
 
     try {
-      console.log('📝 [MATCHING] Confirming charter selection');
+      console.log("📝 [MATCHING] Confirming charter selection");
       await selectMutation.mutateAsync({
         matchId: currentMatch.id,
         charterId: selectedCharterForConfirm.charterId,
@@ -454,40 +456,31 @@ export default function MatchingPage() {
       setSelectedCharterForConfirm(null);
 
       console.log(
-        '✅ [MATCHING] Selection confirmed, waiting for charter to accept...'
+        "✅ [MATCHING] Selection confirmed, waiting for charter to accept...",
       );
       // NO redirect - keep user in matching page while waiting
     } catch (error) {
       // Error is already handled by mutation's onError
-      console.error('❌ [MATCHING] Selection failed:', error);
+      console.error("❌ [MATCHING] Selection failed:", error);
       setConfirmModalOpen(false);
       setSelectedCharterPending(null);
     }
   };
 
   return (
-    <Container
-      maxWidth='md'
-      sx={{ py: 4 }}
-    >
+    <Container maxWidth="md" sx={{ py: 4 }}>
       {/* Header */}
       <Box mb={2}>
-        <Box
-          sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5 }}
-        >
-          <Link href='/client/trips/new'>
-            <Button
-              startIcon={<ArrowBack />}
-              variant='outlined'
-              size='small'
-            >
+        <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1.5 }}>
+          <Link href="/client/trips/new">
+            <Button startIcon={<ArrowBack />} variant="outlined" size="small">
               Nueva Búsqueda
             </Button>
           </Link>
 
           <Typography
-            variant='subtitle1'
-            component='h1'
+            variant="subtitle1"
+            component="h1"
             sx={{ fontWeight: 700, ml: 0.5 }}
           >
             Chóferes Disponibles
@@ -495,27 +488,27 @@ export default function MatchingPage() {
         </Box>
 
         {currentMatch && (
-          <Box sx={{ display: 'flex', gap: 0.75, flexWrap: 'wrap' }}>
+          <Box sx={{ display: "flex", gap: 0.75, flexWrap: "wrap" }}>
             {pickupAddress && (
               <Chip
                 label={`📍 ${pickupAddress.slice(0, 22)}...`}
-                color='primary'
-                variant='outlined'
-                size='small'
+                color="primary"
+                variant="outlined"
+                size="small"
               />
             )}
             {destinationAddress && (
               <Chip
                 label={`🎯 ${destinationAddress.slice(0, 22)}...`}
-                color='secondary'
-                variant='outlined'
-                size='small'
+                color="secondary"
+                variant="outlined"
+                size="small"
               />
             )}
             <Chip
               label={`${availableCharters.length} disponibles`}
-              variant='outlined'
-              size='small'
+              variant="outlined"
+              size="small"
             />
           </Box>
         )}
@@ -525,37 +518,39 @@ export default function MatchingPage() {
           <Box
             sx={{
               mt: 1.5,
-              display: 'inline-flex',
+              display: "inline-flex",
               p: 0.5,
               gap: 0.5,
-              bgcolor: 'background.default',
+              bgcolor: "background.default",
               borderRadius: 999,
             }}
           >
-            {([
-              { key: 'distance', label: 'Cercanía' },
-              { key: 'price', label: 'Más barato' },
-              { key: 'helpers', label: 'Más equipo' },
-            ] as const).map(({ key, label }) => {
+            {(
+              [
+                { key: "distance", label: "Cercanía" },
+                { key: "price", label: "Más barato" },
+                { key: "helpers", label: "Más equipo" },
+              ] as const
+            ).map(({ key, label }) => {
               const active = sortBy === key;
               return (
                 <Box
                   key={key}
-                  component='button'
-                  type='button'
+                  component="button"
+                  type="button"
                   onClick={() => setSortBy(key)}
                   sx={{
-                    border: 'none',
-                    cursor: 'pointer',
+                    border: "none",
+                    cursor: "pointer",
                     px: 2,
                     py: 0.75,
                     borderRadius: 999,
-                    fontSize: '0.8rem',
+                    fontSize: "0.8rem",
                     fontWeight: active ? 700 : 500,
-                    fontFamily: 'inherit',
-                    color: active ? 'secondary.contrastText' : 'text.secondary',
-                    bgcolor: active ? 'secondary.main' : 'transparent',
-                    transition: 'all 0.2s ease-in-out',
+                    fontFamily: "inherit",
+                    color: active ? "secondary.contrastText" : "text.secondary",
+                    bgcolor: active ? "secondary.main" : "transparent",
+                    transition: "all 0.2s ease-in-out",
                   }}
                 >
                   {label}
@@ -570,40 +565,40 @@ export default function MatchingPage() {
           <Box
             sx={{
               mt: 1.5,
-              display: 'flex',
-              flexWrap: 'wrap',
+              display: "flex",
+              flexWrap: "wrap",
               p: 0.5,
               gap: 0.5,
-              bgcolor: 'background.default',
+              bgcolor: "background.default",
               borderRadius: 3,
             }}
           >
-            {([
-              { key: null, label: 'Todos' },
+            {[
+              { key: null, label: "Todos" },
               ...Object.values(VehicleSize).map((s) => ({
                 key: s,
                 label: VEHICLE_SIZE_LABELS[s],
               })),
-            ]).map(({ key, label }) => {
+            ].map(({ key, label }) => {
               const active = sizeFilter === key;
               return (
                 <Box
-                  key={key ?? 'all'}
-                  component='button'
-                  type='button'
+                  key={key ?? "all"}
+                  component="button"
+                  type="button"
                   onClick={() => setSizeFilter(key)}
                   sx={{
-                    border: 'none',
-                    cursor: 'pointer',
+                    border: "none",
+                    cursor: "pointer",
                     px: 2,
                     py: 0.75,
                     borderRadius: 999,
-                    fontSize: '0.8rem',
+                    fontSize: "0.8rem",
                     fontWeight: active ? 700 : 500,
-                    fontFamily: 'inherit',
-                    color: active ? 'secondary.contrastText' : 'text.secondary',
-                    bgcolor: active ? 'secondary.main' : 'transparent',
-                    transition: 'all 0.2s ease-in-out',
+                    fontFamily: "inherit",
+                    color: active ? "secondary.contrastText" : "text.secondary",
+                    bgcolor: active ? "secondary.main" : "transparent",
+                    transition: "all 0.2s ease-in-out",
                   }}
                 >
                   {label}
@@ -618,24 +613,21 @@ export default function MatchingPage() {
       {pickupCoords && destinationCoords && (
         <Card sx={{ mb: 2 }}>
           <CardContent>
-            <Typography
-              variant='subtitle2'
-              sx={{ fontWeight: 600, mb: 2 }}
-            >
+            <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 2 }}>
               📍 Ruta del Viaje
             </Typography>
             <RouteMap
               pickup={{
                 lat: pickupCoords.lat,
                 lon: pickupCoords.lon,
-                label: 'Punto de Recogida',
-                type: 'pickup',
+                label: "Punto de Recogida",
+                type: "pickup",
               }}
               destination={{
                 lat: destinationCoords.lat,
                 lon: destinationCoords.lon,
-                label: 'Punto de Destino',
-                type: 'destination',
+                label: "Punto de Destino",
+                type: "destination",
               }}
             />
           </CardContent>
@@ -645,28 +637,15 @@ export default function MatchingPage() {
       {/* Lista de chóferes */}
       {availableCharters.length === 0 ? (
         <Box>
-          <Alert
-            severity='warning'
-            sx={{ mb: 3 }}
-          >
-            <Typography
-              variant='h6'
-              sx={{ fontWeight: 600, mb: 1 }}
-            >
+          <Alert severity="warning" sx={{ mb: 3 }}>
+            <Typography variant="h6" sx={{ fontWeight: 600, mb: 1 }}>
               No se encontraron chóferes disponibles
             </Typography>
-            <Typography
-              variant='body2'
-              sx={{ mb: 2 }}
-            >
+            <Typography variant="body2" sx={{ mb: 2 }}>
               Buscamos dentro de 30 km de tu punto de recogida, pero no hay
               chóferes disponibles en este momento.
             </Typography>
-            <Typography
-              variant='body2'
-              component='div'
-              sx={{ mb: 1 }}
-            >
+            <Typography variant="body2" component="div" sx={{ mb: 1 }}>
               <strong>Posibles razones:</strong>
               <ul style={{ marginTop: 8, marginBottom: 8, paddingLeft: 20 }}>
                 <li>No hay chóferes dentro del radio de búsqueda</li>
@@ -674,10 +653,7 @@ export default function MatchingPage() {
                 <li>Todos están ocupados con otros viajes</li>
               </ul>
             </Typography>
-            <Typography
-              variant='body2'
-              component='div'
-            >
+            <Typography variant="body2" component="div">
               <strong>Sugerencias:</strong>
               <ul style={{ marginTop: 8, paddingLeft: 20 }}>
                 <li>Ajusta tu punto de recogida o destino</li>
@@ -687,14 +663,8 @@ export default function MatchingPage() {
             </Typography>
           </Alert>
 
-          <Link
-            href='/client/trips/new'
-            style={{ textDecoration: 'none' }}
-          >
-            <Button
-              variant='contained'
-              color='secondary'
-            >
+          <Link href="/client/trips/new" style={{ textDecoration: "none" }}>
+            <Button variant="contained" color="secondary">
               Buscar de Nuevo
             </Button>
           </Link>
@@ -717,13 +687,13 @@ export default function MatchingPage() {
           {!selectedCharterPending &&
             sortedCharters.length === 0 &&
             sizeFilter && (
-              <Box sx={{ textAlign: 'center', py: 4 }}>
-                <Typography sx={{ mb: 2 }} color='text.secondary'>
+              <Box sx={{ textAlign: "center", py: 4 }}>
+                <Typography sx={{ mb: 2 }} color="text.secondary">
                   No hay {VEHICLE_SIZE_LABELS[sizeFilter]} disponibles cerca.
                 </Typography>
                 <Button
-                  variant='outlined'
-                  color='secondary'
+                  variant="outlined"
+                  color="secondary"
                   onClick={() => setSizeFilter(null)}
                 >
                   Ver todos los tamaños
@@ -776,13 +746,13 @@ export default function MatchingPage() {
       <Dialog
         open={inquiryConfirmOpen}
         onClose={handleCloseInquiryConfirm}
-        maxWidth='xs'
+        maxWidth="xs"
         fullWidth
       >
         <DialogTitle>Consultar disponibilidad</DialogTitle>
         <DialogContent>
           <DialogContentText>
-            ¿Querés consultarle a{' '}
+            ¿Querés consultarle a{" "}
             <strong>{selectedCharterForInquiry?.charterName}</strong> si tendrá
             disponibilidad? Te responderá con un mensaje rápido. Es gratis.
           </DialogContentText>
@@ -795,12 +765,14 @@ export default function MatchingPage() {
             Cancelar
           </Button>
           <Button
-            variant='contained'
-            color='warning'
+            variant="contained"
+            color="warning"
             onClick={handleSubmitInquiry}
             disabled={createInquiryMutation.isPending}
           >
-            {createInquiryMutation.isPending ? 'Enviando...' : 'Enviar consulta'}
+            {createInquiryMutation.isPending
+              ? "Enviando..."
+              : "Enviar consulta"}
           </Button>
         </DialogActions>
       </Dialog>
@@ -808,10 +780,10 @@ export default function MatchingPage() {
       {/* Notification Snackbar */}
       <Snackbar
         open={notificationOpen}
-        autoHideDuration={notificationMessage.includes('aceptó') ? 10000 : 5000}
+        autoHideDuration={notificationMessage.includes("aceptó") ? 10000 : 5000}
         onClose={() => setNotificationOpen(false)}
         message={notificationMessage}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
       />
     </Container>
   );

@@ -3,12 +3,10 @@
 import {
   AccountBalanceWallet,
   Add,
-  Email,
   Flag,
   History,
   LocalShipping,
   LocationOn,
-  Phone,
 } from "@mui/icons-material";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import {
@@ -22,10 +20,6 @@ import {
   CardContent,
   Chip,
   CircularProgress,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogTitle,
   Divider,
   Fab,
   IconButton,
@@ -39,14 +33,15 @@ import { formatDistanceToNow } from "date-fns";
 import { es } from "date-fns/locale";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
-import { useState, type SyntheticEvent } from "react";
+import type { SyntheticEvent } from "react";
 import { MobileContainer } from "@/components/layout/MobileContainer";
 import { CreditPackagesShowcase } from "@/components/modals/CreditPackagesShowcase";
+import { SignedAvatar } from "@/components/ui/SignedAvatar";
 import { WelcomeHeader } from "@/components/ui/WelcomeHeader";
 import { INQUIRY_RESPONSE_LABELS } from "@/lib/constants/availabilityInquiry";
-import { useDismissedInquiries } from "@/lib/hooks/useDismissedInquiries";
 import { useSentInquiries } from "@/lib/hooks/queries/useAvailabilityInquiriesQueries";
 import { useUserMatches } from "@/lib/hooks/queries/useTravelMatchQueries";
+import { useDismissedInquiries } from "@/lib/hooks/useDismissedInquiries";
 import { useAuthStore } from "@/lib/stores/authStore";
 import { useCreditPurchaseStore } from "@/lib/stores/creditPurchaseStore";
 import { isActiveTrip } from "@/lib/utils/matchHelpers";
@@ -67,7 +62,9 @@ export default function ClientDashboard() {
   const { data: sentInquiries = [] } = useSentInquiries();
   const { dismissed, dismiss } = useDismissedInquiries();
   const visibleInquiries = sentInquiries.filter(
-    (i) => i.status !== "expired" && !(i.status === "answered" && dismissed.has(i.id)),
+    (i) =>
+      i.status !== "expired" &&
+      !(i.status === "answered" && dismissed.has(i.id)),
   );
   // El badge solo cuenta lo que realmente necesita atención: esperando
   // respuesta, o respondida y todavía no vista por el cliente.
@@ -144,442 +141,430 @@ export default function ClientDashboard() {
   };
 
   return (
-    <>
-      <MobileContainer withBottomNav>
-        {/* Welcome Header */}
-        <WelcomeHeader
-          userName={user?.name}
-          userRole="client"
-          avatarUrl={user?.avatar ?? undefined}
-        />
+    <MobileContainer withBottomNav>
+      {/* Welcome Header */}
+      <WelcomeHeader
+        userName={user?.name}
+        userRole="client"
+        avatarUrl={user?.avatar ?? undefined}
+      />
 
-        {/* Credits Card */}
-        <MotionCard
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.1 }}
+      {/* Credits Card */}
+      <MotionCard
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, delay: 0.1 }}
+        sx={{
+          mb: 3,
+          bgcolor: "primary.main",
+          color: "white",
+        }}
+      >
+        <CardContent
           sx={{
-            mb: 3,
-            bgcolor: "primary.main",
-            color: "white",
+            p: { xs: 2.5, md: 3 },
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
           }}
         >
-          <CardContent
-            sx={{
-              p: { xs: 2.5, md: 3 },
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-            }}
-          >
-            <Box display="flex" alignItems="center" gap={{ xs: 1, md: 2 }}>
-              <motion.div
-                initial={{ scale: 0.5, rotate: -20 }}
-                animate={{ scale: 1, rotate: 0 }}
-                transition={{
-                  duration: 0.6,
-                  delay: 0.2,
-                  type: "spring",
-                  stiffness: 150,
-                }}
-              >
-                <AccountBalanceWallet
-                  sx={{ fontSize: { xs: 32, md: 40 }, opacity: 0.9 }}
-                />
-              </motion.div>
-              <Box display="flex" alignItems="center" gap={1.5}>
-                <Box>
-                  <Typography
-                    variant="caption"
-                    sx={{ opacity: 0.9, display: "block", mb: 0.5 }}
-                  >
-                    Créditos Disponibles
-                  </Typography>
-                  <Typography
-                    variant="h3"
-                    sx={{
-                      fontWeight: 700,
-                      color: "inherit",
-                      fontSize: { xs: "1.75rem", md: "3rem" },
-                    }}
-                  >
-                    {user?.credits || 0}
-                  </Typography>
-                </Box>
-                <IconButton
-                  onClick={() => router.push("/client/payments")}
-                  sx={{
-                    bgcolor: "rgba(255, 255, 255, 0.15)",
-                    color: "white",
-                    width: 36,
-                    height: 36,
-                    "&:hover": {
-                      bgcolor: "rgba(255, 255, 255, 0.25)",
-                    },
-                  }}
-                  title="Ver historial de pagos"
-                >
-                  <History sx={{ fontSize: 20 }} />
-                </IconButton>
-              </Box>
-            </Box>
-            <Fab
-              color="secondary"
-              size="medium"
-              onClick={openModal}
-              sx={{
-                boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
-                width: { xs: 36, md: 56 },
-                height: { xs: 36, md: 56 },
-                minHeight: "unset",
+          <Box display="flex" alignItems="center" gap={{ xs: 1, md: 2 }}>
+            <motion.div
+              initial={{ scale: 0.5, rotate: -20 }}
+              animate={{ scale: 1, rotate: 0 }}
+              transition={{
+                duration: 0.6,
+                delay: 0.2,
+                type: "spring",
+                stiffness: 150,
               }}
             >
-              <Add />
-            </Fab>
-          </CardContent>
-        </MotionCard>
-
-        {/* CTA Principal */}
-        <MotionCard
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.2 }}
-          whileHover={
-            !activeTrip
-              ? { y: -2, boxShadow: "0px 8px 24px rgba(56, 1, 22, 0.12)" }
-              : {}
-          }
-          sx={{
-            mb: 3,
-            overflow: "hidden",
-            position: "relative",
-            background: "linear-gradient(135deg, #FFFFFF 0%, #F5F2E8 100%)",
-            borderTop: "3px solid",
-            borderTopColor: "secondary.main",
-            transition: "all 0.2s ease-in-out",
-          }}
-        >
-          <CardContent
-            sx={{
-              p: { xs: 3, md: 3.5 },
-              textAlign: "center",
-              position: "relative",
-            }}
-          >
-            {/* Ícono de camión en chip de marca */}
-            <Box
-              sx={{
-                width: { xs: 72, md: 64 },
-                height: { xs: 72, md: 64 },
-                mx: "auto",
-                mb: 2,
-                borderRadius: "50%",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                bgcolor: "rgba(56, 1, 22, 0.06)",
-                animation: activeTrip ? "none" : "pulse 3s infinite",
-              }}
-            >
-              <LocalShipping
-                sx={{
-                  fontSize: { xs: 36, md: 32 },
-                  color: "primary.main",
-                }}
+              <AccountBalanceWallet
+                sx={{ fontSize: { xs: 32, md: 40 }, opacity: 0.9 }}
               />
+            </motion.div>
+            <Box display="flex" alignItems="center" gap={1.5}>
+              <Box>
+                <Typography
+                  variant="caption"
+                  sx={{ opacity: 0.9, display: "block", mb: 0.5 }}
+                >
+                  Créditos Disponibles
+                </Typography>
+                <Typography
+                  variant="h3"
+                  sx={{
+                    fontWeight: 700,
+                    color: "inherit",
+                    fontSize: { xs: "1.75rem", md: "3rem" },
+                  }}
+                >
+                  {user?.credits || 0}
+                </Typography>
+              </Box>
+              <IconButton
+                onClick={() => router.push("/client/payments")}
+                sx={{
+                  bgcolor: "rgba(255, 255, 255, 0.15)",
+                  color: "white",
+                  width: 36,
+                  height: 36,
+                  "&:hover": {
+                    bgcolor: "rgba(255, 255, 255, 0.25)",
+                  },
+                }}
+                title="Ver historial de pagos"
+              >
+                <History sx={{ fontSize: 20 }} />
+              </IconButton>
             </Box>
+          </Box>
+          <Fab
+            color="secondary"
+            size="medium"
+            onClick={openModal}
+            sx={{
+              boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+              width: { xs: 36, md: 56 },
+              height: { xs: 36, md: 56 },
+              minHeight: "unset",
+            }}
+          >
+            <Add />
+          </Fab>
+        </CardContent>
+      </MotionCard>
 
-            <Typography
-              variant="h6"
+      {/* CTA Principal */}
+      <MotionCard
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, delay: 0.2 }}
+        whileHover={
+          !activeTrip
+            ? { y: -2, boxShadow: "0px 8px 24px rgba(56, 1, 22, 0.12)" }
+            : {}
+        }
+        sx={{
+          mb: 3,
+          overflow: "hidden",
+          position: "relative",
+          background: "linear-gradient(135deg, #FFFFFF 0%, #F5F2E8 100%)",
+          borderTop: "3px solid",
+          borderTopColor: "secondary.main",
+          transition: "all 0.2s ease-in-out",
+        }}
+      >
+        <CardContent
+          sx={{
+            p: { xs: 3, md: 3.5 },
+            textAlign: "center",
+            position: "relative",
+          }}
+        >
+          {/* Ícono de camión en chip de marca */}
+          <Box
+            sx={{
+              width: { xs: 72, md: 64 },
+              height: { xs: 72, md: 64 },
+              mx: "auto",
+              mb: 2,
+              borderRadius: "50%",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              bgcolor: "rgba(56, 1, 22, 0.06)",
+              animation: activeTrip ? "none" : "pulse 3s infinite",
+            }}
+          >
+            <LocalShipping
               sx={{
-                fontWeight: 700,
-                mb: 0.75,
-                fontSize: { xs: "1.25rem", md: "1.35rem" },
+                fontSize: { xs: 36, md: 32 },
                 color: "primary.main",
               }}
-            >
-              ¿Necesitás transportar algo?
-            </Typography>
+            />
+          </Box>
 
-            <Typography
-              variant="body2"
-              color="text.secondary"
-              sx={{ mb: 2.5, maxWidth: 320, mx: "auto" }}
-            >
-              Publicá tu flete y recibí ofertas de chóferes
-            </Typography>
-
-            <MotionButton
-              variant="contained"
-              color="secondary"
-              size="large"
-              fullWidth
-              startIcon={<Add />}
-              onClick={handleRequestFreight}
-              disabled={!!activeTrip}
-              whileHover={
-                !activeTrip
-                  ? {
-                      scale: 1.02,
-                      boxShadow: "0 8px 24px rgba(220, 166, 33, 0.3)",
-                    }
-                  : {}
-              }
-              whileTap={!activeTrip ? { scale: 0.98 } : {}}
-              sx={{
-                py: { xs: 2, md: 1.5 },
-                fontSize: { xs: "1.1rem", md: "1rem" },
-                fontWeight: 700,
-                borderRadius: 3,
-                minHeight: { xs: 56, md: 48 },
-              }}
-            >
-              Solicitar Flete
-            </MotionButton>
-          </CardContent>
-        </MotionCard>
-
-        {/* Consultas de disponibilidad — solo visible si hay inquiries no expiradas/dismisseadas */}
-        {visibleInquiries.length > 0 && (
-          <MotionCard
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.25 }}
-            sx={{ mb: 3 }}
-          >
-            <Accordion
-              defaultExpanded={false}
-              disableGutters
-              elevation={0}
-              onChange={handleInquiriesExpand}
-            >
-              <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                  <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
-                    Consultas de disponibilidad
-                  </Typography>
-                  {unseenCount > 0 && (
-                    <Chip
-                      label={unseenCount}
-                      size="small"
-                      color="warning"
-                      sx={{ height: 20, fontSize: "0.7rem", fontWeight: 700 }}
-                    />
-                  )}
-                </Box>
-              </AccordionSummary>
-              <AccordionDetails sx={{ pt: 0 }}>
-                <List dense disablePadding>
-                  {visibleInquiries.map((inquiry, idx) => {
-                    const charterName = inquiry.toCharter?.name ?? "Charter";
-                    const subtitle =
-                      inquiry.status === "answered" && inquiry.responseCode
-                        ? INQUIRY_RESPONSE_LABELS[inquiry.responseCode]
-                        : inquiry.status === "pending"
-                          ? `Esperando respuesta · hace ${formatDistanceToNow(new Date(inquiry.createdAt), { locale: es })}`
-                          : "El charter no respondió a tiempo";
-                    return (
-                      <Box key={inquiry.id}>
-                        {idx > 0 && <Divider component="li" />}
-                        <ListItem disableGutters>
-                          <ListItemAvatar>
-                            <Avatar
-                              src={inquiry.toCharter?.avatar ?? undefined}
-                            >
-                              {charterName.charAt(0)}
-                            </Avatar>
-                          </ListItemAvatar>
-                          <ListItemText
-                            primary={charterName}
-                            secondary={subtitle}
-                            primaryTypographyProps={{ fontWeight: 600 }}
-                          />
-                        </ListItem>
-                      </Box>
-                    );
-                  })}
-                </List>
-              </AccordionDetails>
-            </Accordion>
-          </MotionCard>
-        )}
-
-        {/* Active Trip - Single Trip Only */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.5, delay: 0.3 }}
-        >
           <Typography
             variant="h6"
             sx={{
               fontWeight: 700,
-              mb: 2,
-              fontSize: { xs: "1.1rem", md: "1.25rem" },
+              mb: 0.75,
+              fontSize: { xs: "1.25rem", md: "1.35rem" },
+              color: "primary.main",
             }}
           >
-            Tu Viaje Activo
+            ¿Necesitás transportar algo?
           </Typography>
 
-          {isLoading ? (
-            <Box textAlign="center" py={4}>
-              <CircularProgress />
-            </Box>
-          ) : !activeTrip ? (
-            <Card>
-              <CardContent sx={{ textAlign: "center", py: 4 }}>
-                <LocalShipping
-                  sx={{ fontSize: 48, color: "grey.300", mb: 2 }}
-                />
+          <Typography
+            variant="body2"
+            color="text.secondary"
+            sx={{ mb: 2.5, maxWidth: 320, mx: "auto" }}
+          >
+            Publicá tu flete y recibí ofertas de chóferes
+          </Typography>
+
+          <MotionButton
+            variant="contained"
+            color="secondary"
+            size="large"
+            fullWidth
+            startIcon={<Add />}
+            onClick={handleRequestFreight}
+            disabled={!!activeTrip}
+            whileHover={
+              !activeTrip
+                ? {
+                    scale: 1.02,
+                    boxShadow: "0 8px 24px rgba(220, 166, 33, 0.3)",
+                  }
+                : {}
+            }
+            whileTap={!activeTrip ? { scale: 0.98 } : {}}
+            sx={{
+              py: { xs: 2, md: 1.5 },
+              fontSize: { xs: "1.1rem", md: "1rem" },
+              fontWeight: 700,
+              borderRadius: 3,
+              minHeight: { xs: 56, md: 48 },
+            }}
+          >
+            Solicitar Flete
+          </MotionButton>
+        </CardContent>
+      </MotionCard>
+
+      {/* Consultas de disponibilidad — solo visible si hay inquiries no expiradas/dismisseadas */}
+      {visibleInquiries.length > 0 && (
+        <MotionCard
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.25 }}
+          sx={{ mb: 3 }}
+        >
+          <Accordion
+            defaultExpanded={false}
+            disableGutters
+            elevation={0}
+            onChange={handleInquiriesExpand}
+          >
+            <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+              <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
+                  Consultas de disponibilidad
+                </Typography>
+                {unseenCount > 0 && (
+                  <Chip
+                    label={unseenCount}
+                    size="small"
+                    color="warning"
+                    sx={{ height: 20, fontSize: "0.7rem", fontWeight: 700 }}
+                  />
+                )}
+              </Box>
+            </AccordionSummary>
+            <AccordionDetails sx={{ pt: 0 }}>
+              <List dense disablePadding>
+                {visibleInquiries.map((inquiry, idx) => {
+                  const charterName = inquiry.toCharter?.name ?? "Charter";
+                  const subtitle =
+                    inquiry.status === "answered" && inquiry.responseCode
+                      ? INQUIRY_RESPONSE_LABELS[inquiry.responseCode]
+                      : inquiry.status === "pending"
+                        ? `Esperando respuesta · hace ${formatDistanceToNow(new Date(inquiry.createdAt), { locale: es })}`
+                        : "El charter no respondió a tiempo";
+                  return (
+                    <Box key={inquiry.id}>
+                      {idx > 0 && <Divider component="li" />}
+                      <ListItem disableGutters>
+                        <ListItemAvatar>
+                          <SignedAvatar value={inquiry.toCharter?.avatar}>
+                            {charterName.charAt(0)}
+                          </SignedAvatar>
+                        </ListItemAvatar>
+                        <ListItemText
+                          primary={charterName}
+                          secondary={subtitle}
+                          primaryTypographyProps={{ fontWeight: 600 }}
+                        />
+                      </ListItem>
+                    </Box>
+                  );
+                })}
+              </List>
+            </AccordionDetails>
+          </Accordion>
+        </MotionCard>
+      )}
+
+      {/* Active Trip - Single Trip Only */}
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.5, delay: 0.3 }}
+      >
+        <Typography
+          variant="h6"
+          sx={{
+            fontWeight: 700,
+            mb: 2,
+            fontSize: { xs: "1.1rem", md: "1.25rem" },
+          }}
+        >
+          Tu Viaje Activo
+        </Typography>
+
+        {isLoading ? (
+          <Box textAlign="center" py={4}>
+            <CircularProgress />
+          </Box>
+        ) : !activeTrip ? (
+          <Card>
+            <CardContent sx={{ textAlign: "center", py: 4 }}>
+              <LocalShipping sx={{ fontSize: 48, color: "grey.300", mb: 2 }} />
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                No tienes viajes activos
+              </Typography>
+              <Typography variant="caption" color="text.secondary">
+                Cuando solicites un flete aparecerá aquí
+              </Typography>
+            </CardContent>
+          </Card>
+        ) : (
+          <MotionCard
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.4, type: "spring" }}
+            sx={{
+              borderLeft: "4px solid",
+              borderLeftColor: getStatusColor(activeTrip.status, activeTrip),
+              transition: "all 0.2s ease-in-out",
+            }}
+          >
+            <CardContent sx={{ p: 1.5 }}>
+              {/* Header: Title + Status */}
+              <Box
+                display="flex"
+                justifyContent="space-between"
+                alignItems="flex-start"
+                mb={1.5}
+              >
                 <Typography
-                  variant="body2"
-                  color="text.secondary"
-                  sx={{ mb: 1 }}
+                  variant="subtitle2"
+                  sx={{ fontWeight: 700, fontSize: "0.9rem" }}
                 >
-                  No tienes viajes activos
+                  Solicitud de Flete
                 </Typography>
-                <Typography variant="caption" color="text.secondary">
-                  Cuando solicites un flete aparecerá aquí
-                </Typography>
-              </CardContent>
-            </Card>
-          ) : (
-            <MotionCard
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.4, type: "spring" }}
-              sx={{
-                borderLeft: "4px solid",
-                borderLeftColor: getStatusColor(activeTrip.status, activeTrip),
-                transition: "all 0.2s ease-in-out",
-              }}
-            >
-              <CardContent sx={{ p: 1.5 }}>
-                {/* Header: Title + Status */}
+                <Chip
+                  label={getStatusLabel(activeTrip.status, activeTrip).label}
+                  color={getStatusLabel(activeTrip.status, activeTrip).color}
+                  size="small"
+                  sx={{ fontWeight: 600, fontSize: "0.7rem", height: 22 }}
+                />
+              </Box>
+
+              {/* Route Info with Icons */}
+              <Box mb={1.5}>
+                {/* Origin */}
                 <Box
                   display="flex"
-                  justifyContent="space-between"
                   alignItems="flex-start"
-                  mb={1.5}
+                  gap={0.75}
+                  mb={0.75}
                 >
-                  <Typography
-                    variant="subtitle2"
-                    sx={{ fontWeight: 700, fontSize: "0.9rem" }}
-                  >
-                    Solicitud de Flete
-                  </Typography>
-                  <Chip
-                    label={getStatusLabel(activeTrip.status, activeTrip).label}
-                    color={getStatusLabel(activeTrip.status, activeTrip).color}
-                    size="small"
-                    sx={{ fontWeight: 600, fontSize: "0.7rem", height: 22 }}
-                  />
-                </Box>
-
-                {/* Route Info with Icons */}
-                <Box mb={1.5}>
-                  {/* Origin */}
-                  <Box
-                    display="flex"
-                    alignItems="flex-start"
-                    gap={0.75}
-                    mb={0.75}
-                  >
-                    <LocationOn
-                      sx={{
-                        fontSize: 18,
-                        color: "primary.main",
-                        mt: 0.1,
-                      }}
-                    />
-                    <Typography
-                      variant="body2"
-                      fontSize="0.85rem"
-                      lineHeight={1.4}
-                    >
-                      {activeTrip.pickupAddress || "Origen"}
-                    </Typography>
-                  </Box>
-
-                  {/* Destination */}
-                  <Box display="flex" alignItems="flex-start" gap={0.75}>
-                    <Flag
-                      sx={{
-                        fontSize: 18,
-                        color: "secondary.main",
-                        mt: 0.1,
-                      }}
-                    />
-                    <Typography
-                      variant="body2"
-                      fontSize="0.85rem"
-                      fontWeight={600}
-                      lineHeight={1.4}
-                    >
-                      {activeTrip.destinationAddress || "Destino"}
-                    </Typography>
-                  </Box>
-                </Box>
-
-                {/* Show charter info if accepted */}
-                {activeTrip.status === "accepted" && activeTrip.charter && (
-                  <Box
-                    display="flex"
-                    alignItems="center"
-                    gap={1}
-                    mb={2}
-                    p={1.5}
+                  <LocationOn
                     sx={{
-                      bgcolor: "background.default",
-                      borderRadius: 2,
+                      fontSize: 18,
+                      color: "primary.main",
+                      mt: 0.1,
                     }}
+                  />
+                  <Typography
+                    variant="body2"
+                    fontSize="0.85rem"
+                    lineHeight={1.4}
                   >
-                    <Avatar
-                      sx={{
-                        width: 32,
-                        height: 32,
-                        bgcolor: "secondary.main",
-                        color: "primary.main",
-                        fontSize: "0.9rem",
-                        fontWeight: 700,
-                      }}
-                    >
-                      {activeTrip.charter?.name?.[0] ?? "?"}
-                    </Avatar>
-                    <Box>
-                      <Typography variant="caption" color="text.secondary">
-                        Chófer
-                      </Typography>
-                      <Typography variant="body2" fontWeight={600}>
-                        {activeTrip.charter?.name ?? "Sin asignar"}
-                      </Typography>
-                    </Box>
-                  </Box>
-                )}
+                    {activeTrip.pickupAddress || "Origen"}
+                  </Typography>
+                </Box>
 
-                {/* Action Button */}
-                <Button
-                  variant="contained"
-                  color="primary"
-                  fullWidth
-                  onClick={() => handleViewMatch(activeTrip.id)}
+                {/* Destination */}
+                <Box display="flex" alignItems="flex-start" gap={0.75}>
+                  <Flag
+                    sx={{
+                      fontSize: 18,
+                      color: "secondary.main",
+                      mt: 0.1,
+                    }}
+                  />
+                  <Typography
+                    variant="body2"
+                    fontSize="0.85rem"
+                    fontWeight={600}
+                    lineHeight={1.4}
+                  >
+                    {activeTrip.destinationAddress || "Destino"}
+                  </Typography>
+                </Box>
+              </Box>
+
+              {/* Show charter info if accepted */}
+              {activeTrip.status === "accepted" && activeTrip.charter && (
+                <Box
+                  display="flex"
+                  alignItems="center"
+                  gap={1}
+                  mb={2}
+                  p={1.5}
                   sx={{
-                    minHeight: 44,
-                    fontWeight: 700,
+                    bgcolor: "background.default",
+                    borderRadius: 2,
                   }}
                 >
-                  {activeTrip.conversationId
-                    ? "Volver al Chat"
-                    : "Ver Detalles"}
-                </Button>
-              </CardContent>
-            </MotionCard>
-          )}
-        </motion.div>
+                  <Avatar
+                    sx={{
+                      width: 32,
+                      height: 32,
+                      bgcolor: "secondary.main",
+                      color: "primary.main",
+                      fontSize: "0.9rem",
+                      fontWeight: 700,
+                    }}
+                  >
+                    {activeTrip.charter?.name?.[0] ?? "?"}
+                  </Avatar>
+                  <Box>
+                    <Typography variant="caption" color="text.secondary">
+                      Chófer
+                    </Typography>
+                    <Typography variant="body2" fontWeight={600}>
+                      {activeTrip.charter?.name ?? "Sin asignar"}
+                    </Typography>
+                  </Box>
+                </Box>
+              )}
 
-        {/* Credit Purchase Modal */}
-        <CreditPackagesShowcase />
-      </MobileContainer>
-    </>
+              {/* Action Button */}
+              <Button
+                variant="contained"
+                color="primary"
+                fullWidth
+                onClick={() => handleViewMatch(activeTrip.id)}
+                sx={{
+                  minHeight: 44,
+                  fontWeight: 700,
+                }}
+              >
+                {activeTrip.conversationId ? "Volver al Chat" : "Ver Detalles"}
+              </Button>
+            </CardContent>
+          </MotionCard>
+        )}
+      </motion.div>
+
+      {/* Credit Purchase Modal */}
+      <CreditPackagesShowcase />
+    </MobileContainer>
   );
 }

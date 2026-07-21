@@ -16,6 +16,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { FeedbackModal } from "@/components/feedback/FeedbackModal";
 import { RatingDisplay } from "@/components/ui/RatingDisplay";
+import { MOBILE_BOTTOM_NAV_HEIGHT } from "@/lib/constants/mobileDesign";
 import {
   useCanGiveFeedback,
   useTripFeedback,
@@ -23,7 +24,6 @@ import {
 } from "@/lib/hooks/queries/useFeedbackQueries";
 import { useTripHistory } from "@/lib/hooks/queries/useTripQueries";
 import { useAuthStore } from "@/lib/stores/authStore";
-import { MOBILE_BOTTOM_NAV_HEIGHT } from "@/lib/constants/mobileDesign";
 import type { Trip } from "@/lib/types/trip";
 
 type FilterPeriod = "all" | "month" | "3months";
@@ -37,7 +37,7 @@ interface FeedbackModalState {
 
 function formatDate(dateStr: string): string {
   const date = new Date(dateStr);
-  if (isNaN(date.getTime())) return "";
+  if (Number.isNaN(date.getTime())) return "";
   return new Intl.DateTimeFormat("es-AR", {
     day: "numeric",
     month: "short",
@@ -58,7 +58,7 @@ function filterByPeriod(trips: Trip[], period: FilterPeriod): Trip[] {
 
   return trips.filter((trip) => {
     const date = new Date(trip.createdAt);
-    return !isNaN(date.getTime()) && date >= cutoff;
+    return !Number.isNaN(date.getTime()) && date >= cutoff;
   });
 }
 
@@ -339,7 +339,9 @@ function TripHistoryCard({
             Equipo: {trip.travelMatch.personnel.snapshot.driver.name}
             {trip.travelMatch.personnel.snapshot.helpers.length > 0 &&
               ` + ${trip.travelMatch.personnel.snapshot.helpers.length} ayudante${
-                trip.travelMatch.personnel.snapshot.helpers.length > 1 ? "s" : ""
+                trip.travelMatch.personnel.snapshot.helpers.length > 1
+                  ? "s"
+                  : ""
               }`}
           </Typography>
         )}

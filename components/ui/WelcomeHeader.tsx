@@ -1,8 +1,9 @@
 "use client";
 
-import { Avatar, Box, Chip, Tooltip, Typography } from "@mui/material";
+import { Box, Chip, Tooltip, Typography } from "@mui/material";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
+import { SignedAvatar } from "@/components/ui/SignedAvatar";
 
 const MotionBox = motion.create(Box);
 
@@ -38,8 +39,8 @@ export function WelcomeHeader({
           transition={{ duration: 0.5, delay: 0.1, type: "spring" }}
         >
           <Tooltip title="Ver perfil" arrow placement="right">
-            <Avatar
-              src={avatarUrl || undefined}
+            <SignedAvatar
+              value={avatarUrl}
               alt={userName}
               onClick={() => router.push("/profile")}
               sx={{
@@ -57,7 +58,7 @@ export function WelcomeHeader({
               }}
             >
               {initial}
-            </Avatar>
+            </SignedAvatar>
           </Tooltip>
         </motion.div>
         <Box>

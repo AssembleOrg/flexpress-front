@@ -11,7 +11,9 @@ const COLORS = {
   textBlack: [0, 0, 0] as [number, number, number],
 };
 
-type PersonnelInput = NonNullable<NonNullable<Trip["travelMatch"]>["personnel"]>;
+type PersonnelInput = NonNullable<
+  NonNullable<Trip["travelMatch"]>["personnel"]
+>;
 
 function renderPersonnelSection(
   doc: jsPDF,
@@ -25,7 +27,8 @@ function renderPersonnelSection(
   // driver.id === null ⇒ maneja el titular de la cuenta. El nombre del snapshot
   // ya incluye el sufijo "(titular)" en ese caso.
   const driverLabel = driver.name;
-  const helpersLabel = helpers.length > 0 ? helpers.map((h) => h.name).join(", ") : "—";
+  const helpersLabel =
+    helpers.length > 0 ? helpers.map((h) => h.name).join(", ") : "—";
 
   autoTable(doc, {
     startY,
@@ -63,7 +66,9 @@ export function generateClientReceipt(trip: Trip) {
   // Validación estricta: travelMatch es requerido
   if (!trip.travelMatch) {
     console.error("Trip.travelMatch is missing:", trip);
-    throw new Error("No se puede generar el comprobante: datos del viaje incompletos");
+    throw new Error(
+      "No se puede generar el comprobante: datos del viaje incompletos",
+    );
   }
 
   const match = trip.travelMatch;
@@ -195,7 +200,9 @@ export function generateCharterReceipt(trip: Trip) {
   // Validación estricta: travelMatch es requerido
   if (!trip.travelMatch) {
     console.error("Trip.travelMatch is missing:", trip);
-    throw new Error("No se puede generar el comprobante: datos del viaje incompletos");
+    throw new Error(
+      "No se puede generar el comprobante: datos del viaje incompletos",
+    );
   }
 
   const match = trip.travelMatch;

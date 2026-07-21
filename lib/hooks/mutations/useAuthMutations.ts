@@ -51,7 +51,10 @@ export function useLogin() {
         console.log("   pricePerKm en perfil:", fullProfile.pricePerKm);
         updateUser(fullProfile);
       } catch (error) {
-        console.warn("⚠️ [useLogin] No crítico: Error al obtener perfil completo", error);
+        console.warn(
+          "⚠️ [useLogin] No crítico: Error al obtener perfil completo",
+          error,
+        );
         // No crítico: el login ya funcionó, solo no tenemos pricePerKm
       }
 
@@ -60,7 +63,10 @@ export function useLogin() {
       // Mostrar toast si hay notificaciones de créditos acreditados (últimas 48hs)
       const recentUnread = useNotificationsStore.getState().getRecentUnread();
       if (recentUnread.length > 0) {
-        const totalCredits = recentUnread.reduce((sum, n) => sum + n.credits, 0);
+        const totalCredits = recentUnread.reduce(
+          (sum, n) => sum + n.credits,
+          0,
+        );
         setTimeout(() => {
           toast.success(
             `¡Felicidades! Te han acreditado ${totalCredits} créditos 🎉`,
@@ -101,7 +107,6 @@ export function useLogin() {
  */
 export function useRegister() {
   const { login } = useAuthStore();
-  const router = useRouter();
 
   return useMutation({
     mutationFn: (data: RegisterRequest) => authApi.register(data),
@@ -118,14 +123,10 @@ export function useRegister() {
 
       toast.success("Cuenta creada exitosamente");
 
-      // Redirect basado en role
-      const targetPath =
-        response.user.role === "charter"
-          ? "/driver/dashboard"
-          : "/client/dashboard";
-
-      console.log("🔄 [useRegister] Redirigiendo a:", targetPath);
-      router.push(targetPath);
+      // NOTA: la redirección NO se hace acá. El componente de registro sube el DNI y la
+      // selfie DESPUÉS del registro; si redirigiéramos ahora, el componente se desmonta y
+      // esas mutaciones (POST /users/me/documents) se cancelan → admin ve 0 documentos.
+      // El redirect lo hace onSubmit al final, tras persistir todo.
     },
 
     onError: (error) => {
@@ -167,18 +168,35 @@ export function useLogout() {
  * Útil para completar datos después del registro (ej: ubicación de charter)
  */
 export function useUpdateUserProfile() {
-  const queryClient = useQueryClient();
+  const _queryClient = useQueryClient();
   const { updateUser } = useAuthStore();
 
   return useMutation({
-    mutationFn: ({ userId, data }: { userId: string; data: UpdateUserRequest }) =>
-      authApi.updateUser(userId, data),
+    mutationFn: ({
+      userId,
+      data,
+    }: {
+      userId: string;
+      data: UpdateUserRequest;
+    }) => authApi.updateUser(userId, data),
 
     onSuccess: (updatedUser, variables) => {
-      console.log("✅ [useUpdateUserProfile] Perfil actualizado:", updatedUser.name);
-      console.log("✅ [useUpdateUserProfile] updatedUser completo:", updatedUser);
-      console.log("✅ [useUpdateUserProfile] pricePerKm en respuesta:", updatedUser.pricePerKm);
-      console.log("✅ [useUpdateUserProfile] pricePerKm enviado:", variables.data.pricePerKm);
+      console.log(
+        "✅ [useUpdateUserProfile] Perfil actualizado:",
+        updatedUser.name,
+      );
+      console.log(
+        "✅ [useUpdateUserProfile] updatedUser completo:",
+        updatedUser,
+      );
+      console.log(
+        "✅ [useUpdateUserProfile] pricePerKm en respuesta:",
+        updatedUser.pricePerKm,
+      );
+      console.log(
+        "✅ [useUpdateUserProfile] pricePerKm enviado:",
+        variables.data.pricePerKm,
+      );
 
       // Actualizar usuario en el store
       // Si backend no devuelve los campos, usar los valores enviados

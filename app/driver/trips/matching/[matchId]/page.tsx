@@ -20,7 +20,6 @@ import {
   CardContent,
   CircularProgress,
   Container,
-  Grid,
   IconButton,
   Stack,
   Typography,
@@ -37,12 +36,8 @@ import { FinalizeTripModal } from "@/components/modals/FinalizeTripModal";
 import { ReportModal } from "@/components/modals/ReportModal";
 import { TripDetailsCard } from "@/components/trip/TripDetailsCard";
 import { TripMetricsCard } from "@/components/trip/TripMetricsCard";
-import LeafletMap, {
-  type LeafletMapHandle,
-  type MapMarker,
-} from "@/components/ui/LeafletMap";
+import LeafletMap, { type LeafletMapHandle } from "@/components/ui/LeafletMap";
 import { conversationApi } from "@/lib/api/conversations";
-import { MOBILE_BOTTOM_NAV_HEIGHT } from "@/lib/constants/mobileDesign";
 import { useToggleAvailability } from "@/lib/hooks/mutations/useTravelMatchMutations";
 import { useCharterCompleteTrip } from "@/lib/hooks/mutations/useTripMutations";
 import {
@@ -52,7 +47,6 @@ import {
 import { useTrip } from "@/lib/hooks/queries/useTripQueries";
 import { useMyVehicles } from "@/lib/hooks/queries/useVehicleQueries";
 import { useAuthStore } from "@/lib/stores/authStore";
-import type { User, UserRole } from "@/lib/types/api";
 import { getDirectionsUrl } from "@/lib/utils/mapLinks";
 import { downloadPDF, generateCharterReceipt } from "@/lib/utils/pdfGenerator";
 
@@ -216,8 +210,8 @@ export default function DriverMatchingDetailPage() {
   // conversación exista; usamos la relación incluida por el backend como fallback.
   const conversationId = match.conversationId ?? match.conversation?.id;
 
-  const isCompletingTrip = charterCompleteTripMutation.isPending;
-  const tripCompleted = trip?.status === "completed";
+  const _isCompletingTrip = charterCompleteTripMutation.isPending;
+  const _tripCompleted = trip?.status === "completed";
 
   // Determine trip status for UI
   const getStatusInfo = () => {

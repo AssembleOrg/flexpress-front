@@ -1,16 +1,9 @@
 "use client";
 
-import {
-  Box,
-  Card,
-  CardContent,
-  Typography,
-  Avatar,
-  Button,
-  Rating,
-} from "@mui/material";
-import { LocationOn, Flag, Star } from "@mui/icons-material";
+import { Flag, LocationOn, Star } from "@mui/icons-material";
+import { Box, Button, Card, CardContent, Typography } from "@mui/material";
 import Image from "next/image";
+import { SignedAvatar } from "@/components/ui/SignedAvatar";
 
 interface MobileTripCardProps {
   /**
@@ -106,8 +99,8 @@ export function MobileTripCard({
           mb={1.5}
         >
           <Box display="flex" alignItems="center" gap={1}>
-            <Avatar
-              src={otherUser.avatar}
+            <SignedAvatar
+              value={otherUser.avatar}
               alt={otherUser.name}
               sx={{
                 width: 36,
@@ -118,9 +111,13 @@ export function MobileTripCard({
               }}
             >
               {otherUser.name[0]}
-            </Avatar>
+            </SignedAvatar>
             <Box>
-              <Typography variant="subtitle2" fontWeight={700} fontSize="0.9rem">
+              <Typography
+                variant="subtitle2"
+                fontWeight={700}
+                fontSize="0.9rem"
+              >
                 {otherUser.name}
               </Typography>
               {otherUser.rating && (
@@ -162,9 +159,7 @@ export function MobileTripCard({
         <Box mb={1.5}>
           {/* Origin */}
           <Box display="flex" alignItems="flex-start" gap={1} mb={0.5}>
-            <LocationOn
-              sx={{ fontSize: 18, color: "primary.main", mt: 0.2 }}
-            />
+            <LocationOn sx={{ fontSize: 18, color: "primary.main", mt: 0.2 }} />
             <Typography variant="body2" fontSize="0.85rem" lineHeight={1.4}>
               {origin}
             </Typography>

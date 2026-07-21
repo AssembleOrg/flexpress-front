@@ -11,7 +11,6 @@ import {
 } from "@mui/icons-material";
 import {
   Alert,
-  Avatar,
   alpha,
   Box,
   Button,
@@ -29,6 +28,8 @@ import {
   useTheme,
 } from "@mui/material";
 import { useState } from "react";
+import { PrivateDocLink } from "@/components/ui/PrivateImage";
+import { SignedAvatar } from "@/components/ui/SignedAvatar";
 import {
   useAdminReviewDriver,
   useAdminReviewDriverDocument,
@@ -122,8 +123,8 @@ function PersonnelAvatar({
 }) {
   const theme = useTheme();
   return (
-    <Avatar
-      src={src ?? undefined}
+    <SignedAvatar
+      value={src}
       sx={{
         width: 52,
         height: 52,
@@ -135,7 +136,7 @@ function PersonnelAvatar({
       }}
     >
       {initial}
-    </Avatar>
+    </SignedAvatar>
   );
 }
 
@@ -276,16 +277,15 @@ function DriverCard({ driver }: { driver: CharterDriver }) {
                       sx={{ mt: 1, flexWrap: "wrap" }}
                       useFlexGap
                     >
-                      <Button
+                      <PrivateDocLink
+                        value={doc.fileUrl}
                         size="small"
-                        href={doc.fileUrl}
-                        target="_blank"
                         variant="text"
                         startIcon={<OpenInNewRounded sx={{ fontSize: 15 }} />}
                         sx={{ textTransform: "none", borderRadius: 2 }}
                       >
                         Ver
-                      </Button>
+                      </PrivateDocLink>
                       {doc.status === DocumentReviewStatus.PENDING && (
                         <>
                           <Button

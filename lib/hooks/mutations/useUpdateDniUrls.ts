@@ -14,10 +14,14 @@ export function useUpdateDniUrls() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ userId, documentationFrontUrl, documentationBackUrl }: UpdateDniUrlsRequest) => {
+    mutationFn: async ({
+      userId,
+      documentationFrontUrl,
+      documentationBackUrl,
+    }: UpdateDniUrlsRequest) => {
       const response = await api.patch<{ success: boolean; data: User }>(
         `/users/${userId}/update-dni-urls`,
-        { documentationFrontUrl, documentationBackUrl }
+        { documentationFrontUrl, documentationBackUrl },
       );
 
       return response.data.data;

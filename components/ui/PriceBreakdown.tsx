@@ -48,7 +48,9 @@ export function PriceBreakdown({
         }}
       >
         <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
-          <AttachMoney sx={{ fontSize: 16, color: "success.main", flexShrink: 0 }} />
+          <AttachMoney
+            sx={{ fontSize: 16, color: "success.main", flexShrink: 0 }}
+          />
           <Typography variant="caption" color="text.secondary">
             {title}
           </Typography>

@@ -101,7 +101,11 @@ export function isActiveTrip(match: TravelMatch | null | undefined): boolean {
   }
 
   // Include completed matches with active trips (trip in progress)
-  if (match.status === "completed" && match.tripId && match.trip?.status !== "completed") {
+  if (
+    match.status === "completed" &&
+    match.tripId &&
+    match.trip?.status !== "completed"
+  ) {
     return true;
   }
 

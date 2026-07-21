@@ -1,7 +1,5 @@
 "use client";
 
-import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
 import {
   Box,
   Button,
@@ -14,14 +12,16 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
+import { useRouter } from "next/navigation";
+import { useEffect, useMemo, useState } from "react";
 import toast from "react-hot-toast";
+import { BottomNavbar } from "@/components/layout/BottomNavbar";
 import { MobileContainer } from "@/components/layout/MobileContainer";
 import { MobileHeader } from "@/components/layout/MobileHeader";
-import { BottomNavbar } from "@/components/layout/BottomNavbar";
-import { useAuthStore } from "@/lib/stores/authStore";
+import { PriceBreakdown } from "@/components/ui/PriceBreakdown";
 import { useUpdateUserProfile } from "@/lib/hooks/mutations/useAuthMutations";
 import { usePublicPricing } from "@/lib/hooks/queries/useSystemConfigQueries";
-import { PriceBreakdown } from "@/components/ui/PriceBreakdown";
+import { useAuthStore } from "@/lib/stores/authStore";
 
 // Ejemplo concreto para que el charter vea cómo queda su estimado.
 // Bernal → Claypole ≈ 11 km (línea recta), ida y vuelta similares.
@@ -111,7 +111,9 @@ export default function SettingsPage() {
               type="number"
               value={pricePerKm}
               onChange={(e) =>
-                setPricePerKm(e.target.value === "" ? "" : Number(e.target.value))
+                setPricePerKm(
+                  e.target.value === "" ? "" : Number(e.target.value),
+                )
               }
               helperText={`Sugerencia del sistema: $${pricing?.creditsPerKm ?? "..."} / km`}
               InputProps={{

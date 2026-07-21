@@ -1,28 +1,31 @@
 "use client";
 
-import { useState } from "react";
 import {
-  Container,
-  Tabs,
-  Tab,
   Box,
-  CircularProgress,
-  useTheme,
+  Container,
+  Tab,
+  Tabs,
   useMediaQuery,
+  useTheme,
 } from "@mui/material";
-import { useAuthStore } from "@/lib/stores/authStore";
-import { useAdminReports, usePendingCharters, usePendingVehicles } from "@/lib/hooks/queries/useAdminQueries";
-import { usePendingPaymentsCount } from "@/lib/hooks/queries/usePaymentQueries";
-import { UsersTable } from "@/components/admin/UsersTable";
-import { ReportsTable } from "@/components/admin/ReportsTable";
-import { TripsTable } from "@/components/admin/TripsTable";
+import { useState } from "react";
 import { PaymentsTable } from "@/components/admin/PaymentsTable";
+import { ReportsTable } from "@/components/admin/ReportsTable";
 import { SystemConfigTab } from "@/components/admin/SystemConfigTab";
+import { TripsTable } from "@/components/admin/TripsTable";
+import { UsersTable } from "@/components/admin/UsersTable";
 import { VerificationsTab } from "@/components/admin/VerificationsTab";
+import {
+  useAdminReports,
+  usePendingCharters,
+  usePendingVehicles,
+} from "@/lib/hooks/queries/useAdminQueries";
 import {
   usePendingDriversAdmin,
   usePendingHelpersAdmin,
 } from "@/lib/hooks/queries/useCharterPersonnelQueries";
+import { usePendingPaymentsCount } from "@/lib/hooks/queries/usePaymentQueries";
+import { useAuthStore } from "@/lib/stores/authStore";
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -58,13 +61,15 @@ export default function AdminPage() {
   });
 
   // Fetch pending charters for badge
-  const { data: pendingChartersData, isLoading: chartersLoading } = usePendingCharters();
+  const { data: pendingChartersData, isLoading: chartersLoading } =
+    usePendingCharters();
   const { data: pendingVehiclesData = [] } = usePendingVehicles();
   const { data: pendingDriversData = [] } = usePendingDriversAdmin();
   const { data: pendingHelpersData = [] } = usePendingHelpersAdmin();
 
   // Fetch pending payments for badge
-  const { data: pendingPaymentsCount = 0, isLoading: paymentsLoading } = usePendingPaymentsCount();
+  const { data: pendingPaymentsCount = 0, isLoading: paymentsLoading } =
+    usePendingPaymentsCount();
 
   const pendingReportsCount = reportsData?.meta?.total ?? 0;
   const pendingChartersCount =
@@ -73,7 +78,7 @@ export default function AdminPage() {
     pendingDriversData.length +
     pendingHelpersData.length;
 
-  const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
+  const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
     setActiveTab(newValue);
   };
 
@@ -82,7 +87,9 @@ export default function AdminPage() {
   return (
     <Container maxWidth="xl" sx={{ py: { xs: 2, md: 4 } }}>
       {/* Tabs */}
-      <Box sx={{ borderBottom: 1, borderColor: "divider", mb: { xs: 1, md: 3 } }}>
+      <Box
+        sx={{ borderBottom: 1, borderColor: "divider", mb: { xs: 1, md: 3 } }}
+      >
         <Tabs
           value={activeTab}
           onChange={handleTabChange}

@@ -1,11 +1,11 @@
 "use client";
 
 import { Box } from "@mui/material";
+import { DriverPitch } from "@/components/sections/DriverPitch";
 import { FinalCTA } from "@/components/sections/FinalCTA";
 import { Footer } from "@/components/sections/Footer";
 import { ForWho } from "@/components/sections/ForWho";
 import { HeroSplit } from "@/components/sections/HeroSplit";
-import { DriverPitch } from "@/components/sections/DriverPitch";
 import { HowItWorks } from "@/components/sections/HowItWorks";
 import { Security } from "@/components/sections/Security";
 

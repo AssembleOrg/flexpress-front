@@ -1,13 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { DirectionsCar, Group, Person } from "@mui/icons-material";
 import {
-  DirectionsCar,
-  Group,
-  Person,
-} from "@mui/icons-material";
-import {
-  Avatar,
   Box,
   Button,
   Checkbox,
@@ -20,6 +14,8 @@ import {
   Stack,
   Typography,
 } from "@mui/material";
+import { useEffect, useMemo, useState } from "react";
+import { SignedAvatar } from "@/components/ui/SignedAvatar";
 import {
   useMyDrivers,
   useMyHelpers,
@@ -70,11 +66,13 @@ export function ActivationModal({
     [vehicles],
   );
   const availableDrivers = useMemo(
-    () => drivers.filter((d) => d.verificationStatus === "verified" && d.isEnabled),
+    () =>
+      drivers.filter((d) => d.verificationStatus === "verified" && d.isEnabled),
     [drivers],
   );
   const availableHelpers = useMemo(
-    () => helpers.filter((h) => h.verificationStatus === "verified" && h.isEnabled),
+    () =>
+      helpers.filter((h) => h.verificationStatus === "verified" && h.isEnabled),
     [helpers],
   );
 
@@ -166,7 +164,9 @@ export function ActivationModal({
           {/* Vehículo (obligatorio, va de la mano del conductor) */}
           <Box sx={sectionSx}>
             <Box component="span" sx={labelSx}>
-              <DirectionsCar sx={{ fontSize: 13, mr: 0.5, verticalAlign: "-2px" }} />
+              <DirectionsCar
+                sx={{ fontSize: 13, mr: 0.5, verticalAlign: "-2px" }}
+              />
               Vehículo
             </Box>
             {verifiedVehicles.length === 0 ? (
@@ -181,7 +181,9 @@ export function ActivationModal({
                     selected={vehicleId === v.id}
                     onClick={() => setVehicleId(v.id)}
                     icon={<DirectionsCar />}
-                    title={[v.brand, v.model].filter(Boolean).join(" ") || "Vehículo"}
+                    title={
+                      [v.brand, v.model].filter(Boolean).join(" ") || "Vehículo"
+                    }
                     subtitle={v.plate}
                     mono
                   />
@@ -214,7 +216,12 @@ export function ActivationModal({
                         opacity: disabled ? 0.5 : 1,
                       }}
                     >
-                      <Checkbox size="small" checked={checked} disabled={disabled} sx={{ p: 0.5 }} />
+                      <Checkbox
+                        size="small"
+                        checked={checked}
+                        disabled={disabled}
+                        sx={{ p: 0.5 }}
+                      />
                       <Typography variant="body2">{`${h.firstName} ${h.lastName}`}</Typography>
                     </Box>
                   );
@@ -225,7 +232,11 @@ export function ActivationModal({
         </Stack>
       </DialogContent>
       <DialogActions sx={{ p: 2, gap: 1.5 }}>
-        <Button onClick={onClose} disabled={isLoading} sx={{ flex: 1, minHeight: 46 }}>
+        <Button
+          onClick={onClose}
+          disabled={isLoading}
+          sx={{ flex: 1, minHeight: 46 }}
+        >
           Cancelar
         </Button>
         <Button
@@ -278,13 +289,20 @@ function SelectableRow({
         transition: "all 0.15s ease",
       }}
     >
-      <Avatar src={avatar} sx={{ width: 30, height: 30, fontSize: "0.8rem" }}>
+      <SignedAvatar
+        value={avatar}
+        sx={{ width: 30, height: 30, fontSize: "0.8rem" }}
+      >
         {icon ?? title.charAt(0)}
-      </Avatar>
+      </SignedAvatar>
       <Box sx={{ minWidth: 0, flex: 1 }}>
         <Typography
           variant="body2"
-          sx={{ fontWeight: 600, lineHeight: 1.2, fontFamily: mono ? "monospace" : undefined }}
+          sx={{
+            fontWeight: 600,
+            lineHeight: 1.2,
+            fontFamily: mono ? "monospace" : undefined,
+          }}
           noWrap
         >
           {title}
@@ -293,7 +311,10 @@ function SelectableRow({
           <Typography
             variant="caption"
             color="text.secondary"
-            sx={{ fontSize: "0.7rem", fontFamily: mono ? "monospace" : undefined }}
+            sx={{
+              fontSize: "0.7rem",
+              fontFamily: mono ? "monospace" : undefined,
+            }}
             noWrap
           >
             {subtitle}
@@ -301,7 +322,12 @@ function SelectableRow({
         )}
       </Box>
       {selected && (
-        <Chip label="✓" size="small" color="secondary" sx={{ height: 20, minWidth: 20, "& .MuiChip-label": { px: 0.5 } }} />
+        <Chip
+          label="✓"
+          size="small"
+          color="secondary"
+          sx={{ height: 20, minWidth: 20, "& .MuiChip-label": { px: 0.5 } }}
+        />
       )}
     </Box>
   );

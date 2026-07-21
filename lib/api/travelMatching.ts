@@ -3,12 +3,12 @@
  * Handles all Travel Matching operations between users and charters
  */
 
-import api from '@/lib/api';
+import api from "@/lib/api";
 import type {
   ApiResponse,
   AvailableCharter,
   TravelMatch,
-} from '@/lib/types/api';
+} from "@/lib/types/api";
 
 export interface CreateMatchRequest {
   pickupAddress: string;
@@ -59,8 +59,8 @@ export const travelMatchingApi = {
   create: async (data: CreateMatchRequest): Promise<CreateMatchResponse> => {
     try {
       const response = await api.post<ApiResponse<CreateMatchResponse>>(
-        '/travel-matching/matches',
-        data
+        "/travel-matching/matches",
+        data,
       );
 
       // biome-ignore lint/style/noNonNullAssertion: axios response guarantees data
@@ -70,10 +70,10 @@ export const travelMatchingApi = {
       // Extraer el verdadero CreateMatchResponse de responseData.data
       if (
         responseData &&
-        typeof responseData === 'object' &&
-        'success' in responseData &&
-        'message' in responseData &&
-        'data' in responseData
+        typeof responseData === "object" &&
+        "success" in responseData &&
+        "message" in responseData &&
+        "data" in responseData
       ) {
         // biome-ignore lint/style/noNonNullAssertion: structure validated above
         return (
@@ -85,16 +85,16 @@ export const travelMatchingApi = {
 
       return responseData as CreateMatchResponse;
     } catch (error) {
-      console.error('❌ [MATCHING] Create match failed');
+      console.error("❌ [MATCHING] Create match failed");
 
       // Extract detailed error information
       const errorDetails = {
         status: null as number | null,
-        message: 'Unknown error',
+        message: "Unknown error",
         backend_error: null as unknown,
       };
 
-      if (error instanceof Error && 'response' in error) {
+      if (error instanceof Error && "response" in error) {
         const axiosError = error as {
           response?: {
             status?: number;
@@ -121,14 +121,14 @@ export const travelMatchingApi = {
           errorDetails.message = axiosError.message;
         }
 
-        console.error('Status:', errorDetails.status);
-        console.error('Backend message:', errorDetails.message);
-        console.error('Full error data:', errorDetails.backend_error);
+        console.error("Status:", errorDetails.status);
+        console.error("Backend message:", errorDetails.message);
+        console.error("Full error data:", errorDetails.backend_error);
       }
 
       // Create a detailed error with all context
       const enhancedError = new Error(
-        `Travel match creation failed: ${errorDetails.message}`
+        `Travel match creation failed: ${errorDetails.message}`,
       );
       enhancedError.cause = error;
       (enhancedError as unknown as Record<string, unknown>).details =
@@ -143,11 +143,11 @@ export const travelMatchingApi = {
    */
   selectCharter: async (
     matchId: string,
-    charterId: string
+    charterId: string,
   ): Promise<TravelMatch> => {
     const response = await api.put<ApiResponse<TravelMatch>>(
       `/travel-matching/matches/${matchId}/select-charter`,
-      { charterId }
+      { charterId },
     );
     // biome-ignore lint/style/noNonNullAssertion: axios response guarantees data
     return response.data.data!;
@@ -159,7 +159,7 @@ export const travelMatchingApi = {
   getUserMatches: async (): Promise<TravelMatch[]> => {
     try {
       const response = await api.get<ApiResponse<TravelMatch[]>>(
-        '/travel-matching/matches'
+        "/travel-matching/matches",
       );
 
       // Manejar doble wrapper del backend
@@ -168,8 +168,8 @@ export const travelMatchingApi = {
       // Si tiene doble nesting (response.data.data.data)
       if (
         responseData &&
-        typeof responseData === 'object' &&
-        'data' in responseData
+        typeof responseData === "object" &&
+        "data" in responseData
       ) {
         const matches = (responseData as { data: TravelMatch[] }).data;
         if (Array.isArray(matches)) {
@@ -184,7 +184,7 @@ export const travelMatchingApi = {
 
       return [];
     } catch (error) {
-      console.error('❌ [MATCHING] Get user matches failed', error);
+      console.error("❌ [MATCHING] Get user matches failed", error);
       throw error;
     }
   },
@@ -196,7 +196,7 @@ export const travelMatchingApi = {
     try {
       const response = await api.get<
         ApiResponse<{ success: boolean; data: TravelMatch[] } | TravelMatch[]>
-      >('/travel-matching/charter/matches');
+      >("/travel-matching/charter/matches");
 
       // Manejar doble wrapper del backend
       const responseData = response.data.data;
@@ -204,8 +204,8 @@ export const travelMatchingApi = {
       // Si tiene doble nesting (response.data.data.data)
       if (
         responseData &&
-        typeof responseData === 'object' &&
-        'data' in responseData
+        typeof responseData === "object" &&
+        "data" in responseData
       ) {
         const matches = responseData.data;
         if (Array.isArray(matches)) {
@@ -220,7 +220,7 @@ export const travelMatchingApi = {
 
       return [];
     } catch (error) {
-      console.error('❌ [MATCHING] Get charter matches failed', error);
+      console.error("❌ [MATCHING] Get charter matches failed", error);
       throw error;
     }
   },
@@ -233,20 +233,20 @@ export const travelMatchingApi = {
    */
   respondToMatch: async (
     matchId: string,
-    payload: RespondToMatchRequest
+    payload: RespondToMatchRequest,
   ): Promise<TravelMatch> => {
     const response = await api.put<ApiResponse<TravelMatch>>(
       `/travel-matching/charter/matches/${matchId}/respond`,
-      payload
+      payload,
     );
 
     // Defensive: validate response structure
     if (!response.data.data) {
       console.error(
-        '❌ [RESPOND] Backend returned invalid response:',
-        response.data
+        "❌ [RESPOND] Backend returned invalid response:",
+        response.data,
       );
-      throw new Error('Backend devolvió estructura de respuesta inválida');
+      throw new Error("Backend devolvió estructura de respuesta inválida");
     }
 
     return response.data.data;
@@ -270,22 +270,22 @@ export const travelMatchingApi = {
     // Si tiene doble nesting (response.data.data.data)
     if (
       responseData &&
-      typeof responseData === 'object' &&
-      'data' in responseData
+      typeof responseData === "object" &&
+      "data" in responseData
     ) {
       return (responseData as { data: TravelMatch }).data;
     }
 
-    if (responseData && typeof responseData === 'object') {
+    if (responseData && typeof responseData === "object") {
       return responseData as TravelMatch;
     }
 
     // Si no hay match, error
     console.error(
-      '❌ [MATCHING] Backend returned invalid match:',
-      response.data
+      "❌ [MATCHING] Backend returned invalid match:",
+      response.data,
     );
-    throw new Error('Backend devolvió match con estructura inválida');
+    throw new Error("Backend devolvió match con estructura inválida");
   },
 
   /**
@@ -295,7 +295,7 @@ export const travelMatchingApi = {
   cancelMatch: async (matchId: string): Promise<TravelMatch> => {
     const response = await api.put<ApiResponse<TravelMatch>>(
       `/travel-matching/matches/${matchId}/cancel`,
-      {}
+      {},
     );
     // biome-ignore lint/style/noNonNullAssertion: axios response guarantees data
     return response.data.data!;
@@ -307,7 +307,7 @@ export const travelMatchingApi = {
   createTripFromMatch: async (matchId: string) => {
     const response = await api.post(
       `/travel-matching/matches/${matchId}/create-trip`,
-      {}
+      {},
     );
     // biome-ignore lint/style/noNonNullAssertion: axios response guarantees data
     return response.data.data!;
@@ -318,9 +318,9 @@ export const travelMatchingApi = {
    * vehículo + conductor activo + ayudantes)
    */
   getAvailability: async (): Promise<CharterAvailabilityState> => {
-    const response = await api.get('/travel-matching/charter/availability');
+    const response = await api.get("/travel-matching/charter/availability");
     const data = response.data?.data;
-    if (data && typeof data === 'object' && 'data' in data) {
+    if (data && typeof data === "object" && "data" in data) {
       return (data as { data: CharterAvailabilityState }).data;
     }
     return data;
@@ -350,7 +350,10 @@ export const travelMatchingApi = {
         activeHelperIds: config.activeHelperIds,
       }),
     };
-    const response = await api.put('/travel-matching/charter/availability', payload);
+    const response = await api.put(
+      "/travel-matching/charter/availability",
+      payload,
+    );
     // biome-ignore lint/style/noNonNullAssertion: axios response guarantees data
     return response.data.data!;
   },
@@ -361,9 +364,9 @@ export const travelMatchingApi = {
   updateCharterOrigin: async (
     latitude: string,
     longitude: string,
-    address: string
+    address: string,
   ) => {
-    const response = await api.put('/travel-matching/charter/origin', {
+    const response = await api.put("/travel-matching/charter/origin", {
       latitude,
       longitude,
       address,

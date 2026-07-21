@@ -79,7 +79,10 @@ export const paymentsApi = {
    * Reject a payment request (ADMIN)
    * Updates payment status to "rejected"
    */
-  rejectPayment: async (paymentId: string, reason?: string): Promise<Payment> => {
+  rejectPayment: async (
+    paymentId: string,
+    reason?: string,
+  ): Promise<Payment> => {
     const response = await api.patch<ApiResponse<Payment>>(
       `/payments/${paymentId}/reject`,
       { reason },
@@ -119,7 +122,8 @@ export const paymentsApi = {
       "success" in responseData &&
       "data" in responseData
     ) {
-      return (responseData as unknown as { data: { count: number } }).data!.count;
+      return (responseData as unknown as { data: { count: number } }).data
+        ?.count;
     }
 
     return responseData.count;

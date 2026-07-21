@@ -2,8 +2,8 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { travelMatchingApi } from "@/lib/api/travelMatching";
-import { useAuthStore } from "@/lib/stores/authStore";
 import { getSocketConnected } from "@/lib/hooks/useWebSocket";
+import { useAuthStore } from "@/lib/stores/authStore";
 import { queryKeys } from "./queryFactory";
 
 /**
@@ -73,10 +73,10 @@ export function useCharterMatches() {
 export function useCharterAvailability() {
   const { user } = useAuthStore();
   return useQuery({
-    queryKey: queryKeys.charter.availability(user?.id || ''),
+    queryKey: queryKeys.charter.availability(user?.id || ""),
     queryFn: () => travelMatchingApi.getAvailability(),
     staleTime: 30 * 1000,
-    enabled: user?.role === 'charter',
+    enabled: user?.role === "charter",
   });
 }
 
@@ -97,7 +97,7 @@ export function useMatch(matchId: string) {
     refetchOnReconnect: true,
     refetchInterval: (query) => {
       if (getSocketConnected()) return false; // socket activo → match:updated lo cubre
-      if (query.state.status === 'error') return false;
+      if (query.state.status === "error") return false;
       return 30 * 1000; // socket caído → fallback 30s
     },
     enabled: !!matchId,

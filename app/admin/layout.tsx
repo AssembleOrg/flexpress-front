@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect } from "react";
-import { useRouter, usePathname } from "next/navigation";
 import { Box, CircularProgress } from "@mui/material";
-import { useAuthStore } from "@/lib/stores/authStore";
+import { usePathname, useRouter } from "next/navigation";
+import { useEffect } from "react";
 import { AdminNavbar } from "@/components/layout/AdminNavbar";
+import { useAuthStore } from "@/lib/stores/authStore";
 
 export default function AdminLayout({
   children,

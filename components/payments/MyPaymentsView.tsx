@@ -22,6 +22,7 @@ import {
 } from "@mui/material";
 import { useState } from "react";
 import { CreditPackagesShowcase } from "@/components/modals/CreditPackagesShowcase";
+import { PrivateImage } from "@/components/ui/PrivateImage";
 import { useMyPayments } from "@/lib/hooks/queries/usePaymentQueries";
 import { useCreditPurchaseStore } from "@/lib/stores/creditPurchaseStore";
 import type { Payment } from "@/lib/types/api";
@@ -236,16 +237,7 @@ export function MyPaymentsView() {
         </DialogTitle>
         <DialogContent>
           {selectedReceipt && (
-            <Box
-              component="img"
-              src={selectedReceipt}
-              alt="Comprobante de pago"
-              sx={{
-                width: "100%",
-                height: "auto",
-                borderRadius: 1,
-              }}
-            />
+            <PrivateImage value={selectedReceipt} alt="Comprobante de pago" />
           )}
         </DialogContent>
       </Dialog>

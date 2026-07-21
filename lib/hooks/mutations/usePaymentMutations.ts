@@ -7,9 +7,9 @@
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import toast from "react-hot-toast";
+import type { CreatePaymentRequest } from "@/lib/api/payments";
 import { paymentsApi } from "@/lib/api/payments";
 import { queryKeys } from "@/lib/hooks/queries/queryFactory";
-import type { CreatePaymentRequest } from "@/lib/api/payments";
 import { useAuthStore } from "@/lib/stores/authStore";
 import { useNotificationsStore } from "@/lib/stores/notificationsStore";
 
@@ -118,8 +118,13 @@ export function useRejectPayment() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ paymentId, reason }: { paymentId: string; reason?: string }) =>
-      paymentsApi.rejectPayment(paymentId, reason),
+    mutationFn: ({
+      paymentId,
+      reason,
+    }: {
+      paymentId: string;
+      reason?: string;
+    }) => paymentsApi.rejectPayment(paymentId, reason),
 
     onSuccess: () => {
       // Invalidar lista de pagos

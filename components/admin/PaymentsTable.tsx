@@ -1,8 +1,5 @@
 "use client";
 
-import { useState } from "react";
-import Link from "next/link";
-import { DataGrid, GridColDef, GridPaginationModel } from "@mui/x-data-grid";
 import {
   Box,
   Button,
@@ -11,20 +8,27 @@ import {
   DialogActions,
   DialogContent,
   DialogTitle,
+  Stack,
   Typography,
   useMediaQuery,
   useTheme,
-  Stack,
 } from "@mui/material";
-import toast from "react-hot-toast";
-import { useAdminPayments } from "@/lib/hooks/queries/useAdminQueries";
+import {
+  DataGrid,
+  type GridColDef,
+  type GridPaginationModel,
+} from "@mui/x-data-grid";
+import Link from "next/link";
+import { useState } from "react";
+import { ApprovePaymentModal } from "@/components/modals/ApprovePaymentModal";
+import { RejectPaymentModal } from "@/components/modals/RejectPaymentModal";
+import { PrivateImage } from "@/components/ui/PrivateImage";
 import {
   useApprovePayment,
   useRejectPayment,
 } from "@/lib/hooks/mutations/usePaymentMutations";
+import { useAdminPayments } from "@/lib/hooks/queries/useAdminQueries";
 import type { Payment } from "@/lib/types/api";
-import { ApprovePaymentModal } from "@/components/modals/ApprovePaymentModal";
-import { RejectPaymentModal } from "@/components/modals/RejectPaymentModal";
 import { MobilePaymentCard } from "./mobile/MobilePaymentCard";
 
 export function PaymentsTable() {
@@ -92,7 +96,7 @@ export function PaymentsTable() {
     }
   };
 
-  const getStatusColor = (status: string) => {
+  const _getStatusColor = (status: string) => {
     const colors: Record<
       string,
       "default" | "primary" | "error" | "warning" | "success"
@@ -183,7 +187,10 @@ export function PaymentsTable() {
           );
         }
         return (
-          <Button size="small" onClick={() => handleViewReceipt(params.row.receiptUrl)}>
+          <Button
+            size="small"
+            onClick={() => handleViewReceipt(params.row.receiptUrl)}
+          >
             Ver
           </Button>
         );
@@ -315,11 +322,7 @@ export function PaymentsTable() {
         <DialogContent>
           {receiptUrl && (
             <Box textAlign="center">
-              <img
-                src={receiptUrl}
-                alt="Comprobante"
-                style={{ maxWidth: "100%", borderRadius: 8 }}
-              />
+              <PrivateImage value={receiptUrl} alt="Comprobante" />
             </Box>
           )}
         </DialogContent>

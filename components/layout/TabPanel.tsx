@@ -1,6 +1,6 @@
 "use client";
 
-import { Box, Tabs, Tab, type SxProps, type Theme } from "@mui/material";
+import { Box, type SxProps, Tab, Tabs, type Theme } from "@mui/material";
 import { useState } from "react";
 
 interface TabConfig {

@@ -6,7 +6,10 @@ interface StatusChipProps {
   size?: ChipProps["size"];
 }
 
-const statusConfig: Record<Trip["status"], { label: string; color: "primary" | "warning" | "success" | "error" }> = {
+const statusConfig: Record<
+  Trip["status"],
+  { label: string; color: "primary" | "warning" | "success" | "error" }
+> = {
   pending: {
     label: "Pendiente",
     color: "warning" as const,

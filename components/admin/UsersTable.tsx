@@ -7,7 +7,6 @@ import {
   Visibility as VisibilityIcon,
 } from "@mui/icons-material";
 import {
-  Avatar,
   Box,
   Button,
   Chip,
@@ -34,6 +33,7 @@ import {
 } from "@mui/x-data-grid";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
+import { SignedAvatar } from "@/components/ui/SignedAvatar";
 import { useDeleteUser } from "@/lib/hooks/mutations/useAdminMutations";
 import { useAdminUsers } from "@/lib/hooks/queries/useAdminQueries";
 import { useAuthStore } from "@/lib/stores/authStore";
@@ -64,7 +64,7 @@ export function UsersTable() {
   useEffect(() => {
     setPaginationModel((prev) => ({ ...prev, page: 0 }));
     setMobilePage(0);
-  }, [searchText, roleFilter]);
+  }, []);
 
   // Fetch ALL users (client-side filtering/pagination)
   const { data: users = [], isLoading } = useAdminUsers();
@@ -137,12 +137,9 @@ export function UsersTable() {
       sortable: false,
       filterable: false,
       renderCell: (params) => (
-        <Avatar
-          src={params.row.avatar || undefined}
-          sx={{ width: 40, height: 40 }}
-        >
+        <SignedAvatar value={params.row.avatar} sx={{ width: 40, height: 40 }}>
           {params.row.name?.charAt(0)?.toUpperCase()}
-        </Avatar>
+        </SignedAvatar>
       ),
       hideable: false,
     },

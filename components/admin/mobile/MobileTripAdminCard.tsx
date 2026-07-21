@@ -18,7 +18,7 @@ export function MobileTripAdminCard({
   const truncatedId = trip.id.substring(0, 8);
   const truncatedAddress =
     trip.address.length > 30
-      ? trip.address.substring(0, 30) + "..."
+      ? `${trip.address.substring(0, 30)}...`
       : trip.address;
   const cargo = trip.cargoDescription ?? trip.travelMatch?.cargoDescription;
   const snapshot = trip.travelMatch?.personnel?.snapshot;
@@ -115,7 +115,7 @@ export function MobileTripAdminCard({
               color="text.secondary"
             >
               Carga:{" "}
-              {cargo.length > 40 ? cargo.substring(0, 40) + "..." : cargo}
+              {cargo.length > 40 ? `${cargo.substring(0, 40)}...` : cargo}
             </Typography>
           )}
 

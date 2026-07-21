@@ -1,5 +1,6 @@
 import { Person } from "@mui/icons-material";
-import { Avatar, Box, Rating, Typography } from "@mui/material";
+import { Box, Rating, Typography } from "@mui/material";
+import { SignedAvatar } from "@/components/ui/SignedAvatar";
 
 interface UserProfileProps {
   user: {
@@ -43,8 +44,8 @@ export default function UserProfile({
 
   return (
     <Box display="flex" alignItems="center" gap={1.5}>
-      <Avatar
-        src={user.avatar}
+      <SignedAvatar
+        value={user.avatar}
         sx={{
           width: config.avatar,
           height: config.avatar,
@@ -52,7 +53,7 @@ export default function UserProfile({
         }}
       >
         {user.avatar ? null : <Person />}
-      </Avatar>
+      </SignedAvatar>
 
       <Box>
         <Typography

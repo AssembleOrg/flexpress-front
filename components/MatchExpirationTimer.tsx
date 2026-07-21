@@ -1,15 +1,15 @@
-'use client';
+"use client";
 
-import { Box, Typography } from '@mui/material';
-import { useEffect, useState } from 'react';
+import { Box, Typography } from "@mui/material";
+import { useEffect, useState } from "react";
 
 interface MatchExpirationTimerProps {
   expiresAt: string; // ISO timestamp
 }
 
 export function MatchExpirationTimer({ expiresAt }: MatchExpirationTimerProps) {
-  const [timeRemaining, setTimeRemaining] = useState<string>('');
-  const [isWarning, setIsWarning] = useState(false);
+  const [timeRemaining, setTimeRemaining] = useState<string>("");
+  const [_isWarning, setIsWarning] = useState(false);
 
   useEffect(() => {
     const updateTimer = () => {
@@ -18,12 +18,12 @@ export function MatchExpirationTimer({ expiresAt }: MatchExpirationTimerProps) {
       const diff = expirationTime - now;
 
       if (diff <= 0) {
-        setTimeRemaining('Expirado');
+        setTimeRemaining("Expirado");
         setIsWarning(true);
       } else {
         const minutes = Math.floor(diff / 60000);
         const seconds = Math.floor((diff % 60000) / 1000);
-        setTimeRemaining(`${minutes}:${seconds.toString().padStart(2, '0')}`);
+        setTimeRemaining(`${minutes}:${seconds.toString().padStart(2, "0")}`);
         setIsWarning(minutes < 5);
       }
     };
@@ -35,16 +35,12 @@ export function MatchExpirationTimer({ expiresAt }: MatchExpirationTimerProps) {
   }, [expiresAt]);
 
   return (
-    <Box
-      display='flex'
-      alignItems='center'
-      gap={1}
-    >
+    <Box display="flex" alignItems="center" gap={1}>
       <Typography
-        variant='caption'
+        variant="caption"
         sx={{
           fontWeight: 600,
-          color: 'text.secondary',
+          color: "text.secondary",
         }}
       >
         Expira en: {timeRemaining}

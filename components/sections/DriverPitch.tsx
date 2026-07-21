@@ -1,9 +1,8 @@
 "use client";
 
-import { Box, Typography } from "@mui/material";
 import { LocalShipping, Schedule, VerifiedUser } from "@mui/icons-material";
+import { Box, Typography } from "@mui/material";
 import { motion } from "framer-motion";
-import Image from "next/image";
 import {
   fadeInUp,
   motionTokens,

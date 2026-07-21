@@ -1,13 +1,13 @@
 "use client";
 
-import { Button } from "@mui/material";
 import { Download } from "@mui/icons-material";
-import {
-  generateClientReceipt,
-  generateCharterReceipt,
-  downloadPDF,
-} from "@/lib/utils/pdfGenerator";
+import { Button } from "@mui/material";
 import type { Trip } from "@/lib/types/api";
+import {
+  downloadPDF,
+  generateCharterReceipt,
+  generateClientReceipt,
+} from "@/lib/utils/pdfGenerator";
 
 interface ReceiptButtonProps {
   trip: Trip;

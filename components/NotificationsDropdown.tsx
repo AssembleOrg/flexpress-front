@@ -1,20 +1,27 @@
 "use client";
 
-import { Box, Button, Divider, IconButton, Popover, Typography } from "@mui/material";
 import { CloseRounded } from "@mui/icons-material";
 import {
-  useUnreadNotificationCount,
-  useNotifications,
-} from "@/lib/hooks/queries/useNotificationQueries";
-import {
-  useMarkNotificationRead,
-  useMarkAllNotificationsRead,
-} from "@/lib/hooks/mutations/useNotificationMutations";
+  Box,
+  Button,
+  Divider,
+  IconButton,
+  Popover,
+  Typography,
+} from "@mui/material";
 import {
   EmptyState,
   NotificationItem,
   NotificationSkeleton,
 } from "@/components/notifications/NotificationItem";
+import {
+  useMarkAllNotificationsRead,
+  useMarkNotificationRead,
+} from "@/lib/hooks/mutations/useNotificationMutations";
+import {
+  useNotifications,
+  useUnreadNotificationCount,
+} from "@/lib/hooks/queries/useNotificationQueries";
 
 interface NotificationsDropdownProps {
   open: boolean;
@@ -26,7 +33,8 @@ function NotificationsContent({ onClose }: { onClose: () => void }) {
   const { data: countData } = useUnreadNotificationCount();
   const { data, isLoading } = useNotifications(true);
   const { mutate: markRead } = useMarkNotificationRead();
-  const { mutate: markAll, isPending: isMarkingAll } = useMarkAllNotificationsRead();
+  const { mutate: markAll, isPending: isMarkingAll } =
+    useMarkAllNotificationsRead();
 
   const unreadCount = countData?.count ?? 0;
   const notifications = data?.notifications ?? [];
@@ -79,7 +87,14 @@ function NotificationsContent({ onClose }: { onClose: () => void }) {
                 justifyContent: "center",
               }}
             >
-              <Typography sx={{ fontSize: "0.65rem", fontWeight: 700, color: "#fff", lineHeight: 1 }}>
+              <Typography
+                sx={{
+                  fontSize: "0.65rem",
+                  fontWeight: 700,
+                  color: "#fff",
+                  lineHeight: 1,
+                }}
+              >
                 {unreadCount > 99 ? "99+" : unreadCount}
               </Typography>
             </Box>
@@ -137,7 +152,11 @@ function NotificationsContent({ onClose }: { onClose: () => void }) {
   );
 }
 
-export function NotificationsDropdown({ open, onClose, anchorEl }: NotificationsDropdownProps) {
+export function NotificationsDropdown({
+  open,
+  onClose,
+  anchorEl,
+}: NotificationsDropdownProps) {
   return (
     <Popover
       open={open}

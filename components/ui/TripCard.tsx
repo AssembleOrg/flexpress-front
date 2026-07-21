@@ -26,9 +26,9 @@ export default function TripCard({
   onView,
   onCancel,
 }: TripCardProps) {
-  const isDriverView = variant === "driver";
+  const _isDriverView = variant === "driver";
   const isClientView = variant === "client";
-  const isAdminView = variant === "admin";
+  const _isAdminView = variant === "admin";
 
   const displayUser = isClientView ? trip.charter : trip.user;
   const showPrice = trip.travelMatch?.estimatedCredits || 0;
@@ -82,11 +82,7 @@ export default function TripCard({
 
         {/* Distancia */}
         {trip.travelMatch?.distanceKm && (
-          <Typography
-            variant="body2"
-            color="text.secondary"
-            sx={{ mb: 2 }}
-          >
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
             Distancia: {trip.travelMatch.distanceKm.toFixed(1)} km
           </Typography>
         )}
@@ -103,7 +99,8 @@ export default function TripCard({
               <UserProfile
                 user={{
                   firstName: displayUser.name.split(" ")[0] || displayUser.name,
-                  lastName: displayUser.name.split(" ").slice(1).join(" ") || "",
+                  lastName:
+                    displayUser.name.split(" ").slice(1).join(" ") || "",
                   avatar: displayUser.avatar,
                   rating: undefined,
                 }}

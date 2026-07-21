@@ -34,6 +34,7 @@ import {
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import Logo from "@/components/ui/Logo";
+import { SignedAvatar } from "@/components/ui/SignedAvatar";
 import { useLogout } from "@/lib/hooks/mutations/useAuthMutations";
 import { useUnreadNotificationCount } from "@/lib/hooks/queries/useNotificationQueries";
 import {
@@ -383,9 +384,9 @@ export function AuthNavbar() {
           >
             {/* Profile Avatar */}
             <Tooltip title="Mi perfil" arrow>
-              <Avatar
+              <SignedAvatar
                 onClick={handleProfile}
-                src={user?.avatar ?? undefined}
+                value={user?.avatar}
                 sx={{
                   width: 36,
                   height: 36,
@@ -405,7 +406,7 @@ export function AuthNavbar() {
                 {user?.avatar
                   ? null
                   : (user?.name?.[0]?.toUpperCase() ?? <PersonIcon />)}
-              </Avatar>
+              </SignedAvatar>
             </Tooltip>
 
             {/* Logout Button */}

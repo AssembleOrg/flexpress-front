@@ -1,8 +1,8 @@
 "use client";
 
+import { Info } from "@mui/icons-material";
 import {
   Alert,
-  Box,
   Button,
   CircularProgress,
   Dialog,
@@ -12,7 +12,6 @@ import {
   Stack,
   Typography,
 } from "@mui/material";
-import { Info } from "@mui/icons-material";
 
 /**
  * FinalizeTripModal
@@ -81,7 +80,7 @@ export function FinalizeTripModal({
           variant="contained"
           sx={{
             bgcolor: "success.main",
-            "&:hover": { bgcolor: "success.dark" }
+            "&:hover": { bgcolor: "success.dark" },
           }}
           startIcon={isLoading ? <CircularProgress size={18} /> : undefined}
         >

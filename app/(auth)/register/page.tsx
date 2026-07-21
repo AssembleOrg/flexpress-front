@@ -27,6 +27,7 @@ import { Suspense, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { z } from "zod";
 import { AddressInput } from "@/components/ui/AddressInput";
+import { AvatarCropDialog } from "@/components/ui/AvatarCropDialog";
 import { DniUpload } from "@/components/ui/DniUpload";
 import Logo from "@/components/ui/Logo";
 import { PageTransition } from "@/components/ui/PageTransition";
@@ -37,7 +38,7 @@ import {
 import { useCreateUserDocument } from "@/lib/hooks/mutations/useCreateUserDocument";
 import { useAuthStore } from "@/lib/stores/authStore";
 import { DocumentSide, UserDocumentType } from "@/lib/types/api";
-import { uploadFiles } from "@/lib/uploadthing";
+import { uploadToStorage } from "@/lib/upload";
 import { formatPhoneInput, normalizeArgentinePhone } from "@/lib/utils/phone";
 
 const registerSchema = z
@@ -92,6 +93,8 @@ function RegisterFormContent() {
   const [selfie, setSelfie] = useState<File | null>(null);
   const [selfiePreview, setSelfiePreview] = useState<string | null>(null);
   const [selfieError, setSelfieError] = useState("");
+  const [cropFile, setCropFile] = useState<File | null>(null);
+  const [cropOpen, setCropOpen] = useState(false);
   const router = useRouter();
   const registerMutation = useRegister();
   const updateProfileMutation = useUpdateUserProfile();
@@ -101,19 +104,28 @@ function RegisterFormContent() {
   const handleSelfieChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (!file.type.match(/image\/(jpeg|jpg|png|webp)/)) {
-      setSelfieError("Solo se permiten imágenes JPG, PNG o WEBP");
-      return;
-    }
-    if (file.size > 4 * 1024 * 1024) {
-      setSelfieError("La imagen no debe superar los 4MB");
+    // Sin validar tipo/tamaño acá: el cropper reduce a 512px JPEG y uploadToStorage
+    // normaliza (HEIC→JPEG). Aceptamos cualquier imagen, incluido HEIC de iPhone.
+    if (!file.type.startsWith("image/")) {
+      setSelfieError("El archivo debe ser una imagen");
       return;
     }
     setSelfieError("");
-    setSelfie(file);
-    const reader = new FileReader();
-    reader.onloadend = () => setSelfiePreview(reader.result as string);
-    reader.readAsDataURL(file);
+    // Abrir el cropper para que el usuario encuadre su cara antes de subir.
+    setCropFile(file);
+    setCropOpen(true);
+    // Permite volver a elegir el mismo archivo (onChange no dispara si el value no cambia).
+    e.target.value = "";
+  };
+
+  const handleCropped = (cropped: File) => {
+    setSelfie(cropped);
+    setSelfiePreview((prev) => {
+      if (prev?.startsWith("blob:")) URL.revokeObjectURL(prev);
+      return URL.createObjectURL(cropped);
+    });
+    setCropOpen(false);
+    setCropFile(null);
   };
 
   // Determine transition direction based on redirect parameter
@@ -175,42 +187,49 @@ function RegisterFormContent() {
       // PASO 1.5: Guardar género en el store
       setGender(gender);
 
-      // PASO 2: Subir DNI a UploadThing
-      const uploadedFiles = await uploadFiles("dniUploader", {
-        files: [dniFront, dniBack],
-        input: { userId: user.user.id },
-      });
+      // PASO 2: Subir DNI a DigitalOcean Spaces (privado)
+      const [uploadedFront, uploadedBack] = await Promise.all([
+        uploadToStorage("user-dni", dniFront, user.user.id),
+        uploadToStorage("user-dni", dniBack, user.user.id),
+      ]);
 
       // PASO 3: Guardar documentos en DB via nuevo endpoint /users/me/documents
       await createUserDocumentMutation.mutateAsync({
         type: UserDocumentType.DNI,
         side: DocumentSide.FRONT,
-        fileUrl: uploadedFiles[0].url,
+        fileUrl: uploadedFront.url,
       });
       await createUserDocumentMutation.mutateAsync({
         type: UserDocumentType.DNI,
         side: DocumentSide.BACK,
-        fileUrl: uploadedFiles[1].url,
+        fileUrl: uploadedBack.url,
       });
 
-      // PASO 3.5: Subir selfie y persistir como avatar del usuario
+      // PASO 3.5: Subir selfie y persistir como avatar del usuario (público)
       try {
-        const [uploadedSelfie] = await uploadFiles("avatarUploader", {
-          files: [selfie],
-        });
+        const uploadedSelfie = await uploadToStorage(
+          "avatar",
+          selfie,
+          user.user.id,
+        );
         await updateProfileMutation.mutateAsync({
           userId: user.user.id,
-          data: { avatar: uploadedSelfie.url },
+          // Guardamos la KEY (no la URL del CDN): el bucket es privado, así que el avatar
+          // se muestra con URL firmada temporal (usePresignedRead detecta la key).
+          data: { avatar: uploadedSelfie.key },
         });
       } catch (err) {
         console.warn("⚠️ [RegisterForm] No crítico: error al subir selfie", err);
       }
 
-      // PASO 4: Redirigir según rol
+      // PASO 4: Redirigir según rol — recién ACÁ, tras persistir DNI + avatar. Si
+      // redirigiéramos antes (o en el onSuccess del hook), el componente se desmonta y
+      // las mutaciones de documentos se cancelan → admin ve 0 documentos.
       if (userRole === "driver") {
         router.push("/driver/onboarding/vehicle");
+      } else {
+        router.push("/client/dashboard");
       }
-      // Si es cliente, la redirección la maneja useRegister (authStore + redirect)
     } catch (error) {
       console.error("❌ [RegisterForm] Error:", error);
     }
@@ -816,6 +835,15 @@ function RegisterFormContent() {
           </Container>
         </Box>
       </Box>
+      <AvatarCropDialog
+        open={cropOpen}
+        file={cropFile}
+        onCropped={handleCropped}
+        onCancel={() => {
+          setCropOpen(false);
+          setCropFile(null);
+        }}
+      />
     </PageTransition>
   );
 }

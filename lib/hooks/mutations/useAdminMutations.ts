@@ -8,7 +8,7 @@ import type {
   UpdateReportRequest,
   UpdateSystemConfigRequest,
 } from "@/lib/types/admin";
-import type { Report, SystemConfig, User, Vehicle } from "@/lib/types/api";
+import type { User } from "@/lib/types/api";
 
 /**
  * Admin Mutation Hooks

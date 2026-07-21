@@ -5,25 +5,24 @@
 
 import api from "@/lib/api";
 import type {
+  PaginatedResponse,
+  PaymentFilters,
+  ReportFilters,
+  TripFilters,
+  UpdateReportRequest,
+  UpdateSystemConfigRequest,
+  UserFilters,
+} from "@/lib/types/admin";
+import type {
   ApiResponse,
-  User,
-  Report,
-  Trip,
   Payment,
+  Report,
   SystemConfig,
-  VerificationStatus,
+  Trip,
+  User,
   UserDocument,
   Vehicle,
 } from "@/lib/types/api";
-import type {
-  UserFilters,
-  ReportFilters,
-  TripFilters,
-  PaymentFilters,
-  PaginatedResponse,
-  UpdateReportRequest,
-  UpdateSystemConfigRequest,
-} from "@/lib/types/admin";
 
 export const adminApi = {
   // ============================================
@@ -164,14 +163,28 @@ export const adminApi = {
       "success" in responseData &&
       "data" in responseData
     ) {
-      const inner = (responseData as unknown as { data: Report[] | PaginatedResponse<Report> }).data;
-      if (inner && typeof inner === "object" && "data" in inner && "meta" in inner) {
+      const inner = (
+        responseData as unknown as {
+          data: Report[] | PaginatedResponse<Report>;
+        }
+      ).data;
+      if (
+        inner &&
+        typeof inner === "object" &&
+        "data" in inner &&
+        "meta" in inner
+      ) {
         return inner as PaginatedResponse<Report>;
       }
       if (Array.isArray(inner)) {
         return {
           data: inner,
-          meta: { page: filters.page ?? 1, limit: filters.limit ?? 10, total: inner.length, totalPages: 1 },
+          meta: {
+            page: filters.page ?? 1,
+            limit: filters.limit ?? 10,
+            total: inner.length,
+            totalPages: 1,
+          },
         };
       }
     }
@@ -412,7 +425,9 @@ export const adminApi = {
    * GET /users/:id/documents
    */
   getUserDocuments: async (userId: string): Promise<UserDocument[]> => {
-    const response = await api.get<ApiResponse<UserDocument[]>>(`/users/${userId}/documents`);
+    const response = await api.get<ApiResponse<UserDocument[]>>(
+      `/users/${userId}/documents`,
+    );
     return response.data.data ?? [];
   },
 
@@ -425,7 +440,9 @@ export const adminApi = {
    * GET /vehicles/admin/pending
    */
   getPendingVehicles: async (): Promise<Vehicle[]> => {
-    const response = await api.get<ApiResponse<Vehicle[]>>("/vehicles/admin/pending");
+    const response = await api.get<ApiResponse<Vehicle[]>>(
+      "/vehicles/admin/pending",
+    );
     return response.data.data ?? [];
   },
 
@@ -433,7 +450,9 @@ export const adminApi = {
    * Get all pending charters awaiting verification
    */
   getPendingCharters: async (): Promise<User[]> => {
-    const response = await api.get<ApiResponse<User[]>>("/users/charters/pending");
+    const response = await api.get<ApiResponse<User[]>>(
+      "/users/charters/pending",
+    );
 
     // biome-ignore lint/style/noNonNullAssertion: axios response guarantees data
     const responseData = response.data.data!;
@@ -532,7 +551,13 @@ export interface CharterFullDetail extends Omit<User, "charterAvailability"> {
     photoUrl?: string | null;
     verificationStatus: string;
     isEnabled: boolean;
-    documents?: Array<{ id: string; type: string; side?: string | null; fileUrl: string; status: string }>;
+    documents?: Array<{
+      id: string;
+      type: string;
+      side?: string | null;
+      fileUrl: string;
+      status: string;
+    }>;
   }>;
   charterHelpers?: Array<{
     id: string;
@@ -541,11 +566,21 @@ export interface CharterFullDetail extends Omit<User, "charterAvailability"> {
     photoUrl?: string | null;
     verificationStatus: string;
     isEnabled: boolean;
-    documents?: Array<{ id: string; type: string; side?: string | null; fileUrl: string; status: string }>;
+    documents?: Array<{
+      id: string;
+      type: string;
+      side?: string | null;
+      fileUrl: string;
+      status: string;
+    }>;
   }>;
   charterAvailability?: {
     isAvailable: boolean;
-    vehicle?: { brand?: string | null; model?: string | null; plate?: string | null } | null;
+    vehicle?: {
+      brand?: string | null;
+      model?: string | null;
+      plate?: string | null;
+    } | null;
     activeDriver?: { firstName: string; lastName: string } | null;
   } | null;
 }

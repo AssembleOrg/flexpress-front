@@ -2,9 +2,9 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
+  AdminPanelSettings as AdminIcon,
   Visibility,
   VisibilityOff,
-  AdminPanelSettings as AdminIcon,
 } from "@mui/icons-material";
 import {
   Alert,
@@ -24,7 +24,7 @@ import { useForm } from "react-hook-form";
 import Logo from "@/components/ui/Logo";
 import { PageTransition } from "@/components/ui/PageTransition";
 import { useLogin } from "@/lib/hooks/mutations/useAuthMutations";
-import { loginSchema, type LoginFormData } from "@/lib/validations/auth";
+import { type LoginFormData, loginSchema } from "@/lib/validations/auth";
 
 function AdminLoginForm() {
   const [showPassword, setShowPassword] = useState(false);

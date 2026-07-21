@@ -51,7 +51,7 @@ export function useCreateFeedback() {
       return { previousCanGive };
     },
 
-    onSuccess: (_result, variables) => {
+    onSuccess: (_result, _variables) => {
       // Invalidate ALL feedback data — covers any ID mismatch edge case
       // between result.toUserId and the charter.charterId used as query key
       queryClient.invalidateQueries({

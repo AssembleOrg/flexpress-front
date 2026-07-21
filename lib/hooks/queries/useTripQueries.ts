@@ -2,8 +2,8 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { tripsApi } from "@/lib/api/trips";
-import { useAuthStore } from "@/lib/stores/authStore";
 import { getSocketConnected } from "@/lib/hooks/useWebSocket";
+import { useAuthStore } from "@/lib/stores/authStore";
 import { queryKeys } from "./queryFactory";
 
 /**
@@ -86,7 +86,7 @@ export function useTrip(tripId: string) {
     refetchOnReconnect: true,
     refetchInterval: (query) => {
       if (getSocketConnected()) return false; // socket activo → trip:completed lo cubre
-      if (query.state.status === 'error') return false;
+      if (query.state.status === "error") return false;
       return 60 * 1000; // socket caído → fallback 60s
     },
     enabled: !!tripId,

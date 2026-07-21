@@ -1,23 +1,16 @@
 "use client";
 
 import {
-  Box,
-  Card,
-  CardContent,
-  Typography,
-  Avatar,
-  Chip,
-} from "@mui/material";
-import {
-  LocationOn,
-  Flag,
   CalendarToday,
-  AccessTime,
-  Person,
+  Flag,
   Group,
   LocalShipping,
+  LocationOn,
+  Person,
 } from "@mui/icons-material";
+import { Box, Card, CardContent, Chip, Typography } from "@mui/material";
 import { RatingDisplay } from "@/components/ui/RatingDisplay";
+import { SignedAvatar } from "@/components/ui/SignedAvatar";
 
 interface TripDetailsCardProps {
   /**
@@ -132,8 +125,8 @@ export function TripDetailsCard({
           {/* Other User Info */}
           {otherUser && (
             <Box display="flex" alignItems="center" gap={1}>
-              <Avatar
-                src={otherUser.avatar}
+              <SignedAvatar
+                value={otherUser.avatar}
                 alt={otherUser.name}
                 sx={{
                   width: 40,
@@ -144,7 +137,7 @@ export function TripDetailsCard({
                 }}
               >
                 {otherUser.name[0]}
-              </Avatar>
+              </SignedAvatar>
               <Box>
                 <Typography
                   variant="caption"

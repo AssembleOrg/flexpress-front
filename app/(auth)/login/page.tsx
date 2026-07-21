@@ -28,7 +28,7 @@ import { useForm } from "react-hook-form";
 import Logo from "@/components/ui/Logo";
 import { PageTransition } from "@/components/ui/PageTransition";
 import { useLogin } from "@/lib/hooks/mutations/useAuthMutations";
-import { loginSchema, type LoginFormData } from "@/lib/validations/auth";
+import { type LoginFormData, loginSchema } from "@/lib/validations/auth";
 
 function LoginForm() {
   const searchParams = useSearchParams();

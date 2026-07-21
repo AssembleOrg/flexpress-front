@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
-import { Box, Typography, Stack, Alert, Card } from "@mui/material";
 import { CameraAlt, CheckCircle } from "@mui/icons-material";
-import { motion, AnimatePresence } from "framer-motion";
+import { Alert, Box, Card, Stack, Typography } from "@mui/material";
+import { AnimatePresence, motion } from "framer-motion";
+import { useEffect, useState } from "react";
 
 interface DniUploadProps {
   onFilesSelected: (front: File | null, back: File | null) => void;
@@ -16,53 +16,49 @@ export function DniUpload({ onFilesSelected, error }: DniUploadProps) {
   const [frontPreview, setFrontPreview] = useState<string | null>(null);
   const [backPreview, setBackPreview] = useState<string | null>(null);
 
+  // Notifica al padre con los valores MÁS RECIENTES de ambos lados. Evita el bug de
+  // stale state (antes se leía el otro lado desde el closure del callback async).
+  useEffect(() => {
+    onFilesSelected(frontImage, backImage);
+    // onFilesSelected es estable en el padre; solo re-notificamos al cambiar los archivos.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [frontImage, backImage, onFilesSelected]);
+
   const handleFileChange = (
     e: React.ChangeEvent<HTMLInputElement>,
-    side: "front" | "back"
+    side: "front" | "back",
   ) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Validar tipo
-    if (!file.type.match(/image\/(jpeg|jpg|png|webp)/)) {
-      alert("Solo se permiten imágenes JPG, PNG o WEBP");
-      return;
-    }
-
-    // Validar tamaño
-    if (file.size > 4 * 1024 * 1024) {
-      alert("La imagen no debe superar los 4MB");
-      return;
-    }
-
-    // Preview
+    // Sin validación de tipo/tamaño acá: uploadToStorage normaliza (HEIC→JPEG, compresión
+    // a &lt;1MB) al enviar el registro. Aceptamos cualquier imagen, incluido HEIC de iPhone.
     const reader = new FileReader();
     reader.onloadend = () => {
       if (side === "front") {
         setFrontImage(file);
         setFrontPreview(reader.result as string);
-        onFilesSelected(file, backImage);
       } else {
         setBackImage(file);
         setBackPreview(reader.result as string);
-        onFilesSelected(frontImage, file);
       }
     };
     reader.readAsDataURL(file);
+    // Permite volver a elegir el mismo archivo.
+    e.target.value = "";
   };
 
   const renderUploadCard = (
     side: "front" | "back",
     preview: string | null,
     hasImage: boolean,
-    label: string
+    label: string,
   ) => {
     return (
       <Box sx={{ flex: 1 }}>
         <input
           type="file"
           accept="image/*"
-          capture="environment"
           onChange={(e) => handleFileChange(e, side)}
           style={{ display: "none" }}
           id={`dni-${side}-input`}
@@ -87,7 +83,9 @@ export function DniUpload({ onFilesSelected, error }: DniUploadProps) {
                 "&:hover": {
                   borderColor: hasImage ? "success.main" : "secondary.main",
                   borderStyle: "solid",
-                  bgcolor: hasImage ? "transparent" : "rgba(220, 166, 33, 0.02)",
+                  bgcolor: hasImage
+                    ? "transparent"
+                    : "rgba(220, 166, 33, 0.02)",
                 },
               }}
             >
@@ -144,7 +142,9 @@ export function DniUpload({ onFilesSelected, error }: DniUploadProps) {
                         right: 8,
                       }}
                     >
-                      <CheckCircle sx={{ color: "success.main", fontSize: 32 }} />
+                      <CheckCircle
+                        sx={{ color: "success.main", fontSize: 32 }}
+                      />
                     </motion.div>
                   </AnimatePresence>
                 </Box>
@@ -203,7 +203,12 @@ export function DniUpload({ onFilesSelected, error }: DniUploadProps) {
       )}
 
       <Stack direction={{ xs: "column", md: "row" }} spacing={2}>
-        {renderUploadCard("front", frontPreview, !!frontImage, "Frente del DNI")}
+        {renderUploadCard(
+          "front",
+          frontPreview,
+          !!frontImage,
+          "Frente del DNI",
+        )}
         {renderUploadCard("back", backPreview, !!backImage, "Dorso del DNI")}
       </Stack>
 
@@ -212,7 +217,8 @@ export function DniUpload({ onFilesSelected, error }: DniUploadProps) {
         color="text.secondary"
         sx={{ mt: 2, display: "block" }}
       >
-        Formatos: JPG, PNG, WEBP | Tamaño máximo: 4MB por imagen
+        Sacá una foto o elegí de tu galería. Se optimiza automáticamente al
+        enviar.
       </Typography>
       <Typography
         variant="caption"

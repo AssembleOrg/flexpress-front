@@ -11,7 +11,13 @@ interface AuthActions {
   setReturnToOrigin: (val: boolean) => void;
 }
 
-export const useAuthStore = create<AuthState & AuthActions & { gender: "male" | "female" | "other" | null; returnToOrigin: boolean }>()(
+export const useAuthStore = create<
+  AuthState &
+    AuthActions & {
+      gender: "male" | "female" | "other" | null;
+      returnToOrigin: boolean;
+    }
+>()(
   persist(
     (set) => ({
       // Estado inicial
@@ -69,8 +75,7 @@ export const useAuthStore = create<AuthState & AuthActions & { gender: "male" | 
           isLoading: loading,
         }),
 
-      setGender: (gender: "male" | "female" | "other") =>
-        set({ gender }),
+      setGender: (gender: "male" | "female" | "other") => set({ gender }),
 
       setReturnToOrigin: (val: boolean) => set({ returnToOrigin: val }),
     }),

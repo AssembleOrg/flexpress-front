@@ -42,7 +42,7 @@ export function useConversationMessages(conversationId: string) {
       if (getSocketConnected()) return false;
 
       // Socket caído o ausente → activar polling adaptativo como fallback.
-      if (query.state.status === 'error') return false;
+      if (query.state.status === "error") return false;
 
       const data = query.state.data;
       if (!data || data.length === 0) return 5000;
@@ -50,7 +50,8 @@ export function useConversationMessages(conversationId: string) {
       const lastMessage = data[data.length - 1];
       if (!lastMessage?.createdAt) return 5000;
 
-      const timeSinceLastMessage = Date.now() - new Date(lastMessage.createdAt).getTime();
+      const timeSinceLastMessage =
+        Date.now() - new Date(lastMessage.createdAt).getTime();
       if (timeSinceLastMessage < 60_000) return 5_000;
       if (timeSinceLastMessage < 300_000) return 10_000;
       return 15_000;

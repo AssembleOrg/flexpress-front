@@ -1,10 +1,9 @@
 "use client";
 
-import type React from "react";
 import {
+  AdminPanelSettingsOutlined as AdminIcon,
   SouthWest as ReceivedIcon,
   NorthEast as RemovedIcon,
-  AdminPanelSettingsOutlined as AdminIcon,
 } from "@mui/icons-material";
 import {
   Avatar,
@@ -16,6 +15,7 @@ import {
   Stack,
   Typography,
 } from "@mui/material";
+import type React from "react";
 import type { Report } from "@/lib/types/api";
 
 type ReportPerspective = "mine" | "against";
@@ -70,7 +70,8 @@ export function ReportCard({ report, perspective }: ReportCardProps) {
   const borderColor = STATUS_BORDER[report.status] ?? "grey.400";
 
   // Puede haber múltiples líneas de crédito según la perspectiva
-  const creditLines: { icon: React.ReactNode; text: string; color: string }[] = [];
+  const creditLines: { icon: React.ReactNode; text: string; color: string }[] =
+    [];
 
   if (perspective === "mine") {
     if (report.creditsToReporter && report.creditsToReporter > 0) {
@@ -180,7 +181,10 @@ export function ReportCard({ report, perspective }: ReportCardProps) {
             {creditLines.map((line, i) => (
               <Stack key={i} direction="row" spacing={0.5} alignItems="center">
                 {line.icon}
-                <Typography variant="body2" sx={{ fontWeight: 600, color: line.color }}>
+                <Typography
+                  variant="body2"
+                  sx={{ fontWeight: 600, color: line.color }}
+                >
                   {line.text}
                 </Typography>
               </Stack>
@@ -200,7 +204,11 @@ export function ReportCard({ report, perspective }: ReportCardProps) {
           >
             <Stack direction="row" alignItems="center" gap={0.5} mb={0.5}>
               <AdminIcon sx={{ fontSize: 14, color: "text.secondary" }} />
-              <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>
+              <Typography
+                variant="caption"
+                color="text.secondary"
+                sx={{ fontWeight: 600 }}
+              >
                 Notas del administrador
               </Typography>
             </Stack>

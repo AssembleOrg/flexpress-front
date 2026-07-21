@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, type ReactNode, type ReactElement } from "react";
-import { Box, Tabs, Tab } from "@mui/material";
+import { Box, Tab, Tabs } from "@mui/material";
+import { type ReactElement, type ReactNode, useState } from "react";
 import { MOBILE_TAB_HEIGHT } from "@/lib/constants/mobileDesign";
 
 interface TabDefinition {

@@ -9,7 +9,6 @@ import {
 } from "@mui/icons-material";
 
 import {
-  Avatar,
   Box,
   Button,
   Card,
@@ -17,8 +16,9 @@ import {
   Chip,
   Typography,
 } from "@mui/material";
-import { RatingDisplay } from "@/components/ui/RatingDisplay";
 import { PriceBreakdown } from "@/components/ui/PriceBreakdown";
+import { RatingDisplay } from "@/components/ui/RatingDisplay";
+import { SignedAvatar } from "@/components/ui/SignedAvatar";
 import type { AvailableCharter } from "@/lib/types/api";
 import { VEHICLE_SIZE_LABELS } from "@/lib/types/api";
 
@@ -57,19 +57,26 @@ export function CharterCard({
         },
       }}
     >
-      <CardContent sx={{ p: { xs: 1.5, md: 2 }, "&:last-child": { pb: { xs: 1.5, md: 2 } } }}>
+      <CardContent
+        sx={{
+          p: { xs: 1.5, md: 2 },
+          "&:last-child": { pb: { xs: 1.5, md: 2 } },
+        }}
+      >
         {/* Header con avatar y nombre */}
         <Box sx={{ display: "flex", alignItems: "flex-start", mb: 1.5 }}>
-          <Avatar
-            src={charter.charterAvatar || undefined}
+          <SignedAvatar
+            value={charter.charterAvatar}
             alt={charter.charterName}
             sx={{ width: 56, height: 56, mr: 2 }}
           >
             {charter.charterName.charAt(0)}
-          </Avatar>
+          </SignedAvatar>
 
           <Box sx={{ flex: 1 }}>
-            <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 0.5 }}>
+            <Box
+              sx={{ display: "flex", alignItems: "center", gap: 1, mb: 0.5 }}
+            >
               <Typography variant="h6" sx={{ fontWeight: 600 }}>
                 {charter.charterName}
               </Typography>
@@ -139,24 +146,38 @@ export function CharterCard({
               bgcolor: "action.hover",
             }}
           >
-            <Avatar
-              src={charter.activeDriverAvatar || undefined}
+            <SignedAvatar
+              value={charter.activeDriverAvatar}
               sx={{ width: 28, height: 28, fontSize: "0.8rem" }}
             >
               {charter.activeDriverName.charAt(0)}
-            </Avatar>
+            </SignedAvatar>
             <Box sx={{ minWidth: 0, flex: 1 }}>
               <Typography
                 variant="caption"
                 color="text.secondary"
-                sx={{ display: "block", fontSize: "0.65rem", fontWeight: 600, lineHeight: 1.1 }}
+                sx={{
+                  display: "block",
+                  fontSize: "0.65rem",
+                  fontWeight: 600,
+                  lineHeight: 1.1,
+                }}
               >
                 HOY CONDUCE
               </Typography>
-              <Typography variant="body2" sx={{ fontWeight: 600, lineHeight: 1.2 }} noWrap>
+              <Typography
+                variant="body2"
+                sx={{ fontWeight: 600, lineHeight: 1.2 }}
+                noWrap
+              >
                 {charter.activeDriverName}
                 {charter.isTitularDriving && (
-                  <Typography component="span" variant="caption" color="text.secondary" sx={{ ml: 0.5 }}>
+                  <Typography
+                    component="span"
+                    variant="caption"
+                    color="text.secondary"
+                    sx={{ ml: 0.5 }}
+                  >
                     · titular
                   </Typography>
                 )}
@@ -166,9 +187,23 @@ export function CharterCard({
         )}
 
         {/* Zona de trabajo */}
-        <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1, flexWrap: "wrap" }}>
-          <LocationOn sx={{ fontSize: 15, color: "secondary.main", flexShrink: 0 }} />
-          <Typography variant="caption" color="text.secondary" sx={{ flexShrink: 0 }}>
+        <Box
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            gap: 1,
+            mb: 1,
+            flexWrap: "wrap",
+          }}
+        >
+          <LocationOn
+            sx={{ fontSize: 15, color: "secondary.main", flexShrink: 0 }}
+          />
+          <Typography
+            variant="caption"
+            color="text.secondary"
+            sx={{ flexShrink: 0 }}
+          >
             Zona de trabajo:
           </Typography>
           <Typography variant="body2" noWrap sx={{ flex: 1, minWidth: 0 }}>
@@ -177,11 +212,30 @@ export function CharterCard({
         </Box>
 
         {/* Vehículo */}
-        {(charter.vehicleBrand || charter.vehicleModel || charter.vehiclePlate) && (
-          <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1, flexWrap: "wrap" }}>
-            <LocalShipping sx={{ fontSize: 15, color: "text.secondary", flexShrink: 0 }} />
-            <Typography variant="body2" color="text.secondary" noWrap sx={{ flex: 1, minWidth: 0 }}>
-              {[charter.vehicleBrand, charter.vehicleModel].filter(Boolean).join(" ")}
+        {(charter.vehicleBrand ||
+          charter.vehicleModel ||
+          charter.vehiclePlate) && (
+          <Box
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              gap: 1,
+              mb: 1,
+              flexWrap: "wrap",
+            }}
+          >
+            <LocalShipping
+              sx={{ fontSize: 15, color: "text.secondary", flexShrink: 0 }}
+            />
+            <Typography
+              variant="body2"
+              color="text.secondary"
+              noWrap
+              sx={{ flex: 1, minWidth: 0 }}
+            >
+              {[charter.vehicleBrand, charter.vehicleModel]
+                .filter(Boolean)
+                .join(" ")}
             </Typography>
             {charter.vehicleSize && (
               <Chip
@@ -189,7 +243,12 @@ export function CharterCard({
                 size="small"
                 color="secondary"
                 variant="outlined"
-                sx={{ fontSize: "0.7rem", height: 20, fontWeight: 700, flexShrink: 0 }}
+                sx={{
+                  fontSize: "0.7rem",
+                  height: 20,
+                  fontWeight: 700,
+                  flexShrink: 0,
+                }}
               />
             )}
             {charter.vehiclePlate && (
@@ -259,7 +318,9 @@ export function CharterCard({
             disabled={isInquiryLoading}
             sx={{ fontWeight: 600, py: 1.5 }}
           >
-            {isInquiryLoading ? "Enviando consulta..." : "Consultar disponibilidad"}
+            {isInquiryLoading
+              ? "Enviando consulta..."
+              : "Consultar disponibilidad"}
           </Button>
         ) : (
           <Button

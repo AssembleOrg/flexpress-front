@@ -3,8 +3,8 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
 import toast from "react-hot-toast";
-import { travelMatchingApi } from "@/lib/api/travelMatching";
 import { conversationApi } from "@/lib/api/conversations";
+import { travelMatchingApi } from "@/lib/api/travelMatching";
 import { queryKeys } from "@/lib/hooks/queries/queryFactory";
 import { useAuthStore } from "@/lib/stores/authStore";
 import { useTravelMatchStore } from "@/lib/stores/travelMatchStore";
@@ -128,13 +128,8 @@ export function useRespondToMatch() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({
-      matchId,
-      accept,
-    }: {
-      matchId: string;
-      accept: boolean;
-    }) => travelMatchingApi.respondToMatch(matchId, { accept }),
+    mutationFn: ({ matchId, accept }: { matchId: string; accept: boolean }) =>
+      travelMatchingApi.respondToMatch(matchId, { accept }),
 
     onSuccess: async (result, { matchId, accept }) => {
       // Update the match in cache (optimistic update)
@@ -168,7 +163,9 @@ export function useRespondToMatch() {
         } catch (error) {
           // Distinguir entre error esperado (409 - conversación ya existe) y errores reales
           if (axios.isAxiosError(error) && error.response?.status === 409) {
-            console.log("ℹ️ [RESPOND] Conversation already exists (expected behavior)");
+            console.log(
+              "ℹ️ [RESPOND] Conversation already exists (expected behavior)",
+            );
           } else {
             console.error("❌ [RESPOND] Failed to create conversation:", error);
           }
@@ -244,7 +241,7 @@ export function useCreateTripFromMatch() {
     mutationFn: (matchId: string) =>
       travelMatchingApi.createTripFromMatch(matchId),
 
-    onSuccess: async (result, matchId) => {
+    onSuccess: async (_result, matchId) => {
       // 🔧 FIX: Wait for DB propagation (backend updates travelMatch.tripId)
       await new Promise((resolve) => setTimeout(resolve, 300));
 
@@ -302,7 +299,7 @@ export function useToggleAvailability() {
         queryKey: queryKeys.auth.profile(),
       });
       queryClient.invalidateQueries({
-        queryKey: ['charter', 'availability'],
+        queryKey: ["charter", "availability"],
       });
     },
 

@@ -131,7 +131,7 @@ const LeafletMap = forwardRef<LeafletMapHandle, LeafletMapProps>(
           }
         },
       }),
-      [isMapReady],
+      [],
     );
 
     // Initialize map
@@ -181,7 +181,7 @@ const LeafletMap = forwardRef<LeafletMapHandle, LeafletMapProps>(
           mapRef.current = null;
         }
       };
-    }, []);
+    }, [disableInteraction]);
 
     // Clave estable derivada solo de las coordenadas (no de la referencia
     // del array). Es la señal real de "los marcadores cambiaron".

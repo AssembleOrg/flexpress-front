@@ -1,9 +1,9 @@
 "use client";
 
-import Image from "next/image";
-import { Box, Container, Typography } from "@mui/material";
 import { Chat, LocalShipping, Person } from "@mui/icons-material";
+import { Box, Container, Typography } from "@mui/material";
 import { motion } from "framer-motion";
+import Image from "next/image";
 import {
   fadeInUp,
   motionTokens,
@@ -131,7 +131,8 @@ export function HowItWorks() {
                       display: "flex",
                       flexDirection: "column",
                       gap: 2,
-                      transition: "border-color 0.3s ease, box-shadow 0.3s ease",
+                      transition:
+                        "border-color 0.3s ease, box-shadow 0.3s ease",
                       "&:hover": {
                         borderColor: "rgba(220, 166, 33, 0.5)",
                         boxShadow: "0 16px 48px rgba(0,0,0,0.3)",

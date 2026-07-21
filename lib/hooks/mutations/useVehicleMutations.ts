@@ -1,7 +1,12 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import toast from "react-hot-toast";
 import { api } from "@/lib/api";
-import type { Vehicle, VehicleDocument, VehicleDocumentType, VehicleSize } from "@/lib/types/api";
+import type {
+  Vehicle,
+  VehicleDocument,
+  VehicleDocumentType,
+  VehicleSize,
+} from "@/lib/types/api";
 
 export interface CreateVehicleRequest {
   plate: string;
@@ -33,7 +38,8 @@ export function useCreateVehicle() {
       queryClient.invalidateQueries({ queryKey: ["vehicles", "me"] });
     },
     onError: (error: any) => {
-      const message = error.response?.data?.message || "Error al crear vehículo";
+      const message =
+        error.response?.data?.message || "Error al crear vehículo";
       toast.error(message);
     },
   });
@@ -43,19 +49,25 @@ export function useCreateVehicleDocument(vehicleId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (dto: CreateVehicleDocumentRequest): Promise<VehicleDocument> => {
-      const response = await api.post<{ success: boolean; data: VehicleDocument }>(
-        `/vehicles/${vehicleId}/documents`,
-        dto,
-      );
+    mutationFn: async (
+      dto: CreateVehicleDocumentRequest,
+    ): Promise<VehicleDocument> => {
+      const response = await api.post<{
+        success: boolean;
+        data: VehicleDocument;
+      }>(`/vehicles/${vehicleId}/documents`, dto);
       return response.data.data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["vehicles", vehicleId, "documents"] });
+      queryClient.invalidateQueries({
+        queryKey: ["vehicles", vehicleId, "documents"],
+      });
       queryClient.invalidateQueries({ queryKey: ["vehicles", "me"] });
     },
     onError: (error: any) => {
-      const message = error.response?.data?.message || "Error al subir documento del vehículo";
+      const message =
+        error.response?.data?.message ||
+        "Error al subir documento del vehículo";
       toast.error(message);
     },
   });
@@ -84,7 +96,8 @@ export function useUpdateVehicle(vehicleId: string) {
       toast.success("Vehículo actualizado. Pendiente de re-verificación.");
     },
     onError: (error: any) => {
-      const message = error.response?.data?.message || "Error al actualizar vehículo";
+      const message =
+        error.response?.data?.message || "Error al actualizar vehículo";
       toast.error(message);
     },
   });
@@ -105,7 +118,8 @@ export function useToggleVehicleEnabled(vehicleId: string) {
       toast.success("Estado del vehículo actualizado");
     },
     onError: (error: any) => {
-      const message = error.response?.data?.message || "Error al cambiar estado del vehículo";
+      const message =
+        error.response?.data?.message || "Error al cambiar estado del vehículo";
       toast.error(message);
     },
   });

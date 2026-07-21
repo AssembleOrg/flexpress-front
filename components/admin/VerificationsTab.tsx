@@ -43,7 +43,11 @@ function TabLabel({ text, count }: { text: string; count: number }) {
   return (
     <Box
       component="span"
-      sx={{ display: "inline-flex", alignItems: "center", whiteSpace: "nowrap" }}
+      sx={{
+        display: "inline-flex",
+        alignItems: "center",
+        whiteSpace: "nowrap",
+      }}
     >
       {text}
       <Badge count={count} />
@@ -101,7 +105,9 @@ export function VerificationsTab({
         />
         <Tab
           sx={tabSx}
-          label={<TabLabel text="Conductores extras" count={pendingDriversCount} />}
+          label={
+            <TabLabel text="Conductores extras" count={pendingDriversCount} />
+          }
         />
         <Tab
           sx={tabSx}

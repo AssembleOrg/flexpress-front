@@ -5,7 +5,6 @@ import toast from "react-hot-toast";
 import { conversationApi } from "@/lib/api/conversations";
 import { conversationKeys } from "@/lib/hooks/queries/useConversationQueries";
 import { useAuthStore } from "@/lib/stores/authStore";
-import type { Message } from "@/lib/types/api";
 
 /**
  * Send a message to a conversation
@@ -43,7 +42,7 @@ export function useSendMessage() {
       return false;
     },
 
-    onSuccess: (message, variables) => {
+    onSuccess: (_message, variables) => {
       // Invalidate queries to trigger refetch
       // This ensures BOTH users see the message via polling
       // Simple and reliable approach - no race conditions

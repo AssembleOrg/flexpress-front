@@ -1,38 +1,43 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
+import { Add, CheckCircle, DirectionsCar } from "@mui/icons-material";
 import {
+  Alert,
   Box,
   Button,
   Card,
   CardContent,
-  Container,
-  TextField,
-  Typography,
   Divider,
-  Chip,
-  Alert,
-  Select,
-  MenuItem,
   FormControl,
   InputLabel,
+  MenuItem,
+  Select,
+  TextField,
+  Typography,
 } from "@mui/material";
-import { DirectionsCar, Add, CheckCircle } from "@mui/icons-material";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
+import { Controller, useForm } from "react-hook-form";
 import toast from "react-hot-toast";
-import { useCreateVehicle, useCreateVehicleDocument } from "@/lib/hooks/mutations/useVehicleMutations";
-import { VehicleDocumentType, VehicleSize, VEHICLE_SIZE_LABELS } from "@/lib/types/api";
-import { uploadFiles } from "@/lib/uploadthing";
-import type { Vehicle } from "@/lib/types/api";
-import { useAuthStore } from "@/lib/stores/authStore";
-import { useUpdateUserProfile } from "@/lib/hooks/mutations/useAuthMutations";
-import { usePublicPricing } from "@/lib/hooks/queries/useSystemConfigQueries";
-import { VEHICLE_BRANDS } from "@/lib/constants/vehicleBrands";
-import { MobileContainer } from "@/components/layout/MobileContainer";
+import { z } from "zod";
 import { BottomNavbar } from "@/components/layout/BottomNavbar";
+import { MobileContainer } from "@/components/layout/MobileContainer";
+import { VEHICLE_BRANDS } from "@/lib/constants/vehicleBrands";
+import { useUpdateUserProfile } from "@/lib/hooks/mutations/useAuthMutations";
+import {
+  useCreateVehicle,
+  useCreateVehicleDocument,
+} from "@/lib/hooks/mutations/useVehicleMutations";
+import { usePublicPricing } from "@/lib/hooks/queries/useSystemConfigQueries";
+import { useAuthStore } from "@/lib/stores/authStore";
+import type { Vehicle } from "@/lib/types/api";
+import {
+  VEHICLE_SIZE_LABELS,
+  VehicleDocumentType,
+  VehicleSize,
+} from "@/lib/types/api";
+import { uploadToStorage } from "@/lib/upload";
 
 const vehicleSchema = z.object({
   plate: z.string().min(1, "Patente requerida"),
@@ -70,8 +75,12 @@ function VehicleDocUploader({
 
     setUploading(true);
     try {
-      const [result] = await uploadFiles("vehicleDocUploader", { files: [file], input: { vehicleId } });
-      await createDoc.mutateAsync({ type: docType, fileUrl: result.url });
+      // La foto del vehículo es pública; el resto (cédula/seguro/vtv) privado.
+      const scope =
+        docType === VehicleDocumentType.FOTO ? "vehicle-foto" : "vehicle-doc";
+      const result = await uploadToStorage(scope, file, vehicleId);
+      // Siempre la KEY (bucket privado): foto y docs se muestran con URL firmada.
+      await createDoc.mutateAsync({ type: docType, fileUrl: result.key });
       setUploaded(true);
       toast.success(`${label} subido`);
     } catch {
@@ -106,19 +115,41 @@ function VehicleDocUploader({
         color={uploaded ? "success" : "primary"}
       >
         {uploading ? "Subiendo..." : uploaded ? "Listo" : "Subir"}
-        <input type="file" accept="image/*,application/pdf" hidden onChange={handleFile} />
+        <input
+          type="file"
+          accept="image/*,application/pdf"
+          hidden
+          onChange={handleFile}
+        />
       </Button>
     </Box>
   );
 }
 
-function VehicleOnboardingForm({ onVehicleCreated, vehicleNumber }: { onVehicleCreated: (v: Vehicle) => void; vehicleNumber: number }) {
+function VehicleOnboardingForm({
+  onVehicleCreated,
+  vehicleNumber,
+}: {
+  onVehicleCreated: (v: Vehicle) => void;
+  vehicleNumber: number;
+}) {
   const createVehicle = useCreateVehicle();
   const [createdVehicle, setCreatedVehicle] = useState<Vehicle | null>(null);
 
-  const { register, handleSubmit, control, formState: { errors } } = useForm<any>({
+  const {
+    register,
+    handleSubmit,
+    control,
+    formState: { errors },
+  } = useForm<any>({
     resolver: zodResolver(vehicleSchema),
-    defaultValues: { plate: "", brand: "", model: "", year: "", size: VehicleSize.CHICO },
+    defaultValues: {
+      plate: "",
+      brand: "",
+      model: "",
+      year: "",
+      size: VehicleSize.CHICO,
+    },
   });
 
   const onSubmit = (data: VehicleForm) => {
@@ -131,7 +162,10 @@ function VehicleOnboardingForm({ onVehicleCreated, vehicleNumber }: { onVehicleC
   return (
     <Card variant="outlined" sx={{ mb: 3 }}>
       <CardContent>
-        <Typography variant="h6" sx={{ mb: 2, display: "flex", alignItems: "center", gap: 1 }}>
+        <Typography
+          variant="h6"
+          sx={{ mb: 2, display: "flex", alignItems: "center", gap: 1 }}
+        >
           <DirectionsCar />
           Vehículo {vehicleNumber}
         </Typography>
@@ -165,8 +199,17 @@ function VehicleOnboardingForm({ onVehicleCreated, vehicleNumber }: { onVehicleC
                   )}
                 />
               </FormControl>
-              <TextField {...register("model")} label="Modelo" sx={{ flex: 1, minWidth: 120 }} />
-              <TextField {...register("year")} label="Año" type="number" sx={{ flex: 1, minWidth: 100 }} />
+              <TextField
+                {...register("model")}
+                label="Modelo"
+                sx={{ flex: 1, minWidth: 120 }}
+              />
+              <TextField
+                {...register("year")}
+                label="Año"
+                type="number"
+                sx={{ flex: 1, minWidth: 100 }}
+              />
               <FormControl sx={{ flex: 1, minWidth: 160 }}>
                 <InputLabel>Tamaño del flete</InputLabel>
                 <Controller
@@ -184,8 +227,13 @@ function VehicleOnboardingForm({ onVehicleCreated, vehicleNumber }: { onVehicleC
                 />
               </FormControl>
             </Box>
-            <Typography variant="caption" color="text.secondary" sx={{ display: "block", mt: 1 }}>
-              El tamaño no se puede cambiar luego. "Flete Grande" habilita que el cliente pida ayudantes.
+            <Typography
+              variant="caption"
+              color="text.secondary"
+              sx={{ display: "block", mt: 1 }}
+            >
+              El tamaño no se puede cambiar luego. "Flete Grande" habilita que
+              el cliente pida ayudantes.
             </Typography>
             <Button
               type="submit"
@@ -193,16 +241,24 @@ function VehicleOnboardingForm({ onVehicleCreated, vehicleNumber }: { onVehicleC
               sx={{ mt: 2 }}
               disabled={createVehicle.isPending}
             >
-              {createVehicle.isPending ? "Guardando..." : "Guardar datos del vehículo"}
+              {createVehicle.isPending
+                ? "Guardando..."
+                : "Guardar datos del vehículo"}
             </Button>
           </Box>
         ) : (
           <Box>
             <Alert severity="success" sx={{ mb: 2 }}>
-              Vehículo <strong>{createdVehicle.plate}</strong> creado. Ahora subí los documentos:
+              Vehículo <strong>{createdVehicle.plate}</strong> creado. Ahora
+              subí los documentos:
             </Alert>
             {REQUIRED_DOC_TYPES.map(({ type, label }) => (
-              <VehicleDocUploader key={type} vehicleId={createdVehicle.id} docType={type} label={label} />
+              <VehicleDocUploader
+                key={type}
+                vehicleId={createdVehicle.id}
+                docType={type}
+                label={label}
+              />
             ))}
           </Box>
         )}
@@ -243,11 +299,15 @@ export default function VehicleOnboardingPage() {
             Registrá tu vehículo
           </Typography>
           <Typography color="text.secondary">
-            Necesitás al menos 1 vehículo con su documentación para operar. Podés agregar hasta 2.
+            Necesitás al menos 1 vehículo con su documentación para operar.
+            Podés agregar hasta 2.
           </Typography>
         </Box>
 
-        <VehicleOnboardingForm onVehicleCreated={handleVehicleCreated} vehicleNumber={1} />
+        <VehicleOnboardingForm
+          onVehicleCreated={handleVehicleCreated}
+          vehicleNumber={1}
+        />
 
         {vehicles.length >= 1 && !showSecond && (
           <Box sx={{ textAlign: "center", mb: 3 }}>
@@ -262,12 +322,18 @@ export default function VehicleOnboardingPage() {
         )}
 
         {showSecond && (
-          <VehicleOnboardingForm onVehicleCreated={handleVehicleCreated} vehicleNumber={2} />
+          <VehicleOnboardingForm
+            onVehicleCreated={handleVehicleCreated}
+            vehicleNumber={2}
+          />
         )}
 
         {vehicles.length >= 1 && (
           <>
-            <Card variant="outlined" sx={{ mb: 3, backgroundColor: "action.hover" }}>
+            <Card
+              variant="outlined"
+              sx={{ mb: 3, backgroundColor: "action.hover" }}
+            >
               <CardContent>
                 <Typography variant="h6" sx={{ mb: 2 }}>
                   Tu precio por km
@@ -276,7 +342,11 @@ export default function VehicleOnboardingPage() {
                   label="Tu precio por km (en pesos)"
                   type="number"
                   value={pricePerKm}
-                  onChange={(e) => setPricePerKm(e.target.value === "" ? "" : Number(e.target.value))}
+                  onChange={(e) =>
+                    setPricePerKm(
+                      e.target.value === "" ? "" : Number(e.target.value),
+                    )
+                  }
                   helperText={`Sugerencia del sistema: $${pricing?.creditsPerKm ?? "..."} / km`}
                   inputProps={{ min: 0 }}
                   fullWidth
@@ -287,9 +357,15 @@ export default function VehicleOnboardingPage() {
             <Divider sx={{ my: 3 }} />
             <Box sx={{ textAlign: "center" }}>
               <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                Un administrador revisará tu cuenta y vehículo(s) antes de que puedas operar.
+                Un administrador revisará tu cuenta y vehículo(s) antes de que
+                puedas operar.
               </Typography>
-              <Button variant="contained" color="secondary" size="large" onClick={handleFinish}>
+              <Button
+                variant="contained"
+                color="secondary"
+                size="large"
+                onClick={handleFinish}
+              >
                 Finalizar registro
               </Button>
             </Box>
