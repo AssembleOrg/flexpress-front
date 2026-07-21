@@ -17,17 +17,13 @@ import {
   Card,
   CardContent,
   CircularProgress,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogTitle,
   Divider,
   Stack,
-  TextField,
   Typography,
   useTheme,
 } from "@mui/material";
 import { useState } from "react";
+import { RejectReasonModal } from "@/components/modals/RejectReasonModal";
 import { PrivateDocLink } from "@/components/ui/PrivateImage";
 import { SignedAvatar } from "@/components/ui/SignedAvatar";
 import {
@@ -172,9 +168,7 @@ function DriverCard({ driver }: { driver: CharterDriver }) {
   const reviewEntity = useAdminReviewDriver();
   const reviewDoc = useAdminReviewDriverDocument();
   const [rejectOpen, setRejectOpen] = useState(false);
-  const [rejectReason, setRejectReason] = useState("");
   const [docRejectId, setDocRejectId] = useState<string | null>(null);
-  const [docRejectReason, setDocRejectReason] = useState("");
 
   return (
     <>
@@ -308,10 +302,7 @@ function DriverCard({ driver }: { driver: CharterDriver }) {
                             size="small"
                             color="error"
                             variant="outlined"
-                            onClick={() => {
-                              setDocRejectId(doc.id);
-                              setDocRejectReason("");
-                            }}
+                            onClick={() => setDocRejectId(doc.id)}
                             sx={{ textTransform: "none", borderRadius: 2 }}
                           >
                             Rechazar
@@ -361,10 +352,7 @@ function DriverCard({ driver }: { driver: CharterDriver }) {
               variant="outlined"
               color="error"
               startIcon={<Cancel />}
-              onClick={() => {
-                setRejectOpen(true);
-                setRejectReason("");
-              }}
+              onClick={() => setRejectOpen(true)}
               sx={{
                 textTransform: "none",
                 borderRadius: 2,
@@ -378,86 +366,40 @@ function DriverCard({ driver }: { driver: CharterDriver }) {
         </CardContent>
       </Card>
 
-      <Dialog
+      <RejectReasonModal
         open={rejectOpen}
         onClose={() => setRejectOpen(false)}
-        fullWidth
-        maxWidth="sm"
-      >
-        <DialogTitle>Rechazar conductor</DialogTitle>
-        <DialogContent>
-          <TextField
-            label="Motivo del rechazo"
-            value={rejectReason}
-            onChange={(e) => setRejectReason(e.target.value)}
-            fullWidth
-            multiline
-            minRows={2}
-            sx={{ mt: 1 }}
-          />
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setRejectOpen(false)}>Cancelar</Button>
-          <Button
-            color="error"
-            variant="contained"
-            disabled={!rejectReason.trim() || reviewEntity.isPending}
-            onClick={async () => {
-              await reviewEntity.mutateAsync({
-                id: driver.id,
-                payload: {
-                  status: VerificationStatus.REJECTED as any,
-                  rejectionReason: rejectReason.trim(),
-                },
-              });
-              setRejectOpen(false);
-            }}
-          >
-            Confirmar rechazo
-          </Button>
-        </DialogActions>
-      </Dialog>
+        title="Rechazar conductor"
+        isLoading={reviewEntity.isPending}
+        onConfirm={async (reason) => {
+          await reviewEntity.mutateAsync({
+            id: driver.id,
+            payload: {
+              status: VerificationStatus.REJECTED as any,
+              rejectionReason: reason,
+            },
+          });
+          setRejectOpen(false);
+        }}
+      />
 
-      <Dialog
+      <RejectReasonModal
         open={!!docRejectId}
         onClose={() => setDocRejectId(null)}
-        fullWidth
-        maxWidth="sm"
-      >
-        <DialogTitle>Rechazar documento</DialogTitle>
-        <DialogContent>
-          <TextField
-            label="Motivo del rechazo"
-            value={docRejectReason}
-            onChange={(e) => setDocRejectReason(e.target.value)}
-            fullWidth
-            multiline
-            minRows={2}
-            sx={{ mt: 1 }}
-          />
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setDocRejectId(null)}>Cancelar</Button>
-          <Button
-            color="error"
-            variant="contained"
-            disabled={!docRejectReason.trim() || reviewDoc.isPending}
-            onClick={async () => {
-              if (!docRejectId) return;
-              await reviewDoc.mutateAsync({
-                docId: docRejectId,
-                payload: {
-                  status: DocumentReviewStatus.REJECTED as any,
-                  rejectionReason: docRejectReason.trim(),
-                },
-              });
-              setDocRejectId(null);
-            }}
-          >
-            Confirmar rechazo
-          </Button>
-        </DialogActions>
-      </Dialog>
+        title="Rechazar documento"
+        isLoading={reviewDoc.isPending}
+        onConfirm={async (reason) => {
+          if (!docRejectId) return;
+          await reviewDoc.mutateAsync({
+            docId: docRejectId,
+            payload: {
+              status: DocumentReviewStatus.REJECTED as any,
+              rejectionReason: reason,
+            },
+          });
+          setDocRejectId(null);
+        }}
+      />
     </>
   );
 }

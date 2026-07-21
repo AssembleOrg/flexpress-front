@@ -42,6 +42,7 @@ import {
   useUserMatches,
 } from "@/lib/hooks/queries/useTravelMatchQueries";
 import { useAuthStore } from "@/lib/stores/authStore";
+import { VerificationStatus } from "@/lib/types/api";
 import { isActiveTrip } from "@/lib/utils/matchHelpers";
 
 export function AuthNavbar() {
@@ -55,6 +56,9 @@ export function AuthNavbar() {
   const { data: charterMatches = [] } = useCharterMatches();
 
   const isCharter = user?.role === "charter";
+  // Charter pendiente/rechazado: solo Inicio + Salir (igual que BottomNavbar).
+  const isUnverifiedCharter =
+    isCharter && user?.verificationStatus !== VerificationStatus.VERIFIED;
   const matches = isCharter ? charterMatches : userMatches;
 
   // Determinar match activo con conversación (Lógica idéntica a BottomNavbar)
@@ -199,6 +203,8 @@ export function AuthNavbar() {
               Inicio
             </Box>
 
+            {!isUnverifiedCharter && (
+              <>
             {/* Chat (Condicional) */}
             {hasActiveChat && (
               <Box
@@ -372,6 +378,8 @@ export function AuthNavbar() {
               <ReportsIcon sx={{ fontSize: 18 }} />
               Reportes
             </Box>
+              </>
+            )}
           </Box>
 
           {/* Desktop - Profile & Logout */}
@@ -553,6 +561,8 @@ export function AuthNavbar() {
               />
             </ListItem>
 
+            {!isUnverifiedCharter && (
+              <>
             {/* Avisos */}
             <ListItem
               component="button"
@@ -820,6 +830,8 @@ export function AuthNavbar() {
                 }}
               />
             </ListItem>
+              </>
+            )}
 
             {/* Cerrar Sesión */}
             <ListItem

@@ -16,6 +16,7 @@ import {
 } from "@mui/icons-material";
 import {
   Alert,
+  AlertTitle,
   Box,
   Button,
   ButtonBase,
@@ -428,27 +429,19 @@ export default function DriverDashboard() {
                 rechazada.
               </Typography>
               {user?.rejectionReason && (
-                <Box
-                  sx={{
-                    bgcolor: "error.light",
-                    p: 2,
-                    borderRadius: 2,
-                    mb: 3,
-                  }}
-                >
-                  <Typography
-                    variant="subtitle2"
-                    fontWeight={700}
-                    color="error.dark"
-                    mb={1}
-                  >
-                    Motivo del rechazo:
-                  </Typography>
-                  <Typography variant="body2" color="error.dark">
-                    {user.rejectionReason}
-                  </Typography>
-                </Box>
+                <Alert severity="error" sx={{ mb: 3, textAlign: "left" }}>
+                  <AlertTitle>Motivo del rechazo</AlertTitle>
+                  {user.rejectionReason}
+                </Alert>
               )}
+              <Button
+                variant="contained"
+                color="secondary"
+                onClick={() => router.push("/driver/verification")}
+                sx={{ mb: 2 }}
+              >
+                Reenviar documentación
+              </Button>
               <Typography variant="body2" color="text.secondary">
                 Si crees que esto es un error, por favor contacta a soporte.
               </Typography>

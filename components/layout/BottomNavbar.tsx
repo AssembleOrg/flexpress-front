@@ -37,6 +37,7 @@ import {
   useUserMatches,
 } from "@/lib/hooks/queries/useTravelMatchQueries";
 import { useAuthStore } from "@/lib/stores/authStore";
+import { VerificationStatus } from "@/lib/types/api";
 import { isActiveTrip } from "@/lib/utils/matchHelpers";
 
 interface NavItemProps {
@@ -108,6 +109,10 @@ export function BottomNavbar() {
   const unreadCount = unreadData?.count ?? 0;
 
   const isCharter = user?.role === "charter";
+  // Charter pendiente/rechazado: solo puede cargar vehículos y ver su estado.
+  // Reducimos el nav a Inicio + Salir hasta que un admin lo verifique.
+  const isUnverifiedCharter =
+    isCharter && user?.verificationStatus !== VerificationStatus.VERIFIED;
   const matches = isCharter ? charterMatches : userMatches;
 
   const activeMatch = matches.find((match) => {
@@ -226,91 +231,95 @@ export function BottomNavbar() {
           px: 0.5,
         }}
       >
-        <NavItem
-          label="Avisos"
-          value="notifications"
-          icon={
-            <Badge
-              badgeContent={unreadCount}
-              max={99}
-              sx={{
-                "& .MuiBadge-badge": {
-                  bgcolor: "primary.main",
-                  color: "#fff",
-                  fontSize: "0.6rem",
-                  fontWeight: 700,
-                  minWidth: 16,
-                  height: 16,
-                  padding: "0 3px",
-                },
-              }}
-            >
-              <NotificationsNoneRounded />
-            </Badge>
-          }
-          active={value === "notifications"}
-          onClick={() => navigate("notifications")}
-        />
+        {!isUnverifiedCharter && (
+          <>
+            <NavItem
+              label="Avisos"
+              value="notifications"
+              icon={
+                <Badge
+                  badgeContent={unreadCount}
+                  max={99}
+                  sx={{
+                    "& .MuiBadge-badge": {
+                      bgcolor: "primary.main",
+                      color: "#fff",
+                      fontSize: "0.6rem",
+                      fontWeight: 700,
+                      minWidth: 16,
+                      height: 16,
+                      padding: "0 3px",
+                    },
+                  }}
+                >
+                  <NotificationsNoneRounded />
+                </Badge>
+              }
+              active={value === "notifications"}
+              onClick={() => navigate("notifications")}
+            />
 
-        {activeMatch && (
-          <NavItem
-            label="Chat"
-            value="chat"
-            icon={
-              <Badge
-                color="secondary"
-                variant="dot"
-                invisible={!activeMatch.conversationId}
-              >
-                <Chat />
-              </Badge>
-            }
-            active={value === "chat"}
-            onClick={() => navigate("chat")}
-          />
+            {activeMatch && (
+              <NavItem
+                label="Chat"
+                value="chat"
+                icon={
+                  <Badge
+                    color="secondary"
+                    variant="dot"
+                    invisible={!activeMatch.conversationId}
+                  >
+                    <Chat />
+                  </Badge>
+                }
+                active={value === "chat"}
+                onClick={() => navigate("chat")}
+              />
+            )}
+
+            {isCharter && (
+              <NavItem
+                label="Vehículos"
+                value="vehicles"
+                icon={<DirectionsCar />}
+                active={value === "vehicles"}
+                onClick={() => navigate("vehicles")}
+              />
+            )}
+
+            <NavItem
+              label="Pagos"
+              value="payments"
+              icon={<Receipt />}
+              active={value === "payments"}
+              onClick={() => navigate("payments")}
+            />
+
+            <NavItem
+              label="Historial"
+              value="history"
+              icon={<History />}
+              active={value === "history"}
+              onClick={() => navigate("history")}
+            />
+
+            <NavItem
+              label="Reportes"
+              value="reports"
+              icon={<FlagOutlined />}
+              active={value === "reports"}
+              onClick={() => navigate("reports")}
+            />
+
+            <NavItem
+              label="Perfil"
+              value="profile"
+              icon={<PersonOutline />}
+              active={value === "profile"}
+              onClick={() => navigate("profile")}
+            />
+          </>
         )}
-
-        {isCharter && (
-          <NavItem
-            label="Vehículos"
-            value="vehicles"
-            icon={<DirectionsCar />}
-            active={value === "vehicles"}
-            onClick={() => navigate("vehicles")}
-          />
-        )}
-
-        <NavItem
-          label="Pagos"
-          value="payments"
-          icon={<Receipt />}
-          active={value === "payments"}
-          onClick={() => navigate("payments")}
-        />
-
-        <NavItem
-          label="Historial"
-          value="history"
-          icon={<History />}
-          active={value === "history"}
-          onClick={() => navigate("history")}
-        />
-
-        <NavItem
-          label="Reportes"
-          value="reports"
-          icon={<FlagOutlined />}
-          active={value === "reports"}
-          onClick={() => navigate("reports")}
-        />
-
-        <NavItem
-          label="Perfil"
-          value="profile"
-          icon={<PersonOutline />}
-          active={value === "profile"}
-          onClick={() => navigate("profile")}
-        />
       </Box>
 
       <Divider orientation="vertical" flexItem sx={{ my: 1 }} />

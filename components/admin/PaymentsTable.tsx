@@ -13,11 +13,7 @@ import {
   useMediaQuery,
   useTheme,
 } from "@mui/material";
-import {
-  DataGrid,
-  type GridColDef,
-  type GridPaginationModel,
-} from "@mui/x-data-grid";
+import { DataGrid, type GridColDef } from "@mui/x-data-grid";
 import Link from "next/link";
 import { useState } from "react";
 import { ApprovePaymentModal } from "@/components/modals/ApprovePaymentModal";
@@ -35,11 +31,6 @@ export function PaymentsTable() {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
 
-  const [paginationModel, setPaginationModel] = useState<GridPaginationModel>({
-    pageSize: 10,
-    page: 0,
-  });
-
   const [receiptModalOpen, setReceiptModalOpen] = useState(false);
   const [receiptUrl, setReceiptUrl] = useState<string | null>(null);
   const [approveModalOpen, setApproveModalOpen] = useState(false);
@@ -47,10 +38,12 @@ export function PaymentsTable() {
   const [selectedPayment, setSelectedPayment] = useState<Payment | null>(null);
 
   // Queries
-  const { data, isLoading } = useAdminPayments({
-    page: paginationModel.page + 1,
-    limit: paginationModel.pageSize,
-  });
+  const { data, isLoading } = useAdminPayments({ page: 1, limit: 1000 });
+
+  // Ordenar "nuevas arriba" (createdAt descendente)
+  const sortedPayments = [...(data?.data ?? [])].sort(
+    (a, b) => +new Date(b.createdAt) - +new Date(a.createdAt),
+  );
 
   // Mutations
   const approveMutation = useApprovePayment();
@@ -287,7 +280,7 @@ export function PaymentsTable() {
       {/* Conditional Rendering: Mobile Cards vs DataGrid */}
       {isMobile ? (
         <Stack spacing={2}>
-          {(data?.data ?? []).map((payment) => (
+          {sortedPayments.map((payment) => (
             <MobilePaymentCard
               key={payment.id}
               payment={payment}
@@ -298,14 +291,14 @@ export function PaymentsTable() {
           ))}
         </Stack>
       ) : (
-        <Box sx={{ height: 500, width: "100%" }}>
+        <Box sx={{ width: "100%" }}>
           <DataGrid
-            rows={data?.data ?? []}
+            autoHeight
+            rows={sortedPayments}
             columns={visibleColumns}
-            pageSizeOptions={[5, 10, 20, 50]}
-            paginationModel={paginationModel}
-            onPaginationModelChange={setPaginationModel}
             loading={isLoading}
+            hideFooterPagination
+            hideFooter
             disableRowSelectionOnClick
           />
         </Box>

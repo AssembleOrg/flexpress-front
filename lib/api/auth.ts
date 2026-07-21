@@ -207,6 +207,15 @@ export const authApi = {
     return rawData;
   },
 
+  // Reenvío self-service: un charter rechazado reabre su caso (vuelve a pending)
+  resubmitVerification: async (): Promise<User> => {
+    const response = await api.post<ApiResponse<User>>(
+      "/users/me/resubmit-verification",
+    );
+    // biome-ignore lint/style/noNonNullAssertion: axios response guarantees data
+    return response.data.data!;
+  },
+
   // Cerrar sesión
   logout: async (): Promise<void> => {
     await api.post("/auth/logout");

@@ -30,6 +30,7 @@ import { useUnreadNotificationCount } from "@/lib/hooks/queries/useNotificationQ
 import { useHydrated } from "@/lib/hooks/useHydrated";
 import { useAuthStore } from "@/lib/stores/authStore";
 import { useCreditPurchaseStore } from "@/lib/stores/creditPurchaseStore";
+import { VerificationStatus } from "@/lib/types/api";
 
 export function Navbar() {
   const router = useRouter();
@@ -43,6 +44,10 @@ export function Navbar() {
   const { data: unreadData } = useUnreadNotificationCount();
   const unreadCount = unreadData?.count ?? 0;
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
+  // Charter sin verificar no puede recargar créditos: ocultamos el chip.
+  const isUnverifiedCharter =
+    user?.role === "charter" &&
+    user?.verificationStatus !== VerificationStatus.VERIFIED;
 
   const handleNotifClick = (e: React.MouseEvent<HTMLElement>) => {
     if (isMobile) {
@@ -111,30 +116,32 @@ export function Navbar() {
           {/* User Section - Solo renderiza después de hidratar para evitar mismatch */}
           {hydrated && isAuthenticated && user ? (
             <Box display="flex" alignItems="center" gap={2}>
-              {/* Credits Display */}
-              <motion.div
-                initial={{ scale: 0.8, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                transition={{ duration: 0.3 }}
-              >
-                <Chip
-                  icon={<AccountBalanceWalletIcon />}
-                  label={`${user.credits || 0} créditos`}
-                  onClick={openModal}
-                  sx={{
-                    bgcolor: theme.palette.secondary.main,
-                    color: theme.palette.secondary.contrastText,
-                    fontWeight: 600,
-                    cursor: "pointer",
-                    "&:hover": {
-                      bgcolor: theme.palette.secondary.dark,
-                    },
-                    "& .MuiChip-icon": {
+              {/* Credits Display — oculto para charter sin verificar */}
+              {!isUnverifiedCharter && (
+                <motion.div
+                  initial={{ scale: 0.8, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  transition={{ duration: 0.3 }}
+                >
+                  <Chip
+                    icon={<AccountBalanceWalletIcon />}
+                    label={`${user.credits || 0} créditos`}
+                    onClick={openModal}
+                    sx={{
+                      bgcolor: theme.palette.secondary.main,
                       color: theme.palette.secondary.contrastText,
-                    },
-                  }}
-                />
-              </motion.div>
+                      fontWeight: 600,
+                      cursor: "pointer",
+                      "&:hover": {
+                        bgcolor: theme.palette.secondary.dark,
+                      },
+                      "& .MuiChip-icon": {
+                        color: theme.palette.secondary.contrastText,
+                      },
+                    }}
+                  />
+                </motion.div>
+              )}
 
               {/* Notifications */}
               <IconButton
