@@ -1,7 +1,15 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { CameraAlt, DriveEta, Home, Login, Person } from "@mui/icons-material";
+import {
+  CameraAlt,
+  DriveEta,
+  Home,
+  Login,
+  Person,
+  Visibility,
+  VisibilityOff,
+} from "@mui/icons-material";
 import {
   Alert,
   AlertTitle,
@@ -15,6 +23,8 @@ import {
   Container,
   Divider,
   FormControlLabel,
+  IconButton,
+  InputAdornment,
   TextField,
   ToggleButton,
   ToggleButtonGroup,
@@ -79,6 +89,7 @@ function RegisterFormContent() {
     return roleParam === "driver" ? "driver" : "client";
   });
   const [acceptedTerms, setAcceptedTerms] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const [gender, setLocalGender] = useState<"male" | "female" | "other">(
     "other",
   );
@@ -287,8 +298,8 @@ function RegisterFormContent() {
         {/* Header with Logo */}
         <Box
           sx={{
-            pt: 4,
-            pb: 2,
+            pt: { xs: 2.5, md: 4 },
+            pb: { xs: 1, md: 2 },
             textAlign: "center",
             position: "relative",
             zIndex: 1,
@@ -306,23 +317,27 @@ function RegisterFormContent() {
             justifyContent: "center",
             position: "relative",
             zIndex: 1,
-            px: 2,
+            px: { xs: 0, sm: 2 },
           }}
         >
-          <Container maxWidth="sm" sx={{ py: { xs: 4, md: 6 } }}>
+          <Container
+            maxWidth="sm"
+            disableGutters
+            sx={{ py: { xs: 2, md: 6 }, px: { xs: 1.5, sm: 3 } }}
+          >
             <Card
               elevation={0}
               sx={{
                 backdropFilter: "blur(20px)",
                 background: "rgba(255, 255, 255, 0.95)",
                 border: "1px solid rgba(255, 255, 255, 0.2)",
-                borderRadius: 3,
+                borderRadius: { xs: 2.5, md: 3 },
                 boxShadow: "0 8px 32px rgba(0, 0, 0, 0.1)",
               }}
             >
-              <CardContent sx={{ p: { xs: 2, md: 4 } }}>
+              <CardContent sx={{ p: { xs: 2.5, md: 4 } }}>
                 {/* Título */}
-                <Box textAlign="center" mb={4}>
+                <Box textAlign="center" mb={{ xs: 2.5, md: 4 }}>
                   <Typography
                     variant="h4"
                     component="h1"
@@ -330,7 +345,11 @@ function RegisterFormContent() {
                   >
                     Crear Cuenta
                   </Typography>
-                  <Typography variant="h6" color="text.secondary" mb={3}>
+                  <Typography
+                    variant="h6"
+                    color="text.secondary"
+                    mb={{ xs: 2, md: 3 }}
+                  >
                     Únete a Flexpress
                   </Typography>
 
@@ -468,6 +487,7 @@ function RegisterFormContent() {
                       label="Nombre Completo"
                       fullWidth
                       margin="normal"
+                      autoComplete="name"
                       error={!!errors.name}
                       helperText={errors.name?.message}
                       placeholder="Ej: María García"
@@ -485,6 +505,7 @@ function RegisterFormContent() {
                       type="email"
                       fullWidth
                       margin="normal"
+                      autoComplete="email"
                       error={!!errors.email}
                       helperText={errors.email?.message}
                     />
@@ -510,6 +531,7 @@ function RegisterFormContent() {
                           type="tel"
                           fullWidth
                           margin="normal"
+                          autoComplete="tel"
                           error={!!errors.number}
                           helperText={
                             errors.number?.message ??
@@ -531,6 +553,7 @@ function RegisterFormContent() {
                       label="Dirección"
                       fullWidth
                       margin="normal"
+                      autoComplete="street-address"
                       error={!!errors.address}
                       helperText={errors.address?.message}
                       placeholder="Ej: Av. San Martín 123, Buenos Aires"
@@ -650,16 +673,38 @@ function RegisterFormContent() {
                       <TextField
                         {...register("password")}
                         label="Contraseña"
-                        type="password"
+                        type={showPassword ? "text" : "password"}
                         fullWidth
+                        autoComplete="new-password"
                         error={!!errors.password}
                         helperText={errors.password?.message}
+                        slotProps={{
+                          input: {
+                            endAdornment: (
+                              <InputAdornment position="end">
+                                <IconButton
+                                  onClick={() => setShowPassword(!showPassword)}
+                                  edge="end"
+                                  aria-label="mostrar u ocultar contraseña"
+                                  sx={{ color: "primary.main" }}
+                                >
+                                  {showPassword ? (
+                                    <VisibilityOff />
+                                  ) : (
+                                    <Visibility />
+                                  )}
+                                </IconButton>
+                              </InputAdornment>
+                            ),
+                          },
+                        }}
                       />
                       <TextField
                         {...register("confirmPassword")}
                         label="Confirmar Contraseña"
-                        type="password"
+                        type={showPassword ? "text" : "password"}
                         fullWidth
+                        autoComplete="new-password"
                         error={!!errors.confirmPassword}
                         helperText={errors.confirmPassword?.message}
                       />
@@ -706,6 +751,13 @@ function RegisterFormContent() {
                       sx={{ mt: 2, mb: 2 }}
                     />
                   </motion.div>
+
+                  {registerMutation.isError && (
+                    <Alert severity="error" sx={{ mt: 1, mb: 2 }}>
+                      No pudimos crear tu cuenta. Verificá tus datos e intentá
+                      de nuevo (el email podría estar ya registrado).
+                    </Alert>
+                  )}
 
                   <motion.div
                     initial={{ opacity: 0, y: 20 }}

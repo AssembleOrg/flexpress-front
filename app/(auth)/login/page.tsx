@@ -102,8 +102,8 @@ function LoginForm() {
         {/* Header with Logo */}
         <Box
           sx={{
-            pt: 4,
-            pb: 2,
+            pt: { xs: 2.5, md: 4 },
+            pb: { xs: 1, md: 2 },
             textAlign: "center",
             position: "relative",
             zIndex: 1,
@@ -121,21 +121,25 @@ function LoginForm() {
             justifyContent: "center",
             position: "relative",
             zIndex: 1,
-            px: { xs: 1, md: 2 },
+            px: { xs: 0, sm: 2 },
           }}
         >
-          <Container maxWidth="sm" sx={{ py: { xs: 2, md: 3 } }}>
+          <Container
+            maxWidth="sm"
+            disableGutters
+            sx={{ py: { xs: 2, md: 6 }, px: { xs: 1.5, sm: 3 } }}
+          >
             <Card
               elevation={0}
               sx={{
                 backdropFilter: "blur(20px)",
                 background: "rgba(255, 255, 255, 0.95)",
                 border: "1px solid rgba(255, 255, 255, 0.2)",
-                borderRadius: 3,
+                borderRadius: { xs: 2.5, md: 3 },
                 boxShadow: "0 8px 32px rgba(0, 0, 0, 0.1)",
               }}
             >
-              <CardContent sx={{ p: { xs: 3, md: 4 } }}>
+              <CardContent sx={{ p: { xs: 2.5, md: 4 } }}>
                 {/* Título */}
                 <Box textAlign="center" mb={4}>
                   <Typography
