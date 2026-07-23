@@ -237,17 +237,19 @@ export function MobileCharterVerificationCard({
                         {vehicle.brand ? ` — ${vehicle.brand}` : ""}
                         {vehicle.alias ? ` (${vehicle.alias})` : ""}
                       </Typography>
-                      <Chip
-                        label={VEHICLE_SIZE_LABELS[vehicle.size]}
-                        size="small"
-                        color="info"
-                        variant="filled"
-                        sx={{
-                          height: 18,
-                          fontSize: "0.62rem",
-                          fontWeight: 700,
-                        }}
-                      />
+                      {VEHICLE_SIZE_LABELS[vehicle.size] && (
+                        <Chip
+                          label={VEHICLE_SIZE_LABELS[vehicle.size]}
+                          size="small"
+                          color="info"
+                          variant="filled"
+                          sx={{
+                            height: 18,
+                            fontSize: "0.62rem",
+                            fontWeight: 700,
+                          }}
+                        />
+                      )}
                       <Chip
                         label={
                           vehicle.verificationStatus ===

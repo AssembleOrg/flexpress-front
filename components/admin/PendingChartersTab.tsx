@@ -71,9 +71,11 @@ function docStatusColor(status: DocumentReviewStatus) {
 // (ej: un camión cargado como "Flete Chico"). Prominente (filled, info) para
 // que resalte y se distinga del chip de estado.
 function VehicleSizeChip({ size }: { size: Vehicle["size"] }) {
+  const label = VEHICLE_SIZE_LABELS[size];
+  if (!label) return null;
   return (
     <Chip
-      label={VEHICLE_SIZE_LABELS[size]}
+      label={label}
       size="small"
       color="info"
       variant="filled"

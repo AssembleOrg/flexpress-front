@@ -60,10 +60,12 @@ function VehicleDocUploader({
   vehicleId,
   docType,
   label,
+  onUploaded,
 }: {
   vehicleId: string;
   docType: VehicleDocumentType;
   label: string;
+  onUploaded: (docType: VehicleDocumentType) => void;
 }) {
   const [uploaded, setUploaded] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -82,6 +84,7 @@ function VehicleDocUploader({
       // Siempre la KEY (bucket privado): foto y docs se muestran con URL firmada.
       await createDoc.mutateAsync({ type: docType, fileUrl: result.key });
       setUploaded(true);
+      onUploaded(docType);
       toast.success(`${label} subido`);
     } catch {
       toast.error(`Error al subir ${label}`);
@@ -128,13 +131,27 @@ function VehicleDocUploader({
 
 function VehicleOnboardingForm({
   onVehicleCreated,
+  onDocsChange,
   vehicleNumber,
 }: {
   onVehicleCreated: (v: Vehicle) => void;
+  onDocsChange: (vehicleId: string, uploaded: Set<VehicleDocumentType>) => void;
   vehicleNumber: number;
 }) {
   const createVehicle = useCreateVehicle();
   const [createdVehicle, setCreatedVehicle] = useState<Vehicle | null>(null);
+  const [uploadedDocs, setUploadedDocs] = useState<Set<VehicleDocumentType>>(
+    new Set(),
+  );
+
+  const handleDocUploaded = (docType: VehicleDocumentType) => {
+    if (!createdVehicle) return;
+    setUploadedDocs((prev) => {
+      const next = new Set(prev).add(docType);
+      onDocsChange(createdVehicle.id, next);
+      return next;
+    });
+  };
 
   const {
     register,
@@ -258,8 +275,23 @@ function VehicleOnboardingForm({
                 vehicleId={createdVehicle.id}
                 docType={type}
                 label={label}
+                onUploaded={handleDocUploaded}
               />
             ))}
+            {uploadedDocs.size < REQUIRED_DOC_TYPES.length && (
+              <Typography
+                variant="caption"
+                color="warning.main"
+                sx={{ display: "block", mt: 1 }}
+              >
+                Faltan:{" "}
+                {REQUIRED_DOC_TYPES.filter(
+                  ({ type }) => !uploadedDocs.has(type),
+                )
+                  .map(({ label }) => label)
+                  .join(", ")}
+              </Typography>
+            )}
           </Box>
         )}
       </CardContent>
@@ -271,6 +303,9 @@ export default function VehicleOnboardingPage() {
   const router = useRouter();
   const { user } = useAuthStore();
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
+  const [docsByVehicle, setDocsByVehicle] = useState<
+    Record<string, Set<VehicleDocumentType>>
+  >({});
   const [showSecond, setShowSecond] = useState(false);
   const [pricePerKm, setPricePerKm] = useState<number | "">("");
   const updateProfileMutation = useUpdateUserProfile();
@@ -279,6 +314,21 @@ export default function VehicleOnboardingPage() {
   const handleVehicleCreated = (v: Vehicle) => {
     setVehicles((prev) => [...prev, v]);
   };
+
+  const handleDocsChange = (
+    vehicleId: string,
+    uploaded: Set<VehicleDocumentType>,
+  ) => {
+    setDocsByVehicle((prev) => ({ ...prev, [vehicleId]: uploaded }));
+  };
+
+  const vehiclesMissingDocs = vehicles.filter((v) => {
+    const uploaded = docsByVehicle[v.id];
+    return !uploaded || uploaded.size < REQUIRED_DOC_TYPES.length;
+  });
+
+  const allDocsComplete =
+    vehicles.length >= 1 && vehiclesMissingDocs.length === 0;
 
   const handleFinish = async () => {
     if (typeof pricePerKm === "number" && pricePerKm > 0 && user?.id) {
@@ -306,6 +356,7 @@ export default function VehicleOnboardingPage() {
 
         <VehicleOnboardingForm
           onVehicleCreated={handleVehicleCreated}
+          onDocsChange={handleDocsChange}
           vehicleNumber={1}
         />
 
@@ -324,6 +375,7 @@ export default function VehicleOnboardingPage() {
         {showSecond && (
           <VehicleOnboardingForm
             onVehicleCreated={handleVehicleCreated}
+            onDocsChange={handleDocsChange}
             vehicleNumber={2}
           />
         )}
@@ -365,9 +417,37 @@ export default function VehicleOnboardingPage() {
                 color="secondary"
                 size="large"
                 onClick={handleFinish}
+                disabled={!allDocsComplete}
               >
                 Finalizar registro
               </Button>
+              {!allDocsComplete && (
+                <Box sx={{ mt: 1.5 }}>
+                  <Typography variant="body2" color="error">
+                    Cada vehículo debe tener sus 4 documentos (Foto, Cédula
+                    verde, Seguro y VTV) antes de finalizar.
+                  </Typography>
+                  {vehiclesMissingDocs.map((v) => {
+                    const uploaded =
+                      docsByVehicle[v.id] ?? new Set<VehicleDocumentType>();
+                    const faltantes = REQUIRED_DOC_TYPES.filter(
+                      ({ type }) => !uploaded.has(type),
+                    )
+                      .map(({ label }) => label)
+                      .join(", ");
+                    return (
+                      <Typography
+                        key={v.id}
+                        variant="caption"
+                        color="error"
+                        sx={{ display: "block" }}
+                      >
+                        {v.plate}: falta {faltantes}
+                      </Typography>
+                    );
+                  })}
+                </Box>
+              )}
             </Box>
           </>
         )}
