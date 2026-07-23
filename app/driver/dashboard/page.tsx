@@ -44,6 +44,7 @@ import { AcceptMatchModal } from "@/components/modals/AcceptMatchModal";
 import { ActivationModal } from "@/components/modals/ActivationModal";
 import { CreditPackagesShowcase } from "@/components/modals/CreditPackagesShowcase";
 import { RespondInquiryModal } from "@/components/modals/RespondInquiryModal";
+import { PwaInlineCta } from "@/components/pwa/PwaInlineCta";
 import { AccountStatusBanner } from "@/components/ui/AccountStatusBanner";
 import { SignedAvatar } from "@/components/ui/SignedAvatar";
 import { WelcomeHeader } from "@/components/ui/WelcomeHeader";
@@ -412,7 +413,7 @@ export default function DriverDashboard() {
               </Typography>
               <Typography variant="body2" color="text.secondary" mb={3}>
                 Este proceso puede tomar hasta <strong>48 horas</strong>. Te
-                notificaremos por correo electrónico cuando tu cuenta sea
+                avisaremos con una notificación en la app cuando tu cuenta sea
                 aprobada.
               </Typography>
               <Chip
@@ -421,6 +422,7 @@ export default function DriverDashboard() {
                 color="warning"
                 sx={{ fontWeight: 600 }}
               />
+              <PwaInlineCta />
             </>
           ) : (
             <>

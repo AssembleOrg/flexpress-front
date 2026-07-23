@@ -11,10 +11,9 @@ import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { Toaster } from "react-hot-toast";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { InstallPrompt } from "@/components/pwa/InstallPrompt";
 import { queryKeys } from "@/lib/hooks/queries/queryFactory";
-import { usePushPermission } from "@/lib/hooks/usePushPermission";
 import { useWebSocket } from "@/lib/hooks/useWebSocket";
-import { useAuthStore } from "@/lib/stores/authStore";
 import { StoreHydration } from "./StoreHydration";
 import { ThemeProvider } from "./ThemeProvider";
 
@@ -62,12 +61,6 @@ function WebSocketInitializer() {
   return null;
 }
 
-function PushInitializer() {
-  const { isAuthenticated } = useAuthStore();
-  usePushPermission(isAuthenticated);
-  return null;
-}
-
 /**
  * Escucha mensajes del Service Worker (cuando el usuario clickea una notificación push)
  * y navega usando el router de Next.js, evitando recargar la página.
@@ -109,12 +102,12 @@ export function Providers({ children }: ProvidersProps) {
     <APIProvider apiKey={googleApiKey}>
       <QueryClientProvider client={queryClient}>
         <WebSocketInitializer />
-        <PushInitializer />
         <SWMessageListener />
         <ThemeProvider>
           <StoreHydration>
             <ErrorBoundary>
               {children}
+              <InstallPrompt />
               <Toaster
                 position="top-right"
                 toastOptions={{
