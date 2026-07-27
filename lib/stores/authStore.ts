@@ -4,7 +4,9 @@ import { clearRoleCookie, setRoleCookie } from "@/lib/authCookie";
 import type { AuthState, User } from "@/lib/types/auth";
 
 interface AuthActions {
-  login: (user: User, token: string) => void;
+  login: (user: User, token: string, refreshToken?: string | null) => void;
+  /** Reemplaza los tokens tras un refresh, sin tocar el resto de la sesión. */
+  setTokens: (token: string, refreshToken: string) => void;
   clearAuth: () => void;
   updateUser: (user: Partial<User>) => void;
   setLoading: (loading: boolean) => void;
@@ -24,13 +26,14 @@ export const useAuthStore = create<
       // Estado inicial
       user: null,
       token: null,
+      refreshToken: null,
       isAuthenticated: false,
       isLoading: false,
       gender: null,
       returnToOrigin: false,
 
       // Acciones
-      login: (user: User, token: string) => {
+      login: (user: User, token: string, refreshToken: string | null = null) => {
         if (
           typeof window !== "undefined" &&
           process.env.NODE_ENV === "development"
@@ -46,13 +49,17 @@ export const useAuthStore = create<
         return set({
           user,
           token,
+          refreshToken,
           isAuthenticated: true,
           isLoading: false,
         });
       },
 
-      // Limpia estado local (client state)
-      // API call al backend lo maneja React Query en useLogout mutation
+      setTokens: (token: string, refreshToken: string) =>
+        set({ token, refreshToken }),
+
+      // Limpia el estado local. La revocación del refresh en el servidor la
+      // dispara useLogout antes de llamar acá.
       clearAuth: () => {
         if (
           typeof window !== "undefined" &&
@@ -64,6 +71,7 @@ export const useAuthStore = create<
         return set({
           user: null,
           token: null,
+          refreshToken: null,
           isAuthenticated: false,
           isLoading: false,
           gender: null,
@@ -90,6 +98,7 @@ export const useAuthStore = create<
       partialize: (state) => ({
         user: state.user,
         token: state.token,
+        refreshToken: state.refreshToken,
         isAuthenticated: state.isAuthenticated,
         gender: state.gender,
       }),

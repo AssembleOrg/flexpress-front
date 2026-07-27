@@ -20,6 +20,53 @@ export const api = axios.create({
   },
 });
 
+/**
+ * Renovación del access token.
+ *
+ * Un dashboard dispara varias queries a la vez, así que cuando el access vence
+ * llegan varios 401 casi simultáneos. Si cada uno pidiera su propio refresh, el
+ * primero rotaría el token y los demás llegarían con uno ya usado: el backend
+ * lo interpreta como robo y revoca TODAS las sesiones del usuario.
+ *
+ * Por eso se comparte una única promesa en vuelo: el primero renueva y el resto
+ * espera ese mismo resultado.
+ */
+let refreshInFlight: Promise<string | null> | null = null;
+
+async function refreshAccessToken(): Promise<string | null> {
+  if (refreshInFlight) return refreshInFlight;
+
+  const { refreshToken } = useAuthStore.getState();
+  if (!refreshToken) return null;
+
+  refreshInFlight = (async () => {
+    try {
+      // Cliente aparte: si usara `api`, su propio 401 volvería a entrar al
+      // interceptor y armaría un bucle.
+      const { data } = await axios.post(
+        `${API_URL}/auth/refresh`,
+        { refresh_token: refreshToken },
+        { headers: { "Content-Type": "application/json" } },
+      );
+
+      const payload = data?.data ?? data;
+      const accessToken = payload?.access_token;
+      const nextRefresh = payload?.refresh_token;
+
+      if (!accessToken || !nextRefresh) return null;
+
+      useAuthStore.getState().setTokens(accessToken, nextRefresh);
+      return accessToken as string;
+    } catch {
+      return null;
+    } finally {
+      refreshInFlight = null;
+    }
+  })();
+
+  return refreshInFlight;
+}
+
 api.interceptors.request.use(
   (config) => {
     const { token } = useAuthStore.getState();
@@ -60,27 +107,41 @@ api.interceptors.response.use(
     }
     return response;
   },
-  (error) => {
+  async (error) => {
     const requestUrl = error.config?.url ?? "";
     // El 401 de login/registro es "credenciales incorrectas", no sesión
     // expirada: dejar que el onError de la mutación lo maneje (toast/inline).
+    // El de /auth/refresh significa que el refresh ya no sirve.
     const isAuthEndpoint =
       requestUrl.includes("/auth/login") ||
-      requestUrl.includes("/auth/register");
+      requestUrl.includes("/auth/register") ||
+      requestUrl.includes("/auth/refresh");
 
     if (error.response?.status === 401 && !isAuthEndpoint) {
-      // Token expirado o inválido en una ruta protegida: limpiar sesión.
-      // Los guards (AuthGuard/RoleGuard/admin layout) reaccionan al cambio
-      // de isAuthenticated y redirigen sin recargar la página.
-      if (process.env.NODE_ENV === "development") {
-        console.log("❌ [API] 401 Unauthorized - Token inválido o expirado");
-        console.log("   URL:", requestUrl);
-        console.log("   Message:", error.response.data?.message);
-        console.log("   Clearing auth (los guards redirigen)...");
+      // El access dura 15 minutos, así que un 401 acá es lo esperable durante
+      // una sesión normal: se renueva y se reintenta el request original, sin
+      // que el usuario note nada. Solo si el refresh falla se cierra la sesión.
+      const original = error.config;
+
+      if (original && !original._retried) {
+        original._retried = true;
+        const newToken = await refreshAccessToken();
+
+        if (newToken) {
+          original.headers = original.headers ?? {};
+          original.headers.Authorization = `Bearer ${newToken}`;
+          return api(original);
+        }
       }
 
-      const { clearAuth } = useAuthStore.getState();
-      clearAuth();
+      if (process.env.NODE_ENV === "development") {
+        console.log("❌ [API] 401 y no se pudo renovar - cerrando sesión");
+        console.log("   URL:", requestUrl);
+      }
+
+      // Los guards (AuthGuard/RoleGuard/admin layout) reaccionan al cambio
+      // de isAuthenticated y redirigen sin recargar la página.
+      useAuthStore.getState().clearAuth();
     } else if (error.response?.status === 403) {
       if (process.env.NODE_ENV === "development") {
         console.log(

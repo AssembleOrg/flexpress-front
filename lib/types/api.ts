@@ -133,7 +133,10 @@ export interface User {
 
 export interface AuthResponse {
   user: User;
+  /** Access token, vida corta. */
   token: string;
+  /** Refresh token para renovarlo sin volver a pedir credenciales. */
+  refreshToken: string | null;
 }
 
 export interface TravelMatch {

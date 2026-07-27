@@ -4,6 +4,7 @@ import type { ApiResponse, AuthResponse, User } from "../types/api";
 // Backend response type (access_token, no token)
 interface BackendAuthResponse {
   access_token: string;
+  refresh_token?: string;
   user: User;
 }
 
@@ -87,9 +88,10 @@ export const authApi = {
       throw new Error("Invalid response structure from login endpoint");
     }
 
-    const { access_token, user } = authData;
+    const { access_token, refresh_token, user } = authData;
     const authResponse: AuthResponse = {
       token: access_token,
+      refreshToken: refresh_token ?? null,
       user,
     };
 
@@ -156,9 +158,10 @@ export const authApi = {
       throw new Error("Invalid response structure from register endpoint");
     }
 
-    const { access_token, user } = authData;
+    const { access_token, refresh_token, user } = authData;
     const authResponse: AuthResponse = {
       token: access_token,
+      refreshToken: refresh_token ?? null,
       user,
     };
 
@@ -214,8 +217,13 @@ export const authApi = {
     return response.data.data!;
   },
 
-  // El logout es solo del lado del cliente: los JWT son stateless, no hay nada
-  // que invalidar en el servidor. La UI llama a `clearAuth()` del authStore.
+  // Revoca el refresh de este dispositivo en el servidor. El access vigente
+  // muere solo al vencer (15m). Es best-effort: si falla, igual se limpia el
+  // estado local.
+  logout: async (refreshToken: string | null): Promise<void> => {
+    if (!refreshToken) return;
+    await api.post("/auth/logout", { refresh_token: refreshToken });
+  },
 
   // Verificar que la sesión siga viva. Mismo endpoint que getProfile: si el
   // token venció, o la cuenta fue dada de baja o bloqueada, tira 401/403.

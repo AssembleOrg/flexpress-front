@@ -40,8 +40,8 @@ export function useLogin() {
       console.log("   Token presente:", !!response.token);
       console.log("   Token length:", response.token?.length || 0);
 
-      // Guardar user y token en store (persiste a localStorage)
-      login(response.user, response.token);
+      // Guardar user y tokens en store (persiste a localStorage)
+      login(response.user, response.token, response.refreshToken);
 
       // Fetch perfil completo para asegurar campos como pricePerKm
       try {
@@ -118,8 +118,8 @@ export function useRegister() {
       console.log("   Token length:", response.token?.length || 0);
       console.log("   Role:", response.user.role);
 
-      // Guardar user y token en store
-      login(response.user, response.token);
+      // Guardar user y tokens en store
+      login(response.user, response.token, response.refreshToken);
 
       toast.success("Cuenta creada exitosamente");
 
@@ -137,17 +137,15 @@ export function useRegister() {
 }
 
 /**
- * Logout: es todo del lado del cliente.
+ * Logout.
  *
- * Antes esto pegaba a POST /auth/logout, que el backend nunca expuso. La
- * llamada siempre daba 404 y caía en onError, que limpiaba el store pero NO
- * el cache de React Query: `queryClient.clear()` estaba solo en onSuccess, o
- * sea que nunca corría. Los datos del usuario anterior sobrevivían al logout
- * y el siguiente que entrara en la misma pestaña podía verlos hasta que se
- * refetchearan.
+ * Revoca el refresh token en el servidor para que la sesión de este
+ * dispositivo no se pueda renovar, y después limpia el estado local. El access
+ * que quede en vuelo muere solo al vencer, a los 15 minutos.
  *
- * No hay nada que invalidar en el servidor: los JWT son stateless.
- * `clearAuth` también borra la cookie de rol que usa el proxy.
+ * La revocación es best-effort a propósito: si el backend no responde, igual
+ * hay que cerrar la sesión localmente. `clearAuth` también borra la cookie de
+ * rol que usa el proxy.
  */
 export function useLogout() {
   const queryClient = useQueryClient();
@@ -155,6 +153,12 @@ export function useLogout() {
 
   return useMutation({
     mutationFn: async () => {
+      const { refreshToken } = useAuthStore.getState();
+      try {
+        await authApi.logout(refreshToken);
+      } catch (error) {
+        console.warn("⚠️ [useLogout] No se pudo revocar la sesión", error);
+      }
       clearAuth();
       queryClient.clear();
     },
