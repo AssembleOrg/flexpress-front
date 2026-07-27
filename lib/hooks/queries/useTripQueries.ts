@@ -34,24 +34,6 @@ export function useMyTrips() {
   });
 }
 
-/**
- * Get available trips for charters to accept
- * Only visible to charter users
- */
-export function useAvailableTrips() {
-  const { user } = useAuthStore();
-
-  return useQuery({
-    queryKey: queryKeys.trips.available(),
-    queryFn: () => tripsApi.getAvailable(),
-    staleTime: 30 * 1000, // 30 seconds - trips available change frequently
-    gcTime: 2 * 60 * 1000, // 2 minutes
-    refetchInterval: 30 * 1000, // Auto-refresh every 30 seconds
-    refetchOnWindowFocus: true,
-    refetchOnReconnect: true,
-    enabled: user?.role === "charter", // Only for charters
-  });
-}
 
 /**
  * Get trip history for a user or charter

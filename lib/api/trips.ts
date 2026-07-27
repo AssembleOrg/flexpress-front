@@ -29,17 +29,9 @@ function extractData<T>(responseData: any): T {
 }
 
 export const tripsApi = {
-  // Crear nueva solicitud de flete
-  create: async (data: CreateTripRequest): Promise<Trip> => {
-    const response = await api.post("/trips", data);
-    return extractData<Trip>(response.data);
-  },
-
-  // Obtener fletes disponibles (para conductores)
-  getAvailable: async (): Promise<Trip[]> => {
-    const response = await api.get("/trips/available");
-    return extractData<Trip[]>(response.data);
-  },
+  // Nota: el alta de viajes y las transiciones accept/confirm/cancel/complete
+  // vivían acá contra rutas que el backend nunca expuso. El alta real va por
+  // travel-matching (al aceptar el match) y la calificación por /feedback.
 
   // Obtener mis viajes (use /trips/all since /trips/my doesn't exist)
   getMy: async (): Promise<Trip[]> => {
@@ -62,29 +54,9 @@ export const tripsApi = {
     return extractData<Trip>(response.data);
   },
 
-  // Aceptar viaje (conductor)
-  accept: async (tripId: string): Promise<Trip> => {
-    const response = await api.post(`/trips/${tripId}/accept`);
-    return extractData<Trip>(response.data);
-  },
 
-  // Confirmar acuerdo
-  confirm: async (tripId: string, finalPrice?: number): Promise<Trip> => {
-    const response = await api.post(`/trips/${tripId}/confirm`, { finalPrice });
-    return extractData<Trip>(response.data);
-  },
 
-  // Cancelar viaje
-  cancel: async (tripId: string, reason?: string): Promise<Trip> => {
-    const response = await api.post(`/trips/${tripId}/cancel`, { reason });
-    return extractData<Trip>(response.data);
-  },
 
-  // Completar viaje
-  complete: async (tripId: string): Promise<Trip> => {
-    const response = await api.post(`/trips/${tripId}/complete`);
-    return extractData<Trip>(response.data);
-  },
 
   // Charter finaliza su trabajo
   charterComplete: async (tripId: string): Promise<Trip> => {
@@ -98,12 +70,4 @@ export const tripsApi = {
     return extractData<Trip>(response.data);
   },
 
-  // Calificar viaje
-  rate: async (
-    tripId: string,
-    rating: number,
-    comment?: string,
-  ): Promise<void> => {
-    await api.post(`/trips/${tripId}/rate`, { rating, comment });
-  },
 };

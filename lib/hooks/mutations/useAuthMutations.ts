@@ -137,8 +137,17 @@ export function useRegister() {
 }
 
 /**
- * Mutation para logout del usuario
- * Limpia la cookie httpOnly en el backend y el estado local
+ * Logout: es todo del lado del cliente.
+ *
+ * Antes esto pegaba a POST /auth/logout, que el backend nunca expuso. La
+ * llamada siempre daba 404 y caía en onError, que limpiaba el store pero NO
+ * el cache de React Query: `queryClient.clear()` estaba solo en onSuccess, o
+ * sea que nunca corría. Los datos del usuario anterior sobrevivían al logout
+ * y el siguiente que entrara en la misma pestaña podía verlos hasta que se
+ * refetchearan.
+ *
+ * No hay nada que invalidar en el servidor: los JWT son stateless.
+ * `clearAuth` también borra la cookie de rol que usa el proxy.
  */
 export function useLogout() {
   const queryClient = useQueryClient();
@@ -146,19 +155,8 @@ export function useLogout() {
 
   return useMutation({
     mutationFn: async () => {
-      // React Query maneja la llamada API
-      await api.post("/auth/logout");
-    },
-    onSuccess: () => {
-      // Limpiar todo el cache de React Query
+      clearAuth();
       queryClient.clear();
-      // Limpiar estado local de Zustand
-      clearAuth();
-    },
-    onError: (_error) => {
-      // Incluso si hay error, limpiar estado local
-      // (la cookie puede estar ya expirada)
-      clearAuth();
     },
   });
 }

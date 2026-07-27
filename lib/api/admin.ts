@@ -424,12 +424,9 @@ export const adminApi = {
    * Get documents (DNI) for a specific user
    * GET /users/:id/documents
    */
-  getUserDocuments: async (userId: string): Promise<UserDocument[]> => {
-    const response = await api.get<ApiResponse<UserDocument[]>>(
-      `/users/${userId}/documents`,
-    );
-    return response.data.data ?? [];
-  },
+  // No hay GET /users/:id/documents en el backend: los documentos de una
+  // cuenta llegan dentro de getCharterFullDetail, que es lo que usa la pantalla
+  // de detalle. Ver useCharterFullDetail.
 
   // ============================================
   // CHARTER VERIFICATION

@@ -124,24 +124,7 @@ export const feedbackApi = {
     }
   },
 
-  /**
-   * Update feedback for a trip
-   */
-  update: async (
-    feedbackId: string,
-    data: Partial<CreateFeedbackRequest>,
-  ): Promise<Feedback> => {
-    const response = await api.put<ApiResponse<Feedback>>(
-      `/feedback/${feedbackId}`,
-      data,
-    );
-    return unwrap<Feedback>(response.data.data);
-  },
-
-  /**
-   * Delete feedback
-   */
-  delete: async (feedbackId: string): Promise<void> => {
-    await api.delete(`/feedback/${feedbackId}`);
-  },
+  // Editar y borrar feedback apuntaban a PUT/DELETE /feedback/:id, que el
+  // backend nunca expuso: el módulo solo permite crear y consultar. Se quitan
+  // para que nadie cablee un botón contra un 404.
 };

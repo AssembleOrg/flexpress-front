@@ -158,16 +158,6 @@ export function usePendingCharters() {
   });
 }
 
-/**
- * Get documents (DNI) for a specific user
- */
-export function useAdminUserDocuments(userId: string) {
-  return useQuery<UserDocument[]>({
-    queryKey: ["admin", "users", userId, "documents"],
-    queryFn: () => adminApi.getUserDocuments(userId),
-    enabled: !!userId,
-  });
-}
 
 /**
  * Detalle consolidado de una cuenta charter (vehículos + conductores +
