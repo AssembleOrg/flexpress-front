@@ -5,6 +5,7 @@ import toast from "react-hot-toast";
 import { tripsApi } from "@/lib/api/trips";
 import { queryKeys } from "@/lib/hooks/queries/queryFactory";
 import { useAuthStore } from "@/lib/stores/authStore";
+import { getApiErrorMessage, isConflict } from "@/lib/utils/apiError";
 
 /**
  * Trip Mutation Hooks
@@ -149,8 +150,16 @@ export function useCharterCompleteTrip() {
       // Toast movido al componente para evitar duplicación
     },
 
-    onError: () => {
-      toast.error("Error al finalizar viaje");
+    // 409: el viaje ya estaba finalizado. El backend hace la transición con el
+    // estado previo en el WHERE, así que un doble click no dispara dos veces
+    // las notificaciones. Para el usuario la acción salió bien.
+    onError: async (error) => {
+      if (isConflict(error)) {
+        await queryClient.refetchQueries({ queryKey: queryKeys.trips.all });
+        await queryClient.refetchQueries({ queryKey: queryKeys.matches.all });
+        return;
+      }
+      toast.error(getApiErrorMessage(error, "Error al finalizar viaje"));
     },
   });
 }
@@ -179,8 +188,13 @@ export function useClientConfirmCompletion() {
       toast.success("Viaje completado. ¡Gracias por usar FlexPress!");
     },
 
-    onError: () => {
-      toast.error("Error al confirmar finalización");
+    onError: async (error) => {
+      if (isConflict(error)) {
+        await queryClient.refetchQueries({ queryKey: queryKeys.trips.all });
+        await queryClient.refetchQueries({ queryKey: queryKeys.matches.all });
+        return;
+      }
+      toast.error(getApiErrorMessage(error, "Error al confirmar finalización"));
     },
   });
 }

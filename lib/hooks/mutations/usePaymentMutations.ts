@@ -12,6 +12,7 @@ import { paymentsApi } from "@/lib/api/payments";
 import { queryKeys } from "@/lib/hooks/queries/queryFactory";
 import { useAuthStore } from "@/lib/stores/authStore";
 import { useNotificationsStore } from "@/lib/stores/notificationsStore";
+import { getApiErrorMessage, isConflict } from "@/lib/utils/apiError";
 
 /**
  * CREATE PAYMENT REQUEST (Cliente)
@@ -53,7 +54,9 @@ export function useCreatePaymentRequest() {
 
     onError: (error) => {
       console.error("Error creating payment request:", error);
-      toast.error("Error al enviar la solicitud de pago");
+      toast.error(
+        getApiErrorMessage(error, "Error al enviar la solicitud de pago"),
+      );
     },
   });
 }
@@ -105,7 +108,22 @@ export function useApprovePayment() {
 
     onError: (error) => {
       console.error("Error approving payment:", error);
-      toast.error("Error al aprobar el pago");
+
+      // 409: el pago ya fue procesado (otro admin, o doble click). El backend
+      // lo reclama con `status: pending` en el WHERE, así que los créditos se
+      // acreditaron una sola vez. Solo hay que refrescar la lista.
+      if (isConflict(error)) {
+        toast("Este pago ya había sido procesado", { icon: "ℹ️" });
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.admin.payments.all(),
+        });
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.admin.payments.pendingCount(),
+        });
+        return;
+      }
+
+      toast.error(getApiErrorMessage(error, "Error al aprobar el pago"));
     },
   });
 }
@@ -142,7 +160,19 @@ export function useRejectPayment() {
 
     onError: (error) => {
       console.error("Error rejecting payment:", error);
-      toast.error("Error al rechazar el pago");
+
+      if (isConflict(error)) {
+        toast("Este pago ya había sido procesado", { icon: "ℹ️" });
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.admin.payments.all(),
+        });
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.admin.payments.pendingCount(),
+        });
+        return;
+      }
+
+      toast.error(getApiErrorMessage(error, "Error al rechazar el pago"));
     },
   });
 }

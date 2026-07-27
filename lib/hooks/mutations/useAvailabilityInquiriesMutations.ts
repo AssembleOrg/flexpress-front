@@ -6,6 +6,7 @@ import toast from "react-hot-toast";
 import { availabilityInquiriesApi } from "@/lib/api/availabilityInquiries";
 import { queryKeys } from "@/lib/hooks/queries/queryFactory";
 import type { InquiryResponseCode } from "@/lib/types/api";
+import { getApiErrorMessage, isConflict } from "@/lib/utils/apiError";
 
 /**
  * Cliente crea una consulta de disponibilidad a un charter ocupado.
@@ -77,8 +78,16 @@ export function useRespondInquiry() {
         });
         return;
       }
+      // 409: ya la respondimos desde otra pestaña o con un doble tap.
+      if (isConflict(error)) {
+        toast("Esta consulta ya fue respondida", { icon: "ℹ️" });
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.availabilityInquiries.received(),
+        });
+        return;
+      }
       console.error("❌ useRespondInquiry error:", error);
-      toast.error("Error al responder la consulta");
+      toast.error(getApiErrorMessage(error, "Error al responder la consulta"));
     },
   });
 }

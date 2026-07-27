@@ -8,6 +8,7 @@ import { travelMatchingApi } from "@/lib/api/travelMatching";
 import { queryKeys } from "@/lib/hooks/queries/queryFactory";
 import { useAuthStore } from "@/lib/stores/authStore";
 import { useTravelMatchStore } from "@/lib/stores/travelMatchStore";
+import { getApiErrorMessage, isConflict } from "@/lib/utils/apiError";
 import { getCharterCreditCost } from "@/lib/utils/creditCost";
 
 /**
@@ -187,9 +188,15 @@ export function useRespondToMatch() {
       }
     },
 
-    onError: (error) => {
+    onError: async (error) => {
       console.error("❌ useRespondToMatch error:", error);
-      toast.error("Error al responder solicitud");
+      toast.error(getApiErrorMessage(error, "Error al responder solicitud"));
+
+      // 409: otro request ganó la carrera (doble click, dos pestañas). Lo que
+      // se ve en pantalla quedó viejo, así que se refetchea el estado real.
+      if (isConflict(error)) {
+        await queryClient.refetchQueries({ queryKey: queryKeys.matches.all });
+      }
     },
   });
 }
@@ -223,7 +230,7 @@ export function useCancelMatch() {
 
     onError: (error) => {
       console.error("❌ useCancelMatch error:", error);
-      toast.error("Error al cancelar viaje");
+      toast.error(getApiErrorMessage(error, "Error al cancelar viaje"));
     },
   });
 }
@@ -262,9 +269,20 @@ export function useCreateTripFromMatch() {
       toast.success("¡Viaje confirmado!");
     },
 
-    onError: (error) => {
+    onError: async (error) => {
       console.error("❌ useCreateTripFromMatch error:", error);
-      toast.error("Error al crear viaje");
+
+      // El backend ahora reclama el match con `tripId: null` en el WHERE, así
+      // que un segundo intento devuelve 409 en vez de crear un viaje duplicado.
+      // El viaje ya existe: refrescar alcanza para que aparezca.
+      if (isConflict(error)) {
+        toast.success("El viaje ya estaba confirmado");
+        await queryClient.refetchQueries({ queryKey: queryKeys.matches.all });
+        await queryClient.refetchQueries({ queryKey: queryKeys.trips.all });
+        return;
+      }
+
+      toast.error(getApiErrorMessage(error, "Error al crear viaje"));
     },
   });
 }

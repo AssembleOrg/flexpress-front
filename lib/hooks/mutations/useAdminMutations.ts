@@ -9,6 +9,7 @@ import type {
   UpdateSystemConfigRequest,
 } from "@/lib/types/admin";
 import type { User } from "@/lib/types/api";
+import { getApiErrorMessage, isConflict } from "@/lib/utils/apiError";
 
 /**
  * Admin Mutation Hooks
@@ -109,7 +110,19 @@ export function useUpdateReport() {
 
     onError: (error) => {
       console.error("Error updating report:", error);
-      toast.error("Error al actualizar el reporte");
+
+      // 409: el reporte ya se resolvió. Importa porque resolver mueve créditos
+      // entre las partes y el backend ahora bloquea la segunda resolución: sin
+      // esto el admin no entiende por qué "falló" algo que en realidad ya pasó.
+      if (isConflict(error)) {
+        toast("Este reporte ya había sido resuelto", { icon: "ℹ️" });
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.admin.reports.all(),
+        });
+        return;
+      }
+
+      toast.error(getApiErrorMessage(error, "Error al actualizar el reporte"));
     },
   });
 }
