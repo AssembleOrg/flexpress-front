@@ -176,19 +176,17 @@ export const authApi = {
     return authResponse;
   },
 
-  // Obtener perfil actual
+  // Perfil del usuario autenticado. El backend lo revalida contra la base en
+  // cada request, así que un 401/403 acá significa sesión revocada (cuenta dada
+  // de baja o bloqueada), no solo token vencido.
   getProfile: async (): Promise<User> => {
     const response = await api.get<ApiResponse<User>>("/auth/profile");
     // biome-ignore lint/style/noNonNullAssertion: axios response guarantees data
     return response.data.data!;
   },
 
-  // Actualizar perfil
-  updateProfile: async (data: Partial<User>): Promise<User> => {
-    const response = await api.put<ApiResponse<User>>("/auth/profile", data);
-    // biome-ignore lint/style/noNonNullAssertion: axios response guarantees data
-    return response.data.data!;
-  },
+  // Para editar el perfil propio se usa `updateUser` (PATCH /users/:id), que ya
+  // valida ownership en el backend. No hay un PUT /auth/profile.
 
   // Actualizar usuario por ID
   updateUser: async (
@@ -216,14 +214,13 @@ export const authApi = {
     return response.data.data!;
   },
 
-  // Cerrar sesión
-  logout: async (): Promise<void> => {
-    await api.post("/auth/logout");
-  },
+  // El logout es solo del lado del cliente: los JWT son stateless, no hay nada
+  // que invalidar en el servidor. La UI llama a `clearAuth()` del authStore.
 
-  // Verificar token
+  // Verificar que la sesión siga viva. Mismo endpoint que getProfile: si el
+  // token venció, o la cuenta fue dada de baja o bloqueada, tira 401/403.
   verifyToken: async (): Promise<User> => {
-    const response = await api.get<ApiResponse<User>>("/auth/verify");
+    const response = await api.get<ApiResponse<User>>("/auth/profile");
     // biome-ignore lint/style/noNonNullAssertion: axios response guarantees data
     return response.data.data!;
   },

@@ -19,16 +19,31 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
-import { Suspense, useState } from "react";
+import { useRouter } from "next/navigation";
+import { Suspense, useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import Logo from "@/components/ui/Logo";
 import { PageTransition } from "@/components/ui/PageTransition";
+import { useHydrated } from "@/lib/hooks/useHydrated";
 import { useLogin } from "@/lib/hooks/mutations/useAuthMutations";
+import { useAuthStore } from "@/lib/stores/authStore";
 import { type LoginFormData, loginSchema } from "@/lib/validations/auth";
 
 function AdminLoginForm() {
+  const router = useRouter();
+  const hydrated = useHydrated();
+  const { user, isAuthenticated } = useAuthStore();
   const [showPassword, setShowPassword] = useState(false);
   const loginMutation = useLogin();
+
+  // Sesión de admin ya abierta: volver al panel. Cubre el caso de las sesiones
+  // previas a la cookie `fx_role`, que el middleware manda acá al no encontrarla.
+  useEffect(() => {
+    if (!hydrated || !isAuthenticated || !user) return;
+    if (user.role === "admin" || user.role === "subadmin") {
+      router.replace("/admin");
+    }
+  }, [hydrated, isAuthenticated, user, router]);
 
   const {
     register,

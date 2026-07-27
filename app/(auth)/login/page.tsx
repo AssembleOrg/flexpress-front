@@ -22,18 +22,38 @@ import {
   Typography,
 } from "@mui/material";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
-import { Suspense, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Suspense, useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import Logo from "@/components/ui/Logo";
 import { PageTransition } from "@/components/ui/PageTransition";
+import { useHydrated } from "@/lib/hooks/useHydrated";
 import { useLogin } from "@/lib/hooks/mutations/useAuthMutations";
+import { useAuthStore } from "@/lib/stores/authStore";
 import { type LoginFormData, loginSchema } from "@/lib/validations/auth";
 
 function LoginForm() {
+  const router = useRouter();
   const searchParams = useSearchParams();
+  const hydrated = useHydrated();
+  const { user, isAuthenticated } = useAuthStore();
   const [showPassword, setShowPassword] = useState(false);
   const loginMutation = useLogin();
+
+  // Si ya hay sesión, no tiene sentido mostrar el formulario. Además cierra el
+  // caso de las sesiones previas a la cookie `fx_role`: el middleware las manda
+  // acá por no encontrarla, StoreHydration la reescribe, y esto las devuelve a
+  // su dashboard sin pedir login de nuevo.
+  useEffect(() => {
+    if (!hydrated || !isAuthenticated || !user) return;
+    const dashboard =
+      user.role === "admin" || user.role === "subadmin"
+        ? "/admin"
+        : user.role === "charter"
+          ? "/driver/dashboard"
+          : "/client/dashboard";
+    router.replace(searchParams.get("from") ?? dashboard);
+  }, [hydrated, isAuthenticated, user, searchParams, router]);
 
   // transition direction based on redirect parameter
   const getTransitionDirection = (): "left" | "right" | "default" => {

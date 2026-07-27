@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import { clearRoleCookie, setRoleCookie } from "@/lib/authCookie";
 import type { AuthState, User } from "@/lib/types/auth";
 
 interface AuthActions {
@@ -39,6 +40,9 @@ export const useAuthStore = create<
           console.log("   Token length:", token.length);
           console.log("   Role:", user.role);
         }
+        // Espejo del rol para que el middleware pueda redirigir antes de
+        // servir el bundle. No lleva el token: ver lib/authCookie.ts.
+        setRoleCookie(user.role);
         return set({
           user,
           token,
@@ -56,6 +60,7 @@ export const useAuthStore = create<
         ) {
           console.log("✅ [AuthStore] Logout - Limpiando user + token");
         }
+        clearRoleCookie();
         return set({
           user: null,
           token: null,
