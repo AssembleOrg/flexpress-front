@@ -26,6 +26,7 @@ import Logo from "@/components/ui/Logo";
 import { PageTransition } from "@/components/ui/PageTransition";
 import { useHydrated } from "@/lib/hooks/useHydrated";
 import { useLogin } from "@/lib/hooks/mutations/useAuthMutations";
+import { dashboardFor, isAdminRole } from "@/lib/routes";
 import { useAuthStore } from "@/lib/stores/authStore";
 import { type LoginFormData, loginSchema } from "@/lib/validations/auth";
 
@@ -36,12 +37,13 @@ function AdminLoginForm() {
   const [showPassword, setShowPassword] = useState(false);
   const loginMutation = useLogin();
 
-  // Sesión de admin ya abierta: volver al panel. Cubre el caso de las sesiones
-  // previas a la cookie `fx_role`, que el middleware manda acá al no encontrarla.
+  // Sesión de admin ya abierta: volver al panel. Se chequea el rol a propósito:
+  // un user o charter logueado que caiga acá tiene que ver el formulario, no
+  // que lo manden a un panel al que no tiene acceso.
   useEffect(() => {
     if (!hydrated || !isAuthenticated || !user) return;
-    if (user.role === "admin" || user.role === "subadmin") {
-      router.replace("/admin");
+    if (isAdminRole(user.role)) {
+      router.replace(dashboardFor(user.role));
     }
   }, [hydrated, isAuthenticated, user, router]);
 

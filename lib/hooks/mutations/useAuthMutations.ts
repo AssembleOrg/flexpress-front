@@ -2,13 +2,13 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { isAxiosError } from "axios";
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
-import { api } from "@/lib/api";
 import {
   authApi,
   type LoginRequest,
   type RegisterRequest,
   type UpdateUserRequest,
 } from "@/lib/api/auth";
+import { dashboardFor } from "@/lib/routes";
 import { useAuthStore } from "@/lib/stores/authStore";
 import { useNotificationsStore } from "@/lib/stores/notificationsStore";
 
@@ -75,23 +75,17 @@ export function useLogin() {
         }, 1000); // Delay para que no se solape con el toast de bienvenida
       }
 
-      // Redirect basado en role
-      let targetPath = "/client/dashboard"; // Default
-
-      if (response.user.role === "admin" || response.user.role === "subadmin") {
-        targetPath = "/admin";
-      } else if (response.user.role === "charter") {
-        targetPath = "/driver/dashboard";
-      } else if (response.user.role === "user") {
-        targetPath = "/client/dashboard";
-      }
+      // Redirect al dashboard que corresponde al rol (ver lib/routes.ts).
+      const targetPath = dashboardFor(response.user.role);
 
       console.log(
         "🔄 [useLogin] Redirigiendo a:",
         targetPath,
         `(role: ${response.user.role})`,
       );
-      router.push(targetPath);
+      // `replace` y no `push`: el login no debe quedar en el historial, si no
+      // el botón "atrás" vuelve a una pantalla que solo existe para rebotar.
+      router.replace(targetPath);
     },
 
     onError: (error) => {

@@ -23,11 +23,10 @@ export function StoreHydration({ children }: { children: React.ReactNode }) {
     // This is safe because we're inside useEffect (client-only)
     useAuthStore.persist.rehydrate();
 
-    // El middleware redirige mirando la cookie `fx_role`, que se escribe en el
-    // login. Las sesiones abiertas ANTES de que existiera esa cookie no la
-    // tienen, así que se reescribe acá desde el estado ya rehidratado: la
-    // primera navegación las manda al login y desde ahí vuelven solas al
-    // dashboard, sin obligar a rehacer login.
+    // El proxy usa la cookie `fx_role` para no servir el bundle de un área que
+    // no corresponde al rol. Se reescribe acá desde el estado ya rehidratado
+    // porque las sesiones abiertas antes de que la cookie existiera no la
+    // tienen, y porque puede expirar antes que la sesión.
     const { user } = useAuthStore.getState();
     if (user?.role) {
       setRoleCookie(user.role);
