@@ -132,6 +132,7 @@ export function BottomNavbar() {
     else if (pathname.includes("/payments")) setValue("payments");
     else if (pathname.includes("/matching")) setValue("chat");
     else if (pathname.includes("/vehicles")) setValue("vehicles");
+    else if (pathname.includes("/personal")) setValue("personal");
     else if (pathname.includes("/profile")) setValue("profile");
     else if (pathname.includes("/reports")) setValue("reports");
   }, [pathname]);
@@ -157,6 +158,9 @@ export function BottomNavbar() {
         break;
       case "vehicles":
         router.push("/driver/vehicles");
+        break;
+      case "personal":
+        router.push("/driver/personal");
         break;
       case "payments":
         router.push(`${baseRoute}/payments`);
@@ -284,6 +288,16 @@ export function BottomNavbar() {
                 icon={<DirectionsCar />}
                 active={value === "vehicles"}
                 onClick={() => navigate("vehicles")}
+              />
+            )}
+
+            {isCharter && (
+              <NavItem
+                label="Personal"
+                value="personal"
+                icon={<PersonOutline />}
+                active={value === "personal"}
+                onClick={() => navigate("personal")}
               />
             )}
 

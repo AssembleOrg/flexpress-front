@@ -33,11 +33,12 @@ import { formatDistanceToNow } from "date-fns";
 import { es } from "date-fns/locale";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
-import type { SyntheticEvent } from "react";
+import { type SyntheticEvent, useEffect } from "react";
 import { MobileContainer } from "@/components/layout/MobileContainer";
 import { CreditPackagesShowcase } from "@/components/modals/CreditPackagesShowcase";
 import { SignedAvatar } from "@/components/ui/SignedAvatar";
 import { WelcomeHeader } from "@/components/ui/WelcomeHeader";
+import { authApi } from "@/lib/api/auth";
 import { INQUIRY_RESPONSE_LABELS } from "@/lib/constants/availabilityInquiry";
 import { useSentInquiries } from "@/lib/hooks/queries/useAvailabilityInquiriesQueries";
 import { useUserMatches } from "@/lib/hooks/queries/useTravelMatchQueries";
@@ -51,9 +52,27 @@ const MotionButton = motion.create(Button);
 
 export default function ClientDashboard() {
   const router = useRouter();
-  const { user } = useAuthStore();
+  const { user, updateUser } = useAuthStore();
   const { data: myMatches = [], isLoading } = useUserMatches();
   const { openModal } = useCreditPurchaseStore();
+
+  // Refrescar el perfil al montar y al volver el foco a la pestaña, para traer
+  // los créditos frescos tras una aprobación del admin sin recargar la página.
+  // Reusa el patrón post-login (PATCH /users/:id con body vacío devuelve el
+  // perfil completo), igual que el dashboard del charter.
+  useEffect(() => {
+    if (!user?.id) return;
+    const refresh = () =>
+      authApi
+        .updateUser(user.id, {})
+        .then((fresh) => updateUser(fresh))
+        .catch(() => {
+          // No crítico: si falla, el dashboard sigue con el user en store.
+        });
+    refresh();
+    window.addEventListener("focus", refresh);
+    return () => window.removeEventListener("focus", refresh);
+  }, [user?.id, updateUser]);
 
   // Find the ONE active trip (only one trip at a time allowed)
   const activeTrip = myMatches.find(isActiveTrip);

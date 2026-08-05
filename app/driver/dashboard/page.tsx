@@ -111,20 +111,22 @@ export default function DriverDashboard() {
     router.replace("/driver/dashboard");
   }, [searchParams, receivedInquiries, router]);
 
-  // Refrescar el perfil al montar para traer accountStatus fresco (warning/ban)
-  // sin WebSocket: reusa el patrón post-login (PATCH /users/:id con body vacío
-  // devuelve el perfil completo). Se ejecuta una vez al entrar al dashboard.
-  // biome-ignore lint/correctness/useExhaustiveDependencies: solo al montar
+  // Refrescar el perfil al montar y al volver el foco a la pestaña, para traer
+  // accountStatus/créditos frescos sin WebSocket: reusa el patrón post-login
+  // (PATCH /users/:id con body vacío devuelve el perfil completo).
   useEffect(() => {
     if (!user?.id) return;
-    authApi
-      .updateUser(user.id, {})
-      .then((fresh) => updateUser(fresh))
-      .catch(() => {
-        // No crítico: si falla, el dashboard sigue con el user en store.
-      });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    const refresh = () =>
+      authApi
+        .updateUser(user.id, {})
+        .then((fresh) => updateUser(fresh))
+        .catch(() => {
+          // No crítico: si falla, el dashboard sigue con el user en store.
+        });
+    refresh();
+    window.addEventListener("focus", refresh);
+    return () => window.removeEventListener("focus", refresh);
+  }, [user?.id, updateUser]);
 
   // Activation modal state (elegir conductor + vehículo + ayudantes al activarse)
   const [activationOpen, setActivationOpen] = useState(false);
@@ -890,6 +892,67 @@ export default function DriverDashboard() {
               Recargar
             </Typography>
           </ButtonBase>
+        </Box>
+      </MotionCard>
+
+      {/* Configurar mi flota: accesos directos a vehículos y personal, que si no
+            solo se alcanzan bajando en el perfil. Solo redirige, sin lógica. */}
+      <MotionCard
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        sx={{ mb: 2, borderRadius: 3, overflow: "hidden" }}
+      >
+        <CardContent sx={{ pb: 1 }}>
+          <Typography variant="subtitle2" fontWeight={700} color="primary.main">
+            Configurar mi flota
+          </Typography>
+          <Typography variant="caption" color="text.secondary">
+            Cargá y gestioná tus vehículos, conductores y ayudantes.
+          </Typography>
+        </CardContent>
+        <Divider />
+        <Box sx={{ display: "flex" }}>
+          {[
+            {
+              label: "Vehículos",
+              Icon: DirectionsCar,
+              href: "/driver/vehicles",
+            },
+            {
+              label: "Conductores",
+              Icon: Person,
+              href: "/driver/personal",
+            },
+            {
+              label: "Ayudantes",
+              Icon: Assignment,
+              href: "/driver/personal?tab=helpers",
+            },
+          ].map(({ label, Icon, href }, i) => (
+            <ButtonBase
+              key={label}
+              onClick={() => router.push(href)}
+              sx={{
+                flex: 1,
+                flexDirection: "column",
+                gap: 0.75,
+                py: 2,
+                px: 1,
+                borderLeft: i > 0 ? "1px solid" : "none",
+                borderColor: "divider",
+                "&:hover": { bgcolor: "action.hover" },
+              }}
+            >
+              <Icon sx={{ color: "primary.main", fontSize: 26 }} />
+              <Typography
+                variant="caption"
+                fontWeight={600}
+                color="text.primary"
+              >
+                {label}
+              </Typography>
+            </ButtonBase>
+          ))}
         </Box>
       </MotionCard>
 
