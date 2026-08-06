@@ -33,16 +33,14 @@ import { formatDistanceToNow } from "date-fns";
 import { es } from "date-fns/locale";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
-import { type SyntheticEvent, useEffect } from "react";
+import { useEffect } from "react";
 import { MobileContainer } from "@/components/layout/MobileContainer";
 import { CreditPackagesShowcase } from "@/components/modals/CreditPackagesShowcase";
 import { SignedAvatar } from "@/components/ui/SignedAvatar";
 import { WelcomeHeader } from "@/components/ui/WelcomeHeader";
 import { authApi } from "@/lib/api/auth";
-import { INQUIRY_RESPONSE_LABELS } from "@/lib/constants/availabilityInquiry";
 import { useSentInquiries } from "@/lib/hooks/queries/useAvailabilityInquiriesQueries";
 import { useUserMatches } from "@/lib/hooks/queries/useTravelMatchQueries";
-import { useDismissedInquiries } from "@/lib/hooks/useDismissedInquiries";
 import { useAuthStore } from "@/lib/stores/authStore";
 import { useCreditPurchaseStore } from "@/lib/stores/creditPurchaseStore";
 import { isActiveTrip } from "@/lib/utils/matchHelpers";
@@ -77,26 +75,10 @@ export default function ClientDashboard() {
   // Find the ONE active trip (only one trip at a time allowed)
   const activeTrip = myMatches.find(isActiveTrip);
 
-  // Consultas de disponibilidad enviadas (oculto si no hay nada vivo)
+  // Consultas de disponibilidad enviadas: solo las que esperan respuesta.
+  // Una vez respondida (answered) o vencida (expired) ya no necesita atención.
   const { data: sentInquiries = [] } = useSentInquiries();
-  const { dismissed, dismiss } = useDismissedInquiries();
-  const visibleInquiries = sentInquiries.filter(
-    (i) =>
-      i.status !== "expired" &&
-      !(i.status === "answered" && dismissed.has(i.id)),
-  );
-  // El badge solo cuenta lo que realmente necesita atención: esperando
-  // respuesta, o respondida y todavía no vista por el cliente.
-  const unseenCount = visibleInquiries.filter(
-    (i) => i.status === "pending" || !dismissed.has(i.id),
-  ).length;
-  const handleInquiriesExpand = (_: SyntheticEvent, expanded: boolean) => {
-    if (!expanded) return;
-    const answeredIds = visibleInquiries
-      .filter((i) => i.status === "answered")
-      .map((i) => i.id);
-    dismiss(answeredIds);
-  };
+  const pendingInquiries = sentInquiries.filter((i) => i.status === "pending");
 
   const handleRequestFreight = () => {
     // Prevent creating new trip if one is already active
@@ -354,45 +336,27 @@ export default function ClientDashboard() {
         </CardContent>
       </MotionCard>
 
-      {/* Consultas de disponibilidad — solo visible si hay inquiries no expiradas/dismisseadas */}
-      {visibleInquiries.length > 0 && (
+      {/* Consultas de disponibilidad — solo visible si hay alguna esperando respuesta */}
+      {pendingInquiries.length > 0 && (
         <MotionCard
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.25 }}
           sx={{ mb: 3 }}
         >
-          <Accordion
-            defaultExpanded={false}
-            disableGutters
-            elevation={0}
-            onChange={handleInquiriesExpand}
-          >
+          <Accordion defaultExpanded={false} disableGutters elevation={0}>
             <AccordionSummary expandIcon={<ExpandMoreIcon />}>
               <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                 <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
                   Consultas de disponibilidad
                 </Typography>
-                {unseenCount > 0 && (
-                  <Chip
-                    label={unseenCount}
-                    size="small"
-                    color="warning"
-                    sx={{ height: 20, fontSize: "0.7rem", fontWeight: 700 }}
-                  />
-                )}
               </Box>
             </AccordionSummary>
             <AccordionDetails sx={{ pt: 0 }}>
               <List dense disablePadding>
-                {visibleInquiries.map((inquiry, idx) => {
+                {pendingInquiries.map((inquiry, idx) => {
                   const charterName = inquiry.toCharter?.name ?? "Charter";
-                  const subtitle =
-                    inquiry.status === "answered" && inquiry.responseCode
-                      ? INQUIRY_RESPONSE_LABELS[inquiry.responseCode]
-                      : inquiry.status === "pending"
-                        ? `Esperando respuesta · hace ${formatDistanceToNow(new Date(inquiry.createdAt), { locale: es })}`
-                        : "El charter no respondió a tiempo";
+                  const subtitle = `Esperando respuesta · hace ${formatDistanceToNow(new Date(inquiry.createdAt), { locale: es })}`;
                   return (
                     <Box key={inquiry.id}>
                       {idx > 0 && <Divider component="li" />}

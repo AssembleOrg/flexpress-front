@@ -39,6 +39,7 @@ import {
   useMyDrivers,
   useMyHelpers,
 } from "@/lib/hooks/queries/useCharterPersonnelQueries";
+import { useCharterMatches } from "@/lib/hooks/queries/useTravelMatchQueries";
 import { useMyVehicles } from "@/lib/hooks/queries/useVehicleQueries";
 import { useAuthStore } from "@/lib/stores/authStore";
 import { VerificationStatus } from "@/lib/types/api";
@@ -53,6 +54,19 @@ export function ProfileContent() {
   const { data: vehicles = [] } = useMyVehicles();
   const { data: myDrivers = [] } = useMyDrivers();
   const { data: myHelpers = [] } = useMyHelpers();
+  const { data: charterMatches = [] } = useCharterMatches();
+
+  // Viaje abierto = misma condición que activeConversations en el dashboard del
+  // charter: match accepted/completed cuyo trip aún no está completed. Con un
+  // viaje en curso no se puede cambiar la zona de trabajo (afecta las búsquedas).
+  const hasActiveTrip =
+    user?.role === "charter" &&
+    charterMatches.some(
+      (m) =>
+        m?.id &&
+        m.trip?.status !== "completed" &&
+        (m.status === "accepted" || m.status === "completed"),
+    );
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({
     name: user?.name || "",
@@ -138,6 +152,12 @@ export function ProfileContent() {
 
   const handleSaveOrigin = () => {
     if (!originData || !user?.id) return;
+    if (hasActiveTrip) {
+      toast.error(
+        "No puedes cambiar tu zona de trabajo mientras tengas un viaje en curso",
+      );
+      return;
+    }
 
     updateProfileMutation.mutate(
       {
@@ -689,15 +709,34 @@ export function ProfileContent() {
                       </Box>
                     )}
 
-                    {!originData && (
-                      <AddressInput
-                        label="Ubicación de Trabajo"
-                        placeholder="Ingresa tu ubicación de trabajo..."
-                        value={user?.originAddress || ""}
-                        onAddressSelect={(address, lat, lon) => {
-                          setOriginData({ address, lat, lon });
+                    {hasActiveTrip ? (
+                      <Box
+                        sx={{
+                          p: 2,
+                          bgcolor: "warning.light",
+                          borderRadius: 2,
+                          display: "flex",
+                          alignItems: "flex-start",
+                          gap: 1.5,
                         }}
-                      />
+                      >
+                        <LocationOnIcon sx={{ mt: 0.25, flexShrink: 0 }} />
+                        <Typography variant="body2">
+                          No puedes cambiar tu zona de trabajo mientras tengas
+                          un viaje en curso. Finalízalo para poder editarla.
+                        </Typography>
+                      </Box>
+                    ) : (
+                      !originData && (
+                        <AddressInput
+                          label="Ubicación de Trabajo"
+                          placeholder="Ingresa tu ubicación de trabajo..."
+                          value={user?.originAddress || ""}
+                          onAddressSelect={(address, lat, lon) => {
+                            setOriginData({ address, lat, lon });
+                          }}
+                        />
+                      )
                     )}
                   </Paper>
                 )}

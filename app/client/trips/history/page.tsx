@@ -15,6 +15,7 @@ import {
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { FeedbackModal } from "@/components/feedback/FeedbackModal";
+import { ReceiptButton } from "@/components/trip/ReceiptButton";
 import { RatingDisplay } from "@/components/ui/RatingDisplay";
 import { MOBILE_BOTTOM_NAV_HEIGHT } from "@/lib/constants/mobileDesign";
 import {
@@ -359,6 +360,13 @@ function TripHistoryCard({
             >
               ✓ Ya has calificado este viaje
             </Typography>
+          </Box>
+        )}
+
+        {/* Re-descargar comprobante */}
+        {trip.travelMatch && (
+          <Box mt={1}>
+            <ReceiptButton trip={trip} type="client" compact />
           </Box>
         )}
       </CardContent>
