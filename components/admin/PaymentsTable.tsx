@@ -8,6 +8,10 @@ import {
   DialogActions,
   DialogContent,
   DialogTitle,
+  FormControl,
+  InputLabel,
+  MenuItem,
+  Select,
   Stack,
   Typography,
   useMediaQuery,
@@ -36,14 +40,21 @@ export function PaymentsTable() {
   const [approveModalOpen, setApproveModalOpen] = useState(false);
   const [rejectModalOpen, setRejectModalOpen] = useState(false);
   const [selectedPayment, setSelectedPayment] = useState<Payment | null>(null);
+  const [statusFilter, setStatusFilter] = useState<
+    "" | "pending" | "completed" | "accepted" | "rejected"
+  >("");
 
   // Queries
-  const { data, isLoading } = useAdminPayments({ page: 1, limit: 1000 });
+  const { data, isLoading } = useAdminPayments({ page: 1, limit: 100 });
 
   // Ordenar "nuevas arriba" (createdAt descendente)
   const sortedPayments = [...(data?.data ?? [])].sort(
     (a, b) => +new Date(b.createdAt) - +new Date(a.createdAt),
   );
+
+  const filteredPayments = statusFilter
+    ? sortedPayments.filter((p) => p.status === statusFilter)
+    : sortedPayments;
 
   // Mutations
   const approveMutation = useApprovePayment();
@@ -277,10 +288,33 @@ export function PaymentsTable() {
 
   return (
     <Box>
+      {/* Filtro por estado */}
+      <Stack direction="row" spacing={2} sx={{ mb: 3 }}>
+        <FormControl size="small" sx={{ minWidth: 200 }}>
+          <InputLabel id="payment-status-filter-label">
+            Filtrar por estado
+          </InputLabel>
+          <Select
+            labelId="payment-status-filter-label"
+            value={statusFilter}
+            onChange={(e) =>
+              setStatusFilter(e.target.value as typeof statusFilter)
+            }
+            label="Filtrar por estado"
+          >
+            <MenuItem value="">Todos</MenuItem>
+            <MenuItem value="pending">Pendiente</MenuItem>
+            <MenuItem value="completed">Completado</MenuItem>
+            <MenuItem value="accepted">Aceptado</MenuItem>
+            <MenuItem value="rejected">Rechazado</MenuItem>
+          </Select>
+        </FormControl>
+      </Stack>
+
       {/* Conditional Rendering: Mobile Cards vs DataGrid */}
       {isMobile ? (
         <Stack spacing={2}>
-          {sortedPayments.map((payment) => (
+          {filteredPayments.map((payment) => (
             <MobilePaymentCard
               key={payment.id}
               payment={payment}
@@ -294,7 +328,7 @@ export function PaymentsTable() {
         <Box sx={{ width: "100%" }}>
           <DataGrid
             autoHeight
-            rows={sortedPayments}
+            rows={filteredPayments}
             columns={visibleColumns}
             loading={isLoading}
             hideFooterPagination

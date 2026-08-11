@@ -3,19 +3,20 @@
 import { Visibility as VisibilityIcon } from "@mui/icons-material";
 import {
   Box,
+  FormControl,
   IconButton,
+  InputLabel,
+  MenuItem,
+  Select,
   Stack,
   Tooltip,
   useMediaQuery,
   useTheme,
 } from "@mui/material";
-import {
-  DataGrid,
-  type GridColDef,
-  type GridPaginationModel,
-} from "@mui/x-data-grid";
+import { DataGrid, type GridColDef } from "@mui/x-data-grid";
 import Link from "next/link";
 import { useState } from "react";
+import StatusChip from "@/components/ui/StatusChip";
 import { useAdminTrips } from "@/lib/hooks/queries/useAdminQueries";
 import type { Trip } from "@/lib/types/api";
 import { formatDate } from "@/lib/utils/formatDate";
@@ -26,17 +27,19 @@ export function TripsTable() {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
 
-  const [paginationModel, setPaginationModel] = useState<GridPaginationModel>({
-    pageSize: 10,
-    page: 0,
-  });
   const [selectedTrip, setSelectedTrip] = useState<Trip | null>(null);
+  const [statusFilter, setStatusFilter] = useState<"" | Trip["status"]>("");
 
   // Queries
-  const { data, isLoading } = useAdminTrips({
-    page: paginationModel.page + 1,
-    limit: paginationModel.pageSize,
-  });
+  const { data, isLoading } = useAdminTrips({ page: 1, limit: 100 });
+
+  // Ordenar "nuevos arriba" (createdAt descendente) + filtro por estado
+  const sortedTrips = [...(data?.data ?? [])].sort(
+    (a, b) => +new Date(b.createdAt) - +new Date(a.createdAt),
+  );
+  const filteredTrips = statusFilter
+    ? sortedTrips.filter((t) => t.status === statusFilter)
+    : sortedTrips;
 
   const columns: GridColDef[] = [
     {
@@ -139,6 +142,14 @@ export function TripsTable() {
       renderCell: (params) => formatDate(params.row.createdAt),
     },
     {
+      field: "status",
+      headerName: "Estado",
+      width: 170,
+      renderCell: (params) => (
+        <StatusChip status={params.row.status} size="small" />
+      ),
+    },
+    {
       field: "actions",
       headerName: "Acciones",
       width: 110,
@@ -170,19 +181,45 @@ export function TripsTable() {
     },
   ];
 
-  // Hide address, cargo, team, createdAt columns on mobile
+  // Hide address, cargo, team, createdAt, status columns on mobile
   const visibleColumns = isMobile
     ? columns.filter(
-        (col) => !["address", "cargo", "team", "createdAt"].includes(col.field),
+        (col) =>
+          !["address", "cargo", "team", "createdAt", "status"].includes(
+            col.field,
+          ),
       )
     : columns;
 
   return (
     <Box>
+      {/* Filtro por estado */}
+      <Stack direction="row" spacing={2} sx={{ mb: 3 }}>
+        <FormControl size="small" sx={{ minWidth: 200 }}>
+          <InputLabel id="trip-status-filter-label">
+            Filtrar por estado
+          </InputLabel>
+          <Select
+            labelId="trip-status-filter-label"
+            value={statusFilter}
+            onChange={(e) =>
+              setStatusFilter(e.target.value as typeof statusFilter)
+            }
+            label="Filtrar por estado"
+          >
+            <MenuItem value="">Todos</MenuItem>
+            <MenuItem value="pending">Pendiente</MenuItem>
+            <MenuItem value="charter_completed">Esperando Confirmación</MenuItem>
+            <MenuItem value="completed">Finalizado</MenuItem>
+            <MenuItem value="cancelled">Cancelado</MenuItem>
+          </Select>
+        </FormControl>
+      </Stack>
+
       {/* Conditional Rendering: Mobile Cards vs DataGrid */}
       {isMobile ? (
         <Stack spacing={2}>
-          {(data?.data ?? []).map((trip) => (
+          {filteredTrips.map((trip) => (
             <MobileTripAdminCard
               key={trip.id}
               trip={trip}
@@ -194,11 +231,12 @@ export function TripsTable() {
         <Box sx={{ width: "100%" }}>
           <DataGrid
             autoHeight
-            rows={data?.data ?? []}
+            rows={filteredTrips}
             columns={visibleColumns}
             pageSizeOptions={[5, 10, 20, 50]}
-            paginationModel={paginationModel}
-            onPaginationModelChange={setPaginationModel}
+            initialState={{
+              pagination: { paginationModel: { pageSize: 10, page: 0 } },
+            }}
             loading={isLoading}
             disableRowSelectionOnClick
           />

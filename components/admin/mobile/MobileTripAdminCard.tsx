@@ -4,6 +4,7 @@ import {
 } from "@mui/icons-material";
 import { Card, CardContent, Stack, Typography } from "@mui/material";
 import Link from "next/link";
+import StatusChip from "@/components/ui/StatusChip";
 import type { Trip } from "@/lib/types/api";
 
 interface MobileTripAdminCardProps {
@@ -54,9 +55,12 @@ export function MobileTripAdminCard({
             >
               ID: {truncatedId}...
             </Typography>
-            {onClick && (
-              <ChevronRightIcon sx={{ fontSize: 20, color: "#b7850d" }} />
-            )}
+            <Stack direction="row" alignItems="center" spacing={0.5}>
+              <StatusChip status={trip.status} size="small" />
+              {onClick && (
+                <ChevronRightIcon sx={{ fontSize: 20, color: "#b7850d" }} />
+              )}
+            </Stack>
           </Stack>
 
           {/* User → Charter with arrow */}

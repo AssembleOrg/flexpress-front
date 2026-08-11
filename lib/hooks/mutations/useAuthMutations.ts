@@ -29,6 +29,7 @@ function getApiErrorMessage(error: unknown, fallback: string): string {
  */
 export function useLogin() {
   const { login, updateUser } = useAuthStore();
+  const queryClient = useQueryClient();
   const router = useRouter();
 
   return useMutation({
@@ -42,6 +43,12 @@ export function useLogin() {
 
       // Guardar user y tokens en store (persiste a localStorage)
       login(response.user, response.token, response.refreshToken);
+
+      // Descarta el caché del usuario anterior: si no, sus queries (keys sin
+      // userId como notifications/availabilityInquiries) se reactivan con el
+      // nuevo token, pegan a recursos ajenos → 401 → logout en cascada. Mismo
+      // patrón que useLogout.
+      queryClient.clear();
 
       // Fetch perfil completo para asegurar campos como pricePerKm
       try {
