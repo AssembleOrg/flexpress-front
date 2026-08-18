@@ -1,0 +1,29 @@
+# Deploy de FlexPress front (Next 16) en Netlify.
+#
+# Dominio de producción: flex-press.com.ar  (backend sigue en Railway).
+# Branch de deploy en Netlify: `development` (setear como production branch en
+# Site settings → Build & deploy → Branches, para que el dominio y las env de
+# producción apliquen a esta branch).
+#
+# El proxy real front→back NO es este archivo: es el `rewrites()` de
+# next.config.ts (`/api/v1/:path*` → backend). Ese rewrite corre dentro de la
+# Netlify Function del runtime de Next, así que mantiene el REST same-origin y
+# el browser nunca hace CORS. Por eso NO hay redirects/proxy acá: duplicarlo
+# rompería el interceptor de axios.
+#
+# El websocket (NEXT_PUBLIC_SOCKET_URL) sí pega directo al backend, cross-origin
+# → flex-press.com.ar tiene que estar en CORS_ORIGINS del backend.
+
+[build]
+  command = "pnpm build"
+  # Sin `publish`: el runtime v5 de @netlify/plugin-nextjs lo resuelve solo.
+  # Fijarlo a .next a mano rompe el build.
+
+[build.environment]
+  # Next 16 exige Node >= 20.9. pnpm se autodetecta por el pnpm-lock.yaml.
+  NODE_VERSION = "22"
+
+[[plugins]]
+  # Runtime oficial de Next para Netlify: SSR/ISR, API routes (app/api/geocode),
+  # rewrites externos y el middleware proxy.ts como Edge Function.
+  package = "@netlify/plugin-nextjs"
