@@ -62,13 +62,13 @@ export default function ClientDashboard() {
 
   // Refrescar el perfil al montar y al volver el foco a la pestaña, para traer
   // los créditos frescos tras una aprobación del admin sin recargar la página.
-  // Reusa el patrón post-login (PATCH /users/:id con body vacío devuelve el
-  // perfil completo), igual que el dashboard del charter.
+  // Usa GET /auth/profile: antes se hacía PATCH /users/:id con body vacío (un
+  // write usado como read que bumpeaba updatedAt en cada foco/montaje).
   useEffect(() => {
     if (!user?.id) return;
     const refresh = () =>
       authApi
-        .updateUser(user.id, {})
+        .getProfile()
         .then((fresh) => updateUser(fresh))
         .catch(() => {
           // No crítico: si falla, el dashboard sigue con el user en store.

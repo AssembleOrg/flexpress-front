@@ -47,7 +47,7 @@ export function useLogin() {
 
       // Fetch perfil completo para asegurar campos como pricePerKm
       try {
-        const fullProfile = await authApi.updateUser(response.user.id, {});
+        const fullProfile = await authApi.getProfile();
         updateUser(fullProfile);
       } catch (error) {
         console.warn(

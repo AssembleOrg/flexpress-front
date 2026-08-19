@@ -27,7 +27,10 @@ const queryClient = new QueryClient({
       staleTime: 1000 * 60 * 5, // 5 minutes
       gcTime: 1000 * 60 * 10, // 10 minutes (formerly cacheTime)
       retry: 1,
-      refetchOnWindowFocus: true,
+      // Antes true: al volver a la pestaña refetcheaba TODAS las queries, lo que
+      // se veía como llamadas duplicadas/con delay. La frescura ya la sostienen
+      // el realtime (websocket) y la invalidación puntual en visibilitychange.
+      refetchOnWindowFocus: false,
     },
     mutations: {
       retry: 1,

@@ -119,7 +119,7 @@ export default function DriverDashboard() {
     if (!user?.id) return;
     const refresh = () =>
       authApi
-        .updateUser(user.id, {})
+        .getProfile()
         .then((fresh) => updateUser(fresh))
         .catch(() => {
           // No crítico: si falla, el dashboard sigue con el user en store.

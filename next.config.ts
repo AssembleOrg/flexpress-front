@@ -5,6 +5,15 @@ const nextConfig: NextConfig = {
   // queda visible en el config).
   compress: true,
 
+  compiler: {
+    // Strippea todos los console.* del bundle en build de producción (dev
+    // queda intacto). Evita filtrar payloads/tokens/datos en la consola del
+    // browser y achica el bundle. Se preserva console.error para poder
+    // diagnosticar fallos del deploy.
+    removeConsole:
+      process.env.NODE_ENV === "production" ? { exclude: ["error"] } : false,
+  },
+
   async rewrites() {
     // `API_URL` (server-only) tiene prioridad para soportar private
     // domain de Railway (`*.railway.internal`). Si no, cae a
