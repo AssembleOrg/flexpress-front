@@ -130,6 +130,14 @@ export const queryKeys = {
     charters: {
       pending: () => [...queryKeys.admin.all, "charters", "pending"] as const,
     },
+    pendingUsers: {
+      pending: () =>
+        [...queryKeys.admin.all, "users", "pending"] as const,
+    },
+    userDocuments: {
+      detail: (userId: string) =>
+        [...queryKeys.admin.all, "user-documents", userId] as const,
+    },
     vehicles: {
       pending: () => [...queryKeys.admin.all, "vehicles", "pending"] as const,
     },

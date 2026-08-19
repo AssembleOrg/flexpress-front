@@ -308,14 +308,14 @@ export function AcceptMatchModal({
                 variant="h6"
                 sx={{ fontWeight: 700, fontSize: "1rem" }}
               >
-                {match.distanceKm?.toFixed(1) || "0"} km
+                ≈{match.distanceKm?.toFixed(1) || "0"} km
               </Typography>
               <Typography
                 variant="caption"
                 color="text.secondary"
                 sx={{ fontSize: "0.65rem" }}
               >
-                Distancia
+                Distancia aprox.
               </Typography>
             </Box>
 

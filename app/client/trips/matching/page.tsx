@@ -243,8 +243,6 @@ export default function MatchingPage() {
   // Handler for when match is updated (charter accepts/rejects)
   const handleMatchUpdated = useCallback(
     (status: string) => {
-      console.log("🔔 [MATCHING] Match status updated:", status);
-
       if (status === "ACCEPTED") {
         // Descontar 1 crédito al cliente cuando el charter acepta.
         // Guard de idempotencia: socket y polling pueden reportar el mismo
@@ -268,7 +266,6 @@ export default function MatchingPage() {
         // Auto-navigate after 2 seconds
         setTimeout(() => {
           if (currentMatch?.id) {
-            console.log("🚀 [MATCHING] Redirecting to match detail...");
             router.push(`/client/trips/matching/${currentMatch.id}`);
           }
         }, 2000);
@@ -331,17 +328,11 @@ export default function MatchingPage() {
       polledMatch.status === "accepted" &&
       currentMatch?.status !== "accepted"
     ) {
-      console.log(
-        `✅ [POLLING] Match accepted detected via polling for match ${polledMatch.id}`,
-      );
       handleMatchUpdated("ACCEPTED");
     } else if (
       polledMatch.status === "rejected" &&
       currentMatch?.status !== "rejected"
     ) {
-      console.log(
-        `❌ [POLLING] Match rejected detected via polling for match ${polledMatch.id}`,
-      );
       handleMatchUpdated("REJECTED");
     }
   }, [
@@ -442,7 +433,6 @@ export default function MatchingPage() {
     if (!currentMatch || !selectedCharterForConfirm) return;
 
     try {
-      console.log("📝 [MATCHING] Confirming charter selection");
       await selectMutation.mutateAsync({
         matchId: currentMatch.id,
         charterId: selectedCharterForConfirm.charterId,
@@ -455,9 +445,6 @@ export default function MatchingPage() {
       setConfirmModalOpen(false);
       setSelectedCharterForConfirm(null);
 
-      console.log(
-        "✅ [MATCHING] Selection confirmed, waiting for charter to accept...",
-      );
       // NO redirect - keep user in matching page while waiting
     } catch (error) {
       // Error is already handled by mutation's onError

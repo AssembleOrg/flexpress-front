@@ -3,8 +3,10 @@
 import {
   AccountBalanceWallet,
   Add,
+  Block,
   Flag,
   History,
+  HourglassEmpty,
   LocalShipping,
   LocationOn,
 } from "@mui/icons-material";
@@ -13,6 +15,8 @@ import {
   Accordion,
   AccordionDetails,
   AccordionSummary,
+  Alert,
+  AlertTitle,
   Avatar,
   Box,
   Button,
@@ -37,12 +41,14 @@ import { useEffect } from "react";
 import { MobileContainer } from "@/components/layout/MobileContainer";
 import { CreditPackagesShowcase } from "@/components/modals/CreditPackagesShowcase";
 import { SignedAvatar } from "@/components/ui/SignedAvatar";
+import { SupportContact } from "@/components/ui/SupportContact";
 import { WelcomeHeader } from "@/components/ui/WelcomeHeader";
 import { authApi } from "@/lib/api/auth";
 import { useSentInquiries } from "@/lib/hooks/queries/useAvailabilityInquiriesQueries";
 import { useUserMatches } from "@/lib/hooks/queries/useTravelMatchQueries";
 import { useAuthStore } from "@/lib/stores/authStore";
 import { useCreditPurchaseStore } from "@/lib/stores/creditPurchaseStore";
+import { VerificationStatus } from "@/lib/types/api";
 import { isActiveTrip } from "@/lib/utils/matchHelpers";
 
 const MotionCard = motion.create(Card);
@@ -140,6 +146,103 @@ export default function ClientDashboard() {
     };
     return colorMap[statusData.color] || "grey.400";
   };
+
+  // Gate de verificación: un cliente pendiente/rechazado no ve el dashboard.
+  // Mismo patrón que el dashboard del charter. El route guard del layout ya
+  // bloquea el resto de rutas /client/*; acá mostramos su estado.
+  const isPending = user?.verificationStatus === VerificationStatus.PENDING;
+  const isRejected = user?.verificationStatus === VerificationStatus.REJECTED;
+  const isNotVerified = isPending || isRejected;
+
+  if (isNotVerified) {
+    return (
+      <MobileContainer withBottomNav>
+        <WelcomeHeader
+          userName={user?.name}
+          userRole="client"
+          avatarUrl={user?.avatar ?? undefined}
+        />
+
+        <MotionCard
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          sx={{
+            mt: 4,
+            textAlign: "center",
+            p: 4,
+            borderTop: "4px solid",
+            borderTopColor: isPending ? "warning.main" : "error.main",
+          }}
+        >
+          <Box
+            sx={{
+              width: 80,
+              height: 80,
+              borderRadius: "50%",
+              bgcolor: isPending ? "warning.light" : "error.light",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              mx: "auto",
+              mb: 3,
+            }}
+          >
+            {isPending ? (
+              <HourglassEmpty sx={{ fontSize: 40, color: "warning.dark" }} />
+            ) : (
+              <Block sx={{ fontSize: 40, color: "error.dark" }} />
+            )}
+          </Box>
+
+          <Typography variant="h5" fontWeight={700} mb={2}>
+            {isPending ? "Cuenta en Verificación" : "Cuenta Rechazada"}
+          </Typography>
+
+          {isPending ? (
+            <>
+              <Typography variant="body1" color="text.secondary" mb={2}>
+                Tu cuenta está siendo revisada por nuestro equipo de
+                administración.
+              </Typography>
+              <Typography variant="body2" color="text.secondary" mb={3}>
+                Este proceso puede tomar hasta <strong>48 horas</strong>. Te
+                avisaremos con una notificación en la app cuando tu cuenta sea
+                aprobada.
+              </Typography>
+              <Chip
+                icon={<HourglassEmpty />}
+                label="Pendiente de Aprobación"
+                color="warning"
+                sx={{ fontWeight: 600 }}
+              />
+            </>
+          ) : (
+            <>
+              <Typography variant="body1" color="text.secondary" mb={2}>
+                Lo sentimos, tu solicitud de registro ha sido rechazada.
+              </Typography>
+              {user?.rejectionReason && (
+                <Alert severity="error" sx={{ mb: 3, textAlign: "left" }}>
+                  <AlertTitle>Motivo del rechazo</AlertTitle>
+                  {user.rejectionReason}
+                </Alert>
+              )}
+              <Button
+                variant="contained"
+                color="secondary"
+                onClick={() => router.push("/client/verification")}
+                sx={{ mb: 2 }}
+              >
+                Reenviar documentación
+              </Button>
+            </>
+          )}
+          <SupportContact />
+        </MotionCard>
+      </MobileContainer>
+    );
+  }
 
   return (
     <MobileContainer withBottomNav>

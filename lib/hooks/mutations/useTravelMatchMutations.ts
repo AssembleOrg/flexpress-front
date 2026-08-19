@@ -95,13 +95,10 @@ export function useSelectCharter() {
     }) => travelMatchingApi.selectCharter(matchId, charterId),
 
     onSuccess: async (_result, { matchId }) => {
-      console.log("🔄 [SELECT] Starting cache refetch");
-
       // Refetch all matches (force immediate update)
       await queryClient.refetchQueries({
         queryKey: queryKeys.matches.all,
       });
-      console.log("✅ [SELECT] Matches refetched");
 
       toast.success("Chófer seleccionado. Esperando confirmación...");
     },
@@ -148,26 +145,19 @@ export function useRespondToMatch() {
       // If accepted, create conversation immediately
       if (accept) {
         try {
-          console.log("🔄 [RESPOND] Creating conversation for match:", matchId);
           await conversationApi.createFromMatch(matchId);
-          console.log("✅ [RESPOND] Conversation created successfully");
 
           // 🔧 FIX: Wait for DB propagation (backend updates travelMatch.conversationId)
-          console.log("⏳ [RESPOND] Waiting 300ms for DB propagation...");
           await new Promise((resolve) => setTimeout(resolve, 300));
 
           // Invalidate specific match first (forces refetch)
-          console.log("🔄 [RESPOND] Invalidating match cache...");
           await queryClient.invalidateQueries({
             queryKey: queryKeys.matches.detail(matchId),
           });
         } catch (error) {
           // Distinguir entre error esperado (409 - conversación ya existe) y errores reales
-          if (axios.isAxiosError(error) && error.response?.status === 409) {
-            console.log(
-              "ℹ️ [RESPOND] Conversation already exists (expected behavior)",
-            );
-          } else {
+          // El 409 es esperado (conversación ya existe); solo logueamos errores reales.
+          if (!(axios.isAxiosError(error) && error.response?.status === 409)) {
             console.error("❌ [RESPOND] Failed to create conversation:", error);
           }
           // Don't fail the entire mutation - conversation can be created later
@@ -175,7 +165,6 @@ export function useRespondToMatch() {
       }
 
       // Refetch all matches to get fresh data with conversationId
-      console.log("🔄 [RESPOND] Refetching all matches...");
       await queryClient.refetchQueries({
         queryKey: queryKeys.matches.all,
       });

@@ -47,24 +47,6 @@ export const authApi = {
       data,
     );
 
-    // DEBUG LOGS - Ver estructura exacta del response
-    if (
-      typeof window !== "undefined" &&
-      process.env.NODE_ENV === "development"
-    ) {
-      console.log("🔍 [authApi.login] Full response structure:");
-      console.log("   response.data:", response.data);
-      console.log("   response.data.data:", response.data.data);
-      console.log(
-        "   response.data.data?.user:",
-        response.data.data?.user?.name,
-      );
-      console.log(
-        "   response.data.data?.access_token:",
-        response.data.data?.access_token ? "✅ PRESENT" : "❌ MISSING",
-      );
-    }
-
     // 🔧 UNWRAP: Manejar doble wrapper del backend (igual que conversations.ts)
     let authData: BackendAuthResponse;
 
@@ -74,14 +56,10 @@ export const authApi = {
         "data" in response.data.data &&
         typeof (response.data.data as any).data === "object"
       ) {
-        console.log(
-          "📦 [AUTH] Doble wrapper detectado en login - unwrapping...",
-        );
         authData = (response.data.data as { data: BackendAuthResponse }).data;
       }
       // Caso 2: Wrapper simple { success, data: {...} }
       else {
-        console.log("📦 [AUTH] Wrapper simple detectado en login");
         authData = response.data.data as BackendAuthResponse;
       }
     } else {
@@ -95,18 +73,6 @@ export const authApi = {
       user,
     };
 
-    if (
-      typeof window !== "undefined" &&
-      process.env.NODE_ENV === "development"
-    ) {
-      console.log("✅ [authApi.login] Mapped response:");
-      console.log("   token present:", !!authResponse.token);
-      console.log("   token length:", authResponse.token.length);
-      console.log("   user present:", !!authResponse.user);
-      console.log("   user.id:", authResponse.user.id);
-      console.log("   user.pricePerKm:", authResponse.user.pricePerKm);
-    }
-
     return authResponse;
   },
 
@@ -117,24 +83,6 @@ export const authApi = {
       data,
     );
 
-    // DEBUG LOGS - Ver estructura exacta del response
-    if (
-      typeof window !== "undefined" &&
-      process.env.NODE_ENV === "development"
-    ) {
-      console.log("🔍 [authApi.register] Full response structure:");
-      console.log("   response.data:", response.data);
-      console.log("   response.data.data:", response.data.data);
-      console.log(
-        "   response.data.data?.user:",
-        response.data.data?.user?.name,
-      );
-      console.log(
-        "   response.data.data?.access_token:",
-        response.data.data?.access_token ? "✅ PRESENT" : "❌ MISSING",
-      );
-    }
-
     // 🔧 UNWRAP: Manejar doble wrapper del backend (igual que conversations.ts)
     let authData: BackendAuthResponse;
 
@@ -144,14 +92,10 @@ export const authApi = {
         "data" in response.data.data &&
         typeof (response.data.data as any).data === "object"
       ) {
-        console.log(
-          "📦 [AUTH] Doble wrapper detectado en register - unwrapping...",
-        );
         authData = (response.data.data as { data: BackendAuthResponse }).data;
       }
       // Caso 2: Wrapper simple { success, data: {...} }
       else {
-        console.log("📦 [AUTH] Wrapper simple detectado en register");
         authData = response.data.data as BackendAuthResponse;
       }
     } else {
@@ -164,17 +108,6 @@ export const authApi = {
       refreshToken: refresh_token ?? null,
       user,
     };
-
-    if (
-      typeof window !== "undefined" &&
-      process.env.NODE_ENV === "development"
-    ) {
-      console.log("✅ [authApi.register] Mapped response:");
-      console.log("   token present:", !!authResponse.token);
-      console.log("   token length:", authResponse.token.length);
-      console.log("   user present:", !!authResponse.user);
-      console.log("   user.id:", authResponse.user.id);
-    }
 
     return authResponse;
   },

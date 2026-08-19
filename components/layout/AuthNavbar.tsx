@@ -56,9 +56,11 @@ export function AuthNavbar() {
   const { data: charterMatches = [] } = useCharterMatches();
 
   const isCharter = user?.role === "charter";
-  // Charter pendiente/rechazado: solo Inicio + Salir (igual que BottomNavbar).
+  // Charter o cliente pendiente/rechazado: solo Inicio + Salir (igual que
+  // BottomNavbar). Nombre histórico: cubre ambos roles.
   const isUnverifiedCharter =
-    isCharter && user?.verificationStatus !== VerificationStatus.VERIFIED;
+    (isCharter || user?.role === "user") &&
+    user?.verificationStatus !== VerificationStatus.VERIFIED;
   const matches = isCharter ? charterMatches : userMatches;
 
   // Determinar match activo con conversación (Lógica idéntica a BottomNavbar)

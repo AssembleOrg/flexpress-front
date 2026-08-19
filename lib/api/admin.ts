@@ -16,6 +16,7 @@ import type {
 import type {
   ApiResponse,
   Payment,
+  PendingCharterReviewItem,
   Report,
   SystemConfig,
   Trip,
@@ -459,6 +460,28 @@ export const adminApi = {
     }
 
     return [];
+  },
+
+  /**
+   * Clientes (role user) pendientes de verificación.
+   */
+  getPendingUsers: async (): Promise<PendingCharterReviewItem[]> => {
+    const response = await api.get<ApiResponse<PendingCharterReviewItem[]>>(
+      "/users/users/pending",
+    );
+    const responseData = response.data.data;
+    return Array.isArray(responseData) ? responseData : [];
+  },
+
+  /**
+   * Documentos (DNI) de un usuario cualquiera, para el admin.
+   */
+  getUserDocuments: async (userId: string): Promise<UserDocument[]> => {
+    const response = await api.get<ApiResponse<UserDocument[]>>(
+      `/admin/documents/user/${userId}`,
+    );
+    const responseData = response.data.data;
+    return Array.isArray(responseData) ? responseData : [];
   },
 
   /**

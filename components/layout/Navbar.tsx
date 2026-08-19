@@ -44,9 +44,10 @@ export function Navbar() {
   const { data: unreadData } = useUnreadNotificationCount();
   const unreadCount = unreadData?.count ?? 0;
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
-  // Charter sin verificar no puede recargar créditos: ocultamos el chip.
+  // Charter o cliente sin verificar no puede recargar créditos: ocultamos el
+  // chip. Nombre histórico: cubre ambos roles.
   const isUnverifiedCharter =
-    user?.role === "charter" &&
+    (user?.role === "charter" || user?.role === "user") &&
     user?.verificationStatus !== VerificationStatus.VERIFIED;
 
   const handleNotifClick = (e: React.MouseEvent<HTMLElement>) => {

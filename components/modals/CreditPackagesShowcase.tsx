@@ -10,6 +10,7 @@ import {
   ContentCopyRounded,
   DiamondRounded,
   MilitaryTechRounded,
+  WhatsApp,
   WorkspacePremiumRounded,
 } from "@mui/icons-material";
 import {
@@ -26,7 +27,11 @@ import { AnimatePresence, motion } from "framer-motion";
 import type { ReactNode } from "react";
 import { useMemo, useState } from "react";
 import toast from "react-hot-toast";
-import { BANK_ACCOUNTS, type BankAccount } from "@/lib/constants/bankAccounts";
+import {
+  BANK_ACCOUNTS,
+  type BankAccount,
+  SUPPORT_WHATSAPP,
+} from "@/lib/constants/bankAccounts";
 import { useCreatePaymentRequest } from "@/lib/hooks/mutations/usePaymentMutations";
 import { usePublicPricing } from "@/lib/hooks/queries/useSystemConfigQueries";
 import { useCreditPurchaseStore } from "@/lib/stores/creditPurchaseStore";
@@ -38,15 +43,24 @@ import { uploadToStorage } from "@/lib/upload";
  *
  * IMPORTANTE: la lógica de pago NO cambia — sigue siendo transferencia manual +
  * comprobante + useCreatePaymentRequest → aprobación del admin. La pasarela de
- * pago (MercadoPago) se integrará después; los paquetes están hardcodeados.
+ * pago (MercadoPago Checkout Pro) se integrará después.
+ *
+ * Modelo de precios: el MONTO deriva de la config (`créditos × creditPrice` de
+ * usePublicPricing); los tiers (CREDIT_TIERS) solo agregan créditos bonus por
+ * volumen. Así, si el admin cambia el precio, todo se recalcula solo.
  */
 
-interface CreditPackage {
+/**
+ * Modelo "paquetes = solo bonus": el MONTO siempre deriva de la config
+ * (`créditos × creditPrice`), nunca es un valor fijo. Los tiers son umbrales
+ * en CRÉDITOS comprados que regalan créditos bonus. Así, si el admin cambia
+ * `creditPrice`, los precios mostrados se recalculan solos (cero incoherencia).
+ */
+interface CreditTier {
   tier: "bronce" | "plata" | "oro";
   label: string;
-  amountARS: number;
-  baseCredits: number;
-  bonusCredits: number;
+  minCredits: number; // umbral de compra (en créditos) para desbloquear el bonus
+  bonusCredits: number; // créditos de regalo al alcanzar el umbral
   badge?: string;
   accentColor: string;
   icon: ReactNode;
@@ -55,21 +69,20 @@ interface CreditPackage {
 const GOLD = "#DCA621";
 const BORDO = "#380116";
 
-const PREMIUM_PACKAGES: CreditPackage[] = [
+// Ordenados por umbral ascendente (tierForCredits/nextTier lo asumen).
+const CREDIT_TIERS: CreditTier[] = [
   {
     tier: "bronce",
     label: "Bronce",
-    amountARS: 10000,
-    baseCredits: 5,
-    bonusCredits: 0,
+    minCredits: 5,
+    bonusCredits: 1,
     accentColor: "#B87333",
     icon: <MilitaryTechRounded sx={{ fontSize: 26 }} />,
   },
   {
     tier: "plata",
     label: "Plata",
-    amountARS: 25000,
-    baseCredits: 12,
+    minCredits: 10,
     bonusCredits: 2,
     badge: "POPULAR",
     accentColor: "#C0C0C0",
@@ -78,20 +91,33 @@ const PREMIUM_PACKAGES: CreditPackage[] = [
   {
     tier: "oro",
     label: "Oro",
-    amountARS: 50000,
-    baseCredits: 30,
-    bonusCredits: 8,
+    minCredits: 20,
+    bonusCredits: 4,
     badge: "MEJOR VALOR",
     accentColor: GOLD,
     icon: <DiamondRounded sx={{ fontSize: 26 }} />,
   },
 ];
 
+// Tier alcanzado por N créditos comprados (el de mayor umbral ≤ credits), o null.
+export function tierForCredits(credits: number): CreditTier | null {
+  let match: CreditTier | null = null;
+  for (const t of CREDIT_TIERS) {
+    if (credits >= t.minCredits) match = t;
+  }
+  return match;
+}
+
+// Próximo tier aún no alcanzado, para la recomendación de upsell (o null si ya está en el tope).
+export function nextTier(credits: number): CreditTier | null {
+  return CREDIT_TIERS.find((t) => credits < t.minCredits) ?? null;
+}
+
 const formatARS = (value: number) => `$${value.toLocaleString("es-AR")}`;
 
 const SHEET_SPRING = { type: "spring", damping: 30, stiffness: 300 } as const;
 
-type Step = "select" | "checkout";
+type Step = "select" | "checkout" | "done";
 
 export function CreditPackagesShowcase() {
   const {
@@ -114,7 +140,13 @@ export function CreditPackagesShowcase() {
   const [receiptPreview, setReceiptPreview] = useState<string | null>(null);
 
   const [step, setStep] = useState<Step>("select");
-  const [customARS, setCustomARS] = useState(0);
+  // Resumen del paso "done": lo guardamos antes de resetPurchase para seguir mostrándolo.
+  const [doneSummary, setDoneSummary] = useState<{
+    credits: number;
+    amount: number;
+  }>({ credits: 0, amount: 0 });
+  // El usuario ingresa CRÉDITOS; el monto se deriva de la config (creditPrice).
+  const [customCreds, setCustomCreds] = useState(0);
   const [uploadError, setUploadError] = useState<string | null>(null);
   // Desglose visual (base/bonus) del paquete elegido — el backend solo guarda el total.
   const [breakdown, setBreakdown] = useState<{ base: number; bonus: number }>({
@@ -122,17 +154,16 @@ export function CreditPackagesShowcase() {
     bonus: 0,
   });
 
-  const calculateCreditsFromARS = (ars: number) => {
-    if (!pricing) return 0;
-    return Math.floor(ars / pricing.creditPrice);
-  };
+  const creditPrice = pricing?.creditPrice ?? 0;
+  const amountForCredits = (credits: number) => credits * creditPrice;
 
   const handleClose = () => {
     if (createPaymentMutation.isPending) return;
     resetPurchase();
-    setCustomARS(0);
+    setCustomCreds(0);
     setUploadError(null);
     setBreakdown({ base: 0, bonus: 0 });
+    setDoneSummary({ credits: 0, amount: 0 });
     setReceiptPreview((prev) => {
       if (prev) URL.revokeObjectURL(prev);
       return null;
@@ -141,24 +172,22 @@ export function CreditPackagesShowcase() {
     closeModal();
   };
 
-  const handleSelectPackage = (pkg: CreditPackage) => {
-    setCustomAmount(pkg.amountARS);
-    setCustomCredits(pkg.baseCredits + pkg.bonusCredits);
-    setBreakdown({ base: pkg.baseCredits, bonus: pkg.bonusCredits });
+  // Confirma una compra de N créditos base: aplica el bonus del tier alcanzado,
+  // cobra solo la base (base × creditPrice) y guarda el total (base + bonus).
+  const confirmCredits = (baseCredits: number) => {
+    if (baseCredits <= 0 || !pricing) {
+      toast.error("Por favor ingresá una cantidad válida");
+      return;
+    }
+    const bonus = tierForCredits(baseCredits)?.bonusCredits ?? 0;
+    setCustomAmount(amountForCredits(baseCredits));
+    setCustomCredits(baseCredits + bonus);
+    setBreakdown({ base: baseCredits, bonus });
     setStep("checkout");
   };
 
-  const handleConfirmCustom = () => {
-    if (customARS <= 0) {
-      toast.error("Por favor ingresá un monto válido");
-      return;
-    }
-    const credits = calculateCreditsFromARS(customARS);
-    setCustomAmount(customARS);
-    setCustomCredits(credits);
-    setBreakdown({ base: credits, bonus: 0 });
-    setStep("checkout");
-  };
+  const handleSelectPackage = (tier: CreditTier) => confirmCredits(tier.minCredits);
+  const handleConfirmCustom = () => confirmCredits(customCreds);
 
   const handleFileUpload = async (
     event: React.ChangeEvent<HTMLInputElement>,
@@ -197,11 +226,15 @@ export function CreditPackagesShowcase() {
       { credits: customCredits, amount: customAmount, receiptUrl },
       {
         onSuccess: () => {
+          setDoneSummary({ credits: customCredits, amount: customAmount });
           resetPurchase();
-          setCustomARS(0);
+          setCustomCreds(0);
           setBreakdown({ base: 0, bonus: 0 });
-          setStep("select");
-          closeModal();
+          setReceiptPreview((prev) => {
+            if (prev) URL.revokeObjectURL(prev);
+            return null;
+          });
+          setStep("done");
         },
       },
     );
@@ -245,8 +278,8 @@ export function CreditPackagesShowcase() {
               position: "relative",
               width: "100%",
               maxWidth: { xs: "100%", md: 1080 },
-              height: { xs: "100%", md: "auto" },
-              maxHeight: { xs: "100%", md: "92vh" },
+              height: { xs: "100dvh", md: "auto" },
+              maxHeight: { xs: "100dvh", md: "92vh" },
               overflowY: "auto",
               borderTopLeftRadius: 28,
               borderTopRightRadius: 28,
@@ -256,7 +289,7 @@ export function CreditPackagesShowcase() {
               boxShadow: "0 -12px 48px rgba(0,0,0,0.45)",
               px: { xs: 2.5, md: 5 },
               pt: 1.5,
-              pb: { xs: 4, md: 5 },
+              pb: { xs: "calc(32px + env(safe-area-inset-bottom))", md: 5 },
             }}
           >
             {/* Grabber estilo iOS */}
@@ -278,7 +311,7 @@ export function CreditPackagesShowcase() {
               aria-label="Cerrar"
               sx={{
                 position: "absolute",
-                top: 14,
+                top: "calc(14px + env(safe-area-inset-top))",
                 right: 14,
                 minWidth: 0,
                 width: 40,
@@ -294,7 +327,7 @@ export function CreditPackagesShowcase() {
             </Button>
 
             <AnimatePresence mode="wait">
-              {step === "select" ? (
+              {step === "select" && (
                 <motion.div
                   key="select"
                   initial={{ opacity: 0, x: -24 }}
@@ -303,14 +336,15 @@ export function CreditPackagesShowcase() {
                   transition={SHEET_SPRING}
                 >
                   <SelectStep
-                    customARS={customARS}
-                    setCustomARS={setCustomARS}
-                    calculateCreditsFromARS={calculateCreditsFromARS}
+                    customCreds={customCreds}
+                    setCustomCreds={setCustomCreds}
+                    creditPrice={creditPrice}
                     onSelectPackage={handleSelectPackage}
                     onConfirmCustom={handleConfirmCustom}
                   />
                 </motion.div>
-              ) : (
+              )}
+              {step === "checkout" && (
                 <motion.div
                   key="checkout"
                   initial={{ opacity: 0, x: 24 }}
@@ -341,6 +375,21 @@ export function CreditPackagesShowcase() {
                   />
                 </motion.div>
               )}
+              {step === "done" && (
+                <motion.div
+                  key="done"
+                  initial={{ opacity: 0, x: 24 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: 24 }}
+                  transition={SHEET_SPRING}
+                >
+                  <DoneStep
+                    credits={doneSummary.credits}
+                    amount={doneSummary.amount}
+                    onClose={handleClose}
+                  />
+                </motion.div>
+              )}
             </AnimatePresence>
           </Box>
         </Box>
@@ -350,22 +399,28 @@ export function CreditPackagesShowcase() {
 }
 
 function SelectStep({
-  customARS,
-  setCustomARS,
-  calculateCreditsFromARS,
+  customCreds,
+  setCustomCreds,
+  creditPrice,
   onSelectPackage,
   onConfirmCustom,
 }: {
-  customARS: number;
-  setCustomARS: (v: number) => void;
-  calculateCreditsFromARS: (ars: number) => number;
-  onSelectPackage: (pkg: CreditPackage) => void;
+  customCreds: number;
+  setCustomCreds: (v: number) => void;
+  creditPrice: number;
+  onSelectPackage: (tier: CreditTier) => void;
   onConfirmCustom: () => void;
 }) {
-  const customCredits = useMemo(
-    () => calculateCreditsFromARS(customARS),
-    [customARS, calculateCreditsFromARS],
+  // Monto derivado de la config y bonus/recomendación según los créditos ingresados.
+  const amount = useMemo(
+    () => customCreds * creditPrice,
+    [customCreds, creditPrice],
   );
+  const reachedBonus = useMemo(
+    () => tierForCredits(customCreds)?.bonusCredits ?? 0,
+    [customCreds],
+  );
+  const upsell = useMemo(() => nextTier(customCreds), [customCreds]);
 
   return (
     <>
@@ -411,16 +466,17 @@ function SelectStep({
         spacing={1.5}
         sx={{ maxWidth: 560, mx: "auto" }}
       >
-        {PREMIUM_PACKAGES.map((pkg) => (
+        {CREDIT_TIERS.map((tier) => (
           <PackageCard
-            key={pkg.tier}
-            pkg={pkg}
-            onSelect={() => onSelectPackage(pkg)}
+            key={tier.tier}
+            tier={tier}
+            creditPrice={creditPrice}
+            onSelect={() => onSelectPackage(tier)}
           />
         ))}
       </Stack>
 
-      {/* Otro monto (libre) */}
+      {/* Otra cantidad (créditos libres) */}
       <Box
         sx={{
           mt: { xs: 2.5, md: 3 },
@@ -443,7 +499,7 @@ function SelectStep({
             ml: 2,
           }}
         >
-          ¿Otro monto?
+          ¿Otra cantidad de créditos?
         </Typography>
         <Stack
           direction={{ xs: "column", sm: "row" }}
@@ -453,19 +509,21 @@ function SelectStep({
         >
           <TextField
             type="number"
-            placeholder="Ej: 30000"
-            value={customARS || ""}
-            onChange={(e) => setCustomARS(Number(e.target.value))}
+            placeholder="Ej: 8"
+            value={customCreds || ""}
+            onChange={(e) =>
+              setCustomCreds(Math.max(0, Math.floor(Number(e.target.value))))
+            }
             InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">
+              endAdornment: (
+                <InputAdornment position="end">
                   <Typography sx={{ color: "rgba(255,255,255,0.6)" }}>
-                    $
+                    créditos
                   </Typography>
                 </InputAdornment>
               ),
             }}
-            inputProps={{ min: 0 }}
+            inputProps={{ min: 0, step: 1 }}
             sx={{
               flex: 1,
               "& .MuiOutlinedInput-root": {
@@ -482,7 +540,7 @@ function SelectStep({
             variant="contained"
             color="secondary"
             onClick={onConfirmCustom}
-            disabled={customARS <= 0}
+            disabled={customCreds <= 0 || creditPrice <= 0}
             sx={{
               fontWeight: 800,
               borderRadius: 12,
@@ -493,18 +551,40 @@ function SelectStep({
             Continuar
           </Button>
         </Stack>
-        {customARS > 0 && (
-          <Typography
-            sx={{
-              mt: 1,
-              ml: 2,
-              color: GOLD,
-              fontSize: "0.85rem",
-              fontWeight: 600,
-            }}
-          >
-            → Recibirás {customCredits} créditos
-          </Typography>
+        {customCreds > 0 && creditPrice > 0 && (
+          <Stack sx={{ mt: 1, ml: 2 }} gap={0.5}>
+            <Typography
+              sx={{ color: GOLD, fontSize: "0.9rem", fontWeight: 700 }}
+            >
+              El monto es {formatARS(amount)}
+              {reachedBonus > 0 && (
+                <Typography
+                  component="span"
+                  sx={{
+                    color: "rgba(255,255,255,0.75)",
+                    fontSize: "0.85rem",
+                    fontWeight: 600,
+                  }}
+                >
+                  {" "}
+                  · recibís {customCreds} + {reachedBonus} de regalo ={" "}
+                  {customCreds + reachedBonus}
+                </Typography>
+              )}
+            </Typography>
+            {upsell && (
+              <Typography
+                sx={{
+                  color: "rgba(255,255,255,0.65)",
+                  fontSize: "0.78rem",
+                }}
+              >
+                💡 Sumá {upsell.minCredits - customCreds} crédito
+                {upsell.minCredits - customCreds === 1 ? "" : "s"} más y con el
+                paquete {upsell.label} recibís +{upsell.bonusCredits} de regalo.
+              </Typography>
+            )}
+          </Stack>
         )}
       </Box>
     </>
@@ -756,15 +836,99 @@ function CheckoutStep({
   );
 }
 
+function DoneStep({
+  credits,
+  amount,
+  onClose,
+}: {
+  credits: number;
+  amount: number;
+  onClose: () => void;
+}) {
+  const sendWhatsApp = () => {
+    const msg = encodeURIComponent(
+      `Hola, envío mi comprobante de recarga de ${credits} créditos (${formatARS(amount)}).`,
+    );
+    window.open(
+      `https://wa.me/${SUPPORT_WHATSAPP}?text=${msg}`,
+      "_blank",
+      "noopener,noreferrer",
+    );
+  };
+
+  return (
+    <Box sx={{ maxWidth: 480, mx: "auto", textAlign: "center", py: 2 }}>
+      <CheckCircleRounded sx={{ fontSize: 64, color: GOLD, mb: 1.5 }} />
+      <Typography
+        sx={{
+          fontFamily: "var(--font-playfair), serif",
+          fontWeight: 700,
+          color: "#fff",
+          fontSize: { xs: "1.4rem", md: "1.75rem" },
+          mb: 1,
+        }}
+      >
+        ¡Solicitud enviada!
+      </Typography>
+      <Typography
+        sx={{
+          color: "rgba(255,255,255,0.6)",
+          fontSize: "0.9rem",
+          maxWidth: 380,
+          mx: "auto",
+          mb: 3,
+        }}
+      >
+        Recibimos tu comprobante de {credits} créditos ({formatARS(amount)}). Un
+        administrador lo revisará y acreditará los créditos a la brevedad.
+      </Typography>
+
+      <Button
+        fullWidth
+        variant="contained"
+        onClick={sendWhatsApp}
+        startIcon={<WhatsApp />}
+        sx={{
+          fontWeight: 800,
+          borderRadius: 12,
+          bgcolor: "#25D366",
+          color: "#fff",
+          mb: 1,
+          "&:hover": { bgcolor: "#1EBE5A" },
+        }}
+      >
+        Enviar comprobante por WhatsApp
+      </Button>
+      <Typography
+        sx={{ color: "rgba(255,255,255,0.5)", fontSize: "0.72rem", mb: 2.5 }}
+      >
+        Opcional. Adjuntá la foto del comprobante en el chat.
+      </Typography>
+
+      <Button
+        fullWidth
+        variant="text"
+        onClick={onClose}
+        sx={{ color: "rgba(255,255,255,0.8)", fontWeight: 700, borderRadius: 12 }}
+      >
+        Cerrar
+      </Button>
+    </Box>
+  );
+}
+
 function PackageCard({
-  pkg,
+  tier: pkg,
+  creditPrice,
   onSelect,
 }: {
-  pkg: CreditPackage;
+  tier: CreditTier;
+  creditPrice: number;
   onSelect: () => void;
 }) {
   const featured = pkg.tier === "oro";
-  const totalCredits = pkg.baseCredits + pkg.bonusCredits;
+  const totalCredits = pkg.minCredits + pkg.bonusCredits;
+  const priceLabel = creditPrice > 0 ? formatARS(pkg.minCredits * creditPrice) : "—";
 
   return (
     <Box
@@ -900,7 +1064,7 @@ function PackageCard({
       {/* Derecha: precio + CTA */}
       <Stack alignItems="flex-end" gap={0.5} sx={{ flexShrink: 0 }}>
         <Typography sx={{ color: GOLD, fontWeight: 800, fontSize: "0.95rem" }}>
-          {formatARS(pkg.amountARS)}
+          {priceLabel}
         </Typography>
         <Button
           variant="contained"
@@ -941,6 +1105,25 @@ function BankAccountCard({ account }: { account: BankAccount }) {
     }
   };
 
+  // Copia SOLO el alias y abre Mercado Pago (app en mobile, web en desktop).
+  // No se puede prellenar monto/alias sin Checkout Pro (comisión), así que
+  // dejamos el alias en el portapapeles para pegarlo en un tap.
+  const handleOpenMP = async () => {
+    try {
+      await navigator.clipboard.writeText(account.alias);
+      toast.success("Alias copiado — pegalo en Mercado Pago");
+    } catch {
+      toast("Copiá el alias manualmente", { icon: "ℹ️" });
+    }
+    // Ruta directa a "transferir". En mobile, los Universal/App Links de MP
+    // hacen que el SO abra la app instalada; en desktop abre la web.
+    window.open(
+      "https://www.mercadopago.com.ar/money-out/transfer/discovery",
+      "_blank",
+      "noopener,noreferrer",
+    );
+  };
+
   return (
     <Box
       sx={{
@@ -948,11 +1131,9 @@ function BankAccountCard({ account }: { account: BankAccount }) {
         borderRadius: 12,
         bgcolor: "rgba(255,255,255,0.06)",
         border: "1px solid rgba(255,255,255,0.12)",
-        display: "flex",
-        alignItems: "center",
-        gap: 1,
       }}
     >
+      <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
       <Box sx={{ flex: 1, minWidth: 0, ml: 2 }}>
         <Stack direction="row" alignItems="center" gap={0.75} flexWrap="wrap">
           <Typography
@@ -1006,6 +1187,38 @@ function BankAccountCard({ account }: { account: BankAccount }) {
           <ContentCopyRounded sx={{ fontSize: 18 }} />
         )}
       </IconButton>
+      </Box>
+
+      {/* Abrir Mercado Pago con el alias ya copiado (solo el logo) */}
+      <Button
+        fullWidth
+        onClick={handleOpenMP}
+        aria-label="Abrir Mercado Pago"
+        sx={{
+          mt: 1.25,
+          p: 0.75,
+          borderRadius: 10,
+          bgcolor: "#fff",
+          "&:hover": { bgcolor: "#f2f2f2" },
+        }}
+      >
+        <Box
+          component="img"
+          src="/mercadopago-icon.jpg"
+          alt="Mercado Pago"
+          sx={{ height: 28, width: "auto", display: "block" }}
+        />
+      </Button>
+      <Typography
+        sx={{
+          mt: 0.75,
+          color: "rgba(255,255,255,0.5)",
+          fontSize: "0.68rem",
+          textAlign: "center",
+        }}
+      >
+        Se copia el alias. Pegalo en “Transferir” e ingresá el monto.
+      </Typography>
     </Box>
   );
 }

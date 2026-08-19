@@ -56,7 +56,6 @@ function AdminLoginForm() {
   });
 
   const onSubmit = (data: LoginFormData) => {
-    console.log("📝 [AdminLoginForm] Triggering mutation...");
     loginMutation.mutate(data);
   };
 

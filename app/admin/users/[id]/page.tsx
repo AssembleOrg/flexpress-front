@@ -23,6 +23,7 @@ import { useEffect, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import * as z from "zod";
 import { CharterAdminPanel } from "@/components/admin/CharterAdminPanel";
+import { ClientDocumentsPanel } from "@/components/admin/ClientDocumentsPanel";
 import {
   useDeleteUser,
   useUpdateUser,
@@ -329,6 +330,9 @@ export default function UserEditPage() {
       {/* Panel consolidado del charter: documentos del titular + vehículos +
           conductores + ayudantes + config activa + sanción a nivel cuenta */}
       {user.role === "charter" && <CharterAdminPanel charterId={userId} />}
+
+      {/* DNI del cliente (role user) para revisión del admin */}
+      {user.role === "user" && <ClientDocumentsPanel userId={userId} />}
 
       {/* Delete Confirmation Dialog */}
       <Dialog

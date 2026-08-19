@@ -123,11 +123,6 @@ export async function POST(request: NextRequest) {
     // Fallback strategy for areas without ROOFTOP precision
     // Attempt 1: ROOFTOP + street_address (99% precision)
     if (data.status !== "OK" || !data.results || data.results.length === 0) {
-      console.log(
-        "⚠️ [GEOCODE] ROOFTOP failed, attempting RANGE_INTERPOLATED fallback",
-        { lat: body.lat, lon: body.lon },
-      );
-
       // Fallback 2: RANGE_INTERPOLATED + street_address (95% precision)
       const baseUrl = "https://maps.googleapis.com/maps/api/geocode/json";
       const fallbackParams = new URLSearchParams({
@@ -142,23 +137,10 @@ export async function POST(request: NextRequest) {
         `${baseUrl}?${fallbackParams.toString()}`,
       );
       data = await fallbackResponse.json();
-
-      // DEBUG: Log Fallback 2 response
-      console.log("🔍 [GEOCODE] Fallback 2 raw response:", {
-        status: data.status,
-        resultCount: data.results?.length || 0,
-        firstResultTypes: data.results?.[0]?.types,
-        firstResult: data.results?.[0]?.formatted_address,
-      });
     }
 
     // Fallback 3: No result_type filter - accept ANY result (route, locality, etc.)
     if (data.status !== "OK" || !data.results || data.results.length === 0) {
-      console.log(
-        "⚠️ [GEOCODE] RANGE_INTERPOLATED failed, attempting without result_type filter",
-        { lat: body.lat, lon: body.lon },
-      );
-
       const baseUrl = "https://maps.googleapis.com/maps/api/geocode/json";
       const finalParams = new URLSearchParams({
         latlng: `${body.lat},${body.lon}`,
@@ -169,14 +151,6 @@ export async function POST(request: NextRequest) {
 
       const finalResponse = await fetch(`${baseUrl}?${finalParams.toString()}`);
       data = await finalResponse.json();
-
-      // DEBUG: Log what Google actually returned
-      console.log("🔍 [GEOCODE] Fallback 3 raw response:", {
-        status: data.status,
-        resultCount: data.results?.length || 0,
-        firstResultTypes: data.results?.[0]?.types,
-        firstResult: data.results?.[0]?.formatted_address,
-      });
     }
 
     // Final fallback: return coordinates if no address found
@@ -203,12 +177,6 @@ export async function POST(request: NextRequest) {
     const components = extractAddressComponents(result.address_components);
     const locationType = result.geometry.location_type || "APPROXIMATE";
     const isPrecise = locationType === "ROOFTOP";
-
-    console.log("✅ [GEOCODE] Success:", {
-      address: result.formatted_address,
-      locationType,
-      isPrecise,
-    });
 
     return NextResponse.json({
       address: result.formatted_address,

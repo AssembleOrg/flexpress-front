@@ -14,6 +14,7 @@ import type {
 } from "@/lib/types/admin";
 import type {
   Payment,
+  PendingCharterReviewItem,
   Report,
   SystemConfig,
   Trip,
@@ -155,6 +156,31 @@ export function usePendingCharters() {
     queryFn: () => adminApi.getPendingCharters(),
     staleTime: 1000 * 60, // 1 minute - new charters can register anytime
     gcTime: 1000 * 60 * 5, // 5 minutes
+  });
+}
+
+/**
+ * Get all pending clients (role user) awaiting verification
+ */
+export function usePendingUsers() {
+  return useQuery<PendingCharterReviewItem[]>({
+    queryKey: queryKeys.admin.pendingUsers.pending(),
+    queryFn: () => adminApi.getPendingUsers(),
+    staleTime: 1000 * 60,
+    gcTime: 1000 * 60 * 5,
+  });
+}
+
+/**
+ * Documentos (DNI) de un usuario para el admin.
+ */
+export function useAdminUserDocuments(userId: string | null, enabled = true) {
+  return useQuery<UserDocument[]>({
+    queryKey: queryKeys.admin.userDocuments.detail(userId ?? ""),
+    queryFn: () => adminApi.getUserDocuments(userId as string),
+    enabled: !!userId && enabled,
+    staleTime: 1000 * 60,
+    gcTime: 1000 * 60 * 5,
   });
 }
 

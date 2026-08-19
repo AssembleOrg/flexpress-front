@@ -13,7 +13,7 @@ import {
   Stack,
   Typography,
 } from "@mui/material";
-import { PriceBreakdown } from "@/components/ui/PriceBreakdown";
+import { PriceBreakdown, formatKmApprox } from "@/components/ui/PriceBreakdown";
 import { RatingDisplay } from "@/components/ui/RatingDisplay";
 import { SignedAvatar } from "@/components/ui/SignedAvatar";
 import { useUserFeedback } from "@/lib/hooks/queries/useFeedbackQueries";
@@ -166,18 +166,17 @@ export function ConfirmMatchModal({
                 variant="h6"
                 sx={{ fontWeight: 700, fontSize: "1rem" }}
               >
-                {(
+                {formatKmApprox(
                   selectedCharter.totalDistance -
-                  selectedCharter.distanceToPickup
-                ).toFixed(1)}{" "}
-                km
+                    selectedCharter.distanceToPickup,
+                )}
               </Typography>
               <Typography
                 variant="caption"
                 color="text.secondary"
                 sx={{ fontSize: "0.65rem" }}
               >
-                Distancia estimada
+                Tu viaje (aprox.)
               </Typography>
             </Box>
 
@@ -217,6 +216,8 @@ export function ConfirmMatchModal({
             <PriceBreakdown
               title="Estimado del viaje (aprox.)"
               total={selectedCharter.estimatedPriceArs}
+              returnArs={selectedCharter.estimatedPriceReturnArs}
+              chargesReturnTrip={selectedCharter.chargesReturnTrip}
               footer="Es un valor aproximado e informativo. Lo coordinás con el chófer."
             />
           )}

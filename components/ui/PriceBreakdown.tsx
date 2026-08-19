@@ -8,12 +8,43 @@ export function formatArs(value: number): string {
   return `$${Math.round(value).toLocaleString("es-AR")}`;
 }
 
+/**
+ * KM aproximado para mostrar (medimos en línea recta × factor, nunca es
+ * exacto). Ej: 16.6 → "≈16.6 km".
+ */
+export function formatKmApprox(km: number): string {
+  return `≈${km.toFixed(1)} km`;
+}
+
+// Factor de circuito con el que el backend calcula distancia/precio (ver
+// STREET_DISTANCE_FACTOR en distance.util.ts). El rango mostrado reescala ese
+// valor a los extremos 1.3–1.4.
+const BASE_FACTOR = 1.35;
+const MIN_FACTOR = 1.3;
+const MAX_FACTOR = 1.4;
+
+/**
+ * Rango estimado a partir de un valor calculado con BASE_FACTOR. Como el km y
+ * el precio son aproximados, mostramos un rango reescalando a los extremos
+ * 1.3–1.4. Ej: estimatedRange(1350) → { min: 1300, max: 1400 }.
+ */
+export function estimatedRange(value: number): { min: number; max: number } {
+  return {
+    min: (value * MIN_FACTOR) / BASE_FACTOR,
+    max: (value * MAX_FACTOR) / BASE_FACTOR,
+  };
+}
+
 interface PriceBreakdownProps {
   /** Total aproximado del viaje (solo ida, con mínimo aplicado). */
   total: number;
   title?: string;
   /** Texto al pie. Si no se pasa, muestra "Aproximado". */
   footer?: string;
+  /** Estimado del tramo de vuelta (50%). Solo informativo, no suma al total. */
+  returnArs?: number | null;
+  /** Si el charter cobra el viaje de vuelta (muestra la línea de vuelta). */
+  chargesReturnTrip?: boolean;
 }
 
 /**
@@ -26,8 +57,12 @@ export function PriceBreakdown({
   total,
   title = "Estimado del viaje",
   footer,
+  returnArs,
+  chargesReturnTrip,
 }: PriceBreakdownProps) {
   const footerText = footer ?? "Aproximado";
+  const { min, max } = estimatedRange(total);
+  const showReturn = chargesReturnTrip && (returnArs ?? 0) > 0;
 
   return (
     <Box
@@ -60,17 +95,39 @@ export function PriceBreakdown({
           fontWeight={800}
           color="success.dark"
           lineHeight={1.1}
+          sx={{ textAlign: "right" }}
         >
-          {formatArs(total)}
+          {formatArs(min)} – {formatArs(max)}
         </Typography>
       </Box>
+
+      {showReturn && (
+        <Box
+          sx={{
+            display: "flex",
+            alignItems: "baseline",
+            justifyContent: "space-between",
+            gap: 1,
+            mt: 0.75,
+          }}
+        >
+          <Typography variant="caption" color="text.secondary">
+            + Vuelta (aprox.)
+          </Typography>
+          <Typography variant="caption" fontWeight={700} color="success.dark">
+            {formatArs(returnArs as number)}
+          </Typography>
+        </Box>
+      )}
 
       <Typography
         variant="caption"
         color="text.disabled"
         sx={{ display: "block", mt: 0.75, fontSize: "0.65rem" }}
       >
-        Pueden aplicar recargos por espera
+        {showReturn
+          ? "La vuelta se coordina con el chófer. Pueden aplicar recargos por espera"
+          : "Pueden aplicar recargos por espera"}
       </Typography>
 
       <Typography

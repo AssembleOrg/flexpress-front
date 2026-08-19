@@ -64,8 +64,8 @@ export function TripMetricsCard({
   if (distance !== undefined) {
     metrics.push({
       icon: <Route sx={{ fontSize: 20, color: "primary.main" }} />,
-      label: "Distancia",
-      value: `${distance.toFixed(1)} km`,
+      label: "Distancia aprox.",
+      value: `≈${distance.toFixed(1)} km`,
     });
   }
 

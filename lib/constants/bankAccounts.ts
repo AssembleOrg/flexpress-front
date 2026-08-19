@@ -7,15 +7,11 @@ export interface BankAccount {
   bank?: string;
 }
 
+// Formato wa.me: código de país sin '+' ni espacios (ej AR: "54911...").
+// +54 9 11 3012-4035
+export const SUPPORT_WHATSAPP = "5491130124035";
+
 export const BANK_ACCOUNTS: BankAccount[] = [
-  {
-    id: "blessedtech",
-    alias: "blessedtech",
-    accountNumber: "0000003100015518948401",
-    accountType: "CVU",
-    holder: "Holmes Andres Garcia Agudelo",
-    bank: "Mercado Pago",
-  },
   {
     id: "flexpress",
     alias: "flexpress",

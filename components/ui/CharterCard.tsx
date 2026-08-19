@@ -16,7 +16,7 @@ import {
   Chip,
   Typography,
 } from "@mui/material";
-import { PriceBreakdown } from "@/components/ui/PriceBreakdown";
+import { PriceBreakdown, formatKmApprox } from "@/components/ui/PriceBreakdown";
 import { RatingDisplay } from "@/components/ui/RatingDisplay";
 import { SignedAvatar } from "@/components/ui/SignedAvatar";
 import type { AvailableCharter } from "@/lib/types/api";
@@ -270,7 +270,11 @@ export function CharterCard({
         {/* Estimado del viaje en pesos (informativo, aproximado por km) */}
         {charter.estimatedPriceArs != null && (
           <Box sx={{ mb: 1.5 }}>
-            <PriceBreakdown total={charter.estimatedPriceArs} />
+            <PriceBreakdown
+              total={charter.estimatedPriceArs}
+              returnArs={charter.estimatedPriceReturnArs}
+              chargesReturnTrip={charter.chargesReturnTrip}
+            />
           </Box>
         )}
 
@@ -278,7 +282,7 @@ export function CharterCard({
         <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap", mb: 2 }}>
           <Chip
             icon={<DirectionsCar />}
-            label={`${charter.distanceToPickup.toFixed(1)} km al origen`}
+            label={`${formatKmApprox(charter.distanceToPickup)} hasta vos`}
             size="small"
             variant="outlined"
             color="primary"

@@ -4,6 +4,7 @@ import { Box, CircularProgress } from "@mui/material";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { AdminNavbar } from "@/components/layout/AdminNavbar";
+import { useHydrated } from "@/lib/hooks/useHydrated";
 import { useAuthStore } from "@/lib/stores/authStore";
 
 export default function AdminLayout({
@@ -12,6 +13,7 @@ export default function AdminLayout({
   children: React.ReactNode;
 }) {
   const { user, isAuthenticated } = useAuthStore();
+  const hydrated = useHydrated();
   const router = useRouter();
   const pathname = usePathname();
 
@@ -19,8 +21,9 @@ export default function AdminLayout({
   const isLoginPage = pathname === "/admin/login";
 
   useEffect(() => {
-    // Skip auth check on login page
-    if (isLoginPage) {
+    // Skip auth check on login page, and wait for the store to rehydrate from
+    // localStorage before deciding — el store arranca vacío (skipHydration).
+    if (isLoginPage || !hydrated) {
       return;
     }
 
@@ -32,12 +35,14 @@ export default function AdminLayout({
       // Redirect to admin login
       router.push("/admin/login");
     }
-  }, [isAuthenticated, user?.role, router, isLoginPage]);
+  }, [isAuthenticated, user?.role, router, isLoginPage, hydrated]);
 
-  // Show loading while checking auth (skip on login page)
+  // Show loading while hydrating or checking auth (skip on login page)
   if (
     !isLoginPage &&
-    (!isAuthenticated || (user?.role !== "admin" && user?.role !== "subadmin"))
+    (!hydrated ||
+      !isAuthenticated ||
+      (user?.role !== "admin" && user?.role !== "subadmin"))
   ) {
     return (
       <Box

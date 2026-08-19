@@ -391,10 +391,10 @@ export default function ReportDetailPage() {
                     color="textSecondary"
                     sx={{ minWidth: 140 }}
                   >
-                    Distancia:
+                    Distancia aprox.:
                   </Typography>
                   <Typography variant="body2">
-                    {travelMatch.distanceKm} km
+                    ≈{travelMatch.distanceKm} km
                   </Typography>
                 </Stack>
               )}

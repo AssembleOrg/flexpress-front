@@ -212,23 +212,14 @@ export default function MatchDetailPage() {
       isRecoveringConversation.current = true;
 
       const attemptNumber = conversationRecoveryAttempt + 1;
-      console.log(
-        `🔄 [CONV RECOVERY] Attempt ${attemptNumber}/${MAX_ATTEMPTS} for match ${matchId}`,
-      );
       setConversationRecoveryAttempt(attemptNumber);
 
       try {
         await conversationApi.createFromMatch(matchId);
-        console.log(
-          `✅ [CONV RECOVERY] Conversation created on attempt ${attemptNumber}`,
-        );
         await new Promise((resolve) => setTimeout(resolve, 500));
         await refetchMatch();
       } catch (error) {
         if (axios.isAxiosError(error) && error.response?.status === 409) {
-          console.log(
-            "ℹ️ [CONV RECOVERY] 409 — conversation exists, refetching match...",
-          );
           await new Promise((resolve) => setTimeout(resolve, 500));
           await refetchMatch();
         } else {
@@ -744,12 +735,6 @@ export default function MatchDetailPage() {
 
     const statusInfo = getStatusInfo();
 
-    // biome-ignore lint/suspicious/noConsole: diagnóstico temporal — remover cuando se confirme estructura del backend
-    console.log(
-      "[DEBUG] match.charter:",
-      JSON.stringify(match.charter, null, 2),
-    );
-
     return (
       <>
         {/* Mobile Header */}
@@ -912,7 +897,7 @@ export default function MatchDetailPage() {
                           variant="caption"
                           sx={{ fontWeight: 700, fontSize: "0.7rem" }}
                         >
-                          {match.distanceKm.toFixed(1)} km
+                          ≈{match.distanceKm.toFixed(1)} km
                         </Typography>
                       </Box>
                     )}

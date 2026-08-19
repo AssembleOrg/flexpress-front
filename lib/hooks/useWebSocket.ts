@@ -80,8 +80,6 @@ export function useWebSocket(): UseWebSocketReturn {
       return;
     }
 
-    console.log("🔌 [WebSocket] Conectando a:", socketUrl);
-
     const socket = io(`${socketUrl}/conversations`, {
       auth: {
         token,
@@ -97,13 +95,11 @@ export function useWebSocket(): UseWebSocketReturn {
     // ===== Eventos de Conexión =====
 
     socket.on("connect", () => {
-      console.log("✅ [WebSocket] Conectado al servidor");
       setIsConnected(true);
       setIsConnecting(false);
     });
 
-    socket.on("disconnect", (reason) => {
-      console.log("⚠️  [WebSocket] Desconectado:", reason);
+    socket.on("disconnect", () => {
       setIsConnected(false);
     });
 
@@ -112,8 +108,8 @@ export function useWebSocket(): UseWebSocketReturn {
       setIsConnecting(false);
     });
 
-    socket.on("connect_error", (error) => {
-      console.error("❌ [WebSocket] Error de conexión:", error);
+    socket.on("connect_error", () => {
+      console.warn("[WebSocket] Error de conexión");
       setIsConnecting(false);
     });
 
@@ -126,14 +122,6 @@ export function useWebSocket(): UseWebSocketReturn {
      * 🔧 MEJORADO: Logging detallado para debugging
      */
     socket.on("new-message", (message: Message) => {
-      console.log("💬 [WebSocket] Nuevo mensaje recibido:", {
-        id: message?.id,
-        conversationId: message?.conversationId,
-        senderId: message?.senderId,
-        content: `${message?.content?.substring(0, 50)}...`,
-        timestamp: new Date().toISOString(),
-      });
-
       // Validar estructura del mensaje
       if (!message?.id || !message?.conversationId || !message?.content) {
         console.error(
@@ -149,30 +137,17 @@ export function useWebSocket(): UseWebSocketReturn {
       }
 
       // Actualizar cache de React Query con el nuevo mensaje
-      console.log(
-        `🔄 [WebSocket] Actualizando cache para conversación: ${message.conversationId}`,
-      );
       queryClient.setQueryData(
         conversationKeys.messages(message.conversationId),
         (old: Message[] | undefined) => {
           if (!old) {
-            console.log("📝 [WebSocket] Cache vacío, creando con 1 mensaje");
             return [message];
           }
           // Evitar duplicados
           const isDuplicate = old.some((msg) => msg?.id === message.id);
           if (isDuplicate) {
-            console.log(
-              "⚠️  [WebSocket] Mensaje duplicado ignorado:",
-              message.id,
-            );
             return old;
           }
-          console.log(
-            `✅ [WebSocket] Mensaje agregado al cache (${old.length} → ${
-              old.length + 1
-            })`,
-          );
           return [...old, message];
         },
       );
@@ -202,9 +177,6 @@ export function useWebSocket(): UseWebSocketReturn {
           return;
         }
 
-        const { matchId, status } = data;
-        console.log(`🔄 [WebSocket] Match ${matchId} actualizado: ${status}`);
-
         // Refetch all matches (force immediate update for real-time updates)
         queryClient.refetchQueries({
           queryKey: queryKeys.matches.all,
@@ -220,7 +192,6 @@ export function useWebSocket(): UseWebSocketReturn {
     socket.on(
       "notification:new",
       (data: { priority?: string; type?: string }) => {
-        console.log("🔔 [WebSocket] Nueva notificación recibida:", data);
         queryClient.invalidateQueries({
           queryKey: queryKeys.notifications.unreadCount(),
         });
@@ -266,7 +237,6 @@ export function useWebSocket(): UseWebSocketReturn {
         }
 
         const { tripId, matchId } = data;
-        console.log(`🏁 [WebSocket] Trip ${tripId} completado`);
 
         // Refetch all trips and matches (force immediate update for real-time updates)
         if (tripId) {
@@ -289,9 +259,7 @@ export function useWebSocket(): UseWebSocketReturn {
     // Cleanup: desconectar solo cuando no queda ninguna instancia montada
     return () => {
       mountCount--;
-      console.log("🔌 [WebSocket] Instancia desmontada, quedan:", mountCount);
       if (mountCount <= 0) {
-        console.log("🔌 [WebSocket] Última instancia — desconectando");
         globalSocket?.disconnect();
         globalSocket = null;
         mountCount = 0;
@@ -324,7 +292,6 @@ export function useSocketEmit() {
   const joinConversation = useCallback(
     (conversationId: string) => {
       if (socket?.connected) {
-        console.log("📍 [WebSocket] Uniéndose a conversación:", conversationId);
         socket.emit("join-conversation", {
           conversationId,
           userId,
@@ -337,7 +304,6 @@ export function useSocketEmit() {
   const leaveConversation = useCallback(
     (conversationId: string) => {
       if (socket?.connected) {
-        console.log("📍 [WebSocket] Saliendo de conversación:", conversationId);
         socket.emit("leave-conversation", { conversationId });
       }
     },
@@ -347,7 +313,6 @@ export function useSocketEmit() {
   const sendMessage = useCallback(
     (conversationId: string, content: string) => {
       if (socket?.connected) {
-        console.log("💬 [WebSocket] Enviando mensaje:", content);
         socket.emit("send-message", { conversationId, content });
       } else {
         console.warn(
@@ -394,9 +359,6 @@ export function useMatchUpdateListener(
 
     const handleMatchUpdate = (data: { matchId?: string; status?: string }) => {
       if (data?.matchId === matchId && data?.status) {
-        console.log(
-          `📬 [MATCH LISTENER] Match ${matchId} actualizado: ${data.status}`,
-        );
         onMatchUpdated?.(data.status);
       }
     };
@@ -429,9 +391,6 @@ export function useTripCompletedListener(
       matchId?: string;
     }) => {
       if (data?.matchId === matchId) {
-        console.log(
-          `🏁 [TRIP COMPLETED LISTENER] Trip completado para match ${matchId}`,
-        );
         onTripCompleted?.();
       }
     };

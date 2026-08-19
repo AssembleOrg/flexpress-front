@@ -36,11 +36,6 @@ export function useLogin() {
     mutationFn: (data: LoginRequest) => authApi.login(data),
 
     onSuccess: async (response) => {
-      console.log("✅ [useLogin] onSuccess - Guardando auth");
-      console.log("   User:", response.user.name);
-      console.log("   Token presente:", !!response.token);
-      console.log("   Token length:", response.token?.length || 0);
-
       // Guardar user y tokens en store (persiste a localStorage)
       login(response.user, response.token, response.refreshToken);
 
@@ -52,10 +47,7 @@ export function useLogin() {
 
       // Fetch perfil completo para asegurar campos como pricePerKm
       try {
-        console.log("📡 [useLogin] Obteniendo perfil completo...");
         const fullProfile = await authApi.updateUser(response.user.id, {});
-        console.log("✅ [useLogin] Perfil completo obtenido:", fullProfile);
-        console.log("   pricePerKm en perfil:", fullProfile.pricePerKm);
         updateUser(fullProfile);
       } catch (error) {
         console.warn(
@@ -85,11 +77,6 @@ export function useLogin() {
       // Redirect al dashboard que corresponde al rol (ver lib/routes.ts).
       const targetPath = dashboardFor(response.user.role);
 
-      console.log(
-        "🔄 [useLogin] Redirigiendo a:",
-        targetPath,
-        `(role: ${response.user.role})`,
-      );
       // `replace` y no `push`: el login no debe quedar en el historial, si no
       // el botón "atrás" vuelve a una pantalla que solo existe para rebotar.
       router.replace(targetPath);
@@ -113,12 +100,6 @@ export function useRegister() {
     mutationFn: (data: RegisterRequest) => authApi.register(data),
 
     onSuccess: (response) => {
-      console.log("✅ [useRegister] onSuccess - Guardando auth");
-      console.log("   User:", response.user.name);
-      console.log("   Token presente:", !!response.token);
-      console.log("   Token length:", response.token?.length || 0);
-      console.log("   Role:", response.user.role);
-
       // Guardar user y tokens en store
       login(response.user, response.token, response.refreshToken);
 
@@ -184,23 +165,6 @@ export function useUpdateUserProfile() {
     }) => authApi.updateUser(userId, data),
 
     onSuccess: (updatedUser, variables) => {
-      console.log(
-        "✅ [useUpdateUserProfile] Perfil actualizado:",
-        updatedUser.name,
-      );
-      console.log(
-        "✅ [useUpdateUserProfile] updatedUser completo:",
-        updatedUser,
-      );
-      console.log(
-        "✅ [useUpdateUserProfile] pricePerKm en respuesta:",
-        updatedUser.pricePerKm,
-      );
-      console.log(
-        "✅ [useUpdateUserProfile] pricePerKm enviado:",
-        variables.data.pricePerKm,
-      );
-
       // Actualizar usuario en el store
       // Si backend no devuelve los campos, usar los valores enviados
       updateUser({
