@@ -6,7 +6,6 @@ import {
   useQueryClient,
 } from "@tanstack/react-query";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
-import { APIProvider } from "@vis.gl/react-google-maps";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { Toaster } from "react-hot-toast";
@@ -90,51 +89,43 @@ function SWMessageListener() {
 }
 
 export function Providers({ children }: ProvidersProps) {
-  const googleApiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "";
-
-  if (!googleApiKey) {
-    console.warn(
-      "⚠️ Warning: NEXT_PUBLIC_GOOGLE_MAPS_API_KEY is not configured. Google Maps features may not work correctly.",
-    );
-  }
-
+  // Ya no se carga el SDK de Google en el browser: el autocomplete de Places
+  // pasa por /api/places/* con la key server. Cero keys de Google en el bundle.
   return (
-    <APIProvider apiKey={googleApiKey}>
-      <QueryClientProvider client={queryClient}>
-        <WebSocketInitializer />
-        <SWMessageListener />
-        <ThemeProvider>
-          <StoreHydration>
-            <ErrorBoundary>
-              {children}
-              <InstallPrompt />
-              <Toaster
-                position="top-right"
-                toastOptions={{
-                  duration: 4000,
+    <QueryClientProvider client={queryClient}>
+      <WebSocketInitializer />
+      <SWMessageListener />
+      <ThemeProvider>
+        <StoreHydration>
+          <ErrorBoundary>
+            {children}
+            <InstallPrompt />
+            <Toaster
+              position="top-right"
+              toastOptions={{
+                duration: 4000,
+                style: {
+                  background: "#380116",
+                  color: "#FFFFFF",
+                  fontFamily: "var(--font-lato), sans-serif",
+                  fontWeight: 500,
+                },
+                success: {
                   style: {
-                    background: "#380116",
-                    color: "#FFFFFF",
-                    fontFamily: "var(--font-lato), sans-serif",
-                    fontWeight: 500,
+                    background: "#2ECC71",
                   },
-                  success: {
-                    style: {
-                      background: "#2ECC71",
-                    },
+                },
+                error: {
+                  style: {
+                    background: "#E74C3C",
                   },
-                  error: {
-                    style: {
-                      background: "#E74C3C",
-                    },
-                  },
-                }}
-              />
-            </ErrorBoundary>
-          </StoreHydration>
-        </ThemeProvider>
-        <ReactQueryDevtools initialIsOpen={false} />
-      </QueryClientProvider>
-    </APIProvider>
+                },
+              }}
+            />
+          </ErrorBoundary>
+        </StoreHydration>
+      </ThemeProvider>
+      <ReactQueryDevtools initialIsOpen={false} />
+    </QueryClientProvider>
   );
 }
