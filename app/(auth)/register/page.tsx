@@ -5,6 +5,7 @@ import {
   CameraAlt,
   DriveEta,
   Home,
+  InfoOutlined,
   Login,
   Person,
   Visibility,
@@ -25,9 +26,11 @@ import {
   FormControlLabel,
   IconButton,
   InputAdornment,
+  Stack,
   TextField,
   ToggleButton,
   ToggleButtonGroup,
+  Tooltip,
   Typography,
 } from "@mui/material";
 import { motion } from "framer-motion";
@@ -550,13 +553,16 @@ function RegisterFormContent() {
                   >
                     <TextField
                       {...register("address")}
-                      label="Dirección"
+                      label="Domicilio"
                       fullWidth
                       margin="normal"
                       autoComplete="street-address"
                       error={!!errors.address}
-                      helperText={errors.address?.message}
-                      placeholder="Ej: Av. San Martín 123, Buenos Aires"
+                      helperText={
+                        errors.address?.message ??
+                        "Tu dirección personal. No define qué choferes ves."
+                      }
+                      placeholder="Ej: Av. Mitre 1234, Avellaneda"
                     />
                   </motion.div>
 
@@ -611,16 +617,33 @@ function RegisterFormContent() {
                       }}
                     >
                       <Box sx={{ mt: 2, mb: 1 }}>
-                        <Typography
-                          variant="subtitle2"
-                          color="text.secondary"
-                          sx={{ mb: 1, fontWeight: 600 }}
+                        <Stack
+                          direction="row"
+                          alignItems="center"
+                          spacing={0.5}
+                          sx={{ mb: 1 }}
                         >
-                          Ubicación de Operaciones
-                        </Typography>
+                          <Typography
+                            variant="subtitle2"
+                            color="text.secondary"
+                            sx={{ fontWeight: 600 }}
+                          >
+                            Zona de operaciones
+                          </Typography>
+                          <Tooltip
+                            title="Define desde dónde aparecés en las búsquedas y tu radio de alcance. Es lo que usa el sistema para conectarte con clientes cercanos."
+                            enterTouchDelay={0}
+                            leaveTouchDelay={4000}
+                          >
+                            <InfoOutlined
+                              fontSize="small"
+                              sx={{ color: "text.secondary", cursor: "help" }}
+                            />
+                          </Tooltip>
+                        </Stack>
                         <AddressInput
                           label="¿Desde dónde operas habitualmente?"
-                          placeholder="Ej: Av. Corrientes 1234, CABA"
+                          placeholder="Ej: Av. Mitre 1234, Avellaneda"
                           value={originAddress}
                           onAddressSelect={(address, lat, lon) => {
                             setOriginAddress(address);

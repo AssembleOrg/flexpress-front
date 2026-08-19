@@ -68,7 +68,6 @@ function LoginForm() {
   });
 
   const onSubmit = (data: LoginFormData) => {
-    console.log("📝 [LoginForm] Triggering mutation...");
     loginMutation.mutate(data);
   };
 

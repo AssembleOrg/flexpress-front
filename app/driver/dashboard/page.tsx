@@ -47,6 +47,7 @@ import { RespondInquiryModal } from "@/components/modals/RespondInquiryModal";
 import { PwaInlineCta } from "@/components/pwa/PwaInlineCta";
 import { AccountStatusBanner } from "@/components/ui/AccountStatusBanner";
 import { SignedAvatar } from "@/components/ui/SignedAvatar";
+import { SupportContact } from "@/components/ui/SupportContact";
 import { WelcomeHeader } from "@/components/ui/WelcomeHeader";
 import { authApi } from "@/lib/api/auth";
 import {
@@ -451,6 +452,7 @@ export default function DriverDashboard() {
               </Typography>
             </>
           )}
+          <SupportContact />
         </MotionCard>
 
         {/* Estado de vehículos */}
@@ -1379,10 +1381,10 @@ export default function DriverDashboard() {
                           color="text.secondary"
                           display="block"
                         >
-                          Distancia
+                          Distancia aprox.
                         </Typography>
                         <Typography variant="body2" sx={{ fontWeight: 700 }}>
-                          {match.distanceKm.toFixed(1)} km
+                          ≈{match.distanceKm.toFixed(1)} km
                         </Typography>
                       </Box>
                     )}

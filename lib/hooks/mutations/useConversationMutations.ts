@@ -72,11 +72,6 @@ export function useCreateConversation() {
       conversationApi.createFromMatch(matchId),
 
     onSuccess: (conversation) => {
-      console.log(
-        "✅ [useCreateConversation] Conversation created:",
-        conversation.id,
-      );
-
       // Cache the conversation messages
       queryClient.setQueryData(conversationKeys.messages(conversation.id), []);
 

@@ -211,6 +211,46 @@ export function useVerifyCharter() {
 }
 
 /**
+ * Verify or reject a client (role user). Mismo endpoint que el charter
+ * (PATCH /users/:id/verify), que ahora acepta users. Invalida la lista de
+ * clientes pendientes y la de usuarios.
+ */
+export function useVerifyUser() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      userId,
+      status,
+      rejectionReason,
+    }: {
+      userId: string;
+      status: "verified" | "rejected";
+      rejectionReason?: string;
+    }) => adminApi.verifyCharter(userId, status, rejectionReason),
+
+    onSuccess: (_, { status }) => {
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.admin.pendingUsers.pending(),
+      });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.admin.users.all(),
+      });
+      toast.success(
+        status === "verified"
+          ? "Cliente verificado correctamente"
+          : "Cliente rechazado correctamente",
+      );
+    },
+
+    onError: (error) => {
+      console.error("Error verifying user:", error);
+      toast.error("Error al procesar la verificación del cliente");
+    },
+  });
+}
+
+/**
  * Verify or reject a vehicle individually
  * TODO: endpoint PATCH /vehicles/:id/verify no implementado en backend aún
  */

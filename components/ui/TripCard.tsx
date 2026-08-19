@@ -83,7 +83,7 @@ export default function TripCard({
         {/* Distancia */}
         {trip.travelMatch?.distanceKm && (
           <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-            Distancia: {trip.travelMatch.distanceKm.toFixed(1)} km
+            Distancia aprox.: ≈{trip.travelMatch.distanceKm.toFixed(1)} km
           </Typography>
         )}
 

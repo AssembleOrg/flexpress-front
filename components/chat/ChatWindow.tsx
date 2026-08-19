@@ -120,11 +120,9 @@ export function ChatWindow({
   // Usa el objeto memoizado socketEmit que ahora es estable entre renders
   useEffect(() => {
     if (conversationId && userId && isConnected) {
-      console.log(`🔌 Uniéndose a conversación: ${conversationId}`);
       socketEmit.joinConversation(conversationId);
 
       return () => {
-        console.log(`🔌 Saliendo de conversación: ${conversationId}`);
         socketEmit.leaveConversation(conversationId);
       };
     }

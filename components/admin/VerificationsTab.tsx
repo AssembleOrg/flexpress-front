@@ -2,9 +2,11 @@
 
 import { Box, Tab, Tabs } from "@mui/material";
 import { useState } from "react";
+import { usePendingUsers } from "@/lib/hooks/queries/useAdminQueries";
 import { PendingChartersTab } from "./PendingChartersTab";
 import { PendingDriversTab } from "./PendingDriversTab";
 import { PendingHelpersTab } from "./PendingHelpersTab";
+import { PendingUsersTab } from "./PendingUsersTab";
 
 interface VerificationsTabProps {
   pendingChartersCount: number;
@@ -62,6 +64,7 @@ export function VerificationsTab({
   pendingHelpersCount,
 }: VerificationsTabProps) {
   const [sub, setSub] = useState(0);
+  const { data: pendingUsers = [] } = usePendingUsers();
 
   const tabSx = {
     textTransform: "none" as const,
@@ -113,11 +116,16 @@ export function VerificationsTab({
           sx={tabSx}
           label={<TabLabel text="Ayudantes" count={pendingHelpersCount} />}
         />
+        <Tab
+          sx={tabSx}
+          label={<TabLabel text="Clientes" count={pendingUsers.length} />}
+        />
       </Tabs>
 
       {sub === 0 && <PendingChartersTab />}
       {sub === 1 && <PendingDriversTab />}
       {sub === 2 && <PendingHelpersTab />}
+      {sub === 3 && <PendingUsersTab />}
     </Box>
   );
 }

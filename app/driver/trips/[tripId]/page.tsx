@@ -112,10 +112,10 @@ export default function DriverTripDetailPage() {
               {trip.travelMatch?.distanceKm && (
                 <Box>
                   <Typography variant="caption" color="textSecondary">
-                    Distancia
+                    Distancia aprox.
                   </Typography>
                   <Typography variant="body2">
-                    {trip.travelMatch.distanceKm.toFixed(1)} km
+                    ≈{trip.travelMatch.distanceKm.toFixed(1)} km
                   </Typography>
                 </Box>
               )}

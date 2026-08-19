@@ -73,20 +73,6 @@ api.interceptors.request.use(
 
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
-      if (process.env.NODE_ENV === "development") {
-        console.log("✅ [API] Request Interceptor - Token inyectado");
-        console.log("   URL:", config.url);
-        console.log("   Token presente:", !!token);
-        console.log(
-          "   Header Authorization:",
-          config.headers.Authorization ? "✅ Set" : "❌ Not set",
-        );
-      }
-    } else {
-      if (process.env.NODE_ENV === "development") {
-        console.log("⚠️  [API] Request Interceptor - No hay token en store");
-        console.log("   URL:", config.url);
-      }
     }
 
     return config;
@@ -99,12 +85,6 @@ api.interceptors.request.use(
 // Response interceptor: Manejar errores de autenticación
 api.interceptors.response.use(
   (response) => {
-    if (process.env.NODE_ENV === "development") {
-      console.log("✅ [API] Response Success");
-      console.log("   URL:", response.config.url);
-      console.log("   Status:", response.status);
-      console.log("   Data received:", !!response.data);
-    }
     return response;
   },
   async (error) => {
@@ -134,30 +114,9 @@ api.interceptors.response.use(
         }
       }
 
-      if (process.env.NODE_ENV === "development") {
-        console.log("❌ [API] 401 y no se pudo renovar - cerrando sesión");
-        console.log("   URL:", requestUrl);
-      }
-
       // Los guards (AuthGuard/RoleGuard/admin layout) reaccionan al cambio
       // de isAuthenticated y redirigen sin recargar la página.
       useAuthStore.getState().clearAuth();
-    } else if (error.response?.status === 403) {
-      if (process.env.NODE_ENV === "development") {
-        console.log(
-          "❌ [API] 403 Forbidden - No tienes permisos para esta acción",
-        );
-        console.log("   URL:", error.config?.url);
-      }
-    } else if (error.request) {
-      if (process.env.NODE_ENV === "development") {
-        console.log("❌ [API] Error de conexión - El servidor no respondió");
-        console.log("   URL:", error.config?.url);
-      }
-    } else {
-      if (process.env.NODE_ENV === "development") {
-        console.log("❌ [API] Error desconocido:", error.message);
-      }
     }
 
     return Promise.reject(error);

@@ -34,15 +34,6 @@ export const useAuthStore = create<
 
       // Acciones
       login: (user: User, token: string, refreshToken: string | null = null) => {
-        if (
-          typeof window !== "undefined" &&
-          process.env.NODE_ENV === "development"
-        ) {
-          console.log("✅ [AuthStore] Login - Guardando user + token");
-          console.log("   User:", user.name, `(${user.email})`);
-          console.log("   Token length:", token.length);
-          console.log("   Role:", user.role);
-        }
         // Espejo del rol para que el middleware pueda redirigir antes de
         // servir el bundle. No lleva el token: ver lib/authCookie.ts.
         setRoleCookie(user.role);
@@ -61,14 +52,8 @@ export const useAuthStore = create<
       // Limpia el estado local. La revocación del refresh en el servidor la
       // dispara useLogout antes de llamar acá.
       clearAuth: () => {
-        if (
-          typeof window !== "undefined" &&
-          process.env.NODE_ENV === "development"
-        ) {
-          console.log("✅ [AuthStore] Logout - Limpiando user + token");
-        }
         clearRoleCookie();
-        return set({
+        set({
           user: null,
           token: null,
           refreshToken: null,
@@ -76,6 +61,9 @@ export const useAuthStore = create<
           isLoading: false,
           gender: null,
         });
+        // Elimina la clave `flexpress-auth` de localStorage. Sin esto, persist
+        // solo la reescribe con nulls y la sesión puede revivir al rehidratar.
+        useAuthStore.persist.clearStorage();
       },
 
       updateUser: (userData: Partial<User>) =>

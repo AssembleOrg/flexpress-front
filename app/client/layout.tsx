@@ -1,8 +1,10 @@
 import type { Metadata } from "next";
 import { AuthGuard } from "@/components/guards/AuthGuard";
 import { RoleGuard } from "@/components/guards/RoleGuard";
+import { VerifiedRouteGuard } from "@/components/guards/VerifiedRouteGuard";
 import { AuthNavbar } from "@/components/layout/AuthNavbar";
 import { BottomNavbar } from "@/components/layout/BottomNavbar";
+import { UserRole } from "@/lib/types/api";
 
 export const metadata: Metadata = {
   title: "Cliente - Flexpress",
@@ -19,7 +21,13 @@ export default function ClientLayout({
       <RoleGuard requiredRole="user">
         <div className="client-layout">
           <AuthNavbar />
-          {children}
+          <VerifiedRouteGuard
+            role={UserRole.USER}
+            allowedPrefixes={["/client/dashboard", "/client/verification"]}
+            redirectTo="/client/dashboard"
+          >
+            {children}
+          </VerifiedRouteGuard>
           <BottomNavbar />
         </div>
       </RoleGuard>

@@ -42,7 +42,6 @@ export const paymentsApi = {
       "message" in responseData &&
       "data" in responseData
     ) {
-      console.log("🔍 [PAYMENTS] Detected double-wrapped response");
       // biome-ignore lint/style/noNonNullAssertion: structure validated above
       return (responseData as unknown as { data: Payment }).data!;
     }

@@ -54,11 +54,14 @@ export default function SettingsPage() {
     if (km <= 0) return null;
     const ida = EXAMPLE_IDA_KM * km;
     const total = Math.max(ida, MIN_PRICE_ARS);
+    // Vuelta al 50% del $/km (mismo criterio que el backend), solo si la cobra.
+    const ret = chargesReturnTrip ? EXAMPLE_IDA_KM * km * 0.5 : 0;
     return {
       total: Math.round(total),
       ida: Math.round(ida),
+      ret: Math.round(ret),
     };
-  }, [pricePerKm]);
+  }, [pricePerKm, chargesReturnTrip]);
 
   const handleSave = async () => {
     if (typeof pricePerKm !== "number" || pricePerKm <= 0) {
@@ -181,7 +184,11 @@ export default function SettingsPage() {
                   Así lo vería el cliente · ejemplo Bernal → Claypole (
                   {EXAMPLE_IDA_KM} km)
                 </Typography>
-                <PriceBreakdown total={preview.total} />
+                <PriceBreakdown
+                  total={preview.total}
+                  returnArs={preview.ret}
+                  chargesReturnTrip={chargesReturnTrip}
+                />
               </Box>
             )}
 

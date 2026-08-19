@@ -4,6 +4,7 @@ import {
   Box,
   Button,
   Chip,
+  CircularProgress,
   Dialog,
   DialogActions,
   DialogContent,
@@ -313,17 +314,27 @@ export function PaymentsTable() {
 
       {/* Conditional Rendering: Mobile Cards vs DataGrid */}
       {isMobile ? (
-        <Stack spacing={2}>
-          {filteredPayments.map((payment) => (
-            <MobilePaymentCard
-              key={payment.id}
-              payment={payment}
-              onApprove={handleApprove}
-              onReject={handleReject}
-              onViewReceipt={handleViewReceipt}
-            />
-          ))}
-        </Stack>
+        isLoading ? (
+          <Box sx={{ display: "flex", justifyContent: "center", py: 6 }}>
+            <CircularProgress />
+          </Box>
+        ) : filteredPayments.length === 0 ? (
+          <Typography sx={{ textAlign: "center", py: 6, opacity: 0.7 }}>
+            No hay pagos
+          </Typography>
+        ) : (
+          <Stack spacing={2}>
+            {filteredPayments.map((payment) => (
+              <MobilePaymentCard
+                key={payment.id}
+                payment={payment}
+                onApprove={handleApprove}
+                onReject={handleReject}
+                onViewReceipt={handleViewReceipt}
+              />
+            ))}
+          </Stack>
+        )
       ) : (
         <Box sx={{ width: "100%" }}>
           <DataGrid

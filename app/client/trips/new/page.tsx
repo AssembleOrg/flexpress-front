@@ -54,7 +54,6 @@ export default function NewTripPage() {
   // Redirigir a login si no está autenticado
   useEffect(() => {
     if (hydrated && !isAuthenticated) {
-      console.log("❌ [PAGE] User not authenticated, redirecting to login");
       router.push("/login");
     }
   }, [hydrated, isAuthenticated, router]);
@@ -123,12 +122,6 @@ export default function NewTripPage() {
     // Debounce: esperar 500ms antes de llamar a la API
     const timeoutId = setTimeout(async () => {
       try {
-        console.log("🔄 [PAGE] Calling reverse geocode from React context:", {
-          type,
-          lat,
-          lon,
-        });
-
         const result = await geoApi.reverseGeocode(lat, lon);
 
         if (result) {
@@ -143,7 +136,6 @@ export default function NewTripPage() {
             toast.success("Destino ajustado en el mapa");
           }
 
-          console.log("✅ [PAGE] Reverse geocode successful:", address);
         } else {
           console.warn("⚠️ [PAGE] No address found for coordinates");
           toast.error("No se encontró dirección para esta ubicación");

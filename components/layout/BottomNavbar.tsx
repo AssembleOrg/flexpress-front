@@ -109,10 +109,11 @@ export function BottomNavbar() {
   const unreadCount = unreadData?.count ?? 0;
 
   const isCharter = user?.role === "charter";
-  // Charter pendiente/rechazado: solo puede cargar vehículos y ver su estado.
-  // Reducimos el nav a Inicio + Salir hasta que un admin lo verifique.
+  // Charter o cliente pendiente/rechazado: reducimos el nav a Inicio + Salir
+  // hasta que un admin lo verifique. (Nombre histórico: cubre ambos roles.)
   const isUnverifiedCharter =
-    isCharter && user?.verificationStatus !== VerificationStatus.VERIFIED;
+    (isCharter || user?.role === "user") &&
+    user?.verificationStatus !== VerificationStatus.VERIFIED;
   const matches = isCharter ? charterMatches : userMatches;
 
   const activeMatch = matches.find((match) => {
