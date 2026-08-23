@@ -131,6 +131,8 @@ export default function DriverDashboard() {
 
   // Activation modal state (elegir conductor + vehículo + ayudantes al activarse)
   const [activationOpen, setActivationOpen] = useState(false);
+  // Cambia en cada click bloqueado para re-disparar la animación del motivo.
+  const [pulseKey, setPulseKey] = useState(0);
   const { data: myDrivers = [] } = useMyDrivers();
   const { data: myHelpers = [] } = useMyHelpers();
   const hasExtraDrivers = myDrivers.some(
@@ -251,9 +253,11 @@ export default function DriverDashboard() {
       return;
     }
 
-    // Conectar: necesitamos vehículo verificado
-    if (verifiedVehicles.length === 0) {
-      toast.error("Necesitás al menos 1 vehículo verificado para activarte.");
+    // Conectar: si hay algún gate sin cumplir, latido en el mensaje. Sin toast
+    // (evita spam al spamear el switch). No mutamos ni optimistic update, así el
+    // switch vuelve solo a apagado.
+    if (blockReason) {
+      setPulseKey((k) => k + 1);
       return;
     }
 
@@ -347,6 +351,14 @@ export default function DriverDashboard() {
     (v) => v.verificationStatus === VerificationStatus.VERIFIED,
   );
   const hasNoVerifiedVehicles = verifiedVehicles.length === 0;
+
+  // Motivo por el que NO puede activarse (null = puede). Unifica los gates que
+  // antes estaban duplicados en el disabled del switch, el caption y el handler.
+  const blockReason = hasNoVerifiedVehicles
+    ? "Necesitás un vehículo verificado para activarte"
+    : (user?.credits ?? 0) < 2
+      ? "Necesitás 2 créditos para activarte"
+      : null;
 
   // Check verification status
   const isPending = user?.verificationStatus === VerificationStatus.PENDING;
@@ -601,15 +613,32 @@ export default function DriverDashboard() {
                   {isAvailable ? "En línea" : "Desconectado"}
                 </Typography>
               </Stack>
-              <Typography variant="caption" color="text.secondary">
-                {isAvailable
-                  ? "Recibiendo solicitudes"
-                  : hasNoVerifiedVehicles
-                    ? "Necesitás un vehículo verificado para activarte"
-                    : (user?.credits ?? 0) < 2
-                      ? "Necesitás 2 créditos para activarte"
-                      : "Actívate para mostrarte disponible"}
-              </Typography>
+              {!isAvailable && blockReason ? (
+                <Typography
+                  key={pulseKey}
+                  variant="caption"
+                  fontWeight={700}
+                  aria-live="polite"
+                  sx={{
+                    color: "primary.main",
+                    display: "inline-block",
+                    transformOrigin: "left center",
+                    animation: pulseKey ? "blockPulse 0.5s ease-in-out 2" : "none",
+                    "@keyframes blockPulse": {
+                      "0%, 100%": { opacity: 1, transform: "scale(1)" },
+                      "50%": { opacity: 0.35, transform: "scale(1.06)" },
+                    },
+                  }}
+                >
+                  {blockReason}
+                </Typography>
+              ) : (
+                <Typography variant="caption" color="text.secondary">
+                  {isAvailable
+                    ? "Recibiendo solicitudes"
+                    : "Actívate para mostrarte disponible"}
+                </Typography>
+              )}
             </Stack>
             {/* Derecha: botón recargar + Switch */}
             <Stack direction="row" alignItems="center" gap={1}>
@@ -629,10 +658,6 @@ export default function DriverDashboard() {
                 checked={isAvailable}
                 onChange={handleAvailabilityChange}
                 color="secondary"
-                disabled={
-                  !isAvailable &&
-                  ((user?.credits ?? 0) < 2 || hasNoVerifiedVehicles)
-                }
               />
             </Stack>
           </Stack>

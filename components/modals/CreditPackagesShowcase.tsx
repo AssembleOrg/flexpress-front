@@ -17,6 +17,7 @@ import {
   Box,
   Button,
   CircularProgress,
+  Dialog,
   IconButton,
   InputAdornment,
   Stack,
@@ -267,18 +268,12 @@ export function CreditPackagesShowcase() {
             animate={{ y: 0 }}
             exit={{ y: "100%" }}
             transition={SHEET_SPRING}
-            drag="y"
-            dragConstraints={{ top: 0, bottom: 0 }}
-            dragElastic={{ top: 0, bottom: 0.5 }}
-            onDragEnd={(_, info) => {
-              if (info.offset.y > 120 || info.velocity.y > 500) handleClose();
-            }}
             onClick={(e: React.MouseEvent) => e.stopPropagation()}
             sx={{
               position: "relative",
               width: "100%",
               maxWidth: { xs: "100%", md: 1080 },
-              height: { xs: "100dvh", md: "auto" },
+              height: { xs: "auto", md: "auto" },
               maxHeight: { xs: "100dvh", md: "92vh" },
               overflowY: "auto",
               borderTopLeftRadius: 28,
@@ -292,16 +287,38 @@ export function CreditPackagesShowcase() {
               pb: { xs: "calc(32px + env(safe-area-inset-bottom))", md: 5 },
             }}
           >
-            {/* Grabber estilo iOS */}
+            {/* Grabber estilo iOS — único punto de swipe-para-cerrar.
+                El drag NO puede vivir en la sheet: competiría con overflowY:auto
+                y robaría el scroll (cerraría el modal al intentar scrollear). */}
             <Box
+              component={motion.div}
+              drag="y"
+              // Elastic 0 + constraints 0/0 clavan el grabber en su lugar (no se
+              // desplaza visualmente al arrastrar), pero info.offset.y sigue
+              // midiendo el gesto real. Mata el bug visual sin perder la feature.
+              dragConstraints={{ top: 0, bottom: 0 }}
+              dragElastic={0}
+              onDragEnd={(_, info) => {
+                if (info.offset.y > 120 || info.velocity.y > 500) handleClose();
+              }}
               sx={{
-                width: 44,
-                height: 5,
-                borderRadius: 999,
-                bgcolor: "rgba(255,255,255,0.3)",
+                width: 60,
+                height: 24,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
                 mx: "auto",
-                mb: 2,
+                mb: 1,
                 cursor: "grab",
+                touchAction: "none",
+                "&:active": { cursor: "grabbing" },
+                "&::before": {
+                  content: '""',
+                  width: 44,
+                  height: 5,
+                  borderRadius: 999,
+                  bgcolor: "rgba(255,255,255,0.3)",
+                },
               }}
             />
 
@@ -360,13 +377,6 @@ export function CreditPackagesShowcase() {
                     receiptUrl={receiptUrl}
                     receiptPreview={receiptPreview}
                     onBack={() => setStep("select")}
-                    onChangeReceipt={() => {
-                      setReceiptUrl(null);
-                      setReceiptPreview((prev) => {
-                        if (prev) URL.revokeObjectURL(prev);
-                        return null;
-                      });
-                    }}
                     onFileUpload={handleFileUpload}
                     onSubmit={handleSubmit}
                     isUploading={isUploading}
@@ -599,7 +609,6 @@ function CheckoutStep({
   receiptUrl,
   receiptPreview,
   onBack,
-  onChangeReceipt,
   onFileUpload,
   onSubmit,
   isUploading,
@@ -613,13 +622,13 @@ function CheckoutStep({
   receiptUrl: string | null;
   receiptPreview: string | null;
   onBack: () => void;
-  onChangeReceipt: () => void;
   onFileUpload: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onSubmit: () => void;
   isUploading: boolean;
   uploadError: string | null;
   isSubmitting: boolean;
 }) {
+  const [viewerOpen, setViewerOpen] = useState(false);
   return (
     <Box sx={{ maxWidth: 560, mx: "auto" }}>
       {/* Header del paso */}
@@ -737,39 +746,46 @@ function CheckoutStep({
       >
         Subí tu comprobante
       </Typography>
-      <Box
-        sx={{
-          border: "2px dashed",
-          borderColor: receiptUrl ? GOLD : "rgba(255,255,255,0.25)",
-          borderRadius: 14,
-          p: 3,
-          textAlign: "center",
-          bgcolor: "rgba(255,255,255,0.03)",
-        }}
-      >
-        {receiptUrl ? (
-          <Box>
-            <CheckCircleRounded sx={{ fontSize: 44, color: GOLD, mb: 1 }} />
-            <Typography sx={{ color: GOLD, fontWeight: 600 }}>
-              Comprobante cargado
-            </Typography>
-            <Box mt={2}>
-              <Box
-                component="img"
-                src={receiptPreview ?? undefined}
-                alt="Comprobante"
-                sx={{ maxWidth: 200, borderRadius: 2 }}
-              />
-            </Box>
-            <Button
-              size="small"
-              onClick={onChangeReceipt}
-              sx={{ mt: 1, color: "rgba(255,255,255,0.8)" }}
-            >
-              Cambiar imagen
-            </Button>
-          </Box>
-        ) : (
+      {receiptUrl ? (
+        // Renglón compacto: no metemos la img en el flujo scrolleable (una foto
+        // vertical estiraba la sheet). Tap → visor en Dialog aparte.
+        <Box
+          onClick={() => setViewerOpen(true)}
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            gap: 1.25,
+            border: "2px solid",
+            borderColor: GOLD,
+            borderRadius: 14,
+            px: 2,
+            py: 1.5,
+            cursor: "pointer",
+            bgcolor: "rgba(255,255,255,0.03)",
+            "&:hover": { bgcolor: "rgba(255,255,255,0.06)" },
+          }}
+        >
+          <CheckCircleRounded sx={{ fontSize: 24, color: GOLD }} />
+          <Typography sx={{ color: GOLD, fontWeight: 600, flex: 1 }}>
+            Comprobante subido
+          </Typography>
+          <Typography
+            sx={{ color: "rgba(255,255,255,0.6)", fontSize: "0.8rem" }}
+          >
+            Ver / cambiar
+          </Typography>
+        </Box>
+      ) : (
+        <Box
+          sx={{
+            border: "2px dashed",
+            borderColor: "rgba(255,255,255,0.25)",
+            borderRadius: 14,
+            p: 3,
+            textAlign: "center",
+            bgcolor: "rgba(255,255,255,0.03)",
+          }}
+        >
           <Box>
             <CloudUploadRounded
               sx={{ fontSize: 44, color: "rgba(255,255,255,0.5)", mb: 1 }}
@@ -816,8 +832,8 @@ function CheckoutStep({
               </Typography>
             )}
           </Box>
-        )}
-      </Box>
+        </Box>
+      )}
 
       {/* Enviar */}
       <Button
@@ -828,10 +844,84 @@ function CheckoutStep({
         onClick={onSubmit}
         disabled={amount <= 0 || !receiptUrl || isSubmitting || isUploading}
         startIcon={isSubmitting ? <CircularProgress size={20} /> : undefined}
-        sx={{ mt: 3, fontWeight: 800, borderRadius: 12, color: "#212121" }}
+        sx={{
+          mt: 3,
+          mb: { xs: 3, md: 0 },
+          fontWeight: 800,
+          borderRadius: 12,
+          color: "#212121",
+        }}
       >
         {isSubmitting ? "Enviando..." : "Enviar Solicitud"}
       </Button>
+
+      {/* Visor de comprobante en Dialog aparte (fuera del flujo scrolleable) */}
+      <Dialog
+        open={viewerOpen}
+        onClose={() => setViewerOpen(false)}
+        maxWidth="sm"
+        fullWidth
+        sx={{ zIndex: 1500 }}
+        PaperProps={{
+          sx: {
+            bgcolor: "#1a0009",
+            borderRadius: 3,
+            p: 2,
+          },
+        }}
+      >
+        <Box
+          component="img"
+          src={receiptPreview ?? undefined}
+          alt="Comprobante"
+          sx={{
+            width: "100%",
+            maxHeight: "80vh",
+            objectFit: "contain",
+            borderRadius: 2,
+            display: "block",
+          }}
+        />
+        <Stack direction="row" spacing={1.5} mt={2} alignItems="center">
+          <Button
+            component="label"
+            variant="contained"
+            color="secondary"
+            size="large"
+            disabled={isUploading}
+            sx={{
+              flex: 2,
+              fontWeight: 700,
+              borderRadius: 12,
+              color: "#212121",
+              py: 1.25,
+              whiteSpace: "nowrap",
+            }}
+          >
+            {isUploading ? "Subiendo..." : "Cambiar imagen"}
+            <input
+              type="file"
+              hidden
+              accept="image/*"
+              onChange={(e) => {
+                onFileUpload(e);
+                setViewerOpen(false);
+              }}
+            />
+          </Button>
+          <Button
+            onClick={() => setViewerOpen(false)}
+            sx={{
+              flex: 1,
+              color: "rgba(255,255,255,0.8)",
+              fontWeight: 600,
+              whiteSpace: "nowrap",
+            }}
+          >
+            Cerrar
+          </Button>
+        </Stack>
+      </Dialog>
     </Box>
   );
 }
