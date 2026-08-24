@@ -9,6 +9,7 @@ import {
   HourglassEmpty,
   LocalShipping,
   LocationOn,
+  Phone,
 } from "@mui/icons-material";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import {
@@ -37,13 +38,14 @@ import { formatDistanceToNow } from "date-fns";
 import { es } from "date-fns/locale";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { MobileContainer } from "@/components/layout/MobileContainer";
 import { CreditPackagesShowcase } from "@/components/modals/CreditPackagesShowcase";
 import { SignedAvatar } from "@/components/ui/SignedAvatar";
 import { SupportContact } from "@/components/ui/SupportContact";
 import { WelcomeHeader } from "@/components/ui/WelcomeHeader";
 import { authApi } from "@/lib/api/auth";
+import { SUPPORT_WHATSAPP } from "@/lib/constants/bankAccounts";
 import { useSentInquiries } from "@/lib/hooks/queries/useAvailabilityInquiriesQueries";
 import { useUserMatches } from "@/lib/hooks/queries/useTravelMatchQueries";
 import { useAuthStore } from "@/lib/stores/authStore";
@@ -154,6 +156,14 @@ export default function ClientDashboard() {
   const isRejected = user?.verificationStatus === VerificationStatus.REJECTED;
   const isNotVerified = isPending || isRejected;
 
+  // Tras 2 min esperando la aprobación, ofrecer contacto telefónico directo.
+  const [showPhone, setShowPhone] = useState(false);
+  useEffect(() => {
+    if (!isPending) return;
+    const t = setTimeout(() => setShowPhone(true), 2 * 60 * 1000);
+    return () => clearTimeout(t);
+  }, [isPending]);
+
   if (isNotVerified) {
     return (
       <MobileContainer withBottomNav>
@@ -206,9 +216,9 @@ export default function ClientDashboard() {
                 administración.
               </Typography>
               <Typography variant="body2" color="text.secondary" mb={3}>
-                Este proceso puede tomar hasta <strong>48 horas</strong>. Te
-                avisaremos con una notificación en la app cuando tu cuenta sea
-                aprobada.
+                Estamos revisando tu cuenta y la aprobaremos{" "}
+                <strong>a la brevedad</strong>. Te avisaremos con una
+                notificación en la app cuando esté lista.
               </Typography>
               <Chip
                 icon={<HourglassEmpty />}
@@ -216,6 +226,32 @@ export default function ClientDashboard() {
                 color="warning"
                 sx={{ fontWeight: 600 }}
               />
+              {showPhone && (
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ duration: 0.4 }}
+                >
+                  <Box sx={{ mt: 2.5 }}>
+                    <Typography variant="body2" color="text.secondary" mb={1}>
+                      ¿La aprobación está tardando? Llamanos.
+                    </Typography>
+                    <Button
+                      variant="outlined"
+                      color="secondary"
+                      startIcon={<Phone />}
+                      href={`tel:+${SUPPORT_WHATSAPP}`}
+                      sx={{
+                        fontWeight: 700,
+                        borderRadius: 8,
+                        textTransform: "none",
+                      }}
+                    >
+                      +54 9 11 3012-4035
+                    </Button>
+                  </Box>
+                </motion.div>
+              )}
             </>
           ) : (
             <>

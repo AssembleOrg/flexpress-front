@@ -4,6 +4,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import toast from "react-hot-toast";
 import { io, type Socket } from "socket.io-client";
+import { authApi } from "@/lib/api/auth";
 import { queryKeys } from "@/lib/hooks/queries/queryFactory";
 import { conversationKeys } from "@/lib/hooks/queries/useConversationQueries";
 import { useAuthStore } from "@/lib/stores/authStore";
@@ -189,6 +190,18 @@ export function useWebSocket(): UseWebSocketReturn {
      * Recibido cuando el backend crea una notificación para este usuario.
      * Invalida el cache de React Query para actualizar el badge inmediatamente.
      */
+    // Reconcilia el perfil (créditos, verificationStatus, accountStatus) que
+    // viven en el authStore, no en React Query. PATCH /users/:id con body vacío
+    // devuelve el perfil completo. Fallback si no dispara: mount/focus del dashboard.
+    const reconcileProfile = () => {
+      const { user, updateUser } = useAuthStore.getState();
+      if (!user?.id) return;
+      authApi
+        .updateUser(user.id, {})
+        .then((fresh) => updateUser(fresh))
+        .catch(() => {});
+    };
+
     socket.on(
       "notification:new",
       (data: { priority?: string; type?: string }) => {
@@ -207,6 +220,17 @@ export function useWebSocket(): UseWebSocketReturn {
           queryClient.invalidateQueries({
             queryKey: queryKeys.availabilityInquiries.sent(),
           });
+        } else if (data?.type === "payment_approved") {
+          // Créditos: reflejar el nuevo balance en el Navbar sin remontar.
+          reconcileProfile();
+        } else if (
+          data?.type === "vehicle_verified" ||
+          data?.type === "vehicle_rejected"
+        ) {
+          // El dashboard del driver lee ["vehicles","me"] + verificationStatus
+          // del perfil. Refrescar ambos para que el estado cambie sin F5.
+          queryClient.invalidateQueries({ queryKey: ["vehicles", "me"] });
+          reconcileProfile();
         }
         if (data?.priority === "HIGH") {
           toast("Tenés una nueva notificación", {

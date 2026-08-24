@@ -116,17 +116,26 @@ export function ChatWindow({
     });
   }, []);
 
-  // 🔧 OPTIMIZACIÓN: Join conversation room for real-time messaging
-  // Usa el objeto memoizado socketEmit que ahora es estable entre renders
+  // Join a la room de la conversación para mensajería en tiempo real.
+  // Usa el socket singleton directamente (no el snapshot `isConnected` de esta
+  // instancia, que no reacciona a connect/reconnect). Re-emitir el join en el
+  // evento `connect` cubre dos casos: montar antes de conectar, y —el caso real
+  // en móvil/iOS— que el socket se caiga tras unos minutos y reconecte: el
+  // server pierde la membresía de la room y sin este re-join el cliente queda
+  // conectado pero fuera de la room (deja de ver mensajes; el polling no cubre
+  // porque el socket "sí está conectado").
   useEffect(() => {
-    if (conversationId && userId && isConnected) {
-      socketEmit.joinConversation(conversationId);
+    if (!socket || !conversationId || !userId) return;
 
-      return () => {
-        socketEmit.leaveConversation(conversationId);
-      };
-    }
-  }, [conversationId, userId, isConnected, socketEmit]);
+    const join = () => socketEmit.joinConversation(conversationId);
+    if (socket.connected) join();
+    socket.on("connect", join);
+
+    return () => {
+      socket.off("connect", join);
+      socketEmit.leaveConversation(conversationId);
+    };
+  }, [socket, conversationId, userId, socketEmit]);
 
   // 🔧 OPTIMIZACIÓN: Simple typing indicator
   // Usa socket directamente (más estable que socketEmit.socket)
