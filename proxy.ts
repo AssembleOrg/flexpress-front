@@ -48,7 +48,9 @@ export default function proxy(request: NextRequest) {
   //
   // Quien de verdad no tiene sesión igual no pasa: AuthGuard lo frena del lado
   // del cliente y la API le responde 401.
-  if (!role) {
+  // Un valor que no es un rol conocido tampoco se interpreta: dashboardFor lo
+  // mandaría a /login y desde ahí un login válido volvería acá → bucle.
+  if (!role || dashboardFor(role) === "/login") {
     return NextResponse.next();
   }
 

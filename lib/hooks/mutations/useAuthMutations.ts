@@ -35,7 +35,7 @@ export function useLogin() {
   return useMutation({
     mutationFn: (data: LoginRequest) => authApi.login(data),
 
-    onSuccess: async (response) => {
+    onSuccess: (response) => {
       // Guardar user y tokens en store (persiste a localStorage)
       login(response.user, response.token, response.refreshToken);
 
@@ -45,17 +45,24 @@ export function useLogin() {
       // patrón que useLogout.
       queryClient.clear();
 
-      // Fetch perfil completo para asegurar campos como pricePerKm
-      try {
-        const fullProfile = await authApi.updateUser(response.user.id, {});
-        updateUser(fullProfile);
-      } catch (error) {
-        console.warn(
-          "⚠️ [useLogin] No crítico: Error al obtener perfil completo",
-          error,
-        );
-        // No crítico: el login ya funcionó, solo no tenemos pricePerKm
-      }
+      // ÚNICA navegación post-login, y antes de cualquier await. Las páginas de
+      // login no redirigen por su cuenta: con dos o tres router.replace en vuelo
+      // (una detrás de un request de perfil) Next cancelaba la transición y el
+      // admin quedaba mirando el formulario hasta F5.
+      // `replace` y no `push`: el login no debe quedar en el historial.
+      router.replace(dashboardFor(response.user.role));
+
+      // Perfil completo (pricePerKm, verificationStatus, etc.) sin bloquear el
+      // redirect. No crítico: el login ya funcionó.
+      authApi
+        .getProfile()
+        .then(updateUser)
+        .catch((error) => {
+          console.warn(
+            "⚠️ [useLogin] No crítico: Error al obtener perfil completo",
+            error,
+          );
+        });
 
       toast.success(`¡Bienvenido ${response.user.name}!`);
 
@@ -73,13 +80,6 @@ export function useLogin() {
           );
         }, 1000); // Delay para que no se solape con el toast de bienvenida
       }
-
-      // Redirect al dashboard que corresponde al rol (ver lib/routes.ts).
-      const targetPath = dashboardFor(response.user.role);
-
-      // `replace` y no `push`: el login no debe quedar en el historial, si no
-      // el botón "atrás" vuelve a una pantalla que solo existe para rebotar.
-      router.replace(targetPath);
     },
 
     onError: (error) => {

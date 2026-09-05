@@ -52,6 +52,8 @@ export function AdminNavbar() {
       position="static"
       sx={{
         background: "#b7850d",
+        // Safe-area top: el dorado se extiende detrás del status bar iOS
+        pt: "env(safe-area-inset-top)",
         boxShadow: "0 4px 12px 0 rgba(56, 1, 22, 0.2)",
       }}
     >
