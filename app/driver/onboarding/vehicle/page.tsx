@@ -17,7 +17,7 @@ import {
   Typography,
 } from "@mui/material";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import toast from "react-hot-toast";
 import { z } from "zod";
@@ -146,12 +146,16 @@ function VehicleOnboardingForm({
 
   const handleDocUploaded = (docType: VehicleDocumentType) => {
     if (!createdVehicle) return;
-    setUploadedDocs((prev) => {
-      const next = new Set(prev).add(docType);
-      onDocsChange(createdVehicle.id, next);
-      return next;
-    });
+    setUploadedDocs((prev) => new Set(prev).add(docType));
   };
+
+  // Notificar al parent fuera del render (evita setState-in-render).
+  // biome-ignore lint/correctness/useExhaustiveDependencies: onDocsChange (inline no-memoizado en el parent) omitido a propósito para no loopear
+  useEffect(() => {
+    if (createdVehicle && uploadedDocs.size > 0) {
+      onDocsChange(createdVehicle.id, uploadedDocs);
+    }
+  }, [uploadedDocs, createdVehicle]);
 
   const {
     register,

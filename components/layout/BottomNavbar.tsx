@@ -195,7 +195,10 @@ export function BottomNavbar() {
         right: 0,
         zIndex: Z_INDEX.bottomNav,
         display: { xs: "flex", md: "none" },
-        height: MOBILE_BOTTOM_NAV_HEIGHT,
+        // Safe-area bottom: la barra extiende su fondo detrás del home indicator
+        // y empuja los íconos por encima con el paddingBottom. Sin notch = 0.
+        height: `calc(${MOBILE_BOTTOM_NAV_HEIGHT}px + env(safe-area-inset-bottom))`,
+        paddingBottom: "env(safe-area-inset-bottom)",
         bgcolor: "background.paper",
         borderTop: "1px solid",
         borderColor: "divider",

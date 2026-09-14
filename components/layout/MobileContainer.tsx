@@ -55,7 +55,9 @@ export function MobileContainer({
         sx={{
           py: { xs: 2, md: 4 },
           pb: {
-            xs: withBottomNav ? MOBILE_CONTAINER_PADDING_BOTTOM : 2,
+            xs: withBottomNav
+              ? `calc(${MOBILE_CONTAINER_PADDING_BOTTOM * 8}px + env(safe-area-inset-bottom))`
+              : 2,
             md: 4,
           },
         }}

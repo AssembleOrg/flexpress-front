@@ -315,13 +315,15 @@ export default function UserEditPage() {
                   : "Guardar Cambios"}
               </Button>
 
-              <Button
-                variant="outlined"
-                color="error"
-                onClick={() => setDeleteDialogOpen(true)}
-              >
-                Eliminar Usuario
-              </Button>
+              {user.role !== "admin" && (
+                <Button
+                  variant="outlined"
+                  color="error"
+                  onClick={() => setDeleteDialogOpen(true)}
+                >
+                  Eliminar Usuario
+                </Button>
+              )}
             </Stack>
           </Stack>
         </CardContent>

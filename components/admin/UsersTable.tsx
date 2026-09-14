@@ -214,7 +214,7 @@ export function UsersTable() {
               <VisibilityIcon fontSize="small" />
             </IconButton>
           </Tooltip>
-          {currentUser?.role === "admin" && (
+          {currentUser?.role === "admin" && params.row.role !== "admin" && (
             <Tooltip title="Eliminar usuario">
               <IconButton
                 size="small"

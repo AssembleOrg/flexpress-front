@@ -119,7 +119,10 @@ export default function ClientTripHistory() {
         sx={{
           py: 4,
           px: 2,
-          pb: { xs: `${MOBILE_BOTTOM_NAV_HEIGHT + 24}px`, md: 4 },
+          pb: {
+            xs: `calc(${MOBILE_BOTTOM_NAV_HEIGHT + 24}px + env(safe-area-inset-bottom))`,
+            md: 4,
+          },
         }}
       >
         {/* Header */}

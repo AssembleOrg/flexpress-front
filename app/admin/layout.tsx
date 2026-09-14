@@ -5,6 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { AdminNavbar } from "@/components/layout/AdminNavbar";
 import { useHydrated } from "@/lib/hooks/useHydrated";
+import { dashboardFor, isAdminRole } from "@/lib/routes";
 import { useAuthStore } from "@/lib/stores/authStore";
 
 export default function AdminLayout({
@@ -27,22 +28,19 @@ export default function AdminLayout({
       return;
     }
 
-    // Check if user is authenticated and has admin or subadmin role
-    if (
-      !isAuthenticated ||
-      (user?.role !== "admin" && user?.role !== "subadmin")
-    ) {
-      // Redirect to admin login
-      router.push("/admin/login");
+    // Sin sesión → login de admin. Con sesión de otro rol → su dashboard.
+    // `replace`: la pantalla que rebota no debe quedar en el historial.
+    if (!isAuthenticated || !user) {
+      router.replace("/admin/login");
+    } else if (!isAdminRole(user.role)) {
+      router.replace(dashboardFor(user.role));
     }
-  }, [isAuthenticated, user?.role, router, isLoginPage, hydrated]);
+  }, [isAuthenticated, user, router, isLoginPage, hydrated]);
 
   // Show loading while hydrating or checking auth (skip on login page)
   if (
     !isLoginPage &&
-    (!hydrated ||
-      !isAuthenticated ||
-      (user?.role !== "admin" && user?.role !== "subadmin"))
+    (!hydrated || !isAuthenticated || !isAdminRole(user?.role))
   ) {
     return (
       <Box

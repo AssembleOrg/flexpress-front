@@ -84,7 +84,15 @@ export function NotificationsPage() {
   const hasMore = !!currentCursor;
 
   return (
-    <Box sx={{ bgcolor: "background.default", minHeight: "100vh" }}>
+    <Box
+      sx={{
+        bgcolor: "background.default",
+        minHeight: "100vh",
+        // Reserva alto del BottomNavbar (64+16px) + safe-area para que el
+        // contenido no quede tapado por la barra fija.
+        pb: "calc(80px + env(safe-area-inset-bottom))",
+      }}
+    >
       {/* Header */}
       <Box
         sx={{

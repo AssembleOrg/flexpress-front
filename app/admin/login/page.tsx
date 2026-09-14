@@ -19,33 +19,18 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
-import { useRouter } from "next/navigation";
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useState } from "react";
 import { useForm } from "react-hook-form";
 import Logo from "@/components/ui/Logo";
 import { PageTransition } from "@/components/ui/PageTransition";
-import { useHydrated } from "@/lib/hooks/useHydrated";
 import { useLogin } from "@/lib/hooks/mutations/useAuthMutations";
-import { dashboardFor, isAdminRole } from "@/lib/routes";
-import { useAuthStore } from "@/lib/stores/authStore";
 import { type LoginFormData, loginSchema } from "@/lib/validations/auth";
 
+// Con sesión previa NO se redirige solo (ver app/(auth)/login). La única
+// navegación post-login vive en useLogin.onSuccess.
 function AdminLoginForm() {
-  const router = useRouter();
-  const hydrated = useHydrated();
-  const { user, isAuthenticated } = useAuthStore();
   const [showPassword, setShowPassword] = useState(false);
   const loginMutation = useLogin();
-
-  // Sesión de admin ya abierta: volver al panel. Se chequea el rol a propósito:
-  // un user o charter logueado que caiga acá tiene que ver el formulario, no
-  // que lo manden a un panel al que no tiene acceso.
-  useEffect(() => {
-    if (!hydrated || !isAuthenticated || !user) return;
-    if (isAdminRole(user.role)) {
-      router.replace(dashboardFor(user.role));
-    }
-  }, [hydrated, isAuthenticated, user, router]);
 
   const {
     register,

@@ -83,7 +83,14 @@ export function MyPaymentsView() {
   }
 
   return (
-    <Box p={{ xs: 2, md: 4 }}>
+    <Box
+      sx={{
+        p: { xs: 2, md: 4 },
+        // Reserva alto del BottomNavbar (64+16px = MOBILE_CONTAINER_PADDING_BOTTOM)
+        // + safe-area para que el contenido no quede tapado por la barra fija.
+        pb: { xs: "calc(80px + env(safe-area-inset-bottom))", md: 4 },
+      }}
+    >
       {/* Header */}
       <Stack
         direction={{ xs: "column", sm: "row" }}

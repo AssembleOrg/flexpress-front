@@ -30,6 +30,14 @@ body {
   overflow-x: hidden;
 }
 
+/* Safe-area top: el contenido se dibuja detrás del status bar (viewport-fit=cover
+   + black-translucent). Empuja toda vista debajo del reloj/batería en iOS.
+   En devices sin notch env() = 0, así que no cambia nada. */
+.client-layout,
+.driver-layout {
+  padding-top: env(safe-area-inset-top);
+}
+
 body {
   color: var(--foreground);
   background: var(--background);
