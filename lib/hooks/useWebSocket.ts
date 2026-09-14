@@ -285,20 +285,16 @@ export function useWebSocket(): UseWebSocketReturn {
  */
 export function useSocketEmit() {
   const { socket } = useWebSocket();
-  const { user } = useAuthStore();
-  const userId = user?.id;
 
   // 🔧 MEMOIZE: Cada función es estable entre renders si sus dependencias no cambian
+  // El backend saca el userId del JWT del handshake; no se manda en el payload.
   const joinConversation = useCallback(
     (conversationId: string) => {
       if (socket?.connected) {
-        socket.emit("join-conversation", {
-          conversationId,
-          userId,
-        });
+        socket.emit("join-conversation", { conversationId });
       }
     },
-    [socket, userId],
+    [socket],
   );
 
   const leaveConversation = useCallback(
@@ -310,18 +306,8 @@ export function useSocketEmit() {
     [socket],
   );
 
-  const sendMessage = useCallback(
-    (conversationId: string, content: string) => {
-      if (socket?.connected) {
-        socket.emit("send-message", { conversationId, content });
-      } else {
-        console.warn(
-          "⚠️  [WebSocket] No conectado. No se puede enviar mensaje.",
-        );
-      }
-    },
-    [socket],
-  );
+  // Los mensajes van por REST (conversationApi.sendMessage); el backend los
+  // persiste y emite `new-message` al room. No hay evento de socket para enviar.
 
   const notifyTyping = useCallback(
     (conversationId: string) => {
@@ -339,10 +325,9 @@ export function useSocketEmit() {
       socket,
       joinConversation,
       leaveConversation,
-      sendMessage,
       notifyTyping,
     }),
-    [socket, joinConversation, leaveConversation, sendMessage, notifyTyping],
+    [socket, joinConversation, leaveConversation, notifyTyping],
   );
 }
 
