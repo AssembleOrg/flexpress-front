@@ -8,7 +8,7 @@ import {
   useMediaQuery,
   useTheme,
 } from "@mui/material";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { AuditTab } from "@/components/admin/AuditTab";
 import { PaymentsTable } from "@/components/admin/PaymentsTable";
 import { ReportsTable } from "@/components/admin/ReportsTable";
@@ -55,6 +55,37 @@ export default function AdminPage() {
   const { user } = useAuthStore();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
+  const tabsRef = useRef<HTMLDivElement>(null);
+
+  // Drag-to-scroll con mouse sobre los tabs (mobile ya desliza con el dedo).
+  useEffect(() => {
+    const el = tabsRef.current?.querySelector<HTMLElement>(".MuiTabs-scroller");
+    if (!el) return;
+    let down = false;
+    let startX = 0;
+    let startScroll = 0;
+    const onDown = (e: MouseEvent) => {
+      down = true;
+      startX = e.pageX;
+      startScroll = el.scrollLeft;
+    };
+    const onMove = (e: MouseEvent) => {
+      if (!down) return;
+      e.preventDefault();
+      el.scrollLeft = startScroll - (e.pageX - startX);
+    };
+    const onUp = () => {
+      down = false;
+    };
+    el.addEventListener("mousedown", onDown);
+    window.addEventListener("mousemove", onMove);
+    window.addEventListener("mouseup", onUp);
+    return () => {
+      el.removeEventListener("mousedown", onDown);
+      window.removeEventListener("mousemove", onMove);
+      window.removeEventListener("mouseup", onUp);
+    };
+  }, [isMobile]);
 
   // Fetch pending reports for badge
   const { data: reportsData, isLoading: reportsLoading } = useAdminReports({
@@ -92,11 +123,11 @@ export default function AdminPage() {
         sx={{ borderBottom: 1, borderColor: "divider", mb: { xs: 1, md: 3 } }}
       >
         <Tabs
+          ref={tabsRef}
           value={activeTab}
           onChange={handleTabChange}
           variant={isMobile ? "scrollable" : "standard"}
-          scrollButtons={isMobile ? "auto" : false}
-          allowScrollButtonsMobile
+          scrollButtons={false}
           aria-label="admin-tabs"
           sx={{
             "& .MuiTabs-indicator": {
@@ -114,9 +145,16 @@ export default function AdminPage() {
             "& .Mui-selected": {
               color: "#dca621 !important",
             },
-            "& .MuiTabs-scrollButtons": {
-              color: "#dca621",
-              "&.Mui-disabled": { opacity: 0.3 },
+            // Scroll nativo: dedo en mobile, scrollbar delgada arrastrable en desktop.
+            "& .MuiTabs-scroller": {
+              overflowX: "auto !important",
+              scrollbarWidth: "thin",
+              scrollbarColor: "#dca621 transparent",
+              "&::-webkit-scrollbar": { height: 4 },
+              "&::-webkit-scrollbar-thumb": {
+                backgroundColor: "#dca621",
+                borderRadius: 4,
+              },
             },
           }}
         >
