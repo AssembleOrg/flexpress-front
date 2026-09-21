@@ -4,7 +4,11 @@
  */
 
 import { useQuery } from "@tanstack/react-query";
-import type { CharterFullDetail } from "@/lib/api/admin";
+import type {
+  AuditFeedResult,
+  AuditStats,
+  CharterFullDetail,
+} from "@/lib/api/admin";
 import { adminApi } from "@/lib/api/admin";
 import type {
   PaginatedResponse,
@@ -197,5 +201,27 @@ export function useAdminCharterDetail(
     queryKey: ["admin", "charter-detail", charterId],
     queryFn: () => adminApi.getCharterDetail(charterId as string),
     enabled: !!charterId && enabled,
+  });
+}
+
+// ============================================
+// AUDITORÍA
+// ============================================
+
+export function useAuditStats() {
+  return useQuery<AuditStats>({
+    queryKey: queryKeys.admin.audit.stats(),
+    queryFn: () => adminApi.getAuditStats(),
+    staleTime: 1000 * 60, // 1 minuto
+  });
+}
+
+export function useAuditFeed(
+  params: { feature?: string; page?: number; limit?: number } = {},
+) {
+  return useQuery<AuditFeedResult>({
+    queryKey: queryKeys.admin.audit.feed(params),
+    queryFn: () => adminApi.getAuditFeed(params),
+    staleTime: 1000 * 60,
   });
 }

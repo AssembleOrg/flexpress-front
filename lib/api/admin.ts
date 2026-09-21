@@ -555,7 +555,60 @@ export const adminApi = {
     // biome-ignore lint/style/noNonNullAssertion: axios response guarantees data
     return response.data.data!;
   },
+
+  // ============================================
+  // AUDITORÍA
+  // ============================================
+
+  /**
+   * Conteos: charters disponibles ahora, totales por rol, activos 24h.
+   */
+  getAuditStats: async (): Promise<AuditStats> => {
+    const response = await api.get<ApiResponse<AuditStats>>("/audit/stats");
+    // biome-ignore lint/style/noNonNullAssertion: axios response guarantees data
+    return response.data.data!;
+  },
+
+  /**
+   * Feed paginado de actividad (Fecha - Usuario - Feature - Estado).
+   */
+  getAuditFeed: async (
+    params: { feature?: string; page?: number; limit?: number } = {},
+  ): Promise<AuditFeedResult> => {
+    const qs = new URLSearchParams();
+    if (params.feature) qs.append("feature", params.feature);
+    if (params.page) qs.append("page", String(params.page));
+    if (params.limit) qs.append("limit", String(params.limit));
+
+    const response = await api.get<ApiResponse<AuditFeedResult>>(
+      `/audit/feed?${qs.toString()}`,
+    );
+    // biome-ignore lint/style/noNonNullAssertion: axios response guarantees data
+    return response.data.data!;
+  },
 };
+
+export interface AuditStats {
+  chartersAvailableNow: number;
+  totalCharters: number;
+  totalClients: number;
+  activeLast24h: number;
+}
+
+export interface AuditFeedItem {
+  id: string;
+  createdAt: string;
+  userName: string;
+  feature: string | null;
+  status: string | null;
+}
+
+export interface AuditFeedResult {
+  items: AuditFeedItem[];
+  total: number;
+  page: number;
+  limit: number;
+}
 
 /** Detalle consolidado del charter para el panel admin. */
 export interface CharterFullDetail extends Omit<User, "charterAvailability"> {

@@ -9,6 +9,7 @@ import {
   useTheme,
 } from "@mui/material";
 import { useState } from "react";
+import { AuditTab } from "@/components/admin/AuditTab";
 import { PaymentsTable } from "@/components/admin/PaymentsTable";
 import { ReportsTable } from "@/components/admin/ReportsTable";
 import { SystemConfigTab } from "@/components/admin/SystemConfigTab";
@@ -232,6 +233,15 @@ export default function AdminPage() {
               aria-controls="admin-tabpanel-5"
             />
           )}
+
+          {/* Auditoría tab only for admin */}
+          {user?.role === "admin" && (
+            <Tab
+              label="Auditoría"
+              id="admin-tab-6"
+              aria-controls="admin-tabpanel-6"
+            />
+          )}
         </Tabs>
       </Box>
 
@@ -266,6 +276,12 @@ export default function AdminPage() {
       {user?.role === "admin" && (
         <TabPanel value={activeTab} index={5}>
           <SystemConfigTab />
+        </TabPanel>
+      )}
+
+      {user?.role === "admin" && (
+        <TabPanel value={activeTab} index={6}>
+          <AuditTab />
         </TabPanel>
       )}
     </Container>

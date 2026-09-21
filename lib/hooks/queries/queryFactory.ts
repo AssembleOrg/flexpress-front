@@ -147,6 +147,11 @@ export const queryKeys = {
     helpers: {
       pending: () => [...queryKeys.admin.all, "helpers", "pending"] as const,
     },
+    audit: {
+      stats: () => [...queryKeys.admin.all, "audit", "stats"] as const,
+      feed: (params: { feature?: string; page?: number; limit?: number }) =>
+        [...queryKeys.admin.all, "audit", "feed", params] as const,
+    },
   },
 
   // Availability Inquiries
