@@ -150,6 +150,17 @@ export const authApi = {
     return response.data.data!;
   },
 
+  // Confirma el email con el token del link del mail. Es público: el link puede
+  // abrirse en otro dispositivo sin sesión.
+  verifyEmail: async (token: string): Promise<void> => {
+    await api.post("/auth/verify-email", { token });
+  },
+
+  // Reenvía el mail de confirmación al usuario logueado.
+  resendEmailVerification: async (): Promise<void> => {
+    await api.post("/auth/resend-verification");
+  },
+
   // Revoca el refresh de este dispositivo en el servidor. El access vigente
   // muere solo al vencer (15m). Es best-effort: si falla, igual se limpia el
   // estado local.

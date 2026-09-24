@@ -41,6 +41,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { MobileContainer } from "@/components/layout/MobileContainer";
 import { CreditPackagesShowcase } from "@/components/modals/CreditPackagesShowcase";
+import { EmailVerificationBanner } from "@/components/ui/EmailVerificationBanner";
 import { SignedAvatar } from "@/components/ui/SignedAvatar";
 import { SupportContact } from "@/components/ui/SupportContact";
 import { WelcomeHeader } from "@/components/ui/WelcomeHeader";
@@ -173,6 +174,8 @@ export default function ClientDashboard() {
           avatarUrl={user?.avatar ?? undefined}
         />
 
+        <EmailVerificationBanner />
+
         <MotionCard
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -288,6 +291,8 @@ export default function ClientDashboard() {
         userRole="client"
         avatarUrl={user?.avatar ?? undefined}
       />
+
+      <EmailVerificationBanner />
 
       {/* Credits Card */}
       <MotionCard
