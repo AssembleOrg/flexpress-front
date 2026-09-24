@@ -14,6 +14,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 interface PlacePrediction {
   placeId: string;
   description: string;
+  mainText?: string;
+  secondaryText?: string;
 }
 
 interface AddressInputProps {
@@ -21,6 +23,8 @@ interface AddressInputProps {
   placeholder?: string;
   value?: string;
   onAddressSelect: (address: string, lat: number, lon: number) => void;
+  /** El usuario editó el texto a mano: la selección anterior deja de valer. */
+  onEdit?: () => void;
   error?: boolean;
   helperText?: string;
   disabled?: boolean;
@@ -41,6 +45,7 @@ export function AddressInput({
   placeholder = "Ingresa una dirección...",
   value = "",
   onAddressSelect,
+  onEdit,
   error = false,
   helperText = "",
   disabled = false,
@@ -161,7 +166,12 @@ export function AddressInput({
         typeof option === "string" ? option : option.description
       }
       inputValue={inputValue}
-      onInputChange={(_, newValue) => setInputValue(newValue)}
+      onInputChange={(_, newValue, reason) => {
+        setInputValue(newValue);
+        // Texto tipeado a mano (freeSolo) no tiene coordenadas: invalidar la
+        // selección previa para que no viaje una dirección vieja con el viaje.
+        if (reason === "input" || reason === "clear") onEdit?.();
+      }}
       onChange={(_, value) => {
         if (!value) return;
         const selectedPlaceId =
@@ -192,7 +202,16 @@ export function AddressInput({
       )}
       renderOption={(props, option) => (
         <Box component="li" {...props} key={option.placeId}>
-          <Typography variant="body2">{option.description}</Typography>
+          <Box>
+            <Typography variant="body2" sx={{ fontWeight: 600 }}>
+              {option.mainText || option.description}
+            </Typography>
+            {option.secondaryText && (
+              <Typography variant="caption" color="text.secondary">
+                {option.secondaryText}
+              </Typography>
+            )}
+          </Box>
         </Box>
       )}
       noOptionsText={

@@ -1044,7 +1044,6 @@ export default function MatchDetailPage() {
                         match.personnel?.snapshot?.driver
                           ? {
                               name: match.personnel.snapshot.driver.name,
-                              phone: match.personnel.snapshot.driver.phone,
                             }
                           : null
                       }

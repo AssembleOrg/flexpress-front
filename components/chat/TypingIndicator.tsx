@@ -1,6 +1,7 @@
 "use client";
 
 import { Box } from "@mui/material";
+import { bubbleEnter } from "@/components/chat/MessageBubble";
 import { SignedAvatar } from "@/components/ui/SignedAvatar";
 
 interface TypingIndicatorProps {
@@ -9,9 +10,7 @@ interface TypingIndicatorProps {
 }
 
 /**
- * Typing indicator component
- * Shows animated dots to indicate that the other user is typing
- * Now with avatar support for better visual
+ * Indicador "escribiendo…" con el mismo estilo que la burbuja ajena.
  */
 export function TypingIndicator({
   userName = "Usuario",
@@ -19,39 +18,43 @@ export function TypingIndicator({
 }: TypingIndicatorProps) {
   return (
     <Box
-      display="flex"
-      justifyContent="flex-start"
-      mb={1}
-      alignItems="flex-end"
-      gap={1}
+      role="status"
+      aria-label={`${userName} está escribiendo`}
+      sx={{
+        display: "flex",
+        justifyContent: "flex-start",
+        alignItems: "flex-end",
+        gap: 1,
+        mt: 1,
+        ...bubbleEnter,
+      }}
     >
-      {/* Avatar */}
       <SignedAvatar
         value={userAvatar}
         alt={userName}
         sx={{
-          width: 32,
-          height: 32,
+          width: 28,
+          height: 28,
           bgcolor: "secondary.main",
           color: "primary.main",
-          fontSize: "0.875rem",
+          fontSize: "0.8rem",
           fontWeight: 700,
         }}
       >
-        {userName[0]}
+        {userName[0]?.toUpperCase()}
       </SignedAvatar>
 
-      {/* Typing bubble with animated dots */}
       <Box
         sx={{
-          borderRadius: 2,
-          px: 2,
-          py: 1.5,
-          backgroundColor: "grey.200",
+          borderRadius: "20px 20px 20px 6px",
+          px: 1.75,
+          height: 36,
+          bgcolor: "#FFFFFF",
+          border: "1px solid rgba(56, 1, 22, 0.06)",
+          boxShadow: "0 1px 2px rgba(56, 1, 22, 0.06)",
           display: "flex",
           alignItems: "center",
           gap: 0.5,
-          minHeight: 40,
         }}
       >
         <TypingDot delay={0} />
@@ -62,31 +65,22 @@ export function TypingIndicator({
   );
 }
 
-interface TypingDotProps {
-  delay: number;
-}
-
-function TypingDot({ delay }: TypingDotProps) {
+function TypingDot({ delay }: { delay: number }) {
   return (
     <Box
       component="span"
       sx={{
-        width: 8,
-        height: 8,
+        width: 6,
+        height: 6,
         borderRadius: "50%",
-        backgroundColor: "text.secondary",
-        animation: `typing 1.4s infinite`,
+        bgcolor: "text.secondary",
+        animation: "typing 1.2s infinite ease-in-out",
         animationDelay: `${delay}s`,
         "@keyframes typing": {
-          "0%, 60%, 100%": {
-            opacity: 0.5,
-            transform: "translateY(0)",
-          },
-          "30%": {
-            opacity: 1,
-            transform: "translateY(-10px)",
-          },
+          "0%, 60%, 100%": { opacity: 0.35, transform: "translateY(0)" },
+          "30%": { opacity: 1, transform: "translateY(-4px)" },
         },
+        "@media (prefers-reduced-motion: reduce)": { animation: "none" },
       }}
     />
   );

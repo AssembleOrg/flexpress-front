@@ -12,11 +12,12 @@ import { type NextRequest, NextResponse } from "next/server";
  * tecleos + el Place Details siguiente en una sola sesión facturable.
  */
 
-// Sesgo al AMBA (mismo bbox que tenía AddressInput client-side).
+// Sesgo a GBA ampliado: CABA + conurbano + La Plata, Pilar, Escobar, Luján,
+// Cañuelas. Es sesgo, no restricción: el resto de Argentina sigue apareciendo.
 const LOCATION_BIAS = {
   rectangle: {
-    low: { latitude: -34.9, longitude: -58.8 },
-    high: { latitude: -34.4, longitude: -58.2 },
+    low: { latitude: -35.2, longitude: -59.3 },
+    high: { latitude: -34.1, longitude: -57.8 },
   },
 };
 
@@ -29,6 +30,10 @@ interface GoogleSuggestion {
   placePrediction?: {
     placeId?: string;
     text?: { text?: string };
+    structuredFormat?: {
+      mainText?: { text?: string };
+      secondaryText?: { text?: string };
+    };
   };
 }
 
@@ -57,7 +62,7 @@ export async function POST(request: NextRequest) {
           "Content-Type": "application/json",
           "X-Goog-Api-Key": apiKey,
           "X-Goog-FieldMask":
-            "suggestions.placePrediction.placeId,suggestions.placePrediction.text.text",
+            "suggestions.placePrediction.placeId,suggestions.placePrediction.text.text,suggestions.placePrediction.structuredFormat",
         },
         body: JSON.stringify({
           input,
@@ -80,11 +85,15 @@ export async function POST(request: NextRequest) {
     const predictions = (data.suggestions ?? [])
       .map((s) => s.placePrediction)
       .filter(
-        (p): p is { placeId: string; text?: { text?: string } } => !!p?.placeId,
+        (p): p is NonNullable<typeof p> & { placeId: string } => !!p?.placeId,
       )
       .map((p) => ({
         placeId: p.placeId,
         description: p.text?.text ?? "",
+        // Calle + localidad/partido por separado: "San Martín 1234" existe en
+        // decenas de partidos del GBA y el usuario tiene que ver cuál elige.
+        mainText: p.structuredFormat?.mainText?.text ?? p.text?.text ?? "",
+        secondaryText: p.structuredFormat?.secondaryText?.text ?? "",
       }));
 
     return NextResponse.json({ predictions });

@@ -160,9 +160,11 @@ export async function POST(request: NextRequest) {
         { lat: body.lat, lon: body.lon },
       );
 
+      // address y formattedAddress iguales: antes "Sin dirección cercana" se
+      // guardaba como dirección del viaje. Las coords viajan aparte.
       return NextResponse.json({
-        address: `Ubicación: ${body.lat?.toFixed(5)}, ${body.lon?.toFixed(5)}`,
-        formattedAddress: "Sin dirección cercana",
+        address: "Ubicación marcada en el mapa",
+        formattedAddress: "Ubicación marcada en el mapa",
         coordinates: {
           lat: body.lat,
           lon: body.lon,

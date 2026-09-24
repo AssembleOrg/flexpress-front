@@ -40,6 +40,14 @@ import { useTravelMatchStore } from "@/lib/stores/travelMatchStore";
 import { VEHICLE_SIZE_LABELS, VehicleSize } from "@/lib/types/api";
 import { isActiveTrip } from "@/lib/utils/matchHelpers";
 
+// Pin vs. dirección que devuelve Google para ese punto: hasta 50 m es la
+// misma puerta; hasta 300 m se muestra "Cerca de"; más lejos el texto no
+// ayuda y solo vale el pin.
+const EXACT_ADDRESS_KM = 0.05;
+const NEAR_ADDRESS_KM = 0.3;
+// Origen y destino a menos de 100 m = mismo lugar (pin mal puesto).
+const MIN_TRIP_KM = 0.1;
+
 const MotionCard = motion.create(Card);
 const MotionButton = motion.create(Button);
 
@@ -69,6 +77,8 @@ export default function NewTripPage() {
     destinationCoords,
     setPickupLocation,
     setDestinationLocation,
+    clearPickupCoords,
+    clearDestinationCoords,
   } = useTravelMatchStore();
 
   // Tamaño buscado: estado local, solo condiciona la opción de ayudantes
@@ -91,6 +101,10 @@ export default function NewTripPage() {
     lat: number;
     lon: number;
   } | null>(null);
+
+  // Descarta respuestas de reverse geocode viejas: si el usuario arrastra dos
+  // veces o elige del autocomplete mientras una está en vuelo, gana la última.
+  const geocodeSeqRef = useRef(0);
 
   // Captura opcional de carga y ayudantes
   const CARGO_MAX = 140;
@@ -118,35 +132,45 @@ export default function NewTripPage() {
     if (!pendingCoords) return;
 
     const { type, lat, lon } = pendingCoords;
+    const seq = ++geocodeSeqRef.current;
 
     // Debounce: esperar 500ms antes de llamar a la API
     const timeoutId = setTimeout(async () => {
+      // El pin es la verdad: sus coords se guardan siempre y el texto es solo
+      // su etiqueta. Nunca se guarda un texto que no corresponda al pin.
+      let address = "Ubicación marcada en el mapa";
       try {
         const result = await geoApi.reverseGeocode(lat, lon);
-
-        if (result) {
-          const address = result.formattedAddress || result.address;
-
-          // Actualizar Zustand store
-          if (type === "pickup") {
-            setPickupLocation(address, { lat, lon });
-            toast.success("📍 Origen ajustado en el mapa");
-          } else if (type === "destination") {
-            setDestinationLocation(address, { lat, lon });
-            toast.success("Destino ajustado en el mapa");
+        if (result?.address) {
+          const km = geoApi.calculateDistance(
+            lat,
+            lon,
+            result.coordinates.lat,
+            result.coordinates.lon,
+          );
+          if (km <= EXACT_ADDRESS_KM) {
+            address = result.address;
+          } else if (km <= NEAR_ADDRESS_KM) {
+            address = `Cerca de ${result.address}`;
+          } else if (result.city) {
+            address = `Ubicación marcada en el mapa (${result.city})`;
           }
-
-        } else {
-          console.warn("⚠️ [PAGE] No address found for coordinates");
-          toast.error("No se encontró dirección para esta ubicación");
         }
       } catch (error) {
         console.error("❌ [PAGE] Error in reverse geocode:", error);
-        toast.error("Error al obtener dirección");
-      } finally {
-        // Limpiar estado pendiente
-        setPendingCoords(null);
       }
+
+      // Llegó tarde: otro arrastre o una selección del autocomplete ya ganó.
+      if (seq !== geocodeSeqRef.current) return;
+
+      if (type === "pickup") {
+        setPickupLocation(address, { lat, lon });
+        toast.success("📍 Origen ajustado en el mapa");
+      } else {
+        setDestinationLocation(address, { lat, lon });
+        toast.success("Destino ajustado en el mapa");
+      }
+      setPendingCoords(null);
     }, 500); // Debounce de 500ms
 
     // Cleanup
@@ -169,6 +193,50 @@ export default function NewTripPage() {
     !!pickupCoords &&
     !!destinationCoords;
 
+  const tooClose =
+    !!pickupCoords &&
+    !!destinationCoords &&
+    geoApi.calculateDistance(
+      pickupCoords.lat,
+      pickupCoords.lon,
+      destinationCoords.lat,
+      destinationCoords.lon,
+    ) < MIN_TRIP_KM;
+
+  const canSubmit = isFormComplete && !pendingCoords && !tooClose;
+
+  const formHint = !isFormComplete
+    ? "Elegí origen y destino de la lista de sugerencias"
+    : pendingCoords
+      ? "Actualizando la ubicación..."
+      : tooClose
+        ? "El origen y el destino son el mismo lugar"
+        : "Se buscarán chóferes disponibles en tu área";
+
+  // Selección desde el autocomplete: pisa cualquier arrastre en curso.
+  const handleAddressSelect = (
+    type: "pickup" | "destination",
+    address: string,
+    lat: number,
+    lon: number,
+  ) => {
+    geocodeSeqRef.current++;
+    setPendingCoords(null);
+    if (type === "pickup") {
+      setPickupLocation(address, { lat, lon });
+      toast.success("Origen seleccionado");
+    } else {
+      setDestinationLocation(address, { lat, lon });
+      toast.success("Destino seleccionado");
+    }
+    mapRef.current?.centerOnMarker(lat, lon, 15);
+  };
+
+  const handleAddressEdit = (type: "pickup" | "destination") => {
+    if (type === "pickup") clearPickupCoords();
+    else clearDestinationCoords();
+  };
+
   // Handle centering map on pickup location
   const handleCenterOnPickup = () => {
     if (pickupCoords) {
@@ -189,7 +257,7 @@ export default function NewTripPage() {
   };
 
   const handleCreateMatch = () => {
-    if (!isFormComplete) return;
+    if (!canSubmit || !isFormComplete) return;
 
     createMatchMutation.mutate(
       {
@@ -330,11 +398,10 @@ export default function NewTripPage() {
                   label=""
                   placeholder="Ej: Av. Hipólito Yrigoyen 8985, Buenos Aires"
                   value={pickupAddress || ""}
-                  onAddressSelect={(address, lat, lon) => {
-                    setPickupLocation(address, { lat, lon });
-                    mapRef.current?.centerOnMarker(lat, lon, 15);
-                    toast.success("Origen seleccionado");
-                  }}
+                  onAddressSelect={(address, lat, lon) =>
+                    handleAddressSelect("pickup", address, lat, lon)
+                  }
+                  onEdit={() => handleAddressEdit("pickup")}
                 />
               }
               destinationInput={
@@ -342,11 +409,10 @@ export default function NewTripPage() {
                   label=""
                   placeholder="Ej: Calle 13 567, La Plata, Buenos Aires"
                   value={destinationAddress || ""}
-                  onAddressSelect={(address, lat, lon) => {
-                    setDestinationLocation(address, { lat, lon });
-                    mapRef.current?.centerOnMarker(lat, lon, 15);
-                    toast.success("Destino seleccionado");
-                  }}
+                  onAddressSelect={(address, lat, lon) =>
+                    handleAddressSelect("destination", address, lat, lon)
+                  }
+                  onEdit={() => handleAddressEdit("destination")}
                 />
               }
             />
@@ -354,7 +420,8 @@ export default function NewTripPage() {
 
           {/* Chips informativos con iconos de ubicación */}
           <AnimatePresence mode="wait">
-            {(pickupAddress || destinationAddress) && (
+            {((pickupAddress && pickupCoords) ||
+              (destinationAddress && destinationCoords)) && (
               <motion.div
                 initial={{ opacity: 0, height: 0 }}
                 animate={{ opacity: 1, height: "auto" }}
@@ -362,21 +429,21 @@ export default function NewTripPage() {
                 transition={{ duration: 0.3 }}
               >
                 <Box sx={{ mb: 3, display: "flex", gap: 1, flexWrap: "wrap" }}>
-                  {pickupAddress && (
+                  {pickupAddress && pickupCoords && (
                     <LocationChip
                       type="pickup"
                       address={pickupAddress}
                       onClick={handleCenterOnPickup}
                     />
                   )}
-                  {destinationAddress && (
+                  {destinationAddress && destinationCoords && (
                     <LocationChip
                       type="destination"
                       address={destinationAddress}
                       onClick={handleCenterOnDestination}
                     />
                   )}
-                  {pickupAddress && destinationAddress && (
+                  {pickupCoords && destinationCoords && (
                     <Chip
                       icon={<MapIcon />}
                       label="Ver Ruta Completa"
@@ -578,9 +645,9 @@ export default function NewTripPage() {
               color="secondary"
               size="large"
               onClick={handleCreateMatch}
-              disabled={createMatchMutation.isPending || !isFormComplete}
+              disabled={createMatchMutation.isPending || !canSubmit}
               whileHover={
-                !createMatchMutation.isPending && isFormComplete
+                !createMatchMutation.isPending && canSubmit
                   ? {
                       scale: 1.05,
                       y: -2,
@@ -590,12 +657,12 @@ export default function NewTripPage() {
                   : {}
               }
               whileTap={
-                !createMatchMutation.isPending && isFormComplete
+                !createMatchMutation.isPending && canSubmit
                   ? { scale: 0.98 }
                   : {}
               }
               animate={
-                isFormComplete && !createMatchMutation.isPending
+                canSubmit && !createMatchMutation.isPending
                   ? {
                       boxShadow: [
                         "0 4px 12px rgba(220, 166, 33, 0.3)",
@@ -606,7 +673,7 @@ export default function NewTripPage() {
                   : {}
               }
               transition={
-                isFormComplete && !createMatchMutation.isPending
+                canSubmit && !createMatchMutation.isPending
                   ? {
                       boxShadow: {
                         duration: 2,
@@ -636,9 +703,7 @@ export default function NewTripPage() {
               transition={{ delay: 0.8 }}
             >
               <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
-                {!isFormComplete
-                  ? "Selecciona origen y destino para continuar"
-                  : "Se buscarán chóferes disponibles en tu área"}
+                {formHint}
               </Typography>
             </motion.div>
           </Box>

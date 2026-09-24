@@ -39,6 +39,9 @@ interface TravelMatchActions {
   clearPersistedMatch: () => void;
   setPickupLocation: (address: string, coords: Coordinates) => void;
   setDestinationLocation: (address: string, coords: Coordinates) => void;
+  // Invalidan el punto (texto editado a mano) sin borrar lo que se tipeó.
+  clearPickupCoords: () => void;
+  clearDestinationCoords: () => void;
   setWorkersCount: (count: number) => void;
   setScheduledDate: (date: string | null) => void;
   setSizeFilter: (size: VehicleSize | null) => void;
@@ -111,6 +114,10 @@ export const useTravelMatchStore = create<
           destinationAddress: address,
           destinationCoords: coords,
         }),
+
+      clearPickupCoords: () => set({ pickupCoords: null }),
+
+      clearDestinationCoords: () => set({ destinationCoords: null }),
 
       setWorkersCount: (count: number) => set({ workersCount: count }),
 
