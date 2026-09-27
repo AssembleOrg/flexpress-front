@@ -177,7 +177,7 @@ function LoginForm() {
                     margin="normal"
                     error={!!errors.password}
                     helperText={errors.password?.message || ""}
-                    sx={{ mb: 3 }}
+                    sx={{ mb: 1 }}
                     slotProps={{
                       input: {
                         endAdornment: (
@@ -203,6 +203,19 @@ function LoginForm() {
                       },
                     }}
                   />
+
+                  <Box sx={{ textAlign: "right", mb: 2 }}>
+                    <Link
+                      href="/recuperar-contrasena"
+                      style={{
+                        color: "#380116",
+                        fontSize: "0.875rem",
+                        fontWeight: 600,
+                      }}
+                    >
+                      ¿Olvidaste tu contraseña?
+                    </Link>
+                  </Box>
 
                   {loginMutation.isError && (
                     <Alert severity="error" sx={{ mb: 2 }}>

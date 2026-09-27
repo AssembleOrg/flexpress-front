@@ -19,6 +19,7 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
+import Link from "next/link";
 import { Suspense, useState } from "react";
 import { useForm } from "react-hook-form";
 import Logo from "@/components/ui/Logo";
@@ -258,18 +259,19 @@ function AdminLoginForm() {
                   <Typography variant="caption" color="text.secondary">
                     ¿Olvidaste tu contraseña?{" "}
                     <Typography
-                      component="span"
+                      component={Link}
+                      href="/recuperar-contrasena"
                       variant="caption"
                       sx={{
                         color: "#380116",
                         fontWeight: 600,
-                        cursor: "pointer",
+                        textDecoration: "none",
                         "&:hover": {
                           textDecoration: "underline",
                         },
                       }}
                     >
-                      Contacta al administrador principal
+                      Restablecela por email
                     </Typography>
                   </Typography>
                 </Box>

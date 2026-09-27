@@ -148,6 +148,52 @@ export function useLogout() {
 }
 
 /**
+ * Pide el mail de recuperación. La pantalla muestra el mismo mensaje de éxito
+ * exista o no la cuenta; acá solo hay errores reales (validación, throttling).
+ */
+export function useForgotPassword() {
+  return useMutation({
+    mutationFn: (email: string) => authApi.forgotPassword(email),
+    onError: (error) => {
+      toast.error(
+        getApiErrorMessage(error, "No pudimos enviar el mail. Probá más tarde."),
+      );
+    },
+  });
+}
+
+/**
+ * Restablece la contraseña. El backend revoca todas las sesiones, así que si
+ * este navegador tenía una abierta se limpia: su refresh ya no sirve.
+ */
+export function useResetPassword() {
+  const queryClient = useQueryClient();
+  const router = useRouter();
+  const { clearAuth } = useAuthStore();
+
+  return useMutation({
+    mutationFn: ({ token, password }: { token: string; password: string }) =>
+      authApi.resetPassword(token, password),
+    onSuccess: () => {
+      if (useAuthStore.getState().user) {
+        clearAuth();
+        queryClient.clear();
+      }
+      toast.success("Contraseña actualizada. Ya podés iniciar sesión.");
+      router.replace("/login");
+    },
+    onError: (error) => {
+      toast.error(
+        getApiErrorMessage(
+          error,
+          "No pudimos cambiar la contraseña. Probá de nuevo.",
+        ),
+      );
+    },
+  });
+}
+
+/**
  * Mutation para actualizar perfil de usuario
  * Útil para completar datos después del registro (ej: ubicación de charter)
  */

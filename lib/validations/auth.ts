@@ -73,3 +73,22 @@ export const registerCharterSchema = z
 export type LoginFormData = z.infer<typeof loginSchema>;
 export type RegisterUserFormData = z.infer<typeof registerUserSchema>;
 export type RegisterCharterFormData = z.infer<typeof registerCharterSchema>;
+
+export const forgotPasswordSchema = loginSchema.pick({ email: true });
+
+// Mismo máximo que el backend: bcrypt ignora lo que pase de 72 bytes.
+export const resetPasswordSchema = z
+  .object({
+    password: z
+      .string()
+      .min(6, "La contraseña debe tener al menos 6 caracteres")
+      .max(72, "La contraseña no puede tener más de 72 caracteres"),
+    confirmPassword: z.string(),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    message: "Las contraseñas no coinciden",
+    path: ["confirmPassword"],
+  });
+
+export type ForgotPasswordFormData = z.infer<typeof forgotPasswordSchema>;
+export type ResetPasswordFormData = z.infer<typeof resetPasswordSchema>;

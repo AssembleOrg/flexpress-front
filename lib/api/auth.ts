@@ -161,6 +161,18 @@ export const authApi = {
     await api.post("/auth/resend-verification");
   },
 
+  // Pide el mail para restablecer la contraseña. El backend responde igual
+  // exista o no la cuenta, así que no hay nada que devolver.
+  forgotPassword: async (email: string): Promise<void> => {
+    await api.post("/auth/forgot-password", { email });
+  },
+
+  // Cambia la contraseña con el token del mail. El backend además cierra todas
+  // las sesiones del usuario.
+  resetPassword: async (token: string, password: string): Promise<void> => {
+    await api.post("/auth/reset-password", { token, password });
+  },
+
   // Revoca el refresh de este dispositivo en el servidor. El access vigente
   // muere solo al vencer (15m). Es best-effort: si falla, igual se limpia el
   // estado local.
