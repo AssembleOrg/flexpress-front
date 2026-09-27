@@ -1,23 +1,29 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { ErrorOutline, Visibility, VisibilityOff } from "@mui/icons-material";
+import {
+  ErrorOutline,
+  Key,
+  Visibility,
+  VisibilityOff,
+} from "@mui/icons-material";
 import {
   Box,
   Button,
-  Card,
-  CardContent,
-  Container,
   IconButton,
   InputAdornment,
   TextField,
-  Typography,
 } from "@mui/material";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Suspense, useState } from "react";
 import { useForm } from "react-hook-form";
-import Logo from "@/components/ui/Logo";
+import {
+  AuthBadge,
+  AuthHeader,
+  AuthShell,
+  authLinkStyle,
+} from "@/components/auth/AuthShell";
 import { useResetPassword } from "@/lib/hooks/mutations/useAuthMutations";
 import {
   type ResetPasswordFormData,
@@ -38,25 +44,24 @@ function ResetPassword() {
 
   if (!token) {
     return (
-      <Box sx={{ textAlign: "center" }}>
-        <ErrorOutline color="error" sx={{ fontSize: 56, mb: 1 }} />
-        <Typography variant="h6" fontWeight={700} gutterBottom>
-          Link incompleto
-        </Typography>
-        <Typography color="text.secondary" sx={{ mb: 3 }}>
-          Abrí el link completo desde el mail, o pedí uno nuevo.
-        </Typography>
+      <AuthShell>
+        <AuthBadge tone="error">
+          <ErrorOutline />
+        </AuthBadge>
+        <AuthHeader
+          title="Link incompleto"
+          subtitle="Abrí el link completo desde el mail, o pedí uno nuevo."
+        />
         <Button
           component={Link}
           href="/recuperar-contrasena"
           variant="contained"
           color="secondary"
           fullWidth
-          size="large"
         >
           Pedir un link nuevo
         </Button>
-      </Box>
+      </AuthShell>
     );
   }
 
@@ -64,14 +69,15 @@ function ResetPassword() {
     reset.mutate({ token, password: data.password });
 
   return (
-    <>
-      <Typography variant="h6" fontWeight={700} gutterBottom>
-        Elegí una nueva contraseña
-      </Typography>
-      <Typography color="text.secondary" sx={{ mb: 1 }}>
-        Al cambiarla se cierran las sesiones abiertas en todos tus dispositivos.
-      </Typography>
-      <Box component="form" onSubmit={handleSubmit(onSubmit)}>
+    <AuthShell>
+      <AuthBadge>
+        <Key />
+      </AuthBadge>
+      <AuthHeader
+        title="Nueva contraseña"
+        subtitle="Al cambiarla se cierran las sesiones abiertas en todos tus dispositivos."
+      />
+      <Box component="form" onSubmit={handleSubmit(onSubmit)} noValidate>
         <TextField
           {...register("password")}
           label="Nueva contraseña"
@@ -79,9 +85,9 @@ function ResetPassword() {
           autoComplete="new-password"
           autoFocus
           fullWidth
-          margin="normal"
           error={!!errors.password}
           helperText={errors.password?.message}
+          sx={{ mb: 2 }}
           slotProps={{
             input: {
               endAdornment: (
@@ -106,7 +112,6 @@ function ResetPassword() {
           type={showPassword ? "text" : "password"}
           autoComplete="new-password"
           fullWidth
-          margin="normal"
           error={!!errors.confirmPassword}
           helperText={errors.confirmPassword?.message}
           sx={{ mb: 3 }}
@@ -116,53 +121,27 @@ function ResetPassword() {
           variant="contained"
           color="secondary"
           fullWidth
-          size="large"
           disabled={reset.isPending}
-          sx={{ mb: 2 }}
         >
-          {reset.isPending ? "Guardando..." : "Cambiar contraseña"}
+          {reset.isPending ? "Guardando…" : "Cambiar contraseña"}
         </Button>
       </Box>
       {/* El error (link vencido/usado) ya sale en un toast; esto da la salida. */}
       {reset.isError && (
-        <Box sx={{ textAlign: "center" }}>
-          <Link
-            href="/recuperar-contrasena"
-            style={{ color: "#380116", fontWeight: 600 }}
-          >
+        <Box sx={{ textAlign: "center", mt: 2.5 }}>
+          <Link href="/recuperar-contrasena" style={authLinkStyle}>
             Pedir un link nuevo
           </Link>
         </Box>
       )}
-    </>
+    </AuthShell>
   );
 }
 
 export default function ResetPasswordPage() {
   return (
-    <Box
-      sx={{
-        background: "linear-gradient(135deg, #380116 0%, #4b011d 100%)",
-        minHeight: "100vh",
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        justifyContent: "center",
-        gap: 3,
-        px: 2,
-        py: 4,
-      }}
-    >
-      <Logo size={90} variant="white" />
-      <Container maxWidth="xs" disableGutters>
-        <Card sx={{ borderRadius: 3 }}>
-          <CardContent sx={{ p: 4 }}>
-            <Suspense fallback={null}>
-              <ResetPassword />
-            </Suspense>
-          </CardContent>
-        </Card>
-      </Container>
-    </Box>
+    <Suspense fallback={null}>
+      <ResetPassword />
+    </Suspense>
   );
 }

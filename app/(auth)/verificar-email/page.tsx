@@ -1,19 +1,11 @@
 "use client";
 
-import { CheckCircle, ErrorOutline } from "@mui/icons-material";
-import {
-  Box,
-  Button,
-  Card,
-  CardContent,
-  CircularProgress,
-  Container,
-  Typography,
-} from "@mui/material";
+import { ErrorOutline, MarkEmailRead } from "@mui/icons-material";
+import { Button, CircularProgress } from "@mui/material";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useRef, useState } from "react";
-import Logo from "@/components/ui/Logo";
+import { AuthBadge, AuthHeader, AuthShell } from "@/components/auth/AuthShell";
 import { authApi } from "@/lib/api/auth";
 import { dashboardFor } from "@/lib/routes";
 import { useAuthStore } from "@/lib/stores/authStore";
@@ -67,83 +59,59 @@ function VerifyEmail() {
   const next = user ? dashboardFor(user.role) : "/login";
   const nextLabel = user ? "Ir a mi panel" : "Iniciar sesión";
 
-  return (
-    <Box
-      sx={{
-        background: "linear-gradient(135deg, #380116 0%, #4b011d 100%)",
-        minHeight: "100vh",
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        justifyContent: "center",
-        gap: 3,
-        px: 2,
-        py: 4,
-      }}
+  const nextButton = (
+    <Button
+      component={Link}
+      href={next}
+      variant="contained"
+      color="secondary"
+      fullWidth
     >
-      <Logo size={90} variant="white" />
-      <Container maxWidth="xs" disableGutters>
-        <Card sx={{ borderRadius: 3 }}>
-          <CardContent sx={{ p: 4, textAlign: "center" }}>
-            {state.status === "loading" && (
-              <>
-                <CircularProgress sx={{ mb: 2 }} />
-                <Typography variant="h6" fontWeight={700}>
-                  Confirmando tu email…
-                </Typography>
-              </>
-            )}
+      {nextLabel}
+    </Button>
+  );
 
-            {state.status === "ok" && (
-              <>
-                <CheckCircle color="success" sx={{ fontSize: 56, mb: 1 }} />
-                <Typography variant="h6" fontWeight={700} gutterBottom>
-                  ¡Email confirmado!
-                </Typography>
-                <Typography color="text.secondary" sx={{ mb: 3 }}>
-                  Gracias. Ya podés seguir usando Flexpress.
-                </Typography>
-                <Button
-                  component={Link}
-                  href={next}
-                  variant="contained"
-                  color="secondary"
-                  fullWidth
-                  size="large"
-                >
-                  {nextLabel}
-                </Button>
-              </>
-            )}
+  if (state.status === "loading") {
+    return (
+      <AuthShell>
+        <AuthBadge>
+          <CircularProgress size={30} thickness={4.5} color="inherit" />
+        </AuthBadge>
+        <AuthHeader title="Confirmando tu email…" />
+      </AuthShell>
+    );
+  }
 
-            {state.status === "error" && (
-              <>
-                <ErrorOutline color="error" sx={{ fontSize: 56, mb: 1 }} />
-                <Typography variant="h6" fontWeight={700} gutterBottom>
-                  No pudimos confirmar tu email
-                </Typography>
-                <Typography color="text.secondary" sx={{ mb: 3 }}>
-                  {state.message}
-                  {user
-                    ? " Podés pedir un link nuevo desde tu panel."
-                    : " Iniciá sesión y pedí un link nuevo desde tu panel."}
-                </Typography>
-                <Button
-                  component={Link}
-                  href={next}
-                  variant="contained"
-                  color="secondary"
-                  fullWidth
-                  size="large"
-                >
-                  {nextLabel}
-                </Button>
-              </>
-            )}
-          </CardContent>
-        </Card>
-      </Container>
-    </Box>
+  if (state.status === "ok") {
+    return (
+      <AuthShell>
+        <AuthBadge key="ok">
+          <MarkEmailRead />
+        </AuthBadge>
+        <AuthHeader
+          title="¡Email confirmado!"
+          subtitle="Gracias. Ya podés seguir usando Flexpress."
+        />
+        {nextButton}
+      </AuthShell>
+    );
+  }
+
+  return (
+    <AuthShell>
+      <AuthBadge key="error" tone="error">
+        <ErrorOutline />
+      </AuthBadge>
+      <AuthHeader
+        title="No pudimos confirmar tu email"
+        subtitle={`${state.message}${
+          user
+            ? " Podés pedir un link nuevo desde tu panel."
+            : " Iniciá sesión y pedí un link nuevo desde tu panel."
+        }`}
+      />
+      {nextButton}
+    </AuthShell>
   );
 }
 

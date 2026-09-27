@@ -44,28 +44,58 @@ export function EmailVerificationBanner() {
         display: "flex",
         alignItems: "center",
         gap: 1.5,
-        px: 1.5,
-        py: 1.25,
+        p: 1.25,
+        pr: 1.5,
         mb: 2,
-        borderRadius: 2,
-        bgcolor: "background.paper",
-        borderLeft: "3px solid",
-        borderLeftColor: "secondary.main",
-        boxShadow: "0 1px 3px rgba(0,0,0,0.06)",
+        borderRadius: "16px",
+        bgcolor: "#F5F2E8",
+        border: "1px solid rgba(220,166,33,0.35)",
+        boxShadow:
+          "0 1px 2px rgba(56,1,22,0.04), 0 8px 20px -12px rgba(56,1,22,0.18)",
+        "@keyframes bannerIn": {
+          from: { opacity: 0, transform: "translateY(-6px)" },
+          to: { opacity: 1, transform: "none" },
+        },
+        animation: "bannerIn 0.35s ease-out both",
+        "@media (prefers-reduced-motion: reduce)": { animation: "none" },
       }}
     >
-      <MailOutline sx={{ fontSize: 20, color: "secondary.dark" }} />
+      <Box
+        sx={{
+          width: 36,
+          height: 36,
+          flexShrink: 0,
+          borderRadius: "50%",
+          display: "grid",
+          placeItems: "center",
+          bgcolor: "primary.main",
+          color: "secondary.main",
+        }}
+      >
+        <MailOutline sx={{ fontSize: 19 }} />
+      </Box>
       <Box sx={{ flex: 1, minWidth: 0 }}>
         <Typography
           variant="body2"
-          sx={{ fontWeight: 700, lineHeight: 1.3, fontSize: "0.82rem" }}
+          sx={{
+            fontWeight: 700,
+            lineHeight: 1.3,
+            fontSize: "0.85rem",
+            color: "primary.main",
+          }}
         >
           Confirmá tu email
         </Typography>
         <Typography
           variant="caption"
-          color="text.secondary"
-          sx={{ fontSize: "0.72rem", display: "block" }}
+          sx={{
+            fontSize: "0.74rem",
+            display: "block",
+            color: "#6B5E5E",
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            whiteSpace: "nowrap",
+          }}
         >
           {sentTo
             ? `Revisá ${sentTo} (y la carpeta de spam).`
@@ -74,13 +104,33 @@ export function EmailVerificationBanner() {
       </Box>
       <Button
         size="small"
-        variant="text"
-        color="primary"
+        variant="contained"
+        color="secondary"
+        disableElevation
         onClick={resend}
-        disabled={sending}
-        sx={{ fontWeight: 700, flexShrink: 0 }}
+        disabled={sending || !!sentTo}
+        sx={{
+          flexShrink: 0,
+          minWidth: 84,
+          borderRadius: 999,
+          px: 1.75,
+          fontWeight: 700,
+          fontSize: "0.78rem",
+          textTransform: "none",
+          color: "primary.main",
+          "&.Mui-disabled": {
+            bgcolor: "rgba(220,166,33,0.18)",
+            color: "primary.main",
+          },
+        }}
       >
-        {sending ? <CircularProgress size={16} /> : "Reenviar"}
+        {sending ? (
+          <CircularProgress size={14} color="inherit" />
+        ) : sentTo ? (
+          "Enviado ✓"
+        ) : (
+          "Reenviar"
+        )}
       </Button>
     </Box>
   );
