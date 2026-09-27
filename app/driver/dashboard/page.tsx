@@ -47,6 +47,7 @@ import { CreditPackagesShowcase } from "@/components/modals/CreditPackagesShowca
 import { RespondInquiryModal } from "@/components/modals/RespondInquiryModal";
 import { PwaInlineCta } from "@/components/pwa/PwaInlineCta";
 import { AccountStatusBanner } from "@/components/ui/AccountStatusBanner";
+import { EmailVerificationBanner } from "@/components/ui/EmailVerificationBanner";
 import { SignedAvatar } from "@/components/ui/SignedAvatar";
 import { SupportContact } from "@/components/ui/SupportContact";
 import { WelcomeHeader } from "@/components/ui/WelcomeHeader";
@@ -605,6 +606,8 @@ export default function DriverDashboard() {
         greeting={greeting}
         avatarUrl={user?.avatar ?? undefined}
       />
+
+      <EmailVerificationBanner />
 
       {/* Aviso de estado de cuenta (advertencia / bloqueo) */}
       {(user?.accountStatus === "warned" ||

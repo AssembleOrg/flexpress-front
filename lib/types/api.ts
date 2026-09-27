@@ -115,6 +115,9 @@ export interface User {
   rejectionReason: string | null; // Reason if rejected
   verifiedAt: string | null;
   verifiedBy: string | null;
+  // Confirmación de email (no bloquea el uso). null = pendiente; undefined =
+  // sesión guardada antes de que existiera el campo.
+  emailVerifiedAt?: string | null;
   // Sanción a nivel cuenta (visible para el charter)
   accountStatus?: "active" | "warned" | "banned";
   accountStatusNote?: string | null;
