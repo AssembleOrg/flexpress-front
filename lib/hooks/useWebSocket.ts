@@ -95,13 +95,34 @@ export function useWebSocket(): UseWebSocketReturn {
 
     // ===== Eventos de Conexión =====
 
+    // Los badges (unread, matches del chófer, pagos pendientes) pollean lento
+    // con socket activo y rápido sin él. refetchInterval solo se reevalúa tras
+    // un fetch, así que al cambiar el estado del socket invalidamos para que
+    // reconcilien lo perdido y tomen el intervalo correcto.
+    // invalidateQueries solo refetchea las queries montadas.
+    const reconcileBadges = () => {
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.notifications.unreadCount(),
+      });
+      queryClient.invalidateQueries({ queryKey: queryKeys.matches.all });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.admin.payments.pendingCount(),
+      });
+    };
+    let hasConnectedBefore = false;
+
     socket.on("connect", () => {
       setIsConnected(true);
       setIsConnecting(false);
+      // En la primera conexión no hace falta (las queries recién montaron).
+      if (hasConnectedBefore) reconcileBadges();
+      hasConnectedBefore = true;
     });
 
-    socket.on("disconnect", () => {
+    socket.on("disconnect", (reason) => {
       setIsConnected(false);
+      // Desconexión intencional (logout/unmount) → no refetchear.
+      if (reason !== "io client disconnect") reconcileBadges();
     });
 
     socket.on("error", (error) => {
@@ -219,6 +240,14 @@ export function useWebSocket(): UseWebSocketReturn {
         } else if (data?.type === "availability_inquiry_answered") {
           queryClient.invalidateQueries({
             queryKey: queryKeys.availabilityInquiries.sent(),
+          });
+        } else if (data?.type === "match_selected") {
+          // Pedido nuevo para el chófer: refrescar sus matches (navbar/dashboard).
+          queryClient.invalidateQueries({ queryKey: queryKeys.matches.all });
+        } else if (data?.type === "payment_pending") {
+          // Admin: badge de pagos pendientes.
+          queryClient.invalidateQueries({
+            queryKey: queryKeys.admin.payments.pendingCount(),
           });
         } else if (data?.type === "payment_approved") {
           // Créditos: reflejar el nuevo balance en el Navbar sin remontar.

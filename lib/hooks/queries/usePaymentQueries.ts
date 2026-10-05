@@ -7,6 +7,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { paymentsApi } from "@/lib/api/payments";
+import { getSocketConnected } from "@/lib/hooks/useWebSocket";
 import { queryKeys } from "./queryFactory";
 
 /**
@@ -18,7 +19,10 @@ export function usePendingPaymentsCount() {
     queryKey: queryKeys.admin.payments.pendingCount(),
     queryFn: () => paymentsApi.getPendingPaymentsCount(),
     staleTime: 1000 * 30, // 30 segundos
-    refetchInterval: 1000 * 30, // Auto-refetch cada 30s (polling simple)
+    // notification:new tipo payment_pending (useWebSocket) lo invalida al
+    // instante. Aprobaciones/rechazos de otro admin no emiten evento → red de
+    // seguridad de 2 min con socket activo; socket caído → 30s.
+    refetchInterval: () => (getSocketConnected() ? 1000 * 60 * 2 : 1000 * 30),
   });
 }
 

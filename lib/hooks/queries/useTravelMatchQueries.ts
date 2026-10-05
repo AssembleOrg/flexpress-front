@@ -12,7 +12,7 @@ import { queryKeys } from "./queryFactory";
  * Handles fetching travel matches for both users and charters.
  * Caching strategy:
  * - userMatches: 10s stale, 3min cache (user waiting for response)
- * - charterMatches: 5s stale, 2min cache + 30s refresh (WebSocket primary)
+ * - charterMatches: 5s stale, 2min cache + refresh 2min con socket / 30s sin socket
  * - match detail: 15s stale, 5min cache + 15s refresh (WebSocket primary)
  */
 
@@ -59,7 +59,10 @@ export function useCharterMatches() {
     queryFn: () => travelMatchingApi.getCharterMatches(),
     staleTime: 5 * 1000, // 5 seconds - charters need near real-time updates
     gcTime: 2 * 60 * 1000, // 2 minutes
-    refetchInterval: 30 * 1000, // Auto-refresh every 30 seconds (WebSocket handles real-time)
+    // Socket activo → match:updated (cancelaciones) y notification:new
+    // tipo match_selected (pedido nuevo) lo invalidan; queda red de seguridad
+    // de 2 min (ej: expiración del match no emite evento). Socket caído → 30s.
+    refetchInterval: () => (getSocketConnected() ? 2 * 60 * 1000 : 30 * 1000),
     refetchOnWindowFocus: true,
     refetchOnReconnect: true,
     enabled: user?.role === "charter", // Only fetch if charter
