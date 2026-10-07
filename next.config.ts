@@ -5,6 +5,10 @@ const nextConfig: NextConfig = {
   // queda visible en el config).
   compress: true,
 
+  // Netlify da un DEPLOY_ID por deploy: si la app quedó abierta con una versión
+  // vieja, Next lo detecta en la siguiente navegación y recarga la página entera.
+  deploymentId: process.env.DEPLOY_ID,
+
   compiler: {
     // Strippea todos los console.* del bundle en build de producción (dev
     // queda intacto). Evita filtrar payloads/tokens/datos en la consola del

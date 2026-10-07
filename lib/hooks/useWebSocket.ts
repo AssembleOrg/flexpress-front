@@ -305,12 +305,22 @@ export function useWebSocket(): UseWebSocketReturn {
       },
     );
 
+    // Tras reconnectionAttempts fallidos socket.io deja de intentar: si el
+    // celular estuvo bloqueado un rato largo, al volver se reconecta a mano.
+    const onVisible = () => {
+      if (document.visibilityState === "visible" && !socket.connected) {
+        socket.connect();
+      }
+    };
+    document.addEventListener("visibilitychange", onVisible);
+
     // Guardar en singleton de módulo Y en la ref local
     globalSocket = socket;
     socketRef.current = socket;
 
     // Cleanup: desconectar solo cuando no queda ninguna instancia montada
     return () => {
+      document.removeEventListener("visibilitychange", onVisible);
       mountCount--;
       if (mountCount <= 0) {
         globalSocket?.disconnect();
