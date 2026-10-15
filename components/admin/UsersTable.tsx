@@ -53,7 +53,7 @@ export function UsersTable() {
   const [searchText, setSearchText] = useState("");
   const [roleFilter, setRoleFilter] = useState<string>("");
   const [paginationModel, setPaginationModel] = useState<GridPaginationModel>({
-    pageSize: 10,
+    pageSize: 100,
     page: 0,
   });
   const [mobilePage, setMobilePage] = useState(0);
@@ -321,7 +321,7 @@ export function UsersTable() {
             autoHeight
             rows={filteredUsers}
             columns={columns}
-            pageSizeOptions={[10, 25, 50]}
+            pageSizeOptions={[10, 25, 50, 100]}
             paginationModel={paginationModel}
             onPaginationModelChange={setPaginationModel}
             paginationMode="client"

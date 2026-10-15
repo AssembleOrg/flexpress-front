@@ -83,7 +83,6 @@ export function useCreateMatch() {
  */
 export function useSelectCharter() {
   const queryClient = useQueryClient();
-  const { user } = useAuthStore();
 
   return useMutation({
     mutationFn: ({
@@ -94,7 +93,7 @@ export function useSelectCharter() {
       charterId: string;
     }) => travelMatchingApi.selectCharter(matchId, charterId),
 
-    onSuccess: async (_result, { matchId }) => {
+    onSuccess: async () => {
       // Refetch all matches (force immediate update)
       await queryClient.refetchQueries({
         queryKey: queryKeys.matches.all,

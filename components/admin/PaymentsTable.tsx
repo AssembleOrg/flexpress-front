@@ -151,12 +151,12 @@ export function PaymentsTable() {
                 cursor: "pointer",
                 fontWeight: 600,
               }}
-              onMouseEnter={(e) =>
-                (e.currentTarget.style.textDecoration = "underline")
-              }
-              onMouseLeave={(e) =>
-                (e.currentTarget.style.textDecoration = "none")
-              }
+              onMouseEnter={(e) => {
+              e.currentTarget.style.textDecoration = "underline";
+            }}
+              onMouseLeave={(e) => {
+              e.currentTarget.style.textDecoration = "none";
+            }}
             >
               {userName}
             </Link>

@@ -63,12 +63,12 @@ export function TripsTable() {
               textDecoration: "none",
               cursor: "pointer",
             }}
-            onMouseEnter={(e) =>
-              (e.currentTarget.style.textDecoration = "underline")
-            }
-            onMouseLeave={(e) =>
-              (e.currentTarget.style.textDecoration = "none")
-            }
+            onMouseEnter={(e) => {
+              e.currentTarget.style.textDecoration = "underline";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.textDecoration = "none";
+            }}
           >
             {params.row.user.name}
           </Link>
@@ -89,12 +89,12 @@ export function TripsTable() {
               textDecoration: "none",
               cursor: "pointer",
             }}
-            onMouseEnter={(e) =>
-              (e.currentTarget.style.textDecoration = "underline")
-            }
-            onMouseLeave={(e) =>
-              (e.currentTarget.style.textDecoration = "none")
-            }
+            onMouseEnter={(e) => {
+              e.currentTarget.style.textDecoration = "underline";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.textDecoration = "none";
+            }}
           >
             {params.row.charter.name}
           </Link>
@@ -233,9 +233,9 @@ export function TripsTable() {
             autoHeight
             rows={filteredTrips}
             columns={visibleColumns}
-            pageSizeOptions={[5, 10, 20, 50]}
+            pageSizeOptions={[10, 25, 50, 100]}
             initialState={{
-              pagination: { paginationModel: { pageSize: 10, page: 0 } },
+              pagination: { paginationModel: { pageSize: 100, page: 0 } },
             }}
             loading={isLoading}
             disableRowSelectionOnClick

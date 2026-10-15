@@ -52,20 +52,10 @@ export default function UserEditPage() {
   const { user: currentUser } = useAuthStore();
 
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const isAdmin = currentUser?.role === "admin";
 
-  // Permissions check - only admin can edit users
-  if (currentUser?.role !== "admin") {
-    return (
-      <Container maxWidth="md" sx={{ py: 4 }}>
-        <Typography variant="h6" color="error">
-          No tienes permisos para editar usuarios
-        </Typography>
-      </Container>
-    );
-  }
-
-  // Queries
-  const { data: user, isLoading } = useAdminUserDetail(userId);
+  // Queries (null = query deshabilitada para no-admin)
+  const { data: user, isLoading } = useAdminUserDetail(isAdmin ? userId : null);
   const updateUserMutation = useUpdateUser();
   const deleteUserMutation = useDeleteUser();
 
@@ -126,6 +116,17 @@ export default function UserEditPage() {
     setDeleteDialogOpen(false);
     router.push("/admin");
   };
+
+  // Permissions check - only admin can edit users (después de los hooks)
+  if (!isAdmin) {
+    return (
+      <Container maxWidth="md" sx={{ py: 4 }}>
+        <Typography variant="h6" color="error">
+          No tienes permisos para editar usuarios
+        </Typography>
+      </Container>
+    );
+  }
 
   if (isLoading) {
     return (

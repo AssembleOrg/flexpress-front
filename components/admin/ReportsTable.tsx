@@ -29,7 +29,7 @@ export function ReportsTable() {
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
 
   const [paginationModel, setPaginationModel] = useState<GridPaginationModel>({
-    pageSize: 10,
+    pageSize: 100,
     page: 0,
   });
 
@@ -197,7 +197,7 @@ export function ReportsTable() {
           <DataGrid
             rows={data?.data ?? []}
             columns={visibleColumns}
-            pageSizeOptions={[5, 10, 20, 50]}
+            pageSizeOptions={[10, 25, 50, 100]}
             paginationModel={paginationModel}
             onPaginationModelChange={setPaginationModel}
             loading={isLoading}

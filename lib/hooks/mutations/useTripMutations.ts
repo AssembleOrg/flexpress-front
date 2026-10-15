@@ -4,7 +4,6 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import toast from "react-hot-toast";
 import { tripsApi } from "@/lib/api/trips";
 import { queryKeys } from "@/lib/hooks/queries/queryFactory";
-import { useAuthStore } from "@/lib/stores/authStore";
 import { getApiErrorMessage, isConflict } from "@/lib/utils/apiError";
 
 /**

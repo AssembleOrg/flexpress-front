@@ -8,7 +8,7 @@ import {
   Flag,
   LocalShipping,
   LocationOn,
-  Map,
+  Map as MapIcon,
   Navigation,
   ReportProblem,
 } from "@mui/icons-material";
@@ -54,11 +54,11 @@ export default function DriverMatchingDetailPage() {
   const params = useParams();
   const router = useRouter();
   const matchId = params.matchId as string;
-  const { user, returnToOrigin, setReturnToOrigin } = useAuthStore();
+  const { user, setReturnToOrigin } = useAuthStore();
 
   const { data: match, isLoading: matchLoading, refetch } = useMatch(matchId);
   const tripId = match?.tripId;
-  const { data: trip, isLoading: tripLoading } = useTrip(tripId || "");
+  const { data: trip } = useTrip(tripId || "");
 
   const charterCompleteTripMutation = useCharterCompleteTrip();
   const toggleAvailabilityMutation = useToggleAvailability();
@@ -688,7 +688,7 @@ export default function DriverMatchingDetailPage() {
                     variant="contained"
                     size="small"
                     fullWidth
-                    startIcon={<Map />}
+                    startIcon={<MapIcon />}
                     onClick={() => {
                       mapRef.current?.fitAllMarkers();
                       toast.success("Mostrando ruta completa");

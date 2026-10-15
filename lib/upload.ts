@@ -91,7 +91,7 @@ export async function uploadToStorage(
   // (S3/Spaces exige que "file" sea el último campo). POST multipart sin headers custom es
   // un "simple request" → sin preflight OPTIONS, que es lo que evita el 403 de Spaces.
   const formData = new FormData();
-  Object.entries(fields).forEach(([k, v]) => formData.append(k, v));
+  for (const [k, v] of Object.entries(fields)) formData.append(k, v);
   formData.append("file", finalFile);
 
   // mode: "no-cors" — DigitalOcean Spaces no devuelve el header CORS en la respuesta 204

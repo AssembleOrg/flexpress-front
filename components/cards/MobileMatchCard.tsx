@@ -90,11 +90,9 @@ interface MobileMatchCardProps {
  * ```
  */
 export function MobileMatchCard({
-  matchId,
   user,
   origin,
   destination,
-  workersCount,
   scheduledDate,
   expiresIn,
   onAccept,

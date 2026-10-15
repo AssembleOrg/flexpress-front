@@ -244,7 +244,7 @@ export function AuditTab() {
 
   const [feature, setFeature] = useState<string>("");
   const [paginationModel, setPaginationModel] = useState<GridPaginationModel>({
-    pageSize: 50,
+    pageSize: 100,
     page: 0,
   });
   // Mobile: "cargar más" acumulativo (una sola página que crece de a 50).

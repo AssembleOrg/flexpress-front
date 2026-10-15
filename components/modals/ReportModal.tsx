@@ -111,7 +111,7 @@ export function ReportModal({
             multiline
             rows={2}
             helperText={`${reason.length}/100 caracteres (requerido)`}
-            error={!isReasonProvided && reason.length === 0 ? false : false}
+            error={false}
             slotProps={{
               htmlInput: {
                 maxLength: 100,

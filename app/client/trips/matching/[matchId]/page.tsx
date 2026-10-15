@@ -8,7 +8,7 @@ import {
   Flag,
   LocalShipping,
   LocationOn,
-  Map,
+  Map as MapIcon,
   Navigation,
   ReportProblem,
   Route,
@@ -957,7 +957,7 @@ export default function MatchDetailPage() {
                       {
                         key: "ruta",
                         label: "Ruta",
-                        icon: <Map sx={{ fontSize: 16 }} />,
+                        icon: <MapIcon sx={{ fontSize: 16 }} />,
                         onClick: () => mapRef.current?.fitAllMarkers(),
                       },
                     ].map((seg) => (

@@ -40,7 +40,6 @@ export function ConfirmCompletionModal({
   open,
   onClose,
   onConfirm,
-  charterName,
   isLoading = false,
 }: ConfirmCompletionModalProps) {
   return (

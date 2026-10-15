@@ -4,7 +4,6 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import toast from "react-hot-toast";
 import { conversationApi } from "@/lib/api/conversations";
 import { conversationKeys } from "@/lib/hooks/queries/useConversationQueries";
-import { useAuthStore } from "@/lib/stores/authStore";
 
 /**
  * Send a message to a conversation
@@ -15,7 +14,6 @@ import { useAuthStore } from "@/lib/stores/authStore";
  */
 export function useSendMessage() {
   const queryClient = useQueryClient();
-  const { user } = useAuthStore();
 
   return useMutation({
     mutationFn: ({

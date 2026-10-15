@@ -71,7 +71,6 @@ interface MobileTripCardProps {
  * ```
  */
 export function MobileTripCard({
-  id,
   origin,
   destination,
   date,

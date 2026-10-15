@@ -22,7 +22,6 @@ interface TripCardProps {
 export default function TripCard({
   trip,
   variant = "client",
-  onAccept,
   onView,
   onCancel,
 }: TripCardProps) {
