@@ -8,7 +8,9 @@ import {
   CreditScoreOutlined,
   DirectionsCarOutlined,
   FlagOutlined,
+  HourglassBottomRounded,
   NotificationsNoneRounded,
+  PowerSettingsNewRounded,
 } from "@mui/icons-material";
 import { Box, Skeleton, Typography } from "@mui/material";
 import { formatDistanceToNow } from "date-fns";
@@ -26,6 +28,11 @@ export const NOTIFICATION_META: Record<
   trip_charter_completed: { Icon: FlagOutlined, color: "#B7850D" },
   payment_approved: { Icon: CreditScoreOutlined, color: "#2ECC71" },
   payment_rejected: { Icon: CreditCardOffOutlined, color: "#E74C3C" },
+  availability_stale_warning: {
+    Icon: HourglassBottomRounded,
+    color: "#B7850D",
+  },
+  availability_auto_off: { Icon: PowerSettingsNewRounded, color: "#503933" },
 };
 
 export function getNotificationMeta(type: string) {

@@ -133,52 +133,89 @@ export function usePushPermission(isAuthenticated: boolean) {
    * suscrito y sincronizado con el backend.
    */
   const subscribeToPush = useCallback(async (): Promise<boolean> => {
-    if (typeof window === "undefined") return false;
-    if (!("serviceWorker" in navigator) || !("PushManager" in window))
-      return false;
-
-    const vapidKey = getVapidKey();
-    if (!vapidKey) return false;
-
     setIsSubscribing(true);
     try {
-      const registration = await navigator.serviceWorker.register("/sw.js", {
-        updateViaCache: "none",
-      });
-      await navigator.serviceWorker.ready;
-
-      let permission = Notification.permission;
-      if (permission === "default") {
-        permission = await Notification.requestPermission();
-      }
-      if (permission !== "granted") {
-        setSupport(permission === "denied" ? "denied" : "default");
-        return false;
-      }
-
-      const existing = await registration.pushManager.getSubscription();
-      const subscription =
-        existing ??
-        (await registration.pushManager.subscribe({
-          userVisibleOnly: true,
-          applicationServerKey: urlBase64ToUint8Array(
-            vapidKey,
-          ) as unknown as ArrayBuffer,
-        }));
-
-      const ok = await syncSubscriptionToBackend(subscription);
-      if (!ok) return false;
-
-      setSupport("granted");
-      return true;
-    } catch (err) {
-      // No crítico — la app funciona igual sin push
-      console.warn("[Push] Suscripción fallida (no crítico):", err);
-      return false;
+      const result = await requestPushSubscription();
+      if (result !== "unsupported" && result !== "error") setSupport(result);
+      return result === "granted";
     } finally {
       setIsSubscribing(false);
     }
   }, []);
 
   return { support, isSubscribing, subscribeToPush };
+}
+
+/** Estado actual del permiso sin pedir nada (seguro para llamar en cualquier momento). */
+export function getPushPermission(): NotificationPermission | "unsupported" {
+  if (typeof window === "undefined") return "unsupported";
+  if (
+    !("serviceWorker" in navigator) ||
+    !("PushManager" in window) ||
+    !getVapidKey()
+  )
+    return "unsupported";
+  return Notification.permission;
+}
+
+/**
+ * Pide permiso (si falta) y suscribe este dispositivo. DEBE llamarse desde un
+ * gesto del usuario. Sin estado de React: la usan el hook y el toggle de
+ * disponibilidad.
+ *
+ * `requestPermission()` va ANTES de cualquier await: Safari (iOS) solo muestra
+ * el prompt si se pide dentro del gesto, y esperar al SW primero lo consumía.
+ */
+export async function requestPushSubscription(): Promise<
+  "granted" | "denied" | "default" | "unsupported" | "error"
+> {
+  const current = getPushPermission();
+  if (current === "unsupported") return "unsupported";
+  const vapidKey = getVapidKey() as string;
+
+  try {
+    const permission =
+      current === "default" ? await Notification.requestPermission() : current;
+    if (permission !== "granted") return permission;
+
+    const registration = await navigator.serviceWorker.register("/sw.js", {
+      updateViaCache: "none",
+    });
+    await navigator.serviceWorker.ready;
+
+    const existing = await registration.pushManager.getSubscription();
+    const subscription =
+      existing ??
+      (await registration.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(
+          vapidKey,
+        ) as unknown as ArrayBuffer,
+      }));
+
+    return (await syncSubscriptionToBackend(subscription))
+      ? "granted"
+      : "error";
+  } catch (err) {
+    // No crítico — la app funciona igual sin push
+    console.warn("[Push] Suscripción fallida (no crítico):", err);
+    return "error";
+  }
+}
+
+/**
+ * Endpoint push de este dispositivo, si tiene. Para el logout: el backend lo usa
+ * para desvincular el push del usuario que se va. No espera a `serviceWorker.ready`
+ * (que nunca resuelve si no hay SW) y nunca tira.
+ */
+export async function getCurrentPushEndpoint(): Promise<string | undefined> {
+  try {
+    if (typeof window === "undefined" || !("serviceWorker" in navigator))
+      return undefined;
+    const registration = await navigator.serviceWorker.getRegistration();
+    const sub = await registration?.pushManager?.getSubscription();
+    return sub?.endpoint;
+  } catch {
+    return undefined;
+  }
 }

@@ -34,6 +34,7 @@ import { useState } from "react";
 import type { AuditFeedItem } from "@/lib/api/admin";
 import {
   useAuditFeed,
+  useAuditFeedInfinite,
   useAuditStats,
 } from "@/lib/hooks/queries/useAdminQueries";
 import { formatDate } from "@/lib/utils/formatDate";
@@ -47,22 +48,67 @@ const FEATURES = [
   "Charter finalizó el viaje",
   "Cliente confirmó el viaje",
   "Cambió su disponibilidad",
+  "Disponibilidad apagada por inactividad",
   "Pidió cargar crédito",
   "Crédito aprobado",
   "Crédito rechazado",
   "Generó una denuncia",
 ];
 
-const GREEN = ["completed", "accepted", "available", "ok", "charter_completed"];
-const RED = ["rejected", "unavailable"];
+const TONES = {
+  ok: { bg: "#2ECC71", color: "white", Icon: OkIcon },
+  bad: { bg: "#E74C3C", color: "white", Icon: ErrorIcon },
+  warn: { bg: "#DCA621", color: "#212121", Icon: NeutralIcon },
+  neutral: { bg: "#EEE", color: "#757575", Icon: NeutralIcon },
+};
+
+// Códigos que emite el backend (ActivityLogService.logFeature) → etiqueta ES.
+const STATUS: Record<string, { label: string; tone: keyof typeof TONES }> = {
+  pending: { label: "Pendiente", tone: "warn" },
+  searching: { label: "Buscando", tone: "warn" },
+  accepted: { label: "Aprobado", tone: "ok" },
+  ok: { label: "Confirmado", tone: "ok" },
+  available: { label: "Disponible", tone: "ok" },
+  charter_completed: { label: "Finalizado por charter", tone: "ok" },
+  completed: { label: "Completado", tone: "ok" },
+  rejected: { label: "Rechazado", tone: "bad" },
+  unavailable: { label: "No disponible", tone: "neutral" },
+  cancelled: { label: "Cancelado", tone: "neutral" },
+};
 
 function statusStyle(status: string | null) {
-  if (!status) return { bg: "#EEE", color: "#757575", Icon: NeutralIcon };
-  if (GREEN.includes(status))
-    return { bg: "#2ECC71", color: "white", Icon: OkIcon };
-  if (RED.includes(status))
-    return { bg: "#E74C3C", color: "white", Icon: ErrorIcon };
-  return { bg: "#DCA621", color: "#212121", Icon: NeutralIcon };
+  if (!status) return { ...TONES.neutral, label: "—" };
+  // Código nuevo no mapeado: se muestra crudo en vez de romper.
+  const s = STATUS[status] ?? { label: status, tone: "warn" };
+  return { ...TONES[s.tone], label: s.label };
+}
+
+const ROLE_LABEL: Record<NonNullable<AuditFeedItem["userRole"]>, string> = {
+  charter: "Charter",
+  user: "Cliente",
+  admin: "Admin",
+  subadmin: "Subadmin",
+};
+
+function RoleTag({ role }: { role: AuditFeedItem["userRole"] }) {
+  if (!role) return null;
+  return (
+    <Box
+      component="span"
+      sx={{
+        px: 0.75,
+        py: 0.1,
+        borderRadius: "6px",
+        fontSize: "0.65rem",
+        fontWeight: 700,
+        flexShrink: 0,
+        color: role === "charter" ? "#8A6510" : "#380116",
+        bgcolor: alpha(role === "charter" ? "#DCA621" : "#380116", 0.1),
+      }}
+    >
+      {ROLE_LABEL[role]}
+    </Box>
+  );
 }
 
 function StatusChip({ status }: { status: string | null }) {
@@ -70,7 +116,7 @@ function StatusChip({ status }: { status: string | null }) {
   return (
     <Chip
       icon={<s.Icon sx={{ fontSize: 15, color: `${s.color} !important` }} />}
-      label={status ?? "—"}
+      label={s.label}
       size="small"
       sx={{
         backgroundColor: s.bg,
@@ -224,6 +270,7 @@ function MobileAuditCard({ item }: { item: AuditFeedItem }) {
             >
               {item.userName}
             </Typography>
+            <RoleTag role={item.userRole} />
           </Stack>
           <Typography
             variant="caption"
@@ -247,22 +294,26 @@ export function AuditTab() {
     pageSize: 100,
     page: 0,
   });
-  // Mobile: "cargar más" acumulativo (una sola página que crece de a 50).
-  const [mobileLimit, setMobileLimit] = useState(50);
-
   const { data: stats } = useAuditStats();
-  const { data: feed, isLoading } = useAuditFeed(
-    isMobile
-      ? { feature: feature || undefined, page: 1, limit: mobileLimit }
-      : {
-          feature: feature || undefined,
-          page: paginationModel.page + 1,
-          limit: paginationModel.pageSize,
-        },
+  const desktop = useAuditFeed(
+    {
+      feature: feature || undefined,
+      page: paginationModel.page + 1,
+      limit: paginationModel.pageSize,
+    },
+    !isMobile,
   );
+  // Mobile: "cargar más" acumulativo, paginando de verdad (el backend topea limit en 100).
+  const mobile = useAuditFeedInfinite(feature || undefined, isMobile);
 
-  const items = feed?.items ?? [];
-  const total = feed?.total ?? 0;
+  const active = isMobile ? mobile : desktop;
+  const { isLoading, isError, refetch } = active;
+  const items = isMobile
+    ? (mobile.data?.pages.flatMap((p) => p.items) ?? [])
+    : (desktop.data?.items ?? []);
+  const total = isMobile
+    ? (mobile.data?.pages[0]?.total ?? 0)
+    : (desktop.data?.total ?? 0);
 
   const columns: GridColDef<AuditFeedItem>[] = [
     {
@@ -282,6 +333,7 @@ export function AuditTab() {
           <Typography variant="body2" fontWeight={600} noWrap>
             {params.row.userName}
           </Typography>
+          <RoleTag role={params.row.userRole} />
         </Stack>
       ),
     },
@@ -308,7 +360,6 @@ export function AuditTab() {
   const onFeatureChange = (v: string) => {
     setFeature(v);
     setPaginationModel((prev) => ({ ...prev, page: 0 }));
-    setMobileLimit(50);
   };
 
   return (
@@ -360,11 +411,39 @@ export function AuditTab() {
           ))}
         </Select>
       </FormControl>
+      {/* Retención: el cron del backend borra eventos con más de 45 días. */}
+      <Typography
+        variant="caption"
+        color="text.disabled"
+        sx={{ display: "block", mt: -1, mb: 2 }}
+      >
+        Mostrando los últimos 45 días
+      </Typography>
 
       {/* Feed */}
       {isLoading ? (
         <Box sx={{ display: "flex", justifyContent: "center", py: 6 }}>
           <CircularProgress sx={{ color: "#380116" }} />
+        </Box>
+      ) : isError ? (
+        <Box
+          sx={{
+            textAlign: "center",
+            py: 6,
+            px: 2,
+            borderRadius: "16px",
+            bgcolor: alpha("#E74C3C", 0.05),
+          }}
+        >
+          <Typography color="text.secondary" fontWeight={600}>
+            No se pudo cargar la auditoría
+          </Typography>
+          <Button
+            onClick={() => refetch()}
+            sx={{ mt: 1, color: "#380116", fontWeight: 600, textTransform: "none" }}
+          >
+            Reintentar
+          </Button>
         </Box>
       ) : items.length === 0 ? (
         <Box
@@ -377,10 +456,12 @@ export function AuditTab() {
           }}
         >
           <Typography color="text.secondary" fontWeight={600}>
-            Sin actividad todavía
+            {feature ? "Sin eventos para esta acción" : "Sin actividad todavía"}
           </Typography>
           <Typography variant="body2" color="text.disabled" sx={{ mt: 0.5 }}>
-            Los eventos aparecerán acá a medida que los usuarios operen.
+            {feature
+              ? "Probá con otra acción o quitá el filtro."
+              : "Los eventos aparecerán acá a medida que los usuarios operen."}
           </Typography>
         </Box>
       ) : isMobile ? (
@@ -388,11 +469,12 @@ export function AuditTab() {
           {items.map((item) => (
             <MobileAuditCard key={item.id} item={item} />
           ))}
-          {items.length < total && (
+          {mobile.hasNextPage && (
             <Button
               fullWidth
               variant="outlined"
-              onClick={() => setMobileLimit((n) => n + 50)}
+              disabled={mobile.isFetchingNextPage}
+              onClick={() => mobile.fetchNextPage()}
               sx={{
                 mt: 1,
                 py: 1.25,
@@ -417,6 +499,7 @@ export function AuditTab() {
           rows={items}
           columns={columns}
           rowCount={total}
+          loading={desktop.isFetching}
           paginationMode="server"
           pageSizeOptions={[20, 50, 100]}
           paginationModel={paginationModel}

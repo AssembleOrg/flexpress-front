@@ -8,6 +8,7 @@ import {
   type RegisterRequest,
   type UpdateUserRequest,
 } from "@/lib/api/auth";
+import { getCurrentPushEndpoint } from "@/lib/hooks/usePushPermission";
 import { dashboardFor } from "@/lib/routes";
 import { useAuthStore } from "@/lib/stores/authStore";
 import { useNotificationsStore } from "@/lib/stores/notificationsStore";
@@ -137,7 +138,9 @@ export function useLogout() {
     mutationFn: async () => {
       const { refreshToken } = useAuthStore.getState();
       try {
-        await authApi.logout(refreshToken);
+        // El endpoint push va en el mismo request: así el backend deja de
+        // mandarle a este dispositivo las notificaciones del usuario que se va.
+        await authApi.logout(refreshToken, await getCurrentPushEndpoint());
       } catch (error) {
         console.warn("⚠️ [useLogout] No se pudo revocar la sesión", error);
       }

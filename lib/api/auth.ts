@@ -176,9 +176,15 @@ export const authApi = {
   // Revoca el refresh de este dispositivo en el servidor. El access vigente
   // muere solo al vencer (15m). Es best-effort: si falla, igual se limpia el
   // estado local.
-  logout: async (refreshToken: string | null): Promise<void> => {
+  logout: async (
+    refreshToken: string | null,
+    pushEndpoint?: string,
+  ): Promise<void> => {
     if (!refreshToken) return;
-    await api.post("/auth/logout", { refresh_token: refreshToken });
+    await api.post("/auth/logout", {
+      refresh_token: refreshToken,
+      ...(pushEndpoint && { push_endpoint: pushEndpoint }),
+    });
   },
 
   // Verificar que la sesión siga viva. Mismo endpoint que getProfile: si el

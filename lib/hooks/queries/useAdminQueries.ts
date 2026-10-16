@@ -3,7 +3,11 @@
  * Handles all GET requests for admin panel (users, reports, trips, payments)
  */
 
-import { useQuery } from "@tanstack/react-query";
+import {
+  keepPreviousData,
+  useInfiniteQuery,
+  useQuery,
+} from "@tanstack/react-query";
 import type {
   AuditFeedResult,
   AuditStats,
@@ -218,10 +222,31 @@ export function useAuditStats() {
 
 export function useAuditFeed(
   params: { feature?: string; page?: number; limit?: number } = {},
+  enabled = true,
 ) {
   return useQuery<AuditFeedResult>({
     queryKey: queryKeys.admin.audit.feed(params),
     queryFn: () => adminApi.getAuditFeed(params),
+    enabled,
+    staleTime: 1000 * 60,
+    placeholderData: keepPreviousData, // sin parpadeo al paginar/filtrar
+  });
+}
+
+/** Feed acumulativo para mobile ("Cargar más"), de a `limit` por página. */
+export function useAuditFeedInfinite(
+  feature?: string,
+  enabled = true,
+  limit = 50,
+) {
+  return useInfiniteQuery({
+    queryKey: [...queryKeys.admin.audit.feed({ feature, limit }), "infinite"],
+    queryFn: ({ pageParam }) =>
+      adminApi.getAuditFeed({ feature, page: pageParam, limit }),
+    enabled,
+    initialPageParam: 1,
+    getNextPageParam: (last) =>
+      last.page * last.limit < last.total ? last.page + 1 : undefined,
     staleTime: 1000 * 60,
   });
 }

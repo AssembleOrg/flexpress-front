@@ -241,6 +241,11 @@ export function useWebSocket(): UseWebSocketReturn {
           queryClient.invalidateQueries({
             queryKey: queryKeys.availabilityInquiries.sent(),
           });
+        } else if (data?.type === "availability_auto_off") {
+          // El cron lo pasó a No disponible: que el switch lo refleje.
+          queryClient.invalidateQueries({
+            queryKey: ["charter", "availability"],
+          });
         } else if (data?.type === "match_selected") {
           // Pedido nuevo para el chófer: refrescar sus matches (navbar/dashboard).
           queryClient.invalidateQueries({ queryKey: queryKeys.matches.all });

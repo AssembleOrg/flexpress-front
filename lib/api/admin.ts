@@ -599,6 +599,8 @@ export interface AuditFeedItem {
   id: string;
   createdAt: string;
   userName: string;
+  /** null si el usuario fue borrado. */
+  userRole: "admin" | "subadmin" | "user" | "charter" | null;
   feature: string | null;
   status: string | null;
 }

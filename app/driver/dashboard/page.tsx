@@ -45,6 +45,7 @@ import { AcceptMatchModal } from "@/components/modals/AcceptMatchModal";
 import { ActivationModal } from "@/components/modals/ActivationModal";
 import { CreditPackagesShowcase } from "@/components/modals/CreditPackagesShowcase";
 import { RespondInquiryModal } from "@/components/modals/RespondInquiryModal";
+import { PushBlockedDialog } from "@/components/pwa/PushBlockedDialog";
 import { PwaInlineCta } from "@/components/pwa/PwaInlineCta";
 import { AccountStatusBanner } from "@/components/ui/AccountStatusBanner";
 import { EmailVerificationBanner } from "@/components/ui/EmailVerificationBanner";
@@ -70,6 +71,10 @@ import {
   useCharterMatches,
 } from "@/lib/hooks/queries/useTravelMatchQueries";
 import { useMyVehicles } from "@/lib/hooks/queries/useVehicleQueries";
+import {
+  getPushPermission,
+  requestPushSubscription,
+} from "@/lib/hooks/usePushPermission";
 import { useAuthStore } from "@/lib/stores/authStore";
 import { useCreditPurchaseStore } from "@/lib/stores/creditPurchaseStore";
 import type { AvailabilityInquiry } from "@/lib/types/api";
@@ -77,6 +82,7 @@ import { type TravelMatch, VerificationStatus } from "@/lib/types/api";
 import { isMatchExpired } from "@/lib/utils/matchHelpers";
 
 const MotionCard = motion.create(Card);
+const PUSH_BLOCKED_SEEN_KEY = "flexpress:push-blocked-seen";
 
 export default function DriverDashboard() {
   const router = useRouter();
@@ -93,6 +99,7 @@ export default function DriverDashboard() {
 
   // Modal state
   const [acceptModalOpen, setAcceptModalOpen] = useState(false);
+  const [pushBlockedOpen, setPushBlockedOpen] = useState(false);
   const [selectedMatchForAccept, setSelectedMatchForAccept] =
     useState<TravelMatch | null>(null);
 
@@ -221,6 +228,19 @@ export default function DriverDashboard() {
 
   const { setReturnToOrigin } = useAuthStore();
 
+  // Ya en línea con las notificaciones bloqueadas: explicarle cómo
+  // reactivarlas. Una vez por sesión para no insistir en cada toggle.
+  const warnIfPushBlocked = () => {
+    if (getPushPermission() !== "denied") return;
+    try {
+      if (sessionStorage.getItem(PUSH_BLOCKED_SEEN_KEY)) return;
+      sessionStorage.setItem(PUSH_BLOCKED_SEEN_KEY, "1");
+    } catch {
+      // Storage bloqueado (modo privado): se muestra igual.
+    }
+    setPushBlockedOpen(true);
+  };
+
   const handleAvailabilityChange = (
     event: React.ChangeEvent<HTMLInputElement>,
   ) => {
@@ -264,6 +284,10 @@ export default function DriverDashboard() {
       return;
     }
 
+    // Sin push no se entera de los pedidos. Se pide acá, dentro del gesto del
+    // switch (iOS lo exige), sin frenar la activación.
+    if (getPushPermission() === "default") void requestPushSubscription();
+
     // Si el charter tiene conductores extra o más de un vehículo, abrimos el
     // modal de activación para que elija la config (conductor + vehículo +
     // ayudantes). Caso simple (titular, 1 vehículo, sin extras): activar directo.
@@ -289,7 +313,10 @@ export default function DriverDashboard() {
         activeHelperIds: [],
       },
       {
-        onSuccess: () => toast.success("Estás en línea"),
+        onSuccess: () => {
+          toast.success("Estás en línea");
+          warnIfPushBlocked();
+        },
         onError: () =>
           queryClient.setQueryData(
             availabilityKey,
@@ -319,6 +346,7 @@ export default function DriverDashboard() {
         onSuccess: () => {
           setActivationOpen(false);
           toast.success("Estás en línea");
+          warnIfPushBlocked();
         },
         onError: () => {
           queryClient.setQueryData(
@@ -770,6 +798,11 @@ export default function DriverDashboard() {
       </MotionCard>
 
       {/* Activation Modal: elegir conductor + vehículo + ayudantes */}
+      <PushBlockedDialog
+        open={pushBlockedOpen}
+        onClose={() => setPushBlockedOpen(false)}
+      />
+
       <ActivationModal
         open={activationOpen}
         onClose={handleActivationCancel}

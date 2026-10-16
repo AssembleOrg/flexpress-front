@@ -7,7 +7,7 @@ interface BeforeInstallPromptEvent extends Event {
   userChoice: Promise<{ outcome: "accepted" | "dismissed" }>;
 }
 
-function detectStandalone(): boolean {
+export function detectStandalone(): boolean {
   if (typeof window === "undefined") return false;
   return (
     window.matchMedia("(display-mode: standalone)").matches ||
@@ -17,7 +17,7 @@ function detectStandalone(): boolean {
   );
 }
 
-function detectIOS(): boolean {
+export function detectIOS(): boolean {
   if (typeof navigator === "undefined") return false;
   const ua = navigator.userAgent;
   const isIOSDevice = /iPad|iPhone|iPod/.test(ua);
