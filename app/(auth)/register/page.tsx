@@ -93,6 +93,10 @@ function RegisterFormContent() {
   });
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  // Cubre todo el envío (registro + DNI + selfie). Con solo isPending el botón se
+  // rehabilitaba entre pasos: un segundo toque daba 409 y el aviso de error
+  // aunque la cuenta ya se había creado.
+  const [submitting, setSubmitting] = useState(false);
   const [gender, setLocalGender] = useState<"male" | "female" | "other">(
     "other",
   );
@@ -167,6 +171,7 @@ function RegisterFormContent() {
   });
 
   const onSubmit = async (data: RegisterForm) => {
+    if (submitting) return;
     // Validar selfie para ambos roles
     if (!selfie) {
       setSelfieError("Debes subir una foto de perfil");
@@ -194,6 +199,7 @@ function RegisterFormContent() {
         : {}),
     };
 
+    setSubmitting(true);
     try {
       // PASO 1: Registrar usuario
       const user = await registerMutation.mutateAsync(registerData);
@@ -246,6 +252,7 @@ function RegisterFormContent() {
       }
     } catch (error) {
       console.error("❌ [RegisterForm] Error:", error);
+      setSubmitting(false);
     }
   };
 
@@ -803,8 +810,7 @@ function RegisterFormContent() {
                         fullWidth
                         size="large"
                         disabled={
-                          registerMutation.isPending ||
-                          createUserDocumentMutation.isPending ||
+                          submitting ||
                           !acceptedTerms ||
                           !dniFront ||
                           !dniBack
@@ -817,8 +823,7 @@ function RegisterFormContent() {
                           mb: 3,
                         }}
                       >
-                        {registerMutation.isPending ||
-                        createUserDocumentMutation.isPending
+                        {submitting
                           ? "Creando cuenta..."
                           : "Registrarse"}
                       </Button>
