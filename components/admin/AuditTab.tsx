@@ -96,8 +96,10 @@ function RoleTag({ role }: { role: AuditFeedItem["userRole"] }) {
     <Box
       component="span"
       sx={{
+        display: "inline-block",
+        verticalAlign: "middle",
+        lineHeight: 1.6,
         px: 0.75,
-        py: 0.1,
         borderRadius: "6px",
         fontSize: "0.65rem",
         fontWeight: 700,
@@ -262,15 +264,17 @@ function MobileAuditCard({ item }: { item: AuditFeedItem }) {
         >
           <Stack direction="row" alignItems="center" gap={1} minWidth={0}>
             <UserAvatar name={item.userName} />
-            <Typography
-              variant="body2"
-              fontWeight={600}
-              fontSize="0.8rem"
-              noWrap
-            >
-              {item.userName}
-            </Typography>
-            <RoleTag role={item.userRole} />
+            <Box sx={{ minWidth: 0 }}>
+              <Typography
+                variant="body2"
+                fontWeight={600}
+                fontSize="0.8rem"
+                noWrap
+              >
+                {item.userName}
+              </Typography>
+              <RoleTag role={item.userRole} />
+            </Box>
           </Stack>
           <Typography
             variant="caption"
@@ -333,9 +337,15 @@ export function AuditTab() {
           <Typography variant="body2" fontWeight={600} noWrap>
             {params.row.userName}
           </Typography>
-          <RoleTag role={params.row.userRole} />
         </Stack>
       ),
+    },
+    {
+      field: "userRole",
+      headerName: "Rol",
+      width: 110,
+      sortable: false,
+      renderCell: (params) => <RoleTag role={params.row.userRole} />,
     },
     {
       field: "feature",
