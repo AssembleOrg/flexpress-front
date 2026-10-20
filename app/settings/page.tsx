@@ -26,27 +26,40 @@ import toast from "react-hot-toast";
 import { AuthGuard } from "@/components/guards/AuthGuard";
 import { AuthNavbar } from "@/components/layout/AuthNavbar";
 import { PageTransition } from "@/components/ui/PageTransition";
+import { authApi } from "@/lib/api/auth";
 import { useAuthStore } from "@/lib/stores/authStore";
+import { getApiErrorMessage } from "@/lib/utils/apiError";
 
 interface SettingsState {
   emailNotifications: boolean;
   pushNotifications: boolean;
   profilePublic: boolean;
+}
+
+interface PasswordForm {
+  currentPassword: string;
   newPassword: string;
   confirmPassword: string;
 }
 
+const EMPTY_PASSWORD_FORM: PasswordForm = {
+  currentPassword: "",
+  newPassword: "",
+  confirmPassword: "",
+};
+
 export default function SettingsPage() {
   const router = useRouter();
   const _theme = useTheme();
-  useAuthStore();
+  const refreshToken = useAuthStore((s) => s.refreshToken);
   const [isLoading, setIsLoading] = useState(false);
+  const [isChangingPassword, setIsChangingPassword] = useState(false);
+  const [passwordForm, setPasswordForm] =
+    useState<PasswordForm>(EMPTY_PASSWORD_FORM);
   const [settings, setSettings] = useState<SettingsState>({
     emailNotifications: true,
     pushNotifications: true,
     profilePublic: false,
-    newPassword: "",
-    confirmPassword: "",
   });
 
   const handleToggleSetting = (key: keyof SettingsState) => {
@@ -58,32 +71,54 @@ export default function SettingsPage() {
 
   const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setSettings((prev) => ({
+    setPasswordForm((prev) => ({
       ...prev,
       [name]: value,
     }));
   };
 
-  const handleSaveSettings = async () => {
-    if (
-      settings.newPassword &&
-      settings.newPassword !== settings.confirmPassword
-    ) {
+  const handleChangePassword = async () => {
+    const { currentPassword, newPassword, confirmPassword } = passwordForm;
+    if (!currentPassword || !newPassword) {
+      toast.error("Completá la contraseña actual y la nueva");
+      return;
+    }
+    if (newPassword.length < 6) {
+      toast.error("La contraseña nueva debe tener al menos 6 caracteres");
+      return;
+    }
+    if (newPassword !== confirmPassword) {
       toast.error("Las contraseñas no coinciden");
       return;
     }
 
+    setIsChangingPassword(true);
+    try {
+      await authApi.changePassword({
+        currentPassword,
+        newPassword,
+        refreshToken,
+      });
+      toast.success(
+        "Contraseña cambiada. Se cerró la sesión en tus otros dispositivos.",
+      );
+      setPasswordForm(EMPTY_PASSWORD_FORM);
+    } catch (error) {
+      toast.error(
+        getApiErrorMessage(error, "No se pudo cambiar la contraseña"),
+      );
+    } finally {
+      setIsChangingPassword(false);
+    }
+  };
+
+  const handleSaveSettings = async () => {
     setIsLoading(true);
     try {
       // TODO: Aquí irá la llamada a la API para guardar configuración
       await new Promise((resolve) => setTimeout(resolve, 1500)); // Simulación
 
       toast.success("Configuración guardada correctamente");
-      setSettings((prev) => ({
-        ...prev,
-        newPassword: "",
-        confirmPassword: "",
-      }));
     } catch (_error) {
       toast.error("Error al guardar la configuración");
     } finally {
@@ -243,22 +278,44 @@ export default function SettingsPage() {
                 <Box display="flex" flexDirection="column" gap={3}>
                   <TextField
                     fullWidth
+                    label="Contraseña actual"
+                    type="password"
+                    name="currentPassword"
+                    autoComplete="current-password"
+                    value={passwordForm.currentPassword}
+                    onChange={handlePasswordChange}
+                  />
+                  <TextField
+                    fullWidth
                     label="Nueva Contraseña"
                     type="password"
                     name="newPassword"
-                    value={settings.newPassword}
+                    autoComplete="new-password"
+                    value={passwordForm.newPassword}
                     onChange={handlePasswordChange}
-                    placeholder="Dejá en blanco para no cambiar"
+                    helperText="Mínimo 6 caracteres"
                   />
                   <TextField
                     fullWidth
                     label="Confirmar Contraseña"
                     type="password"
                     name="confirmPassword"
-                    value={settings.confirmPassword}
+                    autoComplete="new-password"
+                    value={passwordForm.confirmPassword}
                     onChange={handlePasswordChange}
                     placeholder="Confirmá tu nueva contraseña"
                   />
+                  <Box>
+                    <Button
+                      variant="contained"
+                      onClick={handleChangePassword}
+                      disabled={isChangingPassword}
+                    >
+                      {isChangingPassword
+                        ? "Cambiando..."
+                        : "Cambiar contraseña"}
+                    </Button>
+                  </Box>
                 </Box>
               </Paper>
 

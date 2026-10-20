@@ -161,6 +161,20 @@ export const authApi = {
     await api.post("/auth/resend-verification");
   },
 
+  // Cambio de contraseña desde el perfil. Pide la actual y el backend cierra
+  // las demás sesiones; manda el refresh de este dispositivo para no cerrarla.
+  changePassword: async (data: {
+    currentPassword: string;
+    newPassword: string;
+    refreshToken: string | null;
+  }): Promise<void> => {
+    await api.post("/auth/change-password", {
+      currentPassword: data.currentPassword,
+      newPassword: data.newPassword,
+      ...(data.refreshToken ? { refresh_token: data.refreshToken } : {}),
+    });
+  },
+
   // Revoca el refresh de este dispositivo en el servidor. El access vigente
   // muere solo al vencer (15m). Es best-effort: si falla, igual se limpia el
   // estado local.
